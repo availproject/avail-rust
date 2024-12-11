@@ -1,7 +1,7 @@
 How to build the API
 
 1. Run Node
-2. Run `./build_api.sh` script
+2. Run `just build-metadata` (or Run `./build_api.sh`)
 3. Manually do the following change:
 
 ```diff
