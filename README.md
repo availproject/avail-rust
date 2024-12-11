@@ -1,2 +1,3 @@
-# avail-rust
-Avail Rust SDK
+# Metadata
+
+Read DEV_NOTES.md when new metadata gets generated.
