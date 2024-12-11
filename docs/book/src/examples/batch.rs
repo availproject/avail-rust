@@ -55,7 +55,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let payload = avail::tx().utility().batch_all(calls.clone());
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
 	let res = tx.execute_wait_for_inclusion(&account, options).await?;
-	res.check_if_transaction_was_successful(&sdk.online_client)
+	res.is_successful(&sdk.online_client)
 		.expect_err("It should fail");
 
 	// Force Batch

@@ -157,10 +157,7 @@ TransactionDetails {{
 		Some(tx.value)
 	}
 
-	pub fn check_if_transaction_was_successful(
-		&self,
-		client: &AOnlineClient,
-	) -> Result<(), subxt::Error> {
+	pub fn is_successful(&self, client: &AOnlineClient) -> Result<(), subxt::Error> {
 		utils::check_if_transaction_was_successful(client, &self.events)
 	}
 }
