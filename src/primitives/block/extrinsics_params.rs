@@ -4,13 +4,15 @@
 
 use codec::{Compact, Encode};
 use scale_info::PortableRegistry;
-use subxt_core::client::ClientState;
-use subxt_core::config::{
-	signed_extensions, Config, ExtrinsicParams, ExtrinsicParamsEncoder, Header, RefineParams,
-	SignedExtension,
+use subxt_core::{
+	client::ClientState,
+	config::{
+		signed_extensions, Config, ExtrinsicParams, ExtrinsicParamsEncoder, Header, RefineParams,
+		SignedExtension,
+	},
+	error::ExtrinsicParamsError,
+	utils::Era,
 };
-use subxt_core::error::ExtrinsicParamsError;
-use subxt_core::utils::Era;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct CheckAppId(pub crate::AppId);

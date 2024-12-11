@@ -44,7 +44,7 @@ mod bond {
 		let value = SDK::one_avail() * 100_000u128;
 		let payee = RewardDestination::Staked;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.bond(value, payee);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -71,7 +71,7 @@ mod bond_extra {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let max_additional = SDK::one_avail();
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.bond_extra(max_additional);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -101,7 +101,7 @@ mod nominate {
 			account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?, // Alice Stash
 		];
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.nominate(&targets);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -130,7 +130,7 @@ mod chill {
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.chill();
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -160,7 +160,7 @@ mod chill_other {
 			account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?, // Alice Stash
 		];
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.nominate(&targets);
 		tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -175,7 +175,7 @@ mod chill_other {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let stash = account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.chill_other(stash);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -202,7 +202,7 @@ mod unbond {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let value = SDK::one_avail();
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.unbond(value);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -232,7 +232,7 @@ mod validate {
 		let commission = Commission::new(50).unwrap();
 		let blocked = false;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.validate(commission, blocked);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -251,7 +251,7 @@ mod validate {
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.chill();
 		tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -282,7 +282,7 @@ mod payout_stakers {
 			era = era - 1
 		};
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 

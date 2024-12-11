@@ -10,7 +10,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	let account = SDK::alice()?;
-	let options = Some(Options::new().nonce(BestBlockAndTxPool));
+	let options = Options::new().nonce(BestBlockAndTxPool);
 
 	let value_1 = SDK::one_avail();
 	let value_2 = SDK::one_avail() * 100_000_000;

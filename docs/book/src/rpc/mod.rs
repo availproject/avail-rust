@@ -84,9 +84,8 @@ pub async fn run() -> Result<(), ClientError> {
 	let keypair = SDK::alice()?;
 	let account = keypair.public_key().to_account_id();
 
-	let options = Some(Options::new().app_id(1));
+	let options = Options::new().app_id(1);
 	let populated_options = options
-		.unwrap_or_default()
 		.build(&sdk.online_client, &sdk.rpc_client, &account)
 		.await?;
 

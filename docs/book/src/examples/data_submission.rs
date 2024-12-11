@@ -17,7 +17,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Application Key Creation
 	let key = String::from("My Key").into_bytes();
-	let options = Some(Options::new().nonce(BestBlockAndTxPool));
+	let options = Options::new().nonce(BestBlockAndTxPool);
 	let tx = sdk.tx.data_availability.create_application_key(key);
 	let res = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -28,7 +28,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Data Submission
 	let data = String::from("My Data").into_bytes();
-	let options = Some(Options::new().nonce(BestBlockAndTxPool).app_id(app_id));
+	let options = Options::new().nonce(BestBlockAndTxPool).app_id(app_id);
 	let tx = sdk.tx.data_availability.submit_data(data);
 	let res = tx.execute_wait_for_inclusion(&account, options).await?;
 

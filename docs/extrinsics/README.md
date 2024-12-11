@@ -58,7 +58,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.data_availability
-		.create_application_key(key, wait_for, &account, Some(options))
+		.create_application_key(key, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -158,7 +158,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.data_availability
-		.submit_data(data, wait_for, &account, Some(options))
+		.submit_data(data, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -258,7 +258,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.data_availability
-		.submit_block_length_proposal(rows, cols, wait_for, &account, Some(options))
+		.submit_block_length_proposal(rows, cols, wait_for, &account, options)
 		.await?;
 
 	println!("Rows={:?}, Cols={:?}", result.event.rows, result.event.cols);
@@ -329,7 +329,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.data_availability
-		.set_application_key(old_key, new_key, wait_for, &account, Some(options))
+		.set_application_key(old_key, new_key, wait_for, &account, options)
 		.await?;
 
 	println!(
@@ -403,7 +403,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.data_availability
-		.set_submit_data_fee_modifier(modifier, wait_for, &account, Some(options))
+		.set_submit_data_fee_modifier(modifier, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -510,7 +510,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.balances
-		.transfer_keep_alive(dest, amount, wait_for, &account, Some(options))
+		.transfer_keep_alive(dest, amount, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -607,7 +607,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.balances
-		.transfer_allow_death(dest, amount, wait_for, &account, Some(options))
+		.transfer_allow_death(dest, amount, wait_for, &account, options)
 		.await?;
 
 	if let Some(event) = &result.event2 {
@@ -709,7 +709,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.balances
-		.transfer_all(dest, keep_alive, wait_for, &account, Some(options))
+		.transfer_all(dest, keep_alive, wait_for, &account, options)
 		.await?;
 
 	if let Some(event) = &result.event2 {
@@ -821,7 +821,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.staking
-		.bond(value, payee, wait_for, &account, Some(options))
+		.bond(value, payee, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -915,7 +915,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.staking
-		.bond_extra(max_additional, wait_for, &account, Some(options))
+		.bond_extra(max_additional, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -1007,7 +1007,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.staking
-		.chill(wait_for, &account, Some(options))
+		.chill(wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -1102,7 +1102,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.staking
-		.chill_other(stash, wait_for, &account, Some(options))
+		.chill_other(stash, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -1167,7 +1167,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.staking
-		.nominate(&targets, wait_for, &account, Some(options))
+		.nominate(&targets, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -1267,7 +1267,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.staking
-		.unbond(value, wait_for, &account, Some(options))
+		.unbond(value, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -1363,7 +1363,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.staking
-		.validate(commission, blocked, wait_for, &account, Some(options))
+		.validate(commission, blocked, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -1469,7 +1469,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.session
-		.set_keys(keys, wait_for, &account, Some(options))
+		.set_keys(keys, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -1595,7 +1595,7 @@ async fn main() -> Result<(), String> {
 			bouncer,
 			wait_for,
 			&account,
-			Some(options),
+			options,
 		)
 		.await?;
 
@@ -1712,7 +1712,7 @@ async fn main() -> Result<(), String> {
 			pool_id,
 			wait_for,
 			&account,
-			Some(options),
+			options,
 		)
 		.await?;
 
@@ -1815,7 +1815,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.join(amount, pool_id, wait_for, &account, Some(options))
+		.join(amount, pool_id, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -1916,7 +1916,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.nominate(pool_id, validators, wait_for, &account, Some(options))
+		.nominate(pool_id, validators, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -2013,7 +2013,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.bond_extra(extra, wait_for, &account, Some(options))
+		.bond_extra(extra, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -2119,7 +2119,7 @@ async fn main() -> Result<(), String> {
 			Some(new_commission),
 			wait_for,
 			&account,
-			Some(options),
+			options,
 		)
 		.await?;
 
@@ -2223,7 +2223,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.set_metadata(pool_id, metadata, wait_for, &account, Some(options))
+		.set_metadata(pool_id, metadata, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -2315,7 +2315,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.set_claim_permission(permission, wait_for, &account, Some(options))
+		.set_claim_permission(permission, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -2407,7 +2407,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.set_state(pool_id, state, wait_for, &account, Some(options))
+		.set_state(pool_id, state, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -2505,7 +2505,7 @@ async fn main() -> Result<(), String> {
 			unbonding_points,
 			wait_for,
 			&account,
-			Some(options),
+			options,
 		)
 		.await?;
 
@@ -2612,7 +2612,7 @@ async fn main() -> Result<(), String> {
 			num_slashing_spans,
 			wait_for,
 			&account,
-			Some(options),
+			options,
 		)
 		.await?;
 
@@ -2711,7 +2711,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.chill(pool_id, wait_for, &account, Some(options))
+		.chill(pool_id, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -2799,7 +2799,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.claim_payout(wait_for, &account, Some(options))
+		.claim_payout(wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -2896,7 +2896,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.claim_commission(pool_id, wait_for, &account, Some(options))
+		.claim_commission(pool_id, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();
@@ -2990,7 +2990,7 @@ async fn main() -> Result<(), String> {
 	let result = sdk
 		.tx
 		.nomination_pools
-		.claim_payout_other(other, wait_for, &account, Some(options))
+		.claim_payout_other(other, wait_for, &account, options)
 		.await?;
 
 	result.print_debug();

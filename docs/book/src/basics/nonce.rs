@@ -14,8 +14,8 @@ pub async fn run() -> Result<(), ClientError> {
 		This behavior is different from the one in avail-js.
 	*/
 	options = options.nonce(Nonce::FinalizedBlock);
-	tx.execute_and_forget(&account, Some(options)).await?;
-	tx.execute_and_forget(&account, Some(options))
+	tx.execute_and_forget(&account, options).await?;
+	tx.execute_and_forget(&account, options)
 		.await
 		.expect_err("qed");
 	wait_n_blocks(&sdk, 3).await?;
@@ -25,8 +25,8 @@ pub async fn run() -> Result<(), ClientError> {
 		tx pool.
 	*/
 	options = options.nonce(Nonce::BestBlock);
-	tx.execute_and_forget(&account, Some(options)).await?;
-	tx.execute_and_forget(&account, Some(options))
+	tx.execute_and_forget(&account, options).await?;
+	tx.execute_and_forget(&account, options)
 		.await
 		.expect_err("qed");
 	wait_n_blocks(&sdk, 1).await?;
@@ -35,8 +35,8 @@ pub async fn run() -> Result<(), ClientError> {
 		This is the most commonly used nonce. If correctness is needed, use `Nonce::FinalizedBlock`
 	*/
 	options = options.nonce(Nonce::BestBlockAndTxPool);
-	tx.execute_and_forget(&account, Some(options)).await?;
-	tx.execute_and_forget(&account, Some(options)).await?;
+	tx.execute_and_forget(&account, options).await?;
+	tx.execute_and_forget(&account, options).await?;
 
 	/*
 		Managing the nonce manually
@@ -48,9 +48,9 @@ pub async fn run() -> Result<(), ClientError> {
 	.await?;
 
 	options = options.nonce(Nonce::Custom(nonce));
-	tx.execute_and_forget(&account, Some(options)).await?;
+	tx.execute_and_forget(&account, options).await?;
 	options = options.nonce(Nonce::Custom(nonce + 1));
-	tx.execute_and_forget(&account, Some(options)).await?;
+	tx.execute_and_forget(&account, options).await?;
 
 	Ok(())
 }

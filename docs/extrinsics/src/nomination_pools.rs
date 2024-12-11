@@ -60,7 +60,7 @@ mod create {
 		let nominator = account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
 		let bouncer = account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk
 			.tx
 			.nomination_pools
@@ -98,7 +98,7 @@ mod create_with_pool_id {
 		let bouncer = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let pool_id = 0;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk
 			.tx
 			.nomination_pools
@@ -133,7 +133,7 @@ mod join {
 		let amount = SDK::one_avail() * 100_000u128;
 		let pool_id = 1;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.join(amount, pool_id);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -162,7 +162,7 @@ mod bond_extra {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let extra = BondExtra::FreeBalance(SDK::one_avail());
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.bond_extra(extra);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -191,7 +191,7 @@ mod unbond {
 		let member_account = account.public_key().to_account_id();
 		let unbonding_points = SDK::one_avail();
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk
 			.tx
 			.nomination_pools
@@ -223,7 +223,7 @@ mod withdraw_unbonded {
 		let member_account = account.public_key().to_account_id();
 		let num_slashing_spans = 0;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk
 			.tx
 			.nomination_pools
@@ -260,7 +260,7 @@ mod set_commission {
 			amount: Perbill(10_000_000u32),                                                  // 1%
 		};
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk
 			.tx
 			.nomination_pools
@@ -291,7 +291,7 @@ mod set_metadata {
 		let pool_id = 1;
 		let metadata = String::from("This is metadata").as_bytes().to_vec();
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.set_metadata(pool_id, metadata);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -318,7 +318,7 @@ mod set_state {
 		let pool_id = 0;
 		let state = State::Destroying;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.set_state(pool_id, state);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -346,7 +346,7 @@ mod set_claim_permission {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let permission = Permission::PermissionlessAll;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.set_claim_permission(permission);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -374,7 +374,7 @@ mod nominate {
 			account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?, // Alice_Stash
 		];
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.nominate(pool_id, validators);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -402,7 +402,7 @@ mod chill {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let pool_id = 0;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.chill(pool_id);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -426,7 +426,7 @@ mod claim_payout {
 		let secret_uri = SecretUri::from_str("//Bob")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.claim_payout();
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -454,7 +454,7 @@ mod claim_payout_other {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let other = account_id_from_str("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy")?; // Dave
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.claim_payout_other(other);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -482,7 +482,7 @@ mod claim_commission {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let pool_id = 1;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.nomination_pools.claim_commission(pool_id);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -520,7 +520,7 @@ mod payout_stakers {
 			era = era - 1
 		};
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
 		tx.execute_wait_for_inclusion(&account, options).await?;
 

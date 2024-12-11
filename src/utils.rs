@@ -1,3 +1,13 @@
+use crate::{
+	avail::{self, runtime_types::da_runtime::primitives::SessionKeys},
+	block::Block,
+	error::ClientError,
+	rpcs::{account_next_index, get_block_hash},
+	transactions::{Params, TransactionDetails, TransactionFailed},
+	AExtrinsicEvents, AOnlineClient, AccountId, AppUncheckedExtrinsic, Options, PopulatedOptions,
+	WaitFor,
+};
+use core::str::FromStr;
 use log::{debug, info, log_enabled, warn};
 use primitive_types::H256;
 use subxt::{
@@ -8,18 +18,6 @@ use subxt::{
 	tx::DefaultPayload,
 };
 use subxt_signer::sr25519::Keypair;
-
-use crate::{
-	avail::{self, runtime_types::da_runtime::primitives::SessionKeys},
-	block::Block,
-	error::ClientError,
-	rpcs::{account_next_index, get_block_hash},
-	transactions::{Params, TransactionDetails, TransactionFailed},
-	AExtrinsicEvents, AOnlineClient, AccountId, AppUncheckedExtrinsic, Options, PopulatedOptions,
-	WaitFor,
-};
-
-use core::str::FromStr;
 
 /// Creates and signs an extrinsic and submits to the chain for block inclusion.
 ///
@@ -34,14 +32,13 @@ pub async fn sign_send_and_forget<T>(
 	rpc_client: &RpcClient,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
-	options: Option<Options>,
+	options: Options,
 ) -> Result<H256, TransactionFailed>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
 	let options = options
-		.unwrap_or_default()
 		.build(online_client, rpc_client, &account_id)
 		.await?;
 
@@ -62,7 +59,7 @@ pub async fn execute_and_watch_transaction<T>(
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	wait_for: WaitFor,
-	options: Option<Options>,
+	options: Options,
 	block_timeout: Option<u32>,
 	retry_count: Option<u32>,
 ) -> Result<TransactionDetails, ClientError>
@@ -72,14 +69,13 @@ where
 	let account_id = account.public_key().to_account_id();
 
 	let options = options
-		.unwrap_or_default()
 		.build(online_client, rpc_client, &account_id)
 		.await?;
 
 	let mut retry_count = retry_count.unwrap_or(0);
 	loop {
 		let tx_hash =
-			execute_transaction(online_client, rpc_client, account, call, options.clone()).await?;
+			execute_transaction(online_client, rpc_client, account, call, options).await?;
 		let result = watch_transaction(online_client, tx_hash, wait_for, block_timeout).await;
 		let error = match result {
 			Ok(details) => return Ok(details),
@@ -245,13 +241,13 @@ pub async fn watch_transaction(
 
 	debug!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
 
-	return Ok(TransactionDetails::new(
+	Ok(TransactionDetails::new(
 		events,
 		tx_hash,
 		tx_index,
 		block_hash,
 		block_number,
-	));
+	))
 }
 
 pub fn check_if_transaction_was_successful(
@@ -275,17 +271,16 @@ pub fn decode_raw_block_rpc_extrinsics(
 ) -> Result<Vec<AppUncheckedExtrinsic>, String> {
 	let extrinsics: Result<Vec<AppUncheckedExtrinsic>, String> = extrinsics
 		.into_iter()
-		.map(|e| AppUncheckedExtrinsic::try_from(e))
+		.map(AppUncheckedExtrinsic::try_from)
 		.collect();
 
 	extrinsics
 }
 
 pub fn deconstruct_session_keys(session_keys: Vec<u8>) -> Result<SessionKeys, String> {
-	use crate::avail::runtime_types::sp_core::ed25519::Public as EDPublic;
-	use crate::avail::runtime_types::sp_core::sr25519::Public as SRPublic;
 	use crate::avail::runtime_types::{
 		pallet_im_online, sp_authority_discovery, sp_consensus_babe, sp_consensus_grandpa,
+		sp_core::{ed25519::Public as EDPublic, sr25519::Public as SRPublic},
 	};
 	use core::array::TryFromSliceError;
 
@@ -325,12 +320,12 @@ pub fn deconstruct_session_keys_string(session_keys: String) -> Result<SessionKe
 		let value_1: u8 = iter
 			.next()
 			.and_then(|v| v.to_digit(16))
-			.and_then(|v| Some((v * 16) as u8))
+			.map(|v| (v * 16) as u8)
 			.ok_or_else(err)?;
 		let value_2: u8 = iter
 			.next()
 			.and_then(|v| v.to_digit(16))
-			.and_then(|v| Some(v as u8))
+			.map(|v| v as u8)
 			.ok_or_else(err)?;
 		session_keys_u8.push(value_1 + value_2);
 	}
@@ -358,7 +353,7 @@ pub async fn get_nonce_state(
 
 pub async fn get_nonce_node(client: &RpcClient, address: &str) -> Result<u32, ClientError> {
 	let account = account_id_from_str(address)?;
-	Ok(account_next_index(client, account.to_string()).await?)
+	account_next_index(client, account.to_string()).await
 }
 
 pub fn account_id_from_str(value: &str) -> Result<AccountId, String> {
@@ -383,11 +378,11 @@ pub async fn get_app_keys(
 
 	let mut result = Vec::new();
 	while let Some(Ok(kv)) = app_keys.next().await {
-		let key = (&kv.key_bytes[49..]).to_vec();
+		let key = (kv.key_bytes[49..]).to_vec();
 		let key = String::from_utf8(key).unwrap();
 
 		if kv.value.owner.to_string() == address {
-			result.push((key.clone(), kv.value.id.0.clone()));
+			result.push((key.clone(), kv.value.id.0));
 		}
 	}
 

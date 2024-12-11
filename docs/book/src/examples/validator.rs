@@ -19,7 +19,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Bond
 	let tx = sdk.tx.staking.bond(min_validator_bond, payee);
-	let options = Some(Options::new().nonce(avail_rust::Nonce::BestBlockAndTxPool));
+	let options = Options::new().nonce(avail_rust::Nonce::BestBlockAndTxPool);
 	_ = tx.execute_wait_for_inclusion(&account, options).await?;
 
 	// Generate Session Keys

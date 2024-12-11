@@ -1,15 +1,17 @@
-use crate::avail::{
-	self, nomination_pools::calls::types::set_commission::NewCommission as NewCommissionOriginal,
-	runtime_types::sp_arithmetic::per_things::Perbill,
-};
-use crate::{AOnlineClient, AccountId};
-
 use super::Transaction;
+pub use crate::avail::{
+	nomination_pools::calls::types::{set_claim_permission::Permission, set_state::State},
+	runtime_types::pallet_nomination_pools::BondExtra,
+};
+use crate::{
+	avail::{
+		self,
+		nomination_pools::calls::types::set_commission::NewCommission as NewCommissionOriginal,
+		runtime_types::sp_arithmetic::per_things::Perbill,
+	},
+	AOnlineClient, AccountId,
+};
 use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
-
-pub use crate::avail::nomination_pools::calls::types::set_claim_permission::Permission;
-pub use crate::avail::nomination_pools::calls::types::set_state::State;
-pub use crate::avail::runtime_types::pallet_nomination_pools::BondExtra;
 
 pub type NominateCall = avail::nomination_pools::calls::types::Nominate;
 pub type JoinCall = avail::nomination_pools::calls::types::Join;
@@ -144,9 +146,7 @@ impl NominationPools {
 	}
 
 	pub fn claim_payout_other(&self, other: AccountId) -> Transaction<ClaimPayoutOtherCall> {
-		let payload = avail::tx()
-			.nomination_pools()
-			.claim_payout_other(other.into());
+		let payload = avail::tx().nomination_pools().claim_payout_other(other);
 		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
 	}
 

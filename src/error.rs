@@ -1,9 +1,6 @@
+use crate::{transactions::TransactionFailed, utils::TransactionExecutionError};
 use subxt::error::DispatchError;
-use subxt_signer::sr25519;
-use subxt_signer::SecretUriError;
-
-use crate::transactions::TransactionFailed;
-use crate::utils::TransactionExecutionError;
+use subxt_signer::{sr25519, SecretUriError};
 
 type RpcError = subxt::backend::rpc::reconnecting_rpc_client::Error;
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 set -x
-
+set -e
 
 cargo check
 cargo check --no-default-features

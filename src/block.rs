@@ -1,19 +1,15 @@
-use crate::error::ClientError;
-use crate::rpcs;
 use crate::{
-	avail::data_availability::calls::types as DataAvailabilityCalls,
-	primitives::block::extrinsics_params::CheckAppId,
+	avail::data_availability::calls::types as DataAvailabilityCalls, error::ClientError,
+	primitives::block::extrinsics_params::CheckAppId, rpcs, ABlock, AExtrinsicDetails,
+	AExtrinsicEvents, AExtrinsics, AFoundExtrinsic, AOnlineClient,
 };
-use crate::{
-	ABlock, AExtrinsicDetails, AExtrinsicEvents, AExtrinsics, AFoundExtrinsic, AOnlineClient,
-};
-
 use primitive_types::H256;
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
-use subxt::backend::StreamOfResults;
-use subxt::blocks::StaticExtrinsic;
-use subxt::storage::StorageKeyValuePair;
-use subxt::utils::Yes;
+use subxt::{
+	backend::{rpc::reconnecting_rpc_client::RpcClient, StreamOfResults},
+	blocks::StaticExtrinsic,
+	storage::StorageKeyValuePair,
+	utils::Yes,
+};
 
 pub struct Block {
 	pub block: ABlock,
@@ -215,7 +211,7 @@ pub async fn fetch_events(
 }
 
 pub fn transaction_count(transactions: &AExtrinsics) -> usize {
-	return transactions.len();
+	transactions.len()
 }
 
 pub fn transaction_all_static<T: StaticExtrinsic>(
@@ -227,7 +223,7 @@ pub fn transaction_all_static<T: StaticExtrinsic>(
 pub fn data_submissions_all(transactions: &AExtrinsics) -> Vec<DataSubmission> {
 	transaction_all_static::<DataAvailabilityCalls::SubmitData>(transactions)
 		.into_iter()
-		.map(|tx| DataSubmission::from_static(tx))
+		.map(DataSubmission::from_static)
 		.collect()
 }
 
@@ -252,7 +248,7 @@ pub fn transaction_by_signer_static<T: StaticExtrinsic>(
 pub fn data_submissions_by_signer(transactions: &AExtrinsics, signer: &str) -> Vec<DataSubmission> {
 	transaction_by_signer_static::<DataAvailabilityCalls::SubmitData>(transactions, signer)
 		.into_iter()
-		.map(|tx| DataSubmission::from_static(tx))
+		.map(DataSubmission::from_static)
 		.collect()
 }
 
@@ -278,7 +274,7 @@ pub fn data_submissions_by_index(
 	tx_index: u32,
 ) -> Option<DataSubmission> {
 	transaction_by_index_static::<DataAvailabilityCalls::SubmitData>(transactions, tx_index)
-		.map(|tx| DataSubmission::from_static(tx))
+		.map(DataSubmission::from_static)
 }
 
 pub fn transaction_by_hash(transactions: &AExtrinsics, tx_hash: H256) -> Vec<AExtrinsicDetails> {
@@ -306,7 +302,7 @@ pub fn data_submissions_by_hash(
 	let all_submissions: Vec<DataSubmission> =
 		transaction_by_hash_static::<DataAvailabilityCalls::SubmitData>(transactions, tx_hash)
 			.into_iter()
-			.map(|tx| DataSubmission::from_static(tx))
+			.map(DataSubmission::from_static)
 			.collect();
 
 	all_submissions.into_iter().next()
@@ -337,7 +333,7 @@ pub fn data_submissions_by_app_id(
 	let all_submissions: Vec<DataSubmission> =
 		transaction_by_app_id_static::<DataAvailabilityCalls::SubmitData>(transactions, app_id)
 			.into_iter()
-			.map(|tx| DataSubmission::from_static(tx))
+			.map(DataSubmission::from_static)
 			.collect();
 
 	all_submissions.into_iter().next()
@@ -351,7 +347,7 @@ pub fn transaction_hash_to_index(transactions: &AExtrinsics, tx_hash: H256) -> V
 		}
 	}
 
-	return indices;
+	indices
 }
 
 pub fn read_app_id(transaction: &AExtrinsicDetails) -> Option<u32> {
@@ -359,7 +355,7 @@ pub fn read_app_id(transaction: &AExtrinsicDetails) -> Option<u32> {
 		.signed_extensions()?
 		.find::<CheckAppId>()
 		.ok()?
-		.and_then(|e| Some(e.0))
+		.map(|e| e.0)
 }
 
 #[derive(Debug, Clone)]

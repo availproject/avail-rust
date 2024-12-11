@@ -23,7 +23,7 @@ mod set_keys {
 		let keys = sdk.rpc.author.rotate_keys().await?;
 		let keys = utils::deconstruct_session_keys(keys)?;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.session.set_keys(keys);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 

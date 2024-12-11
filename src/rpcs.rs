@@ -1,12 +1,17 @@
+use crate::{
+	avail::runtime_types::frame_system::limits::BlockLength,
+	error::ClientError,
+	from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState},
+	ABlockDetailsRPC, AvailHeader, BlockHash, BlockNumber, Cell, GDataProof, GRow,
+};
 use avail_core::data_proof::ProofResponse;
-
-use crate::avail::runtime_types::frame_system::limits::BlockLength;
-use crate::error::ClientError;
-use crate::from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState};
-use crate::{ABlockDetailsRPC, AvailHeader, BlockHash, BlockNumber, Cell, GDataProof, GRow};
-use subxt::backend::legacy::rpc_methods::{Bytes, SystemHealth};
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
-use subxt::rpc_params;
+use subxt::{
+	backend::{
+		legacy::rpc_methods::{Bytes, SystemHealth},
+		rpc::reconnecting_rpc_client::RpcClient,
+	},
+	rpc_params,
+};
 
 /// Arbitrary properties defined in chain spec as a JSON object
 pub type Properties = serde_json::map::Map<String, serde_json::Value>;

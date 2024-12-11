@@ -30,7 +30,7 @@ mod transfer_all {
 		let dest = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let keep_alive = false;
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.balances.transfer_all(dest, keep_alive);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -53,7 +53,7 @@ mod transfer_all {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let dest = account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?; // Alice
 		let value = SDK::one_avail() * 900_000;
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, value);
 		tx.execute_wait_for_inclusion(&account, options).await?;
@@ -80,7 +80,7 @@ mod transfer_allow_death {
 		let dest = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.balances.transfer_allow_death(dest, amount);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 
@@ -112,7 +112,7 @@ mod transfer_keep_alive {
 		let dest = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
-		let options = Some(Options::new().nonce(Nonce::BestBlockAndTxPool));
+		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, amount);
 		let result = tx.execute_wait_for_inclusion(&account, options).await?;
 

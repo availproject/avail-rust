@@ -1,8 +1,10 @@
-use crate::api_dev::api::runtime_types::pallet_staking::ValidatorPrefs;
-use crate::api_dev::api::runtime_types::sp_arithmetic::per_things::Perbill;
-use crate::{avail, AOnlineClient, AccountId, RewardDestination};
-
 use super::Transaction;
+use crate::{
+	api_dev::api::runtime_types::{
+		pallet_staking::ValidatorPrefs, sp_arithmetic::per_things::Perbill,
+	},
+	avail, AOnlineClient, AccountId, RewardDestination,
+};
 use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
 use subxt_core::utils::MultiAddress;
 
@@ -62,7 +64,7 @@ impl Staking {
 
 	pub fn nominate(&self, targets: &[AccountId]) -> Transaction<NominateCall> {
 		let targets = targets
-			.into_iter()
+			.iter()
 			.map(|a| MultiAddress::Id(a.clone()))
 			.collect();
 

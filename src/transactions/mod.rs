@@ -27,19 +27,18 @@ pub type Params =
 		AvailConfig,
 	>>::Params;
 
-pub use crate::avail::balances::events as BalancesEvents;
-pub use crate::avail::data_availability::events as DataAvailabilityEvents;
-pub use crate::avail::nomination_pools::events as NominationPoolsEvents;
-pub use crate::avail::session::events as SessionEvents;
-pub use crate::avail::staking::events as StakingEvents;
-pub use crate::avail::system::events as SystemEvents;
+pub use crate::avail::{
+	balances::events as BalancesEvents, data_availability::events as DataAvailabilityEvents,
+	nomination_pools::events as NominationPoolsEvents, session::events as SessionEvents,
+	staking::events as StakingEvents, system::events as SystemEvents,
+};
 
-pub use crate::avail::balances::calls::types as BalancesCalls;
-pub use crate::avail::data_availability::calls::types as DataAvailabilityCalls;
-pub use crate::avail::nomination_pools::calls::types as NominationPoolsCalls;
-pub use crate::avail::session::calls::types as SessionCalls;
-pub use crate::avail::staking::calls::types as StakingCalls;
-pub use crate::avail::system::calls::types as SystemCalls;
+pub use crate::avail::{
+	balances::calls::types as BalancesCalls,
+	data_availability::calls::types as DataAvailabilityCalls,
+	nomination_pools::calls::types as NominationPoolsCalls, session::calls::types as SessionCalls,
+	staking::calls::types as StakingCalls, system::calls::types as SystemCalls,
+};
 
 #[derive(Clone)]
 pub struct Transactions {
@@ -263,7 +262,7 @@ where
 	pub async fn execute_wait_for_inclusion(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError> {
 		self.execute(WaitFor::BlockInclusion, account, options, Some(2))
 			.await
@@ -272,7 +271,7 @@ where
 	pub async fn execute_wait_for_finalization(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError> {
 		self.execute(WaitFor::BlockFinalization, account, options, Some(5))
 			.await
@@ -282,7 +281,7 @@ where
 		&self,
 		wait_for: WaitFor,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 		block_timeout: Option<u32>,
 	) -> Result<TransactionDetails, ClientError> {
 		execute_and_watch_transaction(
@@ -301,7 +300,7 @@ where
 	pub async fn execute_and_forget(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<H256, TransactionFailed> {
 		sign_send_and_forget(
 			&self.online_client,
@@ -364,6 +363,6 @@ where
 		let len_bytes: [u8; 4] = (tx.encoded().len() as u32).to_le_bytes();
 		let encoded_with_len = [tx.encoded(), &len_bytes[..]].concat();
 
-		Ok(query_fee_details(&self.rpc_client, encoded_with_len.into(), None).await?)
+		query_fee_details(&self.rpc_client, encoded_with_len.into(), None).await
 	}
 }

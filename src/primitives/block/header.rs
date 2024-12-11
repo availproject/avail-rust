@@ -1,11 +1,13 @@
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use subxt_core::config::{
-	substrate::{BlakeTwo256, Digest, DigestItem},
-	Hasher, Header,
+use subxt_core::{
+	config::{
+		substrate::{BlakeTwo256, Digest, DigestItem},
+		Hasher, Header,
+	},
+	utils::H256,
 };
-use subxt_core::utils::H256;
 
 use crate::avail::runtime_types::{
 	avail_core::header::{extension::HeaderExtension, Header as ApiHeader},

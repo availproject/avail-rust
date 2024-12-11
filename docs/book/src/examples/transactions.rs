@@ -6,7 +6,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let account = SDK::alice()?;
 
 	let dest = utils::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
-	let options = Some(Options::new().nonce(avail_rust::Nonce::BestBlockAndTxPool));
+	let options = Options::new().nonce(avail_rust::Nonce::BestBlockAndTxPool);
 	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
 	let res = tx.execute_wait_for_inclusion(&account, options).await?;
 

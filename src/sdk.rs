@@ -1,9 +1,7 @@
+use crate::{error::ClientError, rpcs::Rpc, transactions::Transactions, AOnlineClient};
 use std::{str::FromStr, time::Duration};
-
 use subxt::backend::rpc::reconnecting_rpc_client::{ExponentialBackoff, RpcClient};
 use subxt_signer::{sr25519::Keypair, SecretUri};
-
-use crate::{error::ClientError, rpcs::Rpc, transactions::Transactions, AOnlineClient};
 
 #[derive(Clone)]
 pub struct SDK {
@@ -43,7 +41,7 @@ impl SDK {
 		})
 	}
 
-	fn enable_logging() {
+	pub fn enable_logging() {
 		env_logger::builder().init();
 	}
 
@@ -99,13 +97,6 @@ pub async fn initialize_api(endpoint: &str) -> Result<(AOnlineClient, RpcClient)
 	let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
 
 	Ok((api, rpc_client))
-}
-
-pub async fn initialize_api_custom(rpc_client: RpcClient) -> Result<AOnlineClient, ClientError> {
-	// Cloning RpcClient is cheaper and doesn't create a new WS connection
-	let online_client = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
-
-	Ok(online_client)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

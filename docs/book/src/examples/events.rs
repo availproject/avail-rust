@@ -1,4 +1,4 @@
-use avail_rust::{avail, error::ClientError, utils, SDK};
+use avail_rust::{avail, error::ClientError, utils, Options, SDK};
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -7,7 +7,9 @@ pub async fn run() -> Result<(), ClientError> {
 
 	let dest = utils::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
 	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
-	let res = tx.execute_wait_for_inclusion(&account, None).await?;
+	let res = tx
+		.execute_wait_for_inclusion(&account, Options::new())
+		.await?;
 
 	for event in res.events.iter() {
 		let Ok(event) = event else {
