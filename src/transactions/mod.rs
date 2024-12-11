@@ -4,6 +4,7 @@ pub mod nom_pools;
 pub mod options;
 pub mod session;
 pub mod staking;
+pub mod vector;
 
 use crate::{
 	error::ClientError,
