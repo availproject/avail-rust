@@ -11,3 +11,5 @@ Here is the list of available `just` commands (`just -l`):
 - lint-fix - Runs clippy --fix
 - serve-book - Generates and serves the documentation at `http://localhost:3000`
 
+# Release Strategy
+This project uses [GitHub Flow](https://www.alexhyett.com/git-flow-github-flow/) to manage release and branches.
