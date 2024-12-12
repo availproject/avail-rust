@@ -10,20 +10,20 @@ version = "0.1.0"
 crate-type = ["cdylib", "rlib"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-derive_more = { version = "1", features = ["full"] }
-kate-recovery = {  git = "https://github.com/availproject/avail-core", tag = "core-node-4", features = ["serde"] }
+derive_more = { version = "1", default-features = false, features = ["std", "from", "constructor"] }
+kate-recovery = {  git = "https://github.com/availproject/avail-core", tag = "core-node-6", features = ["serde"] }
 subxt = { version = "0.38.0", features = ["reconnecting-rpc-client"] }
 subxt-core = { version = "0.38.0" }
 subxt-signer = { version = "0.38.0" }
-tokio = { version = "1.21.2" }
+tokio = { version = "1.42.0" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 derive_more = { version = "1", default-features = false, features = ["from", "constructor"] }
-kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, tag = "core-node-4", features = ["serde"] }
+kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, tag = "core-node-6", features = ["serde"] }
 subxt = { version = "0.38.0", default-features = false, features = ["web", "jsonrpsee", "reconnecting-rpc-client"] }
 subxt-core = { version = "0.38.0", default-features = false }
 subxt-signer = { version = "0.38.0", default-features = false, features = ["web", "sr25519", "subxt"] }
-tokio = { version = "1.21.2", default-features = false }
+tokio = { version = "1.42.0", default-features = false }
 sp-io = { version = "30", default-features = false, features = [ "disable_panic_handler" ] }
 
 [dependencies]
@@ -35,7 +35,7 @@ codec = { package = "parity-scale-codec", version = "3", default-features = fals
 	"bit-vec",
 ] }
 scale-info = { version = "2.5.0", features = ["bit-vec"] }
-avail-core = {  git = "https://github.com/availproject/avail-core", tag = "core-node-4", default-features = false, features = ["serde", "runtime"] }
+avail-core = {  git = "https://github.com/availproject/avail-core", tag = "core-node-6", default-features = false, features = ["serde", "runtime"] }
 hex = { version = "0.4" }
 base58 = { version = "0.2.0" }
 sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10", default-features = false }
@@ -49,6 +49,3 @@ sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "pol
 sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10" }
 sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10" }
 sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10" }
-
-[features]
-reconnecting-rpc-client = ["subxt/reconnecting-rpc-client"]

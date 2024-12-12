@@ -1,4 +1,4 @@
-use crate::{transactions::TransactionFailed, utils::TransactionExecutionError};
+use crate::utils::TransactionExecutionError;
 use subxt::error::DispatchError;
 use subxt_signer::{sr25519, SecretUriError};
 
@@ -62,12 +62,6 @@ impl From<SecretUriError> for ClientError {
 impl From<sr25519::Error> for ClientError {
 	fn from(value: sr25519::Error) -> Self {
 		Self::Sr25519(value)
-	}
-}
-
-impl From<TransactionFailed> for ClientError {
-	fn from(value: TransactionFailed) -> Self {
-		value.reason
 	}
 }
 

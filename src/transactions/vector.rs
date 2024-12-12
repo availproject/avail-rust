@@ -7,11 +7,13 @@ pub type ExecuteCall = avail::vector::calls::types::Execute;
 pub type FulfillCallCall = avail::vector::calls::types::FulfillCall;
 pub type SendMessageCall = avail::vector::calls::types::SendMessage;
 
-use avail::runtime_types::bounded_collections::bounded_vec::BoundedVec;
-use avail::vector::calls::types::execute::AccountProof;
-use avail::vector::calls::types::execute::AddrMessage;
-use avail::vector::calls::types::execute::StorageProof;
-use avail::vector::calls::types::send_message::Message;
+use avail::{
+	runtime_types::bounded_collections::bounded_vec::BoundedVec,
+	vector::calls::types::{
+		execute::{AccountProof, AddrMessage, StorageProof},
+		send_message::Message,
+	},
+};
 
 #[derive(Clone)]
 pub struct Vector {

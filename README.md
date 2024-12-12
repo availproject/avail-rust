@@ -5,7 +5,7 @@ You can install both tools by running and executing `./install_dependencies.sh`.
 Here is the list of available `just` commands (`just -l`):
 - build - Builds the sdk with all features permutations. Run this once you have done all the changes
 - build-book - Builds the book that contains documentation
-- build-metadata - Builds the metadata. Run Node before running this command. Make sure to read `METADATA_NOTES.md`
+- build-metadata - Builds the metadata. Run Node before running this command. 
 - fmt - Formats the SDK using nightly cargo. Run this once you have done all the changes
 - lint - Runs clippy
 - lint-fix - Runs clippy --fix
@@ -13,3 +13,10 @@ Here is the list of available `just` commands (`just -l`):
 
 # Release Strategy
 This project uses [GitHub Flow](https://www.alexhyett.com/git-flow-github-flow/) to manage release and branches.
+
+# Logging
+You can enable logging by calling `SDK::enable_logging()` in your code and by using the `RUST_LOG` env variable. 
+Example:
+```bash
+RUST_LOG=debug cargo run
+```
