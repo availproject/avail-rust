@@ -3,7 +3,7 @@ use crate::{
 	block::Block,
 	error::ClientError,
 	rpcs::{account_next_index, get_block_hash},
-	transactions::{Params, TransactionDetails, TransactionFailed},
+	transactions::{Params, TransactionDetails},
 	AExtrinsicEvents, AOnlineClient, AccountId, AppUncheckedExtrinsic, Options, PopulatedOptions,
 	WaitFor,
 };
@@ -33,7 +33,7 @@ pub async fn sign_send_and_forget<T>(
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	options: Options,
-) -> Result<H256, TransactionFailed>
+) -> Result<H256, ClientError>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {

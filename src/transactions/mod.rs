@@ -4,6 +4,7 @@ pub mod nom_pools;
 pub mod options;
 pub mod session;
 pub mod staking;
+pub mod vector;
 
 use crate::{
 	error::ClientError,
@@ -162,75 +163,6 @@ TransactionDetails {{
 	}
 }
 
-#[derive(Debug)]
-pub struct TransactionFailed {
-	pub reason: ClientError,
-	pub details: Option<TransactionDetails>,
-}
-
-impl TransactionFailed {
-	pub fn new(reason: String, details: TransactionDetails) -> Self {
-		Self {
-			reason: ClientError::from(reason),
-			details: Some(details),
-		}
-	}
-}
-
-impl From<&str> for TransactionFailed {
-	fn from(value: &str) -> Self {
-		Self {
-			reason: ClientError::from(value),
-			details: None,
-		}
-	}
-}
-
-impl From<(&str, TransactionDetails)> for TransactionFailed {
-	fn from(value: (&str, TransactionDetails)) -> Self {
-		Self {
-			reason: ClientError::from(value.0),
-			details: Some(value.1),
-		}
-	}
-}
-
-impl From<(String, TransactionDetails)> for TransactionFailed {
-	fn from(value: (String, TransactionDetails)) -> Self {
-		Self {
-			reason: ClientError::from(value.0),
-			details: Some(value.1),
-		}
-	}
-}
-
-impl From<String> for TransactionFailed {
-	fn from(value: String) -> Self {
-		Self {
-			reason: ClientError::from(value),
-			details: None,
-		}
-	}
-}
-
-impl From<ClientError> for TransactionFailed {
-	fn from(value: ClientError) -> Self {
-		Self {
-			reason: value,
-			details: None,
-		}
-	}
-}
-
-impl From<(ClientError, TransactionDetails)> for TransactionFailed {
-	fn from(value: (ClientError, TransactionDetails)) -> Self {
-		Self {
-			reason: value.0,
-			details: Some(value.1),
-		}
-	}
-}
-
 #[derive(Debug, Clone)]
 pub struct Transaction<T>
 where
@@ -240,6 +172,7 @@ where
 	rpc_client: RpcClient,
 	payload: DefaultPayload<T>,
 }
+
 impl<T> Transaction<T>
 where
 	T: StaticExtrinsic + EncodeAsFields,
@@ -298,7 +231,7 @@ where
 		&self,
 		account: &Keypair,
 		options: Options,
-	) -> Result<H256, TransactionFailed> {
+	) -> Result<H256, ClientError> {
 		sign_send_and_forget(
 			&self.online_client,
 			&self.rpc_client,
