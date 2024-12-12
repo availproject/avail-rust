@@ -3,6 +3,7 @@ use avail_rust::{
 	Options, SDK,
 };
 
+use avail::runtime_types::da_runtime::RuntimeCall;
 use avail::runtime_types::pallet_balances::pallet::Call::transfer_keep_alive as TransferKeepAlive;
 use avail::utility::events as UtilityEvents;
 
@@ -22,10 +23,12 @@ pub async fn run() -> Result<(), ClientError> {
 		dest: dest_bob.into(),
 		value: value_1,
 	};
+	let call_1 = RuntimeCall::Balances(call_1);
 	let call_2 = TransferKeepAlive {
 		dest: dest_charlie.into(),
 		value: value_2,
 	};
+	let call_2 = RuntimeCall::Balances(call_2);
 	let calls = vec![call_1.into(), call_2.into()];
 
 	// Batch
