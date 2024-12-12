@@ -52,7 +52,7 @@ impl Options {
 	) -> Result<PopulatedOptions, ClientError> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
-		let nonce = self.nonce.unwrap_or(Nonce::FinalizedBlock);
+		let nonce = self.nonce.unwrap_or(Nonce::BestBlockAndTxPool);
 		let nonce = parse_nonce(online_client, rpc_client, nonce, account).await?;
 		let mortality = self.mortality.unwrap_or(Mortality {
 			period: 32,

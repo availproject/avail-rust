@@ -18,6 +18,14 @@ pub async fn da_app_keys() -> Result<(), ClientError> {
 	let result = storage.fetch(&storage_query).await?;
 
 	dbg!(result);
+	/* Output
+	AppKeyInfo {
+		owner: AccountId32(...),
+		id: AppId(
+			1,
+		),
+	}
+	*/
 
 	Ok(())
 }
@@ -39,6 +47,28 @@ pub async fn da_app_keys_iter() -> Result<(), ClientError> {
 		println!("Key: {:?}", key);
 		println!("Value: {:?}", kv.value);
 	}
+	/* Output
+		Key: "Reserved-2"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(2) }
+		Key: "Reserved-8"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(8) }
+		Key: "Reserved-1"
+		Value: AppKeyInfo { owner: AccountId32(...) id: AppId(1) }
+		Key: "Reserved-9"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(9) }
+		Key: "Reserved-4"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(4) }
+		Key: "Reserved-5"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(5) }
+		Key: "Reserved-7"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(7) }
+		Key: "Avail"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(0) }
+		Key: "Reserved-3"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(3) }
+		Key: "Reserved-6"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(6) }
+	*/
 
 	Ok(())
 }
@@ -54,6 +84,9 @@ pub async fn da_next_app_id() -> Result<(), ClientError> {
 	let result = storage.fetch_or_default(&storage_query).await?;
 
 	dbg!(result);
+	/* Output
+		AppId(10)
+	*/
 
 	Ok(())
 }
@@ -68,6 +101,14 @@ pub async fn staking_active_era() -> Result<(), ClientError> {
 	let result = storage.fetch(&storage_query).await?;
 
 	dbg!(result);
+	/* Output
+	ActiveEraInfo {
+		index: 13,
+		start: Some(
+			1732612788000,
+		),
+	}
+	*/
 
 	Ok(())
 }
@@ -84,6 +125,9 @@ pub async fn staking_bonded() -> Result<(), ClientError> {
 	let result = storage.fetch(&storage_query).await?;
 
 	dbg!(result);
+	/* Output
+		AccountId32(...)
+	*/
 
 	Ok(())
 }
@@ -104,6 +148,10 @@ pub async fn staking_bonded_iter() -> Result<(), ClientError> {
 		println!("Key: {:?}", key.to_string());
 		println!("Value: {:?}", kv.value);
 	}
+	/* Output
+		Key: "5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY"
+		Value: AccountId32(...)
+	*/
 
 	Ok(())
 }
@@ -121,12 +169,19 @@ pub async fn system_account() -> Result<(), ClientError> {
 	let result = storage.fetch(&storage_query).await?;
 
 	if let Some(account) = result {
-		dbg!(account.consumers);
-		dbg!(account.data);
-		dbg!(account.nonce);
-		dbg!(account.providers);
-		dbg!(account.sufficients);
+		println!("Consumers: {}", account.consumers);
+		println!("Data: {:?}", account.data);
+		println!("Nonce: {}", account.nonce);
+		println!("Providers: {}", account.providers);
+		println!("Sufficients: {}", account.sufficients);
 	}
+	/* Output
+		Consumers: 0
+		Data: AccountData { free: 10000000000000000000000000, reserved: 0, frozen: 0, flags: ExtraFlags(170141183460469231731687303715884105728) }
+		Nonce: 0
+		Providers: 1
+		Sufficients: 0
+	*/
 
 	Ok(())
 }
@@ -147,6 +202,20 @@ pub async fn system_account_iter() -> Result<(), ClientError> {
 		println!("Key: {:?}", key.to_string());
 		println!("Value: {:?}", kv.value);
 	}
+	/* Output
+		Key: "5FCfAonRZgTFrTd9HREEyeJjDpT397KMzizE6T3DvebLFE7n"
+		Value: AccountInfo { nonce: 0, consumers: 0, providers: 1, sufficients: 0, data: AccountData { free: 10000000000000000000000000, reserved: 0, frozen: 0, flags: ExtraFlags(170141183460469231731687303715884105728) } }
+
+		Key: "5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL"
+		Value: AccountInfo { nonce: 0, consumers: 0, providers: 1, sufficients: 0, data: AccountData { free: 10000000000000000000000000, reserved: 0, frozen: 0, flags: ExtraFlags(170141183460469231731687303715884105728) } }
+
+		Key: "5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY"
+		Value: AccountInfo { nonce: 0, consumers: 3, providers: 1, sufficients: 0, data: AccountData { free: 10000001075151923366255874, reserved: 0, frozen: 100000000000000000000000, flags: ExtraFlags(170141183460469231731687303715884105728) } }
+
+		Key: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+		Value: AccountInfo { nonce: 0, consumers: 0, providers: 1, sufficients: 0, data: AccountData { free: 10000000000000000000000000, reserved: 0, frozen: 0, flags: ExtraFlags(170141183460469231731687303715884105728) } }
+		...
+	*/
 
 	Ok(())
 }

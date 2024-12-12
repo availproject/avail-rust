@@ -8,9 +8,9 @@ use avail_rust::error::ClientError;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	// storage::run().await?;
+	storage::run().await?;
 	// rpc::run().await?;
-	examples::run().await?;
+	// examples::run().await?;
 	// basics::run().await?;
 	// test::run().await?;
 
