@@ -1,7 +1,7 @@
 use avail_rust::{
 	avail::{self, runtime_types::bounded_collections::bounded_vec::BoundedVec},
 	error::ClientError,
-	utils, Cell, Options, PopulatedOptions, SDK,
+	utils, Cell, Options, SDK,
 };
 
 pub async fn run() -> Result<(), ClientError> {
@@ -268,7 +268,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// kate_query_data_proof
 	let data = String::from("My Data").into_bytes();
 	let tx = sdk.tx.data_availability.submit_data(data);
-	let result = tx.execute_wait_for_finalization(&keypair, options).await?;
+	let result = tx.execute_wait_for_finalization(&keypair, None).await?;
 	let (tx_index, block_hash) = (result.tx_index, Some(result.block_hash));
 	let value = sdk.rpc.kate.query_data_proof(tx_index, block_hash).await?;
 	dbg!(value);

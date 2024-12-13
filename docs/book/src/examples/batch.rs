@@ -1,7 +1,4 @@
-use avail_rust::{
-	avail, error::ClientError, transactions::Transaction, utils, Nonce::BestBlockAndTxPool,
-	Options, SDK,
-};
+use avail_rust::{avail, error::ClientError, transactions::Transaction, utils, SDK};
 
 use avail::runtime_types::da_runtime::RuntimeCall;
 use avail::runtime_types::pallet_balances::pallet::Call::transfer_keep_alive as TransferKeepAlive;
@@ -11,7 +8,6 @@ pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	let account = SDK::alice()?;
-	let options = Options::new().nonce(BestBlockAndTxPool);
 
 	let value_1 = SDK::one_avail();
 	let value_2 = SDK::one_avail() * 100_000_000;
@@ -39,7 +35,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// event is deposited.
 	let payload = avail::tx().utility().batch(calls.clone());
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
-	let res = tx.execute_wait_for_inclusion(&account, options).await?;
+	let res = tx.execute_wait_for_inclusion(&account, None).await?;
 	println!("-- Batch Call --");
 
 	let batch_interrupted = res.find_event::<UtilityEvents::BatchInterrupted>();
@@ -57,7 +53,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// The whole transaction will rollback and fail if any of the calls failed.
 	let payload = avail::tx().utility().batch_all(calls.clone());
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
-	let res = tx.execute_wait_for_inclusion(&account, options).await?;
+	let res = tx.execute_wait_for_inclusion(&account, None).await?;
 	res.is_successful(&sdk.online_client)
 		.expect_err("It should fail");
 
@@ -66,7 +62,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// Unlike `batch`, it allows errors and won't interrupt.
 	let payload = avail::tx().utility().force_batch(calls.clone());
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
-	let res = tx.execute_wait_for_inclusion(&account, options).await?;
+	let res = tx.execute_wait_for_inclusion(&account, None).await?;
 	println!("-- Force Batch Call --");
 
 	let item_failed = res.find_event::<UtilityEvents::ItemFailed>();
@@ -87,3 +83,13 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+
+/*
+	Expected Output:
+
+	-- Batch Call --
+	At least one call has failed
+	-- Force Batch Call --
+	At least one call has failed
+	Batch completed even though one or more calls have failed.
+*/

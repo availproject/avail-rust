@@ -1,6 +1,5 @@
 use avail_rust::{
-	avail, error::ClientError, transactions::staking::Commission, utils, Options,
-	RewardDestination, SDK,
+	avail, error::ClientError, transactions::staking::Commission, utils, RewardDestination, SDK,
 };
 
 pub async fn run() -> Result<(), ClientError> {
@@ -19,8 +18,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Bond
 	let tx = sdk.tx.staking.bond(min_validator_bond, payee);
-	let options = Options::new().nonce(avail_rust::Nonce::BestBlockAndTxPool);
-	_ = tx.execute_wait_for_inclusion(&account, options).await?;
+	_ = tx.execute_wait_for_inclusion(&account, None).await?;
 
 	// Generate Session Keys
 	let keys = sdk.rpc.author.rotate_keys().await?;
@@ -28,12 +26,12 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Set Keys
 	let tx = sdk.tx.session.set_keys(keys);
-	_ = tx.execute_wait_for_inclusion(&account, options).await?;
+	_ = tx.execute_wait_for_inclusion(&account, None).await?;
 
 	// Validate
 	let commission = Commission::new(10)?;
 	let tx = sdk.tx.staking.validate(commission, false);
-	_ = tx.execute_wait_for_inclusion(&account, options).await?;
+	_ = tx.execute_wait_for_inclusion(&account, None).await?;
 
 	Ok(())
 }

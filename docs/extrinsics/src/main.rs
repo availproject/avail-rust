@@ -11,6 +11,8 @@ use avail_rust::{avail, SDK};
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
+	SDK::enable_logging();
+
 	balances::run().await?;
 	da::run().await?;
 	session::run().await?;

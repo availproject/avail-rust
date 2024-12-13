@@ -17,7 +17,7 @@ mod transfer_all {
 		error::ClientError,
 		transactions::{BalancesEvents, SystemEvents},
 		utils::account_id_from_str,
-		Keypair, Nonce, Options, SecretUri, SDK,
+		Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -30,9 +30,8 @@ mod transfer_all {
 		let dest = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let keep_alive = false;
 
-		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.balances.transfer_all(dest, keep_alive);
-		let result = tx.execute_wait_for_inclusion(&account, options).await?;
+		let result = tx.execute_wait_for_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<BalancesEvents::Transfer>() {
@@ -53,10 +52,9 @@ mod transfer_all {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let dest = account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?; // Alice
 		let value = SDK::one_avail() * 900_000;
-		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, value);
-		tx.execute_wait_for_inclusion(&account, options).await?;
+		tx.execute_wait_for_inclusion(&account, None).await?;
 
 		Ok(())
 	}
@@ -67,7 +65,7 @@ mod transfer_allow_death {
 		error::ClientError,
 		transactions::{BalancesEvents, SystemEvents},
 		utils::account_id_from_str,
-		Keypair, Nonce, Options, SecretUri, SDK,
+		Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -80,9 +78,8 @@ mod transfer_allow_death {
 		let dest = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
-		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.balances.transfer_allow_death(dest, amount);
-		let result = tx.execute_wait_for_inclusion(&account, options).await?;
+		let result = tx.execute_wait_for_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<BalancesEvents::Transfer>() {
@@ -99,7 +96,7 @@ mod transfer_allow_death {
 mod transfer_keep_alive {
 	use avail_rust::{
 		error::ClientError, transactions::BalancesEvents, utils::account_id_from_str, Keypair,
-		Nonce, Options, SecretUri, SDK,
+		SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -112,9 +109,8 @@ mod transfer_keep_alive {
 		let dest = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
-		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, amount);
-		let result = tx.execute_wait_for_inclusion(&account, options).await?;
+		let result = tx.execute_wait_for_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<BalancesEvents::Transfer>() {

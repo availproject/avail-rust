@@ -27,7 +27,9 @@ mod submit_data {
 
 		let options = Options::new().nonce(Nonce::BestBlockAndTxPool).app_id(1);
 		let tx = sdk.tx.data_availability.submit_data(data);
-		let result = tx.execute_wait_for_inclusion(&account, options).await?;
+		let result = tx
+			.execute_wait_for_inclusion(&account, Some(options))
+			.await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<DataAvailabilityEvents::DataSubmitted>() {
@@ -46,8 +48,7 @@ mod submit_data {
 
 mod create_application_key {
 	use avail_rust::{
-		error::ClientError, transactions::DataAvailabilityEvents, Keypair, Nonce, Options,
-		SecretUri, SDK,
+		error::ClientError, transactions::DataAvailabilityEvents, Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -59,9 +60,8 @@ mod create_application_key {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let key = String::from("MyAwesomeKey").as_bytes().to_vec();
 
-		let options = Options::new().nonce(Nonce::BestBlockAndTxPool);
 		let tx = sdk.tx.data_availability.create_application_key(key);
-		let result = tx.execute_wait_for_inclusion(&account, options).await?;
+		let result = tx.execute_wait_for_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) =

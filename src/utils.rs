@@ -32,17 +32,31 @@ pub async fn sign_send_and_forget<T>(
 	rpc_client: &RpcClient,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
-	options: Options,
+	options: Option<Options>,
 ) -> Result<H256, ClientError>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
 	let options = options
+		.unwrap_or_default()
 		.build(online_client, rpc_client, &account_id)
 		.await?;
 
 	let params = options.build(rpc_client).await?;
+
+	if log_enabled!(log::Level::Debug) {
+		let address = account.public_key().to_account_id().to_string();
+		let call_name = call.call_name();
+		let pallet_name = call.pallet_name();
+		let nonce = &params.4 .0;
+		let app_id = &params.6 .0;
+		debug!(
+			target: "transaction",
+			"Signing and submitting new transaction. Account: {}, Nonce: {:?}, Pallet Name: {}, Call Name: {}, App Id: {}",
+			address, nonce, pallet_name, call_name, app_id
+		);
+	}
 
 	let tx_client = online_client.tx();
 	let tx_hash = tx_client
@@ -59,7 +73,7 @@ pub async fn execute_and_watch_transaction<T>(
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	wait_for: WaitFor,
-	options: Options,
+	options: Option<Options>,
 	block_timeout: Option<u32>,
 	retry_count: Option<u32>,
 ) -> Result<TransactionDetails, ClientError>
@@ -69,6 +83,7 @@ where
 	let account_id = account.public_key().to_account_id();
 
 	let options = options
+		.unwrap_or_default()
 		.build(online_client, rpc_client, &account_id)
 		.await?;
 
@@ -131,10 +146,11 @@ where
 		let call_name = call.call_name();
 		let pallet_name = call.pallet_name();
 		let nonce = &params.4 .0;
+		let app_id = &params.6 .0;
 		debug!(
 			target: "transaction",
-			"Signing and submitting new transaction. Account: {}, Nonce: {:?}, Pallet Name: {}, Call Name: {}",
-			address, nonce, pallet_name, call_name
+			"Signing and submitting new transaction. Account: {}, Nonce: {:?}, Pallet Name: {}, Call Name: {}, App Id: {}",
+			address, nonce, pallet_name, call_name, app_id
 		);
 	}
 	let tx_hash = tx_client.sign_and_submit(call, account, params).await?;
@@ -339,7 +355,7 @@ pub fn deconstruct_session_keys_string(session_keys: String) -> Result<SessionKe
 	deconstruct_session_keys(session_keys_u8)
 }
 
-pub async fn get_nonce_state(
+pub async fn fetch_nonce_state(
 	online_client: &AOnlineClient,
 	rpc_client: &RpcClient,
 	address: &str,
@@ -351,7 +367,7 @@ pub async fn get_nonce_state(
 	Ok(block.account_nonce(&account).await? as u32)
 }
 
-pub async fn get_nonce_node(client: &RpcClient, address: &str) -> Result<u32, ClientError> {
+pub async fn fetch_nonce_node(client: &RpcClient, address: &str) -> Result<u32, ClientError> {
 	let account = account_id_from_str(address)?;
 	account_next_index(client, account.to_string()).await
 }

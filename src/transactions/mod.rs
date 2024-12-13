@@ -192,7 +192,7 @@ where
 	pub async fn execute_wait_for_inclusion(
 		&self,
 		account: &Keypair,
-		options: Options,
+		options: Option<Options>,
 	) -> Result<TransactionDetails, ClientError> {
 		self.execute(WaitFor::BlockInclusion, account, options, Some(2))
 			.await
@@ -201,7 +201,7 @@ where
 	pub async fn execute_wait_for_finalization(
 		&self,
 		account: &Keypair,
-		options: Options,
+		options: Option<Options>,
 	) -> Result<TransactionDetails, ClientError> {
 		self.execute(WaitFor::BlockFinalization, account, options, Some(5))
 			.await
@@ -211,7 +211,7 @@ where
 		&self,
 		wait_for: WaitFor,
 		account: &Keypair,
-		options: Options,
+		options: Option<Options>,
 		block_timeout: Option<u32>,
 	) -> Result<TransactionDetails, ClientError> {
 		execute_and_watch_transaction(
@@ -230,7 +230,7 @@ where
 	pub async fn execute_and_forget(
 		&self,
 		account: &Keypair,
-		options: Options,
+		options: Option<Options>,
 	) -> Result<H256, ClientError> {
 		sign_send_and_forget(
 			&self.online_client,

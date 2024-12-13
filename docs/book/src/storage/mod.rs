@@ -1,21 +1,39 @@
-use avail_rust::{
-	avail::{self, runtime_types::bounded_collections::bounded_vec::BoundedVec},
-	error::ClientError,
-	utils::account_id_from_str,
-	AccountId, Block, SDK,
-};
+use avail_rust::{avail, error::ClientError, utils::account_id_from_str, AccountId, Block, SDK};
+
+pub async fn run() -> Result<(), ClientError> {
+	println!("da_app_keys");
+	da_app_keys().await?;
+	println!("da_app_keys_iter");
+	da_app_keys_iter().await?;
+	println!("da_next_app_id");
+	da_next_app_id().await?;
+	println!("staking_active_era");
+	staking_active_era().await?;
+	println!("staking_bonded");
+	staking_bonded().await?;
+	println!("staking_bonded_iter");
+	staking_bonded_iter().await?;
+	println!("system_account");
+	system_account().await?;
+	println!("system_account_iter");
+	system_account_iter().await?;
+
+	Ok(())
+}
 
 pub async fn da_app_keys() -> Result<(), ClientError> {
+	use avail::data_availability::storage::types::app_keys::Param0;
+
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let key = String::from("Reserved-1");
-	let key = BoundedVec(key.as_bytes().to_vec());
-	let storage_query = avail::storage().data_availability().app_keys(key);
+	let key = String::from("Reserved-1").as_bytes().to_vec();
+	let key = Param0 { 0: key };
 
-	let best_block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(best_block_hash);
-	let result = storage.fetch(&storage_query).await?;
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().data_availability().app_keys(key);
+	let result = storage.fetch(&address).await?;
 
 	dbg!(result);
 	/* Output
@@ -34,11 +52,10 @@ pub async fn da_app_keys_iter() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let storage_query = avail::storage().data_availability().app_keys_iter();
-
-	let best_block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(best_block_hash);
-	let mut results = storage.iter(storage_query).await?;
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().data_availability().app_keys_iter();
+	let mut results = storage.iter(address).await?;
 
 	while let Some(Ok(kv)) = results.next().await {
 		let key = (&kv.key_bytes[49..]).to_vec();
@@ -77,11 +94,10 @@ pub async fn da_next_app_id() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let storage_query = avail::storage().data_availability().next_app_id();
-
-	let best_block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(best_block_hash);
-	let result = storage.fetch_or_default(&storage_query).await?;
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().data_availability().next_app_id();
+	let result = storage.fetch_or_default(&address).await?;
 
 	dbg!(result);
 	/* Output
@@ -95,10 +111,10 @@ pub async fn staking_active_era() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let storage_query = avail::storage().staking().active_era();
-	let best_block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(best_block_hash);
-	let result = storage.fetch(&storage_query).await?;
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().staking().active_era();
+	let result = storage.fetch(&address).await?;
 
 	dbg!(result);
 	/* Output
@@ -119,10 +135,10 @@ pub async fn staking_bonded() -> Result<(), ClientError> {
 
 	let account_id = account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice_Stash
 
-	let storage_query = avail::storage().staking().bonded(account_id);
-	let best_block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(best_block_hash);
-	let result = storage.fetch(&storage_query).await?;
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().staking().bonded(account_id);
+	let result = storage.fetch(&address).await?;
 
 	dbg!(result);
 	/* Output
@@ -136,14 +152,14 @@ pub async fn staking_bonded_iter() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
 	let storage_query = avail::storage().staking().bonded_iter();
-	let best_block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(best_block_hash);
 	let mut results = storage.iter(storage_query).await?;
 
 	while let Some(Ok(kv)) = results.next().await {
-		let key: [u8; 32] = (&kv.key_bytes[40..]).try_into().unwrap();
-		let key = AccountId::from(key);
+		let key = kv.key_bytes.last_chunk::<32>().unwrap();
+		let key = AccountId::from(*key);
 
 		println!("Key: {:?}", key.to_string());
 		println!("Value: {:?}", kv.value);
@@ -162,11 +178,11 @@ pub async fn system_account() -> Result<(), ClientError> {
 
 	let account = SDK::alice()?;
 	let account_id = account.public_key().to_account_id();
-	let storage_query = avail::storage().system().account(account_id);
 
-	let best_block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(best_block_hash);
-	let result = storage.fetch(&storage_query).await?;
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().system().account(account_id);
+	let result = storage.fetch(&address).await?;
 
 	if let Some(account) = result {
 		println!("Consumers: {}", account.consumers);
@@ -190,14 +206,14 @@ pub async fn system_account_iter() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let storage_query = avail::storage().system().account_iter();
-	let best_block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(best_block_hash);
-	let mut results = storage.iter(storage_query).await?;
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().system().account_iter();
+	let mut results = storage.iter(address).await?;
 
 	while let Some(Ok(kv)) = results.next().await {
-		let key: [u8; 32] = (&kv.key_bytes[48..]).try_into().unwrap();
-		let key = AccountId::from(key);
+		let key = kv.key_bytes.last_chunk::<32>().unwrap();
+		let key = AccountId::from(*key);
 
 		println!("Key: {:?}", key.to_string());
 		println!("Value: {:?}", kv.value);
@@ -216,27 +232,6 @@ pub async fn system_account_iter() -> Result<(), ClientError> {
 		Value: AccountInfo { nonce: 0, consumers: 0, providers: 1, sufficients: 0, data: AccountData { free: 10000000000000000000000000, reserved: 0, frozen: 0, flags: ExtraFlags(170141183460469231731687303715884105728) } }
 		...
 	*/
-
-	Ok(())
-}
-
-pub async fn run() -> Result<(), ClientError> {
-	println!("da_app_keys");
-	da_app_keys().await?;
-	println!("da_app_keys_iter");
-	da_app_keys_iter().await?;
-	println!("da_next_app_id");
-	da_next_app_id().await?;
-	println!("staking_active_era");
-	staking_active_era().await?;
-	println!("staking_bonded");
-	staking_bonded().await?;
-	println!("staking_bonded_iter");
-	staking_bonded_iter().await?;
-	println!("system_account");
-	system_account().await?;
-	println!("system_account_iter");
-	system_account_iter().await?;
 
 	Ok(())
 }

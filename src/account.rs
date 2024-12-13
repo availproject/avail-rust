@@ -6,14 +6,14 @@ pub async fn fetch_account_nonce_state(
 	rpc_client: &RpcClient,
 	address: &str,
 ) -> Result<u32, ClientError> {
-	utils::get_nonce_state(online_client, rpc_client, address).await
+	utils::fetch_nonce_state(online_client, rpc_client, address).await
 }
 
 pub async fn fetch_account_nonce_node(
 	rpc_client: &RpcClient,
 	address: &str,
 ) -> Result<u32, ClientError> {
-	utils::get_nonce_node(rpc_client, address).await
+	utils::fetch_nonce_node(rpc_client, address).await
 }
 
 pub async fn fetch_account_app_keys(
