@@ -1,5 +1,4 @@
-use super::Transaction;
-use crate::{avail, AOnlineClient, AccountId};
+use crate::{avail, AOnlineClient, AccountId, Transaction};
 use subxt::backend::rpc::RpcClient;
 
 pub type TransferAllCall = avail::balances::calls::types::TransferAll;

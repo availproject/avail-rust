@@ -2,19 +2,20 @@ use crate::{
 	avail::runtime_types::frame_system::limits::BlockLength,
 	error::ClientError,
 	from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState},
-	ABlockDetailsRPC, AvailHeader, BlockHash, BlockNumber, Cell, GDataProof, GRow,
+	utils, ABlockDetailsRPC, AvailHeader, BlockHash, BlockNumber, Cell, GDataProof, GRow,
 };
 use avail_core::data_proof::ProofResponse;
+use primitive_types::H256;
 use subxt::{
 	backend::{
-		legacy::rpc_methods::{Bytes, SystemHealth},
+		legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
 		rpc::RpcClient,
 	},
 	rpc_params,
 };
 
 /// Arbitrary properties defined in chain spec as a JSON object
-pub type Properties = serde_json::map::Map<String, serde_json::Value>;
+pub type SystemProperties = serde_json::map::Map<String, serde_json::Value>;
 
 pub mod payment {
 	use super::*;
@@ -101,7 +102,7 @@ pub mod system {
 		Ok(value)
 	}
 
-	pub async fn properties(client: &RpcClient) -> Result<Properties, ClientError> {
+	pub async fn properties(client: &RpcClient) -> Result<SystemProperties, ClientError> {
 		let params = rpc_params![];
 		let value = client.request("system_properties", params).await?;
 		Ok(value)
@@ -132,15 +133,6 @@ pub mod chain {
 		Ok(value)
 	}
 
-	pub async fn get_best_block(client: &RpcClient) -> Result<ABlockDetailsRPC, ClientError> {
-		get_block(client, None).await
-	}
-
-	pub async fn get_finalized_block(client: &RpcClient) -> Result<ABlockDetailsRPC, ClientError> {
-		let hash = get_finalized_head(client).await?;
-		get_block(client, Some(hash)).await
-	}
-
 	pub async fn get_block_hash(
 		client: &RpcClient,
 		block_number: Option<BlockNumber>,
@@ -167,10 +159,6 @@ pub mod chain {
 }
 
 pub mod author {
-	use primitive_types::H256;
-
-	use crate::utils;
-
 	use super::*;
 
 	pub async fn rotate_keys(client: &RpcClient) -> Result<Vec<u8>, ClientError> {
@@ -181,12 +169,25 @@ pub mod author {
 
 	pub async fn submit_extrinsic(
 		client: &RpcClient,
-		extrinsic: Vec<u8>,
+		extrinsic: &[u8],
 	) -> Result<H256, ClientError> {
-		let ext = std::format!("0x{}", hex::encode(extrinsic.as_slice()));
+		let ext = std::format!("0x{}", hex::encode(extrinsic));
 		let params = rpc_params![ext];
 		let value: String = client.request("author_submitExtrinsic", params).await?;
 		let value = utils::hex_string_to_h256(&value)?;
+		Ok(value)
+	}
+}
+
+pub mod state {
+	use super::*;
+
+	pub async fn get_runtime_version(
+		client: &RpcClient,
+		at: Option<BlockHash>,
+	) -> Result<RuntimeVersion, ClientError> {
+		let params = rpc_params![at];
+		let value = client.request("state_getRuntimeVersion", params).await?;
 		Ok(value)
 	}
 }

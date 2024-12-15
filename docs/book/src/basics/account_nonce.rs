@@ -1,4 +1,4 @@
-use avail_rust::{avail, error::ClientError, utils, Block, SDK};
+use avail_rust::{account, avail, error::ClientError, Block, SDK};
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -8,12 +8,13 @@ pub async fn run() -> Result<(), ClientError> {
 	let account_address = account_id.to_string();
 
 	// Fetch nonce from Node (this includes Tx Pool)
-	let nonce = utils::fetch_nonce_node(&sdk.rpc_client, &account_address).await?;
+	let nonce = account::fetch_nonce_node(&sdk.rpc_client, &account_address).await?;
 	println!("Nonce from Node: {}", nonce);
 
 	// Fetch nonce from best block state
 	let nonce =
-		utils::fetch_nonce_state(&sdk.online_client, &sdk.rpc_client, &account_address).await?;
+		account::fetch_nonce_state(&sdk.online_client, &sdk.rpc_client, &account_address, None)
+			.await?;
 	println!("Nonce from best block state: {}", nonce);
 
 	// Fetch nonce from custom block state

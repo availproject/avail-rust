@@ -12,3 +12,5 @@ lint-fix:
     cargo clippy --fix
 serve-book:
     cd ./docs/book && mdbook serve
+doc:
+    cargo doc --open

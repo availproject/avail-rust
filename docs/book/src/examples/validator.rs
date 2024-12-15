@@ -19,7 +19,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Bond
 	let tx = sdk.tx.staking.bond(min_validator_bond, payee);
-	_ = tx.execute_wait_for_inclusion(&account, None).await?;
+	_ = tx.execute_and_watch_inclusion(&account, None).await?;
 
 	// Generate Session Keys
 	let keys = rpc::author::rotate_keys(&sdk.rpc_client).await?;
@@ -27,12 +27,12 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Set Keys
 	let tx = sdk.tx.session.set_keys(keys);
-	_ = tx.execute_wait_for_inclusion(&account, None).await?;
+	_ = tx.execute_and_watch_inclusion(&account, None).await?;
 
 	// Validate
 	let commission = Commission::new(10)?;
 	let tx = sdk.tx.staking.validate(commission, false);
-	_ = tx.execute_wait_for_inclusion(&account, None).await?;
+	_ = tx.execute_and_watch_inclusion(&account, None).await?;
 
 	Ok(())
 }

@@ -4,8 +4,7 @@ mod rpc;
 mod storage;
 mod test;
 
-use avail_rust::error::ClientError;
-use avail_rust::SDK;
+use avail_rust::{error::ClientError, SDK};
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {

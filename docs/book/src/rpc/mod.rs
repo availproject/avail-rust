@@ -265,7 +265,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// kate_query_data_proof
 	let data = String::from("My Data").into_bytes();
 	let tx = sdk.tx.data_availability.submit_data(data);
-	let result = tx.execute_wait_for_finalization(&keypair, None).await?;
+	let result = tx.execute_and_watch_finalization(&keypair, None).await?;
 	let (tx_index, block_hash) = (result.tx_index, Some(result.block_hash));
 	let value = rpc::kate::query_data_proof(&sdk.rpc_client, tx_index, block_hash).await?;
 	dbg!(value);

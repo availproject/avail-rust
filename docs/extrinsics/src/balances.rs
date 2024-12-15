@@ -14,9 +14,9 @@ pub async fn run() -> Result<(), ClientError> {
 
 mod transfer_all {
 	use avail_rust::{
+		account,
 		error::ClientError,
 		transactions::{BalancesEvents, SystemEvents},
-		utils::account_id_from_str,
 		Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
@@ -27,11 +27,12 @@ mod transfer_all {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let dest =
+			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let keep_alive = false;
 
 		let tx = sdk.tx.balances.transfer_all(dest, keep_alive);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<BalancesEvents::Transfer>() {
@@ -50,11 +51,12 @@ mod transfer_all {
 		// Input
 		let secret_uri = SecretUri::from_str("//Eve")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest = account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?; // Alice
+		let dest =
+			account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?; // Alice
 		let value = SDK::one_avail() * 900_000;
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, value);
-		tx.execute_wait_for_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, None).await?;
 
 		Ok(())
 	}
@@ -62,9 +64,9 @@ mod transfer_all {
 
 mod transfer_allow_death {
 	use avail_rust::{
+		account,
 		error::ClientError,
 		transactions::{BalancesEvents, SystemEvents},
-		utils::account_id_from_str,
 		Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
@@ -75,11 +77,12 @@ mod transfer_allow_death {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let dest =
+			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
 		let tx = sdk.tx.balances.transfer_allow_death(dest, amount);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<BalancesEvents::Transfer>() {
@@ -95,8 +98,7 @@ mod transfer_allow_death {
 
 mod transfer_keep_alive {
 	use avail_rust::{
-		error::ClientError, transactions::BalancesEvents, utils::account_id_from_str, Keypair,
-		SecretUri, SDK,
+		account, error::ClientError, transactions::BalancesEvents, Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -106,11 +108,12 @@ mod transfer_keep_alive {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let dest =
+			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, amount);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<BalancesEvents::Transfer>() {

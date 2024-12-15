@@ -1,8 +1,12 @@
-use avail_rust::{avail, error::ClientError, transactions::Transaction, utils, SDK};
+use avail_rust::{account, avail, error::ClientError, Transaction, SDK};
 
-use avail::runtime_types::da_runtime::RuntimeCall;
-use avail::runtime_types::pallet_balances::pallet::Call::transfer_keep_alive as TransferKeepAlive;
-use avail::utility::events as UtilityEvents;
+use avail::{
+	runtime_types::{
+		da_runtime::RuntimeCall,
+		pallet_balances::pallet::Call::transfer_keep_alive as TransferKeepAlive,
+	},
+	utility::events as UtilityEvents,
+};
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -11,9 +15,10 @@ pub async fn run() -> Result<(), ClientError> {
 
 	let value_1 = SDK::one_avail();
 	let value_2 = SDK::one_avail() * 100_000_000;
-	let dest_bob = utils::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let dest_bob =
+		account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
 	let dest_charlie =
-		utils::account_id_from_str("5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y")?;
+		account::account_id_from_str("5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y")?;
 
 	let call_1 = TransferKeepAlive {
 		dest: dest_bob.into(),
@@ -35,7 +40,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// event is deposited.
 	let payload = avail::tx().utility().batch(calls.clone());
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
-	let res = tx.execute_wait_for_inclusion(&account, None).await?;
+	let res = tx.execute_and_watch_inclusion(&account, None).await?;
 	println!("-- Batch Call --");
 
 	let batch_interrupted = res.find_event::<UtilityEvents::BatchInterrupted>();
@@ -53,7 +58,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// The whole transaction will rollback and fail if any of the calls failed.
 	let payload = avail::tx().utility().batch_all(calls.clone());
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
-	let res = tx.execute_wait_for_inclusion(&account, None).await?;
+	let res = tx.execute_and_watch_inclusion(&account, None).await?;
 	res.is_successful(&sdk.online_client)
 		.expect_err("It should fail");
 
@@ -62,7 +67,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// Unlike `batch`, it allows errors and won't interrupt.
 	let payload = avail::tx().utility().force_batch(calls.clone());
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
-	let res = tx.execute_wait_for_inclusion(&account, None).await?;
+	let res = tx.execute_and_watch_inclusion(&account, None).await?;
 	println!("-- Force Batch Call --");
 
 	let item_failed = res.find_event::<UtilityEvents::ItemFailed>();

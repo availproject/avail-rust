@@ -1,9 +1,8 @@
-use super::Transaction;
 use crate::{
 	api_dev::api::data_availability::calls::types::{
 		create_application_key::Key, submit_data::Data,
 	},
-	avail, AOnlineClient,
+	avail, AOnlineClient, Transaction,
 };
 use subxt::backend::rpc::RpcClient;
 

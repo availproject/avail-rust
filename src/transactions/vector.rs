@@ -1,5 +1,4 @@
-use super::Transaction;
-use crate::{avail, AOnlineClient};
+use crate::{avail, AOnlineClient, Transaction};
 use primitive_types::H256;
 use subxt::backend::rpc::RpcClient;
 

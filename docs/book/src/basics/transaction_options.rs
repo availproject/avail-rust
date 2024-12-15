@@ -1,6 +1,4 @@
-use avail_rust::{
-	error::ClientError, rpc::chain::get_best_block, utils, Mortality, Nonce, Options, SDK,
-};
+use avail_rust::{account, error::ClientError, rpc, Mortality, Nonce, Options, SDK};
 use std::time::Duration;
 
 pub async fn run() -> Result<(), ClientError> {
@@ -17,7 +15,7 @@ async fn nonce() -> Result<(), ClientError> {
 
 	let account = SDK::alice()?;
 	let account_address = account.public_key().to_account_id().to_string();
-	let dest = utils::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
 	let mut options = Options::new();
 	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
 
@@ -25,10 +23,8 @@ async fn nonce() -> Result<(), ClientError> {
 		Using finalized block nonce will not take into consideration nonces from non-finalized blocks.
 	*/
 	options = options.nonce(Nonce::FinalizedBlock);
-	tx.execute_and_forget(&account, Some(options)).await?;
-	tx.execute_and_forget(&account, Some(options))
-		.await
-		.expect_err("qed");
+	tx.execute(&account, Some(options)).await?;
+	tx.execute(&account, Some(options)).await.expect_err("qed");
 	wait_n_blocks(&sdk, 3).await?;
 
 	/*
@@ -36,10 +32,8 @@ async fn nonce() -> Result<(), ClientError> {
 		tx pool.
 	*/
 	options = options.nonce(Nonce::BestBlock);
-	tx.execute_and_forget(&account, Some(options)).await?;
-	tx.execute_and_forget(&account, Some(options))
-		.await
-		.expect_err("qed");
+	tx.execute(&account, Some(options)).await?;
+	tx.execute(&account, Some(options)).await.expect_err("qed");
 	wait_n_blocks(&sdk, 1).await?;
 
 	/*
@@ -47,18 +41,18 @@ async fn nonce() -> Result<(), ClientError> {
 		This is the default behavior,
 	*/
 	options = options.nonce(Nonce::BestBlockAndTxPool);
-	tx.execute_and_forget(&account, Some(options)).await?;
-	tx.execute_and_forget(&account, Some(options)).await?;
+	tx.execute(&account, Some(options)).await?;
+	tx.execute(&account, Some(options)).await?;
 
 	/*
 		Managing the nonce manually
 	*/
-	let nonce = utils::fetch_nonce_node(&sdk.rpc_client, &account_address).await?;
+	let nonce = account::fetch_nonce_node(&sdk.rpc_client, &account_address).await?;
 
 	options = options.nonce(Nonce::Custom(nonce));
-	tx.execute_and_forget(&account, Some(options)).await?;
+	tx.execute(&account, Some(options)).await?;
 	options = options.nonce(Nonce::Custom(nonce + 1));
-	tx.execute_and_forget(&account, Some(options)).await?;
+	tx.execute(&account, Some(options)).await?;
 
 	Ok(())
 }
@@ -70,7 +64,7 @@ async fn app_id() -> Result<(), ClientError> {
 	let tx = sdk.tx.data_availability.submit_data(vec![0, 1, 2]);
 
 	let options = Options::new().app_id(1);
-	tx.execute_and_forget(&account, Some(options)).await?;
+	tx.execute(&account, Some(options)).await?;
 
 	Ok(())
 }
@@ -79,11 +73,11 @@ async fn tip() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	let account = SDK::alice()?;
-	let dest = utils::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
 	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
 
 	let options = Options::new().tip(1);
-	tx.execute_and_forget(&account, Some(options)).await?;
+	tx.execute(&account, Some(options)).await?;
 
 	Ok(())
 }
@@ -92,7 +86,7 @@ async fn mortality() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	let account = SDK::alice()?;
-	let dest = utils::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
 	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
 
 	let period = 3;
@@ -100,18 +94,21 @@ async fn mortality() -> Result<(), ClientError> {
 	let mortality = Mortality::new(period, block_hash);
 
 	let options = Options::new().mortality(mortality);
-	tx.execute_and_forget(&account, Some(options)).await?;
+	tx.execute(&account, Some(options)).await?;
 
 	Ok(())
 }
 
 async fn wait_n_blocks(sdk: &SDK, n: u32) -> Result<(), ClientError> {
-	let current_block = get_best_block(&sdk.rpc_client).await?.block.header.number;
-	let expected_block = current_block + n;
+	let mut expected_block_number = None;
 
 	loop {
-		let current_block = get_best_block(&sdk.rpc_client).await?.block.header.number;
-		if current_block >= expected_block {
+		let current_block = rpc::chain::get_block(&sdk.rpc_client, None).await?;
+		let current_block_number = current_block.block.header.number;
+		if expected_block_number.is_none() {
+			expected_block_number = Some(current_block_number + n);
+		}
+		if expected_block_number.is_some_and(|x| x <= current_block_number) {
 			break;
 		}
 

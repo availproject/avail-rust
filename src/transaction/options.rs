@@ -1,13 +1,17 @@
-use super::Params;
 use crate::{
 	error::ClientError,
 	rpc::{
 		chain::{get_block_hash, get_header},
 		system::account_next_index,
 	},
-	AOnlineClient, AccountId, AvailExtrinsicParamsBuilder, Block, BlockHash,
+	AOnlineClient, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Block, BlockHash,
 };
 use subxt::backend::rpc::RpcClient;
+
+pub type Params =
+	<<AvailConfig as subxt::Config>::ExtrinsicParams as subxt::config::ExtrinsicParams<
+		AvailConfig,
+	>>::Params;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Options {

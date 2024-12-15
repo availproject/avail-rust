@@ -1,4 +1,4 @@
-use avail_rust::{avail, error::ClientError, utils::account_id_from_str, AccountId, Block, SDK};
+use avail_rust::{account, avail, error::ClientError, AccountId, Block, SDK};
 
 pub async fn run() -> Result<(), ClientError> {
 	println!("da_app_keys");
@@ -133,7 +133,8 @@ pub async fn staking_bonded() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let account_id = account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice_Stash
+	let account_id =
+		account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice_Stash
 
 	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
 	let storage = online_client.storage().at(block_hash);

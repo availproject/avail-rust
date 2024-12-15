@@ -44,7 +44,7 @@ mod bond {
 		let payee = RewardDestination::Staked;
 
 		let tx = sdk.tx.staking.bond(value, payee);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<StakingEvents::Bonded>() {
@@ -68,7 +68,7 @@ mod bond_extra {
 		let max_additional = SDK::one_avail();
 
 		let tx = sdk.tx.staking.bond_extra(max_additional);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<StakingEvents::Bonded>() {
@@ -81,8 +81,7 @@ mod bond_extra {
 
 mod nominate {
 	use avail_rust::{
-		error::ClientError, transactions::StakingCalls, utils::account_id_from_str, Keypair,
-		SecretUri, SDK,
+		account, error::ClientError, transactions::StakingCalls, Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -93,11 +92,11 @@ mod nominate {
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let targets = [
-			account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?, // Alice Stash
+			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?, // Alice Stash
 		];
 
 		let tx = sdk.tx.staking.nominate(&targets);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(data) = result
@@ -123,7 +122,7 @@ mod chill {
 		let account = Keypair::from_uri(&secret_uri)?;
 
 		let tx = sdk.tx.staking.chill();
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<StakingEvents::Chilled>() {
@@ -136,8 +135,7 @@ mod chill {
 
 mod chill_other {
 	use avail_rust::{
-		error::ClientError, transactions::StakingEvents, utils::account_id_from_str, Keypair,
-		SecretUri, SDK,
+		account, error::ClientError, transactions::StakingEvents, Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -148,11 +146,11 @@ mod chill_other {
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let targets = [
-			account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?, // Alice Stash
+			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?, // Alice Stash
 		];
 
 		let tx = sdk.tx.staking.nominate(&targets);
-		tx.execute_wait_for_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, None).await?;
 
 		Ok(())
 	}
@@ -163,10 +161,11 @@ mod chill_other {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let stash = account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
+		let stash =
+			account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
 
 		let tx = sdk.tx.staking.chill_other(stash);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<StakingEvents::Chilled>() {
@@ -190,7 +189,7 @@ mod unbond {
 		let value = SDK::one_avail();
 
 		let tx = sdk.tx.staking.unbond(value);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<StakingEvents::Unbonded>() {
@@ -219,7 +218,7 @@ mod validate {
 		let blocked = false;
 
 		let tx = sdk.tx.staking.validate(commission, blocked);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<StakingEvents::ValidatorPrefsSet>() {
@@ -237,16 +236,14 @@ mod validate {
 		let account = Keypair::from_uri(&secret_uri)?;
 
 		let tx = sdk.tx.staking.chill();
-		tx.execute_wait_for_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, None).await?;
 
 		Ok(())
 	}
 }
 
 mod payout_stakers {
-	use avail_rust::{
-		avail, error::ClientError, utils::account_id_from_str, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{account, avail, error::ClientError, Keypair, SecretUri, SDK};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -256,7 +253,7 @@ mod payout_stakers {
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let validator_stash =
-			account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
+			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
 		let era_storage = avail::storage().staking().active_era();
 		let storage = sdk.online_client.storage().at_latest().await?;
 		let era = storage.fetch(&era_storage).await?;
@@ -266,7 +263,7 @@ mod payout_stakers {
 		};
 
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 

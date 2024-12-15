@@ -28,7 +28,7 @@ mod submit_data {
 		let options = Options::new().nonce(Nonce::BestBlockAndTxPool).app_id(1);
 		let tx = sdk.tx.data_availability.submit_data(data);
 		let result = tx
-			.execute_wait_for_inclusion(&account, Some(options))
+			.execute_and_watch_inclusion(&account, Some(options))
 			.await?;
 
 		result.print_debug();
@@ -61,7 +61,7 @@ mod create_application_key {
 		let key = String::from("MyAwesomeKey").as_bytes().to_vec();
 
 		let tx = sdk.tx.data_availability.create_application_key(key);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) =

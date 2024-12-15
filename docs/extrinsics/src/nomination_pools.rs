@@ -44,8 +44,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 mod create {
 	use avail_rust::{
-		error::ClientError, transactions::NominationPoolsEvents, utils::account_id_from_str,
-		Keypair, SecretUri, SDK,
+		account, error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -56,15 +55,18 @@ mod create {
 		let secret_uri = SecretUri::from_str("//Bob")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let amount = SDK::one_avail() * 100_000u128;
-		let root = account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
-		let nominator = account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
-		let bouncer = account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+		let root =
+			account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+		let nominator =
+			account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+		let bouncer =
+			account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
 
 		let tx = sdk
 			.tx
 			.nomination_pools
 			.create(amount, root, nominator, bouncer);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<NominationPoolsEvents::Created>() {
@@ -80,8 +82,7 @@ mod create {
 
 mod create_with_pool_id {
 	use avail_rust::{
-		error::ClientError, transactions::NominationPoolsEvents, utils::account_id_from_str,
-		Keypair, SecretUri, SDK,
+		account, error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -92,16 +93,19 @@ mod create_with_pool_id {
 		let secret_uri = SecretUri::from_str("//Eve")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let amount = SDK::one_avail() * 100_000u128;
-		let root = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
-		let nominator = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
-		let bouncer = account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let root =
+			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let nominator =
+			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let bouncer =
+			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let pool_id = 0;
 
 		let tx = sdk
 			.tx
 			.nomination_pools
 			.create_with_pool_id(amount, root, nominator, bouncer, pool_id);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<NominationPoolsEvents::Created>() {
@@ -131,7 +135,7 @@ mod join {
 		let pool_id = 1;
 
 		let tx = sdk.tx.nomination_pools.join(amount, pool_id);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<NominationPoolsEvents::Bonded>() {
@@ -159,7 +163,7 @@ mod bond_extra {
 		let extra = BondExtra::FreeBalance(SDK::one_avail());
 
 		let tx = sdk.tx.nomination_pools.bond_extra(extra);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<NominationPoolsEvents::Bonded>() {
@@ -189,7 +193,7 @@ mod unbond {
 			.tx
 			.nomination_pools
 			.unbond(member_account, unbonding_points);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<NominationPoolsEvents::Unbonded>() {
@@ -219,7 +223,7 @@ mod withdraw_unbonded {
 			.tx
 			.nomination_pools
 			.withdraw_unbonded(member_account, num_slashing_spans);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<NominationPoolsEvents::Withdrawn>() {
@@ -232,9 +236,9 @@ mod withdraw_unbonded {
 
 mod set_commission {
 	use avail_rust::{
+		account,
 		error::ClientError,
 		transactions::{nom_pools::NewCommission, NominationPoolsEvents},
-		utils::account_id_from_str,
 		Keypair, Perbill, SecretUri, SDK,
 	};
 	use core::str::FromStr;
@@ -247,15 +251,17 @@ mod set_commission {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let pool_id = 1;
 		let new_commission = NewCommission {
-			payee: account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?, // Alice
-			amount: Perbill(10_000_000u32),                                                  // 1%
+			payee: account::account_id_from_str(
+				"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+			)?, // Alice
+			amount: Perbill(10_000_000u32), // 1%
 		};
 
 		let tx = sdk
 			.tx
 			.nomination_pools
 			.set_commission(pool_id, Some(new_commission));
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) =
@@ -282,7 +288,7 @@ mod set_metadata {
 		let metadata = String::from("This is metadata").as_bytes().to_vec();
 
 		let tx = sdk.tx.nomination_pools.set_metadata(pool_id, metadata);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 
@@ -308,7 +314,7 @@ mod set_state {
 		let state = State::Destroying;
 
 		let tx = sdk.tx.nomination_pools.set_state(pool_id, state);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<NominationPoolsEvents::StateChanged>() {
@@ -334,7 +340,7 @@ mod set_claim_permission {
 		let permission = Permission::PermissionlessAll;
 
 		let tx = sdk.tx.nomination_pools.set_claim_permission(permission);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 
@@ -344,8 +350,7 @@ mod set_claim_permission {
 
 mod nominate {
 	use avail_rust::{
-		error::ClientError, transactions::NominationPoolsCalls, utils::account_id_from_str,
-		Keypair, SecretUri, SDK,
+		account, error::ClientError, transactions::NominationPoolsCalls, Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -357,11 +362,11 @@ mod nominate {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let pool_id = 1;
 		let validators = vec![
-			account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?, // Alice_Stash
+			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?, // Alice_Stash
 		];
 
 		let tx = sdk.tx.nomination_pools.nominate(pool_id, validators);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(data) = result
@@ -388,7 +393,7 @@ mod chill {
 		let pool_id = 0;
 
 		let tx = sdk.tx.nomination_pools.chill(pool_id);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 
@@ -410,7 +415,7 @@ mod claim_payout {
 		let account = Keypair::from_uri(&secret_uri)?;
 
 		let tx = sdk.tx.nomination_pools.claim_payout();
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<NominationPoolsEvents::PaidOut>() {
@@ -423,8 +428,7 @@ mod claim_payout {
 
 mod claim_payout_other {
 	use avail_rust::{
-		error::ClientError, transactions::NominationPoolsEvents, utils::account_id_from_str,
-		Keypair, SecretUri, SDK,
+		account, error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -434,10 +438,11 @@ mod claim_payout_other {
 		// Input
 		let secret_uri = SecretUri::from_str("//Bob")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let other = account_id_from_str("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy")?; // Dave
+		let other =
+			account::account_id_from_str("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy")?; // Dave
 
 		let tx = sdk.tx.nomination_pools.claim_payout_other(other);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) = result.find_first_event::<NominationPoolsEvents::PaidOut>() {
@@ -463,7 +468,7 @@ mod claim_commission {
 		let pool_id = 1;
 
 		let tx = sdk.tx.nomination_pools.claim_commission(pool_id);
-		let result = tx.execute_wait_for_inclusion(&account, None).await?;
+		let result = tx.execute_and_watch_inclusion(&account, None).await?;
 
 		result.print_debug();
 		if let Some(event) =
@@ -477,9 +482,7 @@ mod claim_commission {
 }
 
 mod payout_stakers {
-	use avail_rust::{
-		avail, error::ClientError, utils::account_id_from_str, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{account, avail, error::ClientError, Keypair, SecretUri, SDK};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -489,7 +492,7 @@ mod payout_stakers {
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let validator_stash =
-			account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
+			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
 		let era_storage = avail::storage().staking().active_era();
 		let storage = sdk.online_client.storage().at_latest().await?;
 		let era = storage.fetch(&era_storage).await?;
@@ -499,7 +502,7 @@ mod payout_stakers {
 		};
 
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
-		tx.execute_wait_for_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, None).await?;
 
 		Ok(())
 	}
