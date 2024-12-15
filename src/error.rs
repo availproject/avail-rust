@@ -1,4 +1,4 @@
-use crate::utils::TransactionExecutionError;
+use crate::transaction::utils::TransactionExecutionError;
 use subxt::error::DispatchError;
 use subxt_signer::{sr25519, SecretUriError};
 

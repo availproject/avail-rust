@@ -1,7 +1,6 @@
-use super::Transaction;
-use crate::{avail, AOnlineClient};
+use crate::{avail, AOnlineClient, Transaction};
 use primitive_types::H256;
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 
 pub type ExecuteCall = avail::vector::calls::types::Execute;
 pub type FulfillCallCall = avail::vector::calls::types::FulfillCall;
@@ -51,9 +50,9 @@ impl Vector {
 		proof: Vec<u8>,
 		slot: u64,
 	) -> Transaction<FulfillCallCall> {
-		let input = BoundedVec { 0: input };
-		let output = BoundedVec { 0: output };
-		let proof = BoundedVec { 0: proof };
+		let input = BoundedVec(input);
+		let output = BoundedVec(output);
+		let proof = BoundedVec(proof);
 
 		let payload = avail::tx()
 			.vector()

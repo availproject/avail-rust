@@ -3,12 +3,16 @@ mod config;
 mod from_substrate;
 mod sdk;
 
+#[cfg(feature = "native")]
+pub mod http;
+
 // Export types for internal and external consumption
 pub mod account;
 pub mod block;
 pub mod error;
 pub mod primitives;
-pub mod rpcs;
+pub mod rpc;
+pub mod transaction;
 pub mod transactions;
 pub mod utils;
 
@@ -40,7 +44,9 @@ pub use primitives::{
 pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer;
-pub use transactions::{Mortality, Nonce, Options, PopulatedOptions};
+pub use transaction::{
+	Mortality, Nonce, Options, PopulatedOptions, Transaction, TransactionDetails,
+};
 
 pub mod nomination_pools_types {
 	pub use crate::avail::nomination_pools::calls::types::{

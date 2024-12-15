@@ -1,11 +1,10 @@
-use super::Transaction;
 use crate::{
 	api_dev::api::runtime_types::{
 		pallet_staking::ValidatorPrefs, sp_arithmetic::per_things::Perbill,
 	},
-	avail, AOnlineClient, AccountId, RewardDestination,
+	avail, AOnlineClient, AccountId, RewardDestination, Transaction,
 };
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 use subxt_core::utils::MultiAddress;
 
 pub type BondCall = avail::staking::calls::types::Bond;

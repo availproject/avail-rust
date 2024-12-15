@@ -1,11 +1,11 @@
 use crate::{
 	avail::data_availability::calls::types as DataAvailabilityCalls, error::ClientError,
-	primitives::block::extrinsics_params::CheckAppId, rpcs, ABlock, AExtrinsicDetails,
+	primitives::block::extrinsics_params::CheckAppId, rpc, ABlock, AExtrinsicDetails,
 	AExtrinsicEvents, AExtrinsics, AFoundExtrinsic, AOnlineClient,
 };
 use primitive_types::H256;
 use subxt::{
-	backend::{rpc::reconnecting_rpc_client::RpcClient, StreamOfResults},
+	backend::{rpc::RpcClient, StreamOfResults},
 	blocks::StaticExtrinsic,
 	storage::StorageKeyValuePair,
 	utils::Yes,
@@ -54,7 +54,7 @@ impl Block {
 		rpc_client: &RpcClient,
 		block_number: u32,
 	) -> Result<Self, ClientError> {
-		let block_hash = rpcs::get_block_hash(rpc_client, Some(block_number)).await?;
+		let block_hash = rpc::chain::get_block_hash(rpc_client, Some(block_number)).await?;
 		Self::new(online_client, block_hash).await
 	}
 
@@ -173,11 +173,11 @@ impl Block {
 	}
 
 	pub async fn fetch_best_block_hash(client: &RpcClient) -> Result<H256, ClientError> {
-		rpcs::get_block_hash(client, None).await
+		rpc::chain::get_block_hash(client, None).await
 	}
 
 	pub async fn fetch_finalized_block_hash(client: &RpcClient) -> Result<H256, ClientError> {
-		rpcs::get_finalized_head(client).await
+		rpc::chain::get_finalized_head(client).await
 	}
 }
 

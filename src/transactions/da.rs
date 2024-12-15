@@ -1,11 +1,10 @@
-use super::Transaction;
 use crate::{
 	api_dev::api::data_availability::calls::types::{
 		create_application_key::Key, submit_data::Data,
 	},
-	avail, AOnlineClient,
+	avail, AOnlineClient, Transaction,
 };
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 
 pub type SubmitDataCall = avail::data_availability::calls::types::SubmitData;
 pub type CreateApplicationKeyCall = avail::data_availability::calls::types::CreateApplicationKey;

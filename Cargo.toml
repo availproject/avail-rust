@@ -4,29 +4,17 @@
 name = "avail-rust"
 edition = "2021"
 version = "0.1.0"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-derive_more = { version = "1", default-features = false, features = ["std", "from", "constructor"] }
-kate-recovery = {  git = "https://github.com/availproject/avail-core", tag = "core-node-6", features = ["serde"] }
-subxt = { version = "0.38.0", features = ["reconnecting-rpc-client"] }
-subxt-core = { version = "0.38.0" }
-subxt-signer = { version = "0.38.0" }
-tokio = { version = "1.42.0" }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-derive_more = { version = "1", default-features = false, features = ["from", "constructor"] }
-kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, tag = "core-node-6", features = ["serde"] }
-subxt = { version = "0.38.0", default-features = false, features = ["web", "jsonrpsee", "reconnecting-rpc-client"] }
-subxt-core = { version = "0.38.0", default-features = false }
-subxt-signer = { version = "0.38.0", default-features = false, features = ["web", "sr25519", "subxt"] }
-tokio = { version = "1.42.0", default-features = false }
-sp-io = { version = "30", default-features = false, features = [ "disable_panic_handler" ] }
-
 [dependencies]
+derive_more = { version = "1", default-features = false, features = ["from", "constructor"] }
+tokio = { version = "1.42.0", default-features = false }
+subxt = { version = "0.38.0", default-features = false, features = ["reconnecting-rpc-client", "jsonrpsee"] }
+subxt-core = { version = "0.38.0", default-features = false  }
+subxt-signer = { version = "0.38.0", default-features = false }
+kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, tag = "core-node-6", features = ["serde"] }
 serde = { version = "1.0.195", features = ["derive", ] }
 serde_json = { version = "1.0.124", features = ["raw_value"] }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = [
@@ -43,6 +31,29 @@ bounded-collections = { version = "0.2.0", features = ["serde"] }
 primitive-types = { version = "0.13.1", default-features = false }
 log = { version = "0.4.22", default-features = false }
 env_logger = { version = "0.11.5" }
+
+jsonrpsee = { version = "0.24.7",  default-features = false, features = [ "http-client" ], optional = true }
+sp-io = { version = "30", default-features = false, features = [ "disable_panic_handler" ], optional = true }
+
+
+
+[features]
+default = [ "native" ]
+native = [
+	"derive_more/std",
+	"subxt/default",
+	"subxt-core/std",
+	"subxt-signer/default",
+	"kate-recovery/default",
+	"dep:jsonrpsee"
+]
+wasm = [
+	"subxt/web",
+	"subxt-signer/web",
+	"subxt-signer/sr25519",
+	"subxt-signer/subxt",
+	"dep:sp-io"
+]
 
 [patch.crates-io]
 sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10" }

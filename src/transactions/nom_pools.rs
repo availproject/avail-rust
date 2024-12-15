@@ -1,4 +1,3 @@
-use super::Transaction;
 pub use crate::avail::{
 	nomination_pools::calls::types::{set_claim_permission::Permission, set_state::State},
 	runtime_types::pallet_nomination_pools::BondExtra,
@@ -9,9 +8,9 @@ use crate::{
 		nomination_pools::calls::types::set_commission::NewCommission as NewCommissionOriginal,
 		runtime_types::sp_arithmetic::per_things::Perbill,
 	},
-	AOnlineClient, AccountId,
+	AOnlineClient, AccountId, Transaction,
 };
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 
 pub type NominateCall = avail::nomination_pools::calls::types::Nominate;
 pub type JoinCall = avail::nomination_pools::calls::types::Join;
