@@ -1,7 +1,10 @@
 use super::Params;
 use crate::{
 	error::ClientError,
-	rpc::{chain::get_block_hash, chain::get_header, system::account_next_index},
+	rpc::{
+		chain::{get_block_hash, get_header},
+		system::account_next_index,
+	},
 	AOnlineClient, AccountId, AvailExtrinsicParamsBuilder, Block, BlockHash,
 };
 use subxt::backend::rpc::RpcClient;

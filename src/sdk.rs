@@ -1,8 +1,9 @@
 use crate::{error::ClientError, transactions::Transactions, AOnlineClient};
 use std::{str::FromStr, time::Duration};
-use subxt::backend::rpc::reconnecting_rpc_client::ExponentialBackoff;
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient as ReconnectingRpcClient;
-use subxt::backend::rpc::RpcClient;
+use subxt::backend::rpc::{
+	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
+	RpcClient,
+};
 use subxt_signer::{sr25519::Keypair, SecretUri};
 
 #[cfg(feature = "native")]

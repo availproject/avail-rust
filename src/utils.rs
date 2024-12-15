@@ -11,8 +11,11 @@ use core::str::FromStr;
 use log::{debug, info, log_enabled, warn};
 use primitive_types::H256;
 use subxt::{
-	backend::legacy::rpc_methods::Bytes, backend::rpc::RpcClient, blocks::StaticExtrinsic,
-	error::DispatchError, ext::scale_encode::EncodeAsFields, tx::DefaultPayload,
+	backend::{legacy::rpc_methods::Bytes, rpc::RpcClient},
+	blocks::StaticExtrinsic,
+	error::DispatchError,
+	ext::scale_encode::EncodeAsFields,
+	tx::DefaultPayload,
 };
 use subxt_signer::sr25519::Keypair;
 

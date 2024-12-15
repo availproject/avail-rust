@@ -1,10 +1,12 @@
-use jsonrpsee::core::client::ClientT;
-use jsonrpsee::core::client::Error as JsonClientError;
-use jsonrpsee::core::traits::ToRpcParams;
-use jsonrpsee::http_client::HttpClient as JsonHttpClient;
+use jsonrpsee::{
+	core::{
+		client::{ClientT, Error as JsonClientError},
+		traits::ToRpcParams,
+	},
+	http_client::HttpClient as JsonHttpClient,
+};
 use serde_json::value::RawValue;
-use subxt::backend::rpc::RpcClientT;
-use subxt::error::RpcError;
+use subxt::{backend::rpc::RpcClientT, error::RpcError};
 
 pub struct Params(Option<Box<RawValue>>);
 
