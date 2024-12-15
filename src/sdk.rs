@@ -68,6 +68,10 @@ impl SDK {
 		"ws://127.0.0.1:9944"
 	}
 
+	pub fn local_http_endpoint() -> &'static str {
+		"http://127.0.0.1:9944"
+	}
+
 	pub fn turing_endpoint() -> &'static str {
 		"wss://turing-rpc.avail.so/ws"
 	}
@@ -106,7 +110,7 @@ pub async fn reconnecting_api(endpoint: &str) -> Result<(AOnlineClient, RpcClien
 
 #[cfg(feature = "native")]
 pub async fn http_api(endpoint: &str) -> Result<(AOnlineClient, RpcClient), ClientError> {
-	let rpc_client = http::HttpClient::new(endpoint);
+	let rpc_client = http::HttpClient::new(endpoint).map_err(|e| e.to_string())?;
 	let rpc_client = RpcClient::new(rpc_client);
 
 	// Cloning RpcClient is cheaper and doesn't create a new WS connection

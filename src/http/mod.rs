@@ -19,8 +19,8 @@ impl ToRpcParams for Params {
 pub struct HttpClient(pub JsonHttpClient);
 
 impl HttpClient {
-	pub fn new(endpoint: &str) -> Self {
-		Self(JsonHttpClient::builder().build(endpoint).unwrap())
+	pub fn new(endpoint: &str) -> Result<Self, jsonrpsee::core::client::Error> {
+		Ok(Self(JsonHttpClient::builder().build(endpoint)?))
 	}
 }
 
