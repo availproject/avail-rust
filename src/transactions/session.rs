@@ -1,6 +1,6 @@
 use super::Transaction;
 use crate::{avail, avail::runtime_types::da_runtime::primitives::SessionKeys, AOnlineClient};
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 
 pub type SetKeysCall = avail::session::calls::types::SetKeys;
 

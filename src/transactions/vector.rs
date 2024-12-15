@@ -1,7 +1,7 @@
 use super::Transaction;
 use crate::{avail, AOnlineClient};
 use primitive_types::H256;
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 
 pub type ExecuteCall = avail::vector::calls::types::Execute;
 pub type FulfillCallCall = avail::vector::calls::types::FulfillCall;

@@ -3,12 +3,15 @@ mod config;
 mod from_substrate;
 mod sdk;
 
+#[cfg(feature = "native")]
+pub mod http;
+
 // Export types for internal and external consumption
 pub mod account;
 pub mod block;
 pub mod error;
 pub mod primitives;
-pub mod rpcs;
+pub mod rpc;
 pub mod transactions;
 pub mod utils;
 

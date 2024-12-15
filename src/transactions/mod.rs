@@ -7,21 +7,16 @@ pub mod staking;
 pub mod vector;
 
 use crate::{
-	error::ClientError,
-	from_substrate::FeeDetails,
-	rpcs::query_fee_details,
-	utils::{self, *},
+	error::ClientError, from_substrate::FeeDetails, rpc::payment::query_fee_details, utils,
 	AExtrinsicEvents, AOnlineClient, AvailConfig, WaitFor, H256,
 };
-
 pub use options::{Mortality, Nonce, Options, PopulatedOptions};
-use subxt_signer::sr25519::Keypair;
-
 use std::sync::Arc;
 use subxt::{
-	backend::rpc::reconnecting_rpc_client::RpcClient, blocks::StaticExtrinsic, events::StaticEvent,
+	backend::rpc::RpcClient, blocks::StaticExtrinsic, events::StaticEvent,
 	ext::scale_encode::EncodeAsFields, tx::DefaultPayload,
 };
+use subxt_signer::sr25519::Keypair;
 
 pub type Params =
 	<<AvailConfig as subxt::Config>::ExtrinsicParams as subxt::config::ExtrinsicParams<
@@ -214,7 +209,7 @@ where
 		options: Option<Options>,
 		block_timeout: Option<u32>,
 	) -> Result<TransactionDetails, ClientError> {
-		execute_and_watch_transaction(
+		utils::execute_and_watch_transaction(
 			&self.online_client,
 			&self.rpc_client,
 			account,
@@ -232,7 +227,7 @@ where
 		account: &Keypair,
 		options: Option<Options>,
 	) -> Result<H256, ClientError> {
-		sign_send_and_forget(
+		utils::sign_send_and_forget(
 			&self.online_client,
 			&self.rpc_client,
 			account,
@@ -242,13 +237,20 @@ where
 		.await
 	}
 
-	pub async fn watch_transaction(
-		online_client: &AOnlineClient,
-		tx_hash: H256,
-		wait_for: WaitFor,
-		block_timeout: Option<u32>,
-	) -> Result<TransactionDetails, TransactionExecutionError> {
-		watch_transaction(online_client, tx_hash, wait_for, block_timeout).await
+	#[cfg(feature = "native")]
+	pub async fn http_execute_and_forget(
+		&self,
+		account: &Keypair,
+		options: Option<Options>,
+	) -> Result<H256, ClientError> {
+		utils::http_sign_send_and_forget(
+			&self.online_client,
+			&self.rpc_client,
+			account,
+			&self.payload,
+			options,
+		)
+		.await
 	}
 
 	pub async fn payment_query_info(

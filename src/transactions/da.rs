@@ -5,7 +5,7 @@ use crate::{
 	},
 	avail, AOnlineClient,
 };
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 
 pub type SubmitDataCall = avail::data_availability::calls::types::SubmitData;
 pub type CreateApplicationKeyCall = avail::data_availability::calls::types::CreateApplicationKey;

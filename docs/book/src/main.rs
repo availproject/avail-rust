@@ -11,11 +11,11 @@ use avail_rust::SDK;
 async fn main() -> Result<(), ClientError> {
 	SDK::enable_logging();
 
-	storage::run().await?;
-	rpc::run().await?;
-	basics::run().await?;
-	examples::run().await?;
-	// test::run().await?;
+	// storage::run().await?;
+	// rpc::run().await?;
+	// basics::run().await?;
+	// examples::run().await?;
+	test::run().await?;
 
 	Ok(())
 }

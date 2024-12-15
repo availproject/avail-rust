@@ -1,10 +1,10 @@
 use super::Params;
 use crate::{
 	error::ClientError,
-	rpcs::{account_next_index, get_block_hash, get_header},
+	rpc::{chain::get_block_hash, chain::get_header, system::account_next_index},
 	AOnlineClient, AccountId, AvailExtrinsicParamsBuilder, Block, BlockHash,
 };
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Options {

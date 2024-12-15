@@ -1,5 +1,6 @@
 use avail_rust::{
-	avail, error::ClientError, transactions::staking::Commission, utils, RewardDestination, SDK,
+	avail, error::ClientError, rpc, transactions::staking::Commission, utils, RewardDestination,
+	SDK,
 };
 
 pub async fn run() -> Result<(), ClientError> {
@@ -21,7 +22,7 @@ pub async fn run() -> Result<(), ClientError> {
 	_ = tx.execute_wait_for_inclusion(&account, None).await?;
 
 	// Generate Session Keys
-	let keys = sdk.rpc.author.rotate_keys().await?;
+	let keys = rpc::author::rotate_keys(&sdk.rpc_client).await?;
 	let keys = utils::deconstruct_session_keys(keys)?;
 
 	// Set Keys

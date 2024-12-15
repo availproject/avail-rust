@@ -1,14 +1,14 @@
 use avail_rust::{
 	avail::{self, runtime_types::bounded_collections::bounded_vec::BoundedVec},
 	error::ClientError,
-	utils, Cell, Options, SDK,
+	rpc, utils, Cell, Options, SDK,
 };
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	// author_rotate_keys
-	let value = sdk.rpc.author.rotate_keys().await?;
+	let value = rpc::author::rotate_keys(&sdk.rpc_client).await?;
 	let value = utils::deconstruct_session_keys(value)?;
 	dbg!(value);
 	/*	Output
@@ -21,7 +21,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// chain_get_block
-	let value = sdk.rpc.chain.get_block(None).await?;
+	let value = rpc::chain::get_block(&sdk.rpc_client, None).await?;
 	dbg!(value);
 	/*	Output
 	BlockDetails {
@@ -54,21 +54,21 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// chain_get_block_hash
-	let value = sdk.rpc.chain.get_block_hash(None).await?;
+	let value = rpc::chain::get_block_hash(&sdk.rpc_client, None).await?;
 	dbg!(value);
 	/*	Output
 		0xc4e0a9a2ef80ddc1d70c9946d8a6f86ca4b15053b39ba56709222f01ddc64561
 	*/
 
 	// chain_get_finalized_head
-	let value = sdk.rpc.chain.get_finalized_head().await?;
+	let value = rpc::chain::get_finalized_head(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 		0x2c896c9faae4e111f1fbeb955be5e999a328846969b59a7a7c64eadc4701122a
 	*/
 
 	// chain_get_header
-	let value = sdk.rpc.chain.get_header(None).await?;
+	let value = rpc::chain::get_header(&sdk.rpc_client, None).await?;
 	dbg!(value);
 	/*	Output
 	AvailHeader {
@@ -96,28 +96,28 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// system_account_next_index
 	let account = String::from("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
-	let value = sdk.rpc.system.account_next_index(account).await?;
+	let value = rpc::system::account_next_index(&sdk.rpc_client, account).await?;
 	dbg!(value);
 	/*	Output
 		2
 	*/
 
 	// system_chain
-	let value = sdk.rpc.system.chain().await?;
+	let value = rpc::system::chain(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 		"Avail Development Network"
 	*/
 
 	// system_chain_type
-	let value = sdk.rpc.system.chain_type().await?;
+	let value = rpc::system::chain_type(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 		"Development"
 	*/
 
 	// system_health
-	let value = sdk.rpc.system.health().await?;
+	let value = rpc::system::health(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 	SystemHealth {
@@ -128,7 +128,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_local_listen_addresses
-	let value = sdk.rpc.system.local_listen_addresses().await?;
+	let value = rpc::system::local_listen_addresses(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 	value = [
@@ -140,21 +140,21 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_local_peer_id
-	let value = sdk.rpc.system.local_peer_id().await?;
+	let value = rpc::system::local_peer_id(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 		"12D3KooWRajsCfp1NR15iN7PcwcFAG3LB7iGDKUBosHkevNRQLYs"
 	*/
 
 	// system_name
-	let value = sdk.rpc.system.name().await?;
+	let value = rpc::system::name(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 		"Avail Node"
 	*/
 
 	// system_node_roles
-	let value = sdk.rpc.system.node_roles().await?;
+	let value = rpc::system::node_roles(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 	[
@@ -163,14 +163,14 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_peers
-	let value = sdk.rpc.system.peers().await?;
+	let value = rpc::system::peers(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 		[]
 	*/
 
 	// system_properties
-	let value = sdk.rpc.system.properties().await?;
+	let value = rpc::system::properties(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 	{
@@ -181,7 +181,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_system_sync_state
-	let value = sdk.rpc.system.sync_state().await?;
+	let value = rpc::system::sync_state(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 	SyncState {
@@ -192,7 +192,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_version
-	let value = sdk.rpc.system.version().await?;
+	let value = rpc::system::version(&sdk.rpc_client).await?;
 	dbg!(value);
 	/*	Output
 		"2.2.1-55da578d34b"
@@ -226,11 +226,8 @@ pub async fn run() -> Result<(), ClientError> {
 	let len_bytes: [u8; 4] = (tx.encoded().len() as u32).to_le_bytes();
 	let encoded_with_len = [tx.encoded(), &len_bytes[..]].concat();
 
-	let fee_details = sdk
-		.rpc
-		.payment
-		.query_fee_details(encoded_with_len.into(), None)
-		.await?;
+	let fee_details =
+		rpc::payment::query_fee_details(&sdk.rpc_client, encoded_with_len.into(), None).await?;
 	dbg!(fee_details);
 	/*	Output
 	FeeDetails {
@@ -246,7 +243,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// kate_block_length
-	let value = sdk.rpc.kate.block_length(None).await?;
+	let value = rpc::kate::block_length(&sdk.rpc_client, None).await?;
 	dbg!(value);
 	/*	Output
 	BlockLength {
@@ -270,7 +267,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let tx = sdk.tx.data_availability.submit_data(data);
 	let result = tx.execute_wait_for_finalization(&keypair, None).await?;
 	let (tx_index, block_hash) = (result.tx_index, Some(result.block_hash));
-	let value = sdk.rpc.kate.query_data_proof(tx_index, block_hash).await?;
+	let value = rpc::kate::query_data_proof(&sdk.rpc_client, tx_index, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	ProofResponse {
@@ -291,7 +288,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// kate_query_proof
 	let cells = vec![Cell::from((0u32, 0u32))];
-	let value = sdk.rpc.kate.query_proof(cells, block_hash).await?;
+	let value = rpc::kate::query_proof(&sdk.rpc_client, cells, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	[
@@ -306,7 +303,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// kate_query_rows
 	let rows = vec![0u32];
-	let value = sdk.rpc.kate.query_rows(rows, block_hash).await?;
+	let value = rpc::kate::query_rows(&sdk.rpc_client, rows, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	[

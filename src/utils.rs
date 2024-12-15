@@ -2,7 +2,7 @@ use crate::{
 	avail::{self, runtime_types::da_runtime::primitives::SessionKeys},
 	block::Block,
 	error::ClientError,
-	rpcs::{account_next_index, get_block_hash},
+	rpc,
 	transactions::{Params, TransactionDetails},
 	AExtrinsicEvents, AOnlineClient, AccountId, AppUncheckedExtrinsic, Options, PopulatedOptions,
 	WaitFor,
@@ -11,11 +11,8 @@ use core::str::FromStr;
 use log::{debug, info, log_enabled, warn};
 use primitive_types::H256;
 use subxt::{
-	backend::{legacy::rpc_methods::Bytes, rpc::reconnecting_rpc_client::RpcClient},
-	blocks::StaticExtrinsic,
-	error::DispatchError,
-	ext::scale_encode::EncodeAsFields,
-	tx::DefaultPayload,
+	backend::legacy::rpc_methods::Bytes, backend::rpc::RpcClient, blocks::StaticExtrinsic,
+	error::DispatchError, ext::scale_encode::EncodeAsFields, tx::DefaultPayload,
 };
 use subxt_signer::sr25519::Keypair;
 
@@ -59,10 +56,47 @@ where
 	}
 
 	let tx_client = online_client.tx();
-	let tx_hash = tx_client
-		.sign_and_submit(call, account, params)
-		.await
-		.map_err(|e| e.to_string())?;
+	let tx_hash = tx_client.sign_and_submit(call, account, params).await?;
+
+	Ok(tx_hash)
+}
+
+#[cfg(feature = "native")]
+pub async fn http_sign_send_and_forget<T>(
+	online_client: &AOnlineClient,
+	rpc_client: &RpcClient,
+	account: &Keypair,
+	call: &DefaultPayload<T>,
+	options: Option<Options>,
+) -> Result<H256, ClientError>
+where
+	T: StaticExtrinsic + EncodeAsFields,
+{
+	let account_id = account.public_key().to_account_id();
+	let options = options
+		.unwrap_or_default()
+		.build(online_client, rpc_client, &account_id)
+		.await?;
+
+	let params = options.build(rpc_client).await?;
+
+	if log_enabled!(log::Level::Debug) {
+		let address = account.public_key().to_account_id().to_string();
+		let call_name = call.call_name();
+		let pallet_name = call.pallet_name();
+		let nonce = &params.4 .0;
+		let app_id = &params.6 .0;
+		debug!(
+			target: "transaction",
+			"Signing and submitting new transaction. Account: {}, Nonce: {:?}, Pallet Name: {}, Call Name: {}, App Id: {}",
+			address, nonce, pallet_name, call_name, app_id
+		);
+	}
+
+	let tx_client = online_client.tx();
+	let signed_call = tx_client.create_signed(call, account, params).await?;
+	let extrinsic = signed_call.encoded().to_vec();
+	let tx_hash = rpc::author::submit_extrinsic(rpc_client, extrinsic).await?;
 
 	Ok(tx_hash)
 }
@@ -266,6 +300,81 @@ pub async fn watch_transaction(
 	))
 }
 
+#[cfg(feature = "native")]
+pub async fn http_watch_transaction(
+	online_client: &AOnlineClient,
+	rpc_client: &RpcClient,
+	tx_hash: H256,
+	wait_for: WaitFor,
+	block_timeout: Option<u32>,
+) -> Result<TransactionDetails, TransactionExecutionError> {
+	let mut current_block_hash: Option<H256> = None;
+	let mut timeout_block_number: Option<u32> = None;
+	let mut block_hash;
+	let mut block_number;
+	let tx_details;
+	let mut should_sleep = false;
+
+	debug!(target: "watcher", "Watching for Tx Hash: {:?}. Waiting for: {}, Block timeout: {:?}", tx_hash, wait_for.to_str(), block_timeout);
+
+	loop {
+		if should_sleep {
+			tokio::time::sleep(core::time::Duration::from_secs(3)).await;
+		}
+		if !should_sleep {
+			should_sleep = true;
+		}
+
+		block_hash = match wait_for {
+			WaitFor::BlockInclusion => rpc::chain::get_block_hash(rpc_client, None).await.unwrap(),
+			WaitFor::BlockFinalization => rpc::chain::get_finalized_head(rpc_client).await.unwrap(),
+		};
+
+		if current_block_hash.is_some_and(|x| x == block_hash) {
+			continue;
+		}
+		current_block_hash = Some(block_hash);
+
+		let block = online_client.blocks().at(block_hash).await?;
+		block_number = block.number();
+		block_hash = block.hash();
+		debug!(target: "watcher", "New block fetched. Hash: {:?}, Number: {}", block_hash, block_number);
+
+		let transactions = block.extrinsics().await?;
+		let tx_found = transactions.iter().find(|e| e.hash() == tx_hash);
+		if let Some(tx) = tx_found {
+			tx_details = tx;
+			break;
+		}
+
+		// Block timeout logic
+		let Some(block_timeout) = block_timeout else {
+			continue;
+		};
+
+		if timeout_block_number.is_none() {
+			timeout_block_number = Some(block_number + block_timeout);
+			debug!(target: "watcher", "Current Block Number: {}, Timeout Block Number: {}", block_number, block_number + block_timeout + 1);
+		}
+		if timeout_block_number.is_some_and(|timeout| block_number > timeout) {
+			return Err(TransactionExecutionError::TransactionNotFound);
+		}
+	}
+
+	let events = tx_details.events().await?;
+	let tx_index = tx_details.index();
+
+	debug!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
+
+	Ok(TransactionDetails::new(
+		events,
+		tx_hash,
+		tx_index,
+		block_hash,
+		block_number,
+	))
+}
+
 pub fn check_if_transaction_was_successful(
 	client: &AOnlineClient,
 	events: &AExtrinsicEvents,
@@ -369,7 +478,7 @@ pub async fn fetch_nonce_state(
 
 pub async fn fetch_nonce_node(client: &RpcClient, address: &str) -> Result<u32, ClientError> {
 	let account = account_id_from_str(address)?;
-	account_next_index(client, account.to_string()).await
+	rpc::system::account_next_index(client, account.to_string()).await
 }
 
 pub fn account_id_from_str(value: &str) -> Result<AccountId, String> {
@@ -381,7 +490,7 @@ pub async fn get_app_keys(
 	rpc_client: &RpcClient,
 	address: &str,
 ) -> Result<Vec<(String, u32)>, String> {
-	let block_hash = get_block_hash(rpc_client, None).await;
+	let block_hash = rpc::chain::get_block_hash(rpc_client, None).await;
 	let block_hash = block_hash.map_err(|e| e.to_string())?;
 
 	let storage = online_client.storage().at(block_hash);
@@ -418,4 +527,29 @@ pub async fn get_app_ids(
 	};
 
 	Ok(keys.into_iter().map(|v| v.1).collect())
+}
+
+pub fn hex_string_to_h256(mut s: &str) -> Result<H256, String> {
+	if s.starts_with("0x") {
+		s = &s[2..];
+	}
+
+	if s.len() != 64 {
+		let msg = std::format!(
+			"Failed to convert string to H256. Expected 64 bytes got {}. Input string: {}",
+			s.len(),
+			s
+		);
+		return Err(msg);
+	}
+
+	let block_hash = hex::decode(s).map_err(|e| e.to_string())?;
+	let block_hash = TryInto::<[u8; 32]>::try_into(block_hash);
+	match block_hash {
+		Ok(v) => Ok(H256(v)),
+		Err(e) => {
+			let msg = std::format!("Failed to covert decoded string to H256. Input {:?}", e);
+			Err(msg)
+		},
+	}
 }

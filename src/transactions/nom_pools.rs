@@ -11,7 +11,7 @@ use crate::{
 	},
 	AOnlineClient, AccountId,
 };
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 
 pub type NominateCall = avail::nomination_pools::calls::types::Nominate;
 pub type JoinCall = avail::nomination_pools::calls::types::Join;

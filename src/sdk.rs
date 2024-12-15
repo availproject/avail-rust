@@ -1,43 +1,37 @@
-use crate::{error::ClientError, rpcs::Rpc, transactions::Transactions, AOnlineClient};
+use crate::{error::ClientError, transactions::Transactions, AOnlineClient};
 use std::{str::FromStr, time::Duration};
-use subxt::backend::rpc::reconnecting_rpc_client::{ExponentialBackoff, RpcClient};
+use subxt::backend::rpc::reconnecting_rpc_client::ExponentialBackoff;
+use subxt::backend::rpc::reconnecting_rpc_client::RpcClient as ReconnectingRpcClient;
+use subxt::backend::rpc::RpcClient;
 use subxt_signer::{sr25519::Keypair, SecretUri};
+
+#[cfg(feature = "native")]
+use crate::http;
 
 #[derive(Clone)]
 pub struct SDK {
 	pub online_client: AOnlineClient,
 	pub rpc_client: RpcClient,
 	pub tx: Transactions,
-	pub rpc: Rpc,
 }
 
 impl SDK {
 	pub async fn new(endpoint: &str) -> Result<Self, ClientError> {
-		let (online_client, rpc_client) = initialize_api(endpoint).await?;
+		let (online_client, rpc_client) = reconnecting_api(endpoint).await?;
 
-		let rpc = Rpc::new(rpc_client.clone()).await;
-		let tx = Transactions::new(online_client.clone(), rpc_client.clone());
-
-		Ok(SDK {
-			online_client,
-			rpc_client,
-			tx,
-			rpc,
-		})
+		Self::new_custom(online_client, rpc_client).await
 	}
 
 	pub async fn new_custom(
 		online_client: AOnlineClient,
 		rpc_client: RpcClient,
 	) -> Result<Self, ClientError> {
-		let rpc = Rpc::new(rpc_client.clone()).await;
 		let tx = Transactions::new(online_client.clone(), rpc_client.clone());
 
 		Ok(SDK {
 			online_client,
 			rpc_client,
 			tx,
-			rpc,
 		})
 	}
 
@@ -82,8 +76,17 @@ impl SDK {
 	}
 }
 
-pub async fn initialize_api(endpoint: &str) -> Result<(AOnlineClient, RpcClient), ClientError> {
-	let rpc_client = RpcClient::builder()
+#[cfg(feature = "native")]
+impl SDK {
+	pub async fn new_http(endpoint: &str) -> Result<Self, ClientError> {
+		let (online_client, rpc_client) = http_api(endpoint).await?;
+
+		Self::new_custom(online_client, rpc_client).await
+	}
+}
+
+pub async fn reconnecting_api(endpoint: &str) -> Result<(AOnlineClient, RpcClient), ClientError> {
+	let rpc_client = ReconnectingRpcClient::builder()
 		.retry_policy(
 			ExponentialBackoff::from_millis(1000)
 				.max_delay(Duration::from_secs(3))
@@ -92,6 +95,18 @@ pub async fn initialize_api(endpoint: &str) -> Result<(AOnlineClient, RpcClient)
 		.build(endpoint)
 		.await
 		.map_err(|e| e.to_string())?;
+	let rpc_client = RpcClient::new(rpc_client);
+
+	// Cloning RpcClient is cheaper and doesn't create a new WS connection
+	let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
+
+	Ok((api, rpc_client))
+}
+
+#[cfg(feature = "native")]
+pub async fn http_api(endpoint: &str) -> Result<(AOnlineClient, RpcClient), ClientError> {
+	let rpc_client = http::HttpClient::new(endpoint);
+	let rpc_client = RpcClient::new(rpc_client);
 
 	// Cloning RpcClient is cheaper and doesn't create a new WS connection
 	let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;

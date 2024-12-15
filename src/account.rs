@@ -1,5 +1,7 @@
-use crate::{avail, error::ClientError, rpcs::get_block_hash, utils, AOnlineClient, AccountId};
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use crate::{
+	avail, error::ClientError, rpc::chain::get_block_hash, utils, AOnlineClient, AccountId,
+};
+use subxt::backend::rpc::RpcClient;
 
 pub async fn fetch_account_nonce_state(
 	online_client: &AOnlineClient,

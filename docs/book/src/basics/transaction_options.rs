@@ -1,4 +1,6 @@
-use avail_rust::{error::ClientError, rpcs::get_best_block, utils, Mortality, Nonce, Options, SDK};
+use avail_rust::{
+	error::ClientError, rpc::chain::get_best_block, utils, Mortality, Nonce, Options, SDK,
+};
 use std::time::Duration;
 
 pub async fn run() -> Result<(), ClientError> {

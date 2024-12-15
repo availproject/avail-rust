@@ -5,7 +5,7 @@ use crate::{
 	},
 	avail, AOnlineClient, AccountId, RewardDestination,
 };
-use subxt::backend::rpc::reconnecting_rpc_client::RpcClient;
+use subxt::backend::rpc::RpcClient;
 use subxt_core::utils::MultiAddress;
 
 pub type BondCall = avail::staking::calls::types::Bond;
