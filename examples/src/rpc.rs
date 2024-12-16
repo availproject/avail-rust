@@ -20,6 +20,29 @@ pub async fn run() -> Result<(), ClientError> {
 	}
 	*/
 
+	// author_submit_extrinsic
+	let account = SDK::alice()?;
+	let account_id = account.public_key().to_account_id();
+	let call = avail::tx()
+		.data_availability()
+		.submit_data(BoundedVec(vec![0, 1, 2]));
+	let params = Options::new()
+		.build(&sdk.online_client, &sdk.rpc_client, &account_id)
+		.await?
+		.build(&sdk.rpc_client)
+		.await?;
+	let signed_call = sdk
+		.online_client
+		.tx()
+		.create_signed(&call, &account, params)
+		.await?;
+	let extrinsic = signed_call.encoded();
+	let value = rpc::author::submit_extrinsic(&sdk.rpc_client, extrinsic).await?;
+	dbg!(value);
+	/*	Output
+		"0x56edc7516bb403f0d812f0f91dea5e36b46bbb31f7b69e78469652f74882377d"
+	*/
+
 	// chain_get_block
 	let value = rpc::chain::get_block(&sdk.rpc_client, None).await?;
 	dbg!(value);
@@ -239,6 +262,24 @@ pub async fn run() -> Result<(), ClientError> {
 			},
 		),
 		tip: 0,
+	}
+	*/
+
+	// state_get_runtime_version
+	let value = rpc::state::get_runtime_version(&sdk.rpc_client, None).await?;
+	dbg!(value);
+	/*	Output
+	RuntimeVersion {
+		spec_version: 39,
+		transaction_version: 1,
+		other: {
+			"stateVersion": Number(1),
+			"authoringVersion": Number(12),
+			"specName": String("avail"),
+			"implVersion": Number(0),
+			"apis": Array [...],
+			"implName": String("avail"),
+		},
 	}
 	*/
 

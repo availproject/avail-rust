@@ -134,7 +134,6 @@ where
 	}
 }
 
-#[cfg(feature = "native")]
 impl<T> Transaction<T>
 where
 	T: StaticExtrinsic + EncodeAsFields,

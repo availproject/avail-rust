@@ -2,6 +2,7 @@ use super::{Options, Params, TransactionDetails};
 use crate::{error::ClientError, rpc, AOnlineClient, WaitFor};
 use log::{debug, info, log_enabled, warn};
 use primitive_types::H256;
+use std::time::Duration;
 use subxt::{
 	backend::rpc::RpcClient, blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields,
 	tx::DefaultPayload,
@@ -217,7 +218,6 @@ where
 	}
 }
 
-#[cfg(feature = "native")]
 pub async fn http_sign_and_send<T>(
 	online_client: &AOnlineClient,
 	rpc_client: &RpcClient,
@@ -239,7 +239,6 @@ where
 	http_sign_and_send_raw_params(online_client, rpc_client, account, call, params).await
 }
 
-#[cfg(feature = "native")]
 pub async fn http_sign_and_send_raw_params<T>(
 	online_client: &AOnlineClient,
 	rpc_client: &RpcClient,
@@ -271,13 +270,12 @@ where
 	Ok(tx_hash)
 }
 
-#[cfg(feature = "native")]
 pub async fn http_watch(
 	online_client: &AOnlineClient,
 	rpc_client: &RpcClient,
 	tx_hash: H256,
 	wait_for: WaitFor,
-	sleep_duration: core::time::Duration,
+	sleep_duration: Duration,
 	block_timeout: Option<u32>,
 ) -> Result<TransactionDetails, TransactionExecutionError> {
 	let mut current_block_hash: Option<H256> = None;
@@ -347,7 +345,6 @@ pub async fn http_watch(
 	))
 }
 
-#[cfg(feature = "native")]
 pub async fn http_sign_send_and_watch<T>(
 	online_client: &AOnlineClient,
 	rpc_client: &RpcClient,
@@ -369,7 +366,7 @@ where
 		.await?;
 
 	let mut retry_count = retry_count.unwrap_or(0);
-	let sleep_duration = core::time::Duration::from_secs(3);
+	let sleep_duration = Duration::from_secs(3);
 	loop {
 		let params = options.build(rpc_client).await?;
 		let tx_hash =
