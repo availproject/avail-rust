@@ -76,6 +76,10 @@ impl SDK {
 		"wss://turing-rpc.avail.so/ws"
 	}
 
+	pub fn turing_http_endpoint() -> &'static str {
+		"https://turing-rpc.avail.so/rpc"
+	}
+
 	pub fn mainnet_endpoint() -> &'static str {
 		"wss://mainnet-rpc.avail.so/ws"
 	}

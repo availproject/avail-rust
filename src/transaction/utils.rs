@@ -354,6 +354,7 @@ pub async fn http_sign_send_and_watch<T>(
 	options: Option<Options>,
 	block_timeout: Option<u32>,
 	retry_count: Option<u32>,
+	sleep_duration: Option<Duration>,
 ) -> Result<TransactionDetails, ClientError>
 where
 	T: StaticExtrinsic + EncodeAsFields,
@@ -366,7 +367,7 @@ where
 		.await?;
 
 	let mut retry_count = retry_count.unwrap_or(0);
-	let sleep_duration = Duration::from_secs(3);
+	let sleep_duration = sleep_duration.unwrap_or_else(|| Duration::from_secs(3));
 	loop {
 		let params = options.build(rpc_client).await?;
 		let tx_hash =

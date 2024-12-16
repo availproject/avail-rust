@@ -1,8 +1,4 @@
-use avail_rust::{
-	avail::{self, runtime_types::bounded_collections::bounded_vec::BoundedVec},
-	error::ClientError,
-	rpc, utils, Cell, Options, SDK,
-};
+use avail_rust::{prelude::*, primitives::kate, utils};
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -328,7 +324,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// kate_query_proof
-	let cells = vec![Cell::from((0u32, 0u32))];
+	let cells = vec![kate::Cell::from((0u32, 0u32))];
 	let value = rpc::kate::query_proof(&sdk.rpc_client, cells, block_hash).await?;
 	dbg!(value);
 	/*	Output

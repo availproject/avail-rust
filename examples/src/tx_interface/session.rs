@@ -8,9 +8,7 @@ pub async fn run() -> Result<(), ClientError> {
 }
 
 mod set_keys {
-	use avail_rust::{
-		error::ClientError, rpc, transactions::SessionCalls, utils, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::SessionCalls, utils};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {

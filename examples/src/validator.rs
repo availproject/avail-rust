@@ -1,6 +1,7 @@
 use avail_rust::{
-	avail, error::ClientError, rpc, transactions::staking::Commission, utils, RewardDestination,
-	SDK,
+	prelude::*,
+	transactions::staking::{Commission, RewardDestination},
+	utils,
 };
 
 pub async fn run() -> Result<(), ClientError> {

@@ -1,4 +1,4 @@
-use avail_rust::{account, error::ClientError, rpc, Mortality, Nonce, Options, SDK};
+use avail_rust::prelude::*;
 use std::time::Duration;
 
 pub async fn run() -> Result<(), ClientError> {

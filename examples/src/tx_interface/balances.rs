@@ -14,10 +14,8 @@ pub async fn run() -> Result<(), ClientError> {
 
 mod transfer_all {
 	use avail_rust::{
-		account,
-		error::ClientError,
+		prelude::*,
 		transactions::{BalancesEvents, SystemEvents},
-		Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -65,10 +63,8 @@ mod transfer_all {
 
 mod transfer_allow_death {
 	use avail_rust::{
-		account,
-		error::ClientError,
+		prelude::*,
 		transactions::{BalancesEvents, SystemEvents},
-		Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -99,9 +95,7 @@ mod transfer_allow_death {
 }
 
 mod transfer_keep_alive {
-	use avail_rust::{
-		account, error::ClientError, transactions::BalancesEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::BalancesEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {

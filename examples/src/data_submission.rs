@@ -1,9 +1,4 @@
-use avail_rust::{
-	avail,
-	block::{Block, DataSubmission},
-	error::ClientError,
-	Options, SDK,
-};
+use avail_rust::prelude::*;
 
 type DataSubmissionCall = avail::data_availability::calls::types::SubmitData;
 type ApplicationKeyCreatedEvent = avail::data_availability::events::ApplicationKeyCreated;

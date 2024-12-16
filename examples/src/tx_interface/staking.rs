@@ -30,7 +30,8 @@ pub async fn run() -> Result<(), ClientError> {
 
 mod bond {
 	use avail_rust::{
-		error::ClientError, transactions::StakingEvents, Keypair, RewardDestination, SecretUri, SDK,
+		prelude::*,
+		transactions::{staking::RewardDestination, StakingEvents},
 	};
 	use core::str::FromStr;
 
@@ -57,7 +58,7 @@ mod bond {
 }
 
 mod bond_extra {
-	use avail_rust::{error::ClientError, transactions::StakingEvents, Keypair, SecretUri, SDK};
+	use avail_rust::{prelude::*, transactions::StakingEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -82,9 +83,7 @@ mod bond_extra {
 }
 
 mod nominate {
-	use avail_rust::{
-		account, error::ClientError, transactions::StakingCalls, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::StakingCalls};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -114,7 +113,7 @@ mod nominate {
 }
 
 mod chill {
-	use avail_rust::{error::ClientError, transactions::StakingEvents, Keypair, SecretUri, SDK};
+	use avail_rust::{prelude::*, transactions::StakingEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -138,9 +137,7 @@ mod chill {
 }
 
 mod chill_other {
-	use avail_rust::{
-		account, error::ClientError, transactions::StakingEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::StakingEvents};
 	use core::str::FromStr;
 
 	pub async fn prepare() -> Result<(), ClientError> {
@@ -182,7 +179,7 @@ mod chill_other {
 }
 
 mod unbond {
-	use avail_rust::{error::ClientError, transactions::StakingEvents, Keypair, SecretUri, SDK};
+	use avail_rust::{prelude::*, transactions::StakingEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -208,9 +205,8 @@ mod unbond {
 
 mod validate {
 	use avail_rust::{
-		error::ClientError,
+		prelude::*,
 		transactions::{staking::Commission, StakingEvents},
-		Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -250,7 +246,7 @@ mod validate {
 }
 
 mod payout_stakers {
-	use avail_rust::{account, avail, error::ClientError, Keypair, SecretUri, SDK};
+	use avail_rust::prelude::*;
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {

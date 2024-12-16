@@ -11,9 +11,8 @@ pub async fn run() -> Result<(), ClientError> {
 
 mod submit_data {
 	use avail_rust::{
-		error::ClientError,
+		prelude::*,
 		transactions::{DataAvailabilityCalls, DataAvailabilityEvents},
-		Keypair, Nonce, Options, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -50,9 +49,7 @@ mod submit_data {
 }
 
 mod create_application_key {
-	use avail_rust::{
-		error::ClientError, transactions::DataAvailabilityEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::DataAvailabilityEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {

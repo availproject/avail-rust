@@ -5,4 +5,4 @@ pub mod utils;
 
 pub use details::TransactionDetails;
 pub use options::{Mortality, Nonce, Options, Params, PopulatedOptions};
-pub use transaction::Transaction;
+pub use transaction::{Transaction, WebSocket, HTTP};

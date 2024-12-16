@@ -2,7 +2,7 @@ use crate::{
 	api_dev::api::runtime_types::{
 		pallet_staking::ValidatorPrefs, sp_arithmetic::per_things::Perbill,
 	},
-	avail, AOnlineClient, AccountId, RewardDestination, Transaction,
+	avail, AOnlineClient, AccountId, Transaction,
 };
 use subxt::backend::rpc::RpcClient;
 use subxt_core::utils::MultiAddress;
@@ -15,6 +15,7 @@ pub type NominateCall = avail::staking::calls::types::Nominate;
 pub type UnbondCall = avail::staking::calls::types::Unbond;
 pub type ValidateCall = avail::staking::calls::types::Validate;
 pub type PayoutStakersCall = avail::staking::calls::types::PayoutStakers;
+pub type RewardDestination = avail::runtime_types::pallet_staking::RewardDestination<AccountId>;
 
 #[derive(Clone)]
 pub struct Staking {

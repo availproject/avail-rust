@@ -2,6 +2,7 @@ use avail_rust::{
 	avail,
 	block::{Block, DataSubmission},
 	error::ClientError,
+	transaction::HTTP,
 	Options, SDK,
 };
 
@@ -17,7 +18,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// Application Key Creation
 	let key = String::from("My Key Http").into_bytes();
 	let tx = sdk.tx.data_availability.create_application_key(key);
-	let res = tx.http_execute_and_watch_inclusion(&account, None).await?;
+	let res = tx.execute_and_watch_inclusion(&account, None).await?;
 	res.is_successful(&online_client)?;
 
 	let Some(event) = res.find_first_event::<ApplicationKeyCreatedEvent>() else {
@@ -30,7 +31,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let options = Options::new().app_id(app_id);
 	let tx = sdk.tx.data_availability.submit_data(data);
 	let res = tx
-		.http_execute_and_watch_inclusion(&account, Some(options))
+		.execute_and_watch_inclusion(&account, Some(options))
 		.await?;
 	res.is_successful(&online_client)?;
 

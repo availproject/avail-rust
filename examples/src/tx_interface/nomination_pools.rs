@@ -43,9 +43,7 @@ pub async fn run() -> Result<(), ClientError> {
 }
 
 mod create {
-	use avail_rust::{
-		account, error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::NominationPoolsEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -82,9 +80,7 @@ mod create {
 }
 
 mod create_with_pool_id {
-	use avail_rust::{
-		account, error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::NominationPoolsEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -122,9 +118,7 @@ mod create_with_pool_id {
 }
 
 mod join {
-	use avail_rust::{
-		error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::NominationPoolsEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -151,9 +145,8 @@ mod join {
 
 mod bond_extra {
 	use avail_rust::{
-		error::ClientError,
+		prelude::*,
 		transactions::{nom_pools::BondExtra, NominationPoolsEvents},
-		Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -179,9 +172,7 @@ mod bond_extra {
 }
 
 mod unbond {
-	use avail_rust::{
-		error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::NominationPoolsEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -210,9 +201,7 @@ mod unbond {
 }
 
 mod withdraw_unbonded {
-	use avail_rust::{
-		error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::NominationPoolsEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -242,10 +231,8 @@ mod withdraw_unbonded {
 
 mod set_commission {
 	use avail_rust::{
-		account,
-		error::ClientError,
+		prelude::*,
 		transactions::{nom_pools::NewCommission, NominationPoolsEvents},
-		Keypair, Perbill, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -281,7 +268,7 @@ mod set_commission {
 }
 
 mod set_metadata {
-	use avail_rust::{error::ClientError, Keypair, SecretUri, SDK};
+	use avail_rust::prelude::*;
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -305,9 +292,8 @@ mod set_metadata {
 
 mod set_state {
 	use avail_rust::{
-		error::ClientError,
+		prelude::*,
 		transactions::{nom_pools::State, NominationPoolsEvents},
-		Keypair, SecretUri, SDK,
 	};
 	use core::str::FromStr;
 
@@ -334,9 +320,7 @@ mod set_state {
 }
 
 mod set_claim_permission {
-	use avail_rust::{
-		error::ClientError, transactions::nom_pools::Permission, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::nom_pools::Permission};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -358,9 +342,7 @@ mod set_claim_permission {
 }
 
 mod nominate {
-	use avail_rust::{
-		account, error::ClientError, transactions::NominationPoolsCalls, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::NominationPoolsCalls};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -391,7 +373,7 @@ mod nominate {
 }
 
 mod chill {
-	use avail_rust::{error::ClientError, Keypair, SecretUri, SDK};
+	use avail_rust::prelude::*;
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -413,9 +395,7 @@ mod chill {
 }
 
 mod claim_payout {
-	use avail_rust::{
-		error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::NominationPoolsEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -439,9 +419,7 @@ mod claim_payout {
 }
 
 mod claim_payout_other {
-	use avail_rust::{
-		account, error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::NominationPoolsEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -467,9 +445,7 @@ mod claim_payout_other {
 }
 
 mod claim_commission {
-	use avail_rust::{
-		error::ClientError, transactions::NominationPoolsEvents, Keypair, SecretUri, SDK,
-	};
+	use avail_rust::{prelude::*, transactions::NominationPoolsEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -495,7 +471,7 @@ mod claim_commission {
 }
 
 mod payout_stakers {
-	use avail_rust::{account, avail, error::ClientError, Keypair, SecretUri, SDK};
+	use avail_rust::prelude::*;
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
