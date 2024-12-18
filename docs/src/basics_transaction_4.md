@@ -19,6 +19,13 @@ Here is just a sneak peak on the events and block api that we offer.
 {{#include ./../../examples/docs/basics_4/main.rs:block}}
 ```
 
+## Transaction with custom payload
+Transaction interface can be created using custom payload.
+
+```rs
+{{#include ./../../examples/docs/basics_4/main.rs:custompayload}}
+```
+
 ## Source Code 
 ```rs
 {{#include ./../../examples/docs/basics_4/main.rs}}

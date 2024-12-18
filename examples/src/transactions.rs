@@ -40,6 +40,17 @@ pub async fn run() -> Result<(), ClientError> {
 		}
 	}
 
+	// Transaction object can be used with custom payload.
+	// ! Check Transaction 1(basics_1) or Transaction 2(basics_2) example for custom payload. !
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let payload = avail_rust::avail::tx()
+		.balances()
+		.transfer_keep_alive(dest.into(), SDK::one_avail());
+	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
+	let tx_details = tx.execute_and_watch_inclusion(&account, None).await?;
+	// Checking if the transaction was successful
+	tx_details.is_successful(&sdk.online_client)?;
+
 	Ok(())
 }
 
