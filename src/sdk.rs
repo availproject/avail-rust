@@ -83,6 +83,10 @@ impl SDK {
 	pub fn mainnet_endpoint() -> &'static str {
 		"wss://mainnet-rpc.avail.so/ws"
 	}
+
+	pub fn mainnet_http_endpoint() -> &'static str {
+		"https://mainnet-rpc.avail.so/rpc"
+	}
 }
 
 #[cfg(feature = "native")]

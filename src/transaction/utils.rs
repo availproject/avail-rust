@@ -60,7 +60,7 @@ where
 		.build(online_client, rpc_client, &account_id)
 		.await?;
 
-	let params = options.build(rpc_client).await?;
+	let params = options.build().await?;
 
 	sign_and_send_raw_params(online_client, account, call, params).await
 }
@@ -190,7 +190,7 @@ where
 
 	let mut retry_count = retry_count.unwrap_or(0);
 	loop {
-		let params = options.build(rpc_client).await?;
+		let params = options.build().await?;
 		let tx_hash = sign_and_send_raw_params(online_client, account, call, params).await?;
 		let result = watch(online_client, tx_hash, wait_for, block_timeout).await;
 		let error = match result {
@@ -234,7 +234,7 @@ where
 		.build(online_client, rpc_client, &account_id)
 		.await?;
 
-	let params = options.build(rpc_client).await?;
+	let params = options.build().await?;
 
 	http_sign_and_send_raw_params(online_client, rpc_client, account, call, params).await
 }
@@ -369,7 +369,7 @@ where
 	let mut retry_count = retry_count.unwrap_or(0);
 	let sleep_duration = sleep_duration.unwrap_or_else(|| Duration::from_secs(3));
 	loop {
-		let params = options.build(rpc_client).await?;
+		let params = options.build().await?;
 		let tx_hash =
 			http_sign_and_send_raw_params(online_client, rpc_client, account, call, params).await?;
 		let result = http_watch(

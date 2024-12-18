@@ -1,5 +1,6 @@
 mod account_nonce;
 mod batch;
+mod block;
 mod custom_rpc_connection;
 mod data_submission;
 mod events;
@@ -7,6 +8,7 @@ mod http_rpc_connection;
 mod rpc;
 mod storage;
 mod transaction_options;
+mod transaction_payment;
 mod transactions;
 mod tx_interface;
 mod validator;
@@ -18,6 +20,8 @@ async fn main() -> Result<(), ClientError> {
 	SDK::enable_logging();
 
 	account_nonce::run().await?;
+	transaction_payment::run().await?;
+	block::run().await?;
 	batch::run().await?;
 	custom_rpc_connection::run().await?;
 	data_submission::run().await?;

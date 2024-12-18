@@ -25,7 +25,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let params = Options::new()
 		.build(&sdk.online_client, &sdk.rpc_client, &account_id)
 		.await?
-		.build(&sdk.rpc_client)
+		.build()
 		.await?;
 	let signed_call = sdk
 		.online_client
@@ -229,7 +229,7 @@ pub async fn run() -> Result<(), ClientError> {
 		.build(&sdk.online_client, &sdk.rpc_client, &account)
 		.await?;
 
-	let params = populated_options.build(&sdk.rpc_client).await?;
+	let params = populated_options.build().await?;
 	let tx = sdk
 		.online_client
 		.tx()

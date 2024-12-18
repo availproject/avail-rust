@@ -1,7 +1,6 @@
 mod api_dev;
 mod config;
 mod from_substrate;
-mod sdk;
 
 #[cfg(feature = "native")]
 pub mod http;
@@ -12,12 +11,15 @@ pub mod block;
 pub mod error;
 pub mod primitives;
 pub mod rpc;
+pub mod sdk;
 pub mod transaction;
 pub mod transactions;
 pub mod utils;
 
 pub use api_dev::api as avail;
-pub use avail::runtime_types::sp_arithmetic::per_things::Perbill;
+pub use avail::runtime_types::{
+	bounded_collections::bounded_vec::BoundedVec, sp_arithmetic::per_things::Perbill,
+};
 pub use avail_core;
 pub use block::Block;
 pub use config::*;

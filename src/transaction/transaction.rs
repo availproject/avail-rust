@@ -112,7 +112,7 @@ where
 			.build(&self.online_client, &self.rpc_client, &account_id)
 			.await?;
 
-		let params = options.build(&self.rpc_client).await?;
+		let params = options.build().await?;
 		let tx = self
 			.online_client
 			.tx()
@@ -133,7 +133,7 @@ where
 			.build(&self.online_client, &self.rpc_client, &account_id)
 			.await?;
 
-		let params = options.build(&self.rpc_client).await?;
+		let params = options.build().await?;
 		let tx = self
 			.online_client
 			.tx()

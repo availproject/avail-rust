@@ -117,8 +117,10 @@ impl Block {
 		transaction_by_app_id_static(&self.transactions, app_id)
 	}
 
-	pub fn transaction_hash_to_index(&self, tx_hash: H256) -> Vec<u32> {
+	pub fn transaction_hash_to_index(&self, tx_hash: H256) -> Option<u32> {
 		transaction_hash_to_index(&self.transactions, tx_hash)
+			.first()
+			.cloned()
 	}
 
 	pub fn data_submissions_all(&self) -> Vec<DataSubmission> {

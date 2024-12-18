@@ -76,3 +76,9 @@ impl From<serde_json::Error> for ClientError {
 		Self::SerdeJson(value)
 	}
 }
+
+impl From<TransactionExecutionError> for ClientError {
+	fn from(value: TransactionExecutionError) -> Self {
+		Self::TransactionExecution(value)
+	}
+}

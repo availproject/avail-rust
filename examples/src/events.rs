@@ -21,9 +21,9 @@ pub async fn run() -> Result<(), ClientError> {
 		);
 	}
 
-	// find_first, find_last_event, find_event
-	let event = res.events.find_first::<avail::balances::events::Transfer>();
-	let Some(event) = event.ok().flatten() else {
+	// find_first_event, find_last_event, find_event
+	let event = res.find_first_event::<avail::balances::events::Transfer>();
+	let Some(event) = event else {
 		return Ok(());
 	};
 

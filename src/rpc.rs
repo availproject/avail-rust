@@ -2,10 +2,9 @@ use crate::{
 	avail::runtime_types::frame_system::limits::BlockLength,
 	error::ClientError,
 	from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState},
-	utils, ABlockDetailsRPC, AvailHeader, BlockHash, BlockNumber, Cell, GDataProof, GRow,
+	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, GDataProof, GRow, H256,
 };
 use avail_core::data_proof::ProofResponse;
-use primitive_types::H256;
 use subxt::{
 	backend::{
 		legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
@@ -23,7 +22,7 @@ pub mod payment {
 	pub async fn query_fee_details(
 		client: &RpcClient,
 		extrinsic: Bytes,
-		at: Option<BlockHash>,
+		at: Option<H256>,
 	) -> Result<FeeDetails, ClientError> {
 		let params = rpc_params![extrinsic, at];
 		let value = client.request("payment_queryFeeDetails", params).await?;
@@ -33,7 +32,7 @@ pub mod payment {
 	pub async fn query_info(
 		client: &RpcClient,
 		extrinsic: Bytes,
-		at: Option<BlockHash>,
+		at: Option<H256>,
 	) -> Result<RuntimeDispatchInfo, ClientError> {
 		let params = rpc_params![extrinsic, at];
 		let value = client.request("payment_queryInfo", params).await?;
@@ -126,7 +125,7 @@ pub mod chain {
 
 	pub async fn get_block(
 		client: &RpcClient,
-		at: Option<BlockHash>,
+		at: Option<H256>,
 	) -> Result<ABlockDetailsRPC, ClientError> {
 		let params = rpc_params![at];
 		let value = client.request("chain_getBlock", params).await?;
@@ -136,13 +135,13 @@ pub mod chain {
 	pub async fn get_block_hash(
 		client: &RpcClient,
 		block_number: Option<BlockNumber>,
-	) -> Result<BlockHash, ClientError> {
+	) -> Result<H256, ClientError> {
 		let params = rpc_params![block_number];
 		let value = client.request("chain_getBlockHash", params).await?;
 		Ok(value)
 	}
 
-	pub async fn get_finalized_head(client: &RpcClient) -> Result<BlockHash, ClientError> {
+	pub async fn get_finalized_head(client: &RpcClient) -> Result<H256, ClientError> {
 		let params = rpc_params![];
 		let value = client.request("chain_getFinalizedHead", params).await?;
 		Ok(value)
@@ -150,7 +149,7 @@ pub mod chain {
 
 	pub async fn get_header(
 		client: &RpcClient,
-		at: Option<BlockHash>,
+		at: Option<H256>,
 	) -> Result<AvailHeader, ClientError> {
 		let params = rpc_params![at];
 		let value = client.request("chain_getHeader", params).await?;
@@ -184,7 +183,7 @@ pub mod state {
 
 	pub async fn get_runtime_version(
 		client: &RpcClient,
-		at: Option<BlockHash>,
+		at: Option<H256>,
 	) -> Result<RuntimeVersion, ClientError> {
 		let params = rpc_params![at];
 		let value = client.request("state_getRuntimeVersion", params).await?;
@@ -197,7 +196,7 @@ pub mod kate {
 
 	pub async fn block_length(
 		client: &RpcClient,
-		at: Option<BlockHash>,
+		at: Option<H256>,
 	) -> Result<BlockLength, ClientError> {
 		let params = rpc_params![at];
 		let value = client.request("kate_blockLength", params).await?;
@@ -207,7 +206,7 @@ pub mod kate {
 	pub async fn query_data_proof(
 		client: &RpcClient,
 		transaction_index: u32,
-		at: Option<BlockHash>,
+		at: Option<H256>,
 	) -> Result<ProofResponse, ClientError> {
 		let params = rpc_params![transaction_index, at];
 		let value = client.request("kate_queryDataProof", params).await?;
@@ -217,7 +216,7 @@ pub mod kate {
 	pub async fn query_proof(
 		client: &RpcClient,
 		cells: Vec<Cell>,
-		at: Option<BlockHash>,
+		at: Option<H256>,
 	) -> Result<Vec<GDataProof>, ClientError> {
 		let params = rpc_params![cells, at];
 		let value = client.request("kate_queryProof", params).await?;
@@ -227,7 +226,7 @@ pub mod kate {
 	pub async fn query_rows(
 		client: &RpcClient,
 		rows: Vec<u32>,
-		at: Option<BlockHash>,
+		at: Option<H256>,
 	) -> Result<Vec<GRow>, ClientError> {
 		let params = rpc_params![rows, at];
 		let value = client.request("kate_queryRows", params).await?;
