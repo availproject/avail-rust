@@ -1,0 +1,2372 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Avail Rust SDK Examples</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="custom.css">
+
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Avail Rust SDK Examples</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="basics"><a class="header" href="#basics">Basics</a></h1>
+<p>The goal of this guide is to learn how to use subxt and then in a iterative way enhance and tidy the code using avail-rust SDK.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="transaction---1"><a class="header" href="#transaction---1">Transaction - 1</a></h1>
+<p>Every transaction consists of the following parts:</p>
+<ul>
+<li>Signature</li>
+<li>Payload</li>
+<li>Transaction Parameters</li>
+</ul>
+<p>The Signature defines who is accountable and who's funds will be taken in order to pay for transaction execution.<br />
+The Payload is the function (together with the data) that will be executed.<br />
+The Transaction Parameters define additional information about our transaction. Here we would say how much tip we want to give, what nonce to use, etc.</p>
+<p>In order for our transaction to be executed we need the following parts:</p>
+<ul>
+<li>Establish WebSocket or HTTP connection with a network</li>
+<li>Way to submit a transaction</li>
+<li>Way to check if that transaction was successfully included</li>
+</ul>
+<h2 id="setting-up-the-stage"><a class="header" href="#setting-up-the-stage">Setting up the stage</a></h2>
+<p>Our initial setup will have nothing more than the bare minimum to compile our code.<br />
+Most of the types that we need are included in the <code>prelude</code> import collection but because we are not going to use any of it (for now) we will have to manually import modules.</p>
+<p>All the future code that we will write will go inside the <code>main</code> function.</p>
+<pre><code class="language-rs">use avail_rust::error::ClientError;
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;(), ClientError&gt; {
+    // Code goes here
+
+    Ok(())
+}
+</code></pre>
+<h2 id="connection"><a class="header" href="#connection">Connection</a></h2>
+<p>The first thing that we need to do is to establish a connection with an existing network. For the sake of brevity, we will cover only how to do it using websockets but you can find in other examples on how to do it either using HTTP or a custom solution.</p>
+<pre><code class="language-rs">	use avail_rust::{
+		subxt::backend::rpc::{
+			reconnecting_rpc_client::RpcClient as ReconnectingRpcClient, RpcClient,
+		},
+		AOnlineClient,
+	};
+
+	let endpoint = "ws://127.0.0.1:9944";
+	let rpc_client = ReconnectingRpcClient::builder().build(endpoint).await;
+	let rpc_client = rpc_client.map_err(|e| e.to_string())?;
+
+	let rpc_client = RpcClient::new(rpc_client);
+	let online_client = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
+</code></pre>
+<p><code>rpc_client</code> is a low level API that allows us to communicate with our network via rpc calls.<br />
+<code>online_client</code> is a higher level API that provides many helper functions and abstractions.</p>
+<h2 id="accounts"><a class="header" href="#accounts">Accounts</a></h2>
+<blockquote>
+<p>An account represents an identity—usually of a person or an organization—that is capable of making transactions or holding funds.
+In general, every account has an owner who possesses a public and private key pair. The private key is a cryptographically-secure sequence of randomly-generated numbers. For human readability, the private key generates a random sequence of words called a secret seed phrase or mnemonic.<br />
+<a href="https://docs.substrate.io/learn/accounts-addresses-keys/">Substrate - Accounts, Addresses, Keys</a></p>
+</blockquote>
+<p>To create an account we paste our secret seed as an argument to <code>SecretUri</code> and then pass that <code>Keypair</code>. In this case, we will use the default development account named <code>Alice</code>.<br />
+In production you would pass your secret seed via env variable or read it from file.</p>
+<p>For Bob use <code>//Bob</code>, for Eve use <code>//Eve</code>, etc.</p>
+<pre><code class="language-rs">	use avail_rust::subxt_signer::{sr25519::Keypair, SecretUri};
+	use std::str::FromStr;
+
+	let secret_uri = SecretUri::from_str("//Alice")?;
+	let account = Keypair::from_uri(&amp;secret_uri)?;
+	let account_id = account.public_key().to_account_id();
+	// 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+	let _account_address = account_id.to_string();
+</code></pre>
+<h2 id="payload"><a class="header" href="#payload">Payload</a></h2>
+<p>Payload defines what operation will be executed on the chain. Payload consists of three components:</p>
+<ul>
+<li>Pallet Name</li>
+<li>Call Name</li>
+<li>Call Data</li>
+</ul>
+<p>What you need to know is that all the payloads are defines in the following path <code>avail_rust::avail::*::calls::types::**;</code> where <code>*</code> represents the pallet name and <code>**</code> represents the call type.<br />
+For more examples go to the next page.</p>
+<pre><code class="language-rs">	use avail_rust::{
+		avail::runtime_types::bounded_collections::bounded_vec::BoundedVec,
+		subxt::{blocks::StaticExtrinsic, ext::subxt_core::tx::payload::StaticPayload},
+	};
+
+	use avail_rust::avail::data_availability::calls::types::SubmitData;
+	let pallet_name = SubmitData::PALLET;
+	let call_name = SubmitData::CALL;
+
+	let data = String::from("My Data").into_bytes();
+	let data = BoundedVec(data);
+	let call_data = SubmitData { data };
+
+	let payload = StaticPayload::new(pallet_name, call_name, call_data);
+</code></pre>
+<h2 id="transaction-parameters"><a class="header" href="#transaction-parameters">Transaction Parameters</a></h2>
+<p>There are four transaction parameters:</p>
+<ul>
+<li>nonce</li>
+<li>app_id</li>
+<li>tip</li>
+<li>mortality</li>
+</ul>
+<p>Manually building the transaction parameters is a tedious and convoluted job so here we are using a helper object to do that for us.<br />
+With the <code>Options</code> object we can set what parameters we want to use and with calling <code>build()</code> it populates all the non-set params with default values.<br />
+Here are the default values for all the parameters:</p>
+<ul>
+<li>nonce: It uses the best block nonce and it increments it if there are existing transaction in the tx pool with the same nonce</li>
+<li>app_id: 0</li>
+<li>tip: 0</li>
+<li>mortality: The transaction will be alive for 32 blocks starting from current best block hash(height)</li>
+</ul>
+<pre><code class="language-rs">	use avail_rust::Options;
+	let options = Options::new()
+		.build(&amp;online_client, &amp;rpc_client, &amp;account_id)
+		.await?;
+	let params = options.build().await?;
+</code></pre>
+<h2 id="signature"><a class="header" href="#signature">Signature</a></h2>
+<p>Adding signature to an existing payload and transaction params allows us to build an transaction that is ready to be submitted.</p>
+<pre><code class="language-rs">	let submittable_tx = online_client
+		.tx()
+		.create_signed(&amp;payload, &amp;account, params)
+		.await?;
+</code></pre>
+<h2 id="submission"><a class="header" href="#submission">Submission</a></h2>
+<p>Submission is done by calling <code>.submit()</code>. There is another method available as well, <code>.submit_and_watch()</code>, but that one isn't working correctly.<br />
+Submitting a transaction yields back the transaction hash.</p>
+<pre><code class="language-rs">	let tx_hash = submittable_tx.submit().await?;
+</code></pre>
+<h2 id="watcher"><a class="header" href="#watcher">Watcher</a></h2>
+<p>Just because we have submitted our transaction it doesn't mean it was successful or  that it got executed at all.<br />
+We need to implement a <code>watcher</code> that will check the next N blocks to see if our tx hash is included in the block.</p>
+<p>Once found, we need to search for the <code>ExtrinsicSuccess</code> event in order to determine if the transaction was successful or not.</p>
+<pre><code class="language-rs">	use avail_rust::avail::system::events::ExtrinsicSuccess;
+	let mut block_sub = online_client.blocks().subscribe_all().await?;
+	while let Some(block) = block_sub.next().await {
+		let block = block?;
+		let block_txs = block.extrinsics().await?;
+		let tx = block_txs.iter().find(|tx| tx.hash() == tx_hash);
+		if let Some(tx) = tx {
+			println!("Transaction was found.");
+			println!("Block Hash: {:?}", block.hash()); // Block Hash: 0x61415b6012005665bac0cf8575a94e509d079a762be2ba6a71a04633efd01c1b
+			println!("Block Number: {:?}", block.number()); // Block Number: 200
+			println!("Tx Hash: {:?}", tx.hash()); // Tx Hash: 0x01651a93d55bde0f258504498d4f2164416df5331794d9c905d4c8711d9537ef
+			println!("Tx Index: {:?}", tx.index()); // Tx Index: 1
+
+			let events = tx.events().await?;
+			println!("Event count: {}", events.iter().count()); // Event count: 7
+			if events
+				.find_first::&lt;ExtrinsicSuccess&gt;()
+				.ok()
+				.flatten()
+				.is_some()
+			{
+				println!("Transaction was successful");
+			}
+
+			break;
+		}
+	}
+</code></pre>
+<h2 id="source-code"><a class="header" href="#source-code">Source Code</a></h2>
+<pre><code class="language-rs">use avail_rust::error::ClientError;
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;(), ClientError&gt; {
+	// RPC Connection
+	// ANCHOR: connection
+	use avail_rust::{
+		subxt::backend::rpc::{
+			reconnecting_rpc_client::RpcClient as ReconnectingRpcClient, RpcClient,
+		},
+		AOnlineClient,
+	};
+
+	let endpoint = "ws://127.0.0.1:9944";
+	let rpc_client = ReconnectingRpcClient::builder().build(endpoint).await;
+	let rpc_client = rpc_client.map_err(|e| e.to_string())?;
+
+	let rpc_client = RpcClient::new(rpc_client);
+	let online_client = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
+	// ANCHOR_END: connection
+
+	// Accounts
+	// ANCHOR: accounts
+	use avail_rust::subxt_signer::{sr25519::Keypair, SecretUri};
+	use std::str::FromStr;
+
+	let secret_uri = SecretUri::from_str("//Alice")?;
+	let account = Keypair::from_uri(&amp;secret_uri)?;
+	let account_id = account.public_key().to_account_id();
+	// 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+	let _account_address = account_id.to_string();
+	// ANCHOR_END: accounts
+
+	// Payload
+	// ANCHOR: payload
+	use avail_rust::{
+		avail::runtime_types::bounded_collections::bounded_vec::BoundedVec,
+		subxt::{blocks::StaticExtrinsic, ext::subxt_core::tx::payload::StaticPayload},
+	};
+
+	use avail_rust::avail::data_availability::calls::types::SubmitData;
+	let pallet_name = SubmitData::PALLET;
+	let call_name = SubmitData::CALL;
+
+	let data = String::from("My Data").into_bytes();
+	let data = BoundedVec(data);
+	let call_data = SubmitData { data };
+
+	let payload = StaticPayload::new(pallet_name, call_name, call_data);
+	// ANCHOR_END: payload
+
+	// Transaction Parameters
+	// ANCHOR: params
+	use avail_rust::Options;
+	let options = Options::new()
+		.build(&amp;online_client, &amp;rpc_client, &amp;account_id)
+		.await?;
+	let params = options.build().await?;
+	// ANCHOR_END: params
+
+	// Signature
+	// ANCHOR: signature
+	let submittable_tx = online_client
+		.tx()
+		.create_signed(&amp;payload, &amp;account, params)
+		.await?;
+	// ANCHOR_END: signature
+
+	// Submission
+	// ANCHOR: submission
+	let tx_hash = submittable_tx.submit().await?;
+	// ANCHOR_END: submission
+
+	// Watcher
+	// ANCHOR: watcher
+	use avail_rust::avail::system::events::ExtrinsicSuccess;
+	let mut block_sub = online_client.blocks().subscribe_all().await?;
+	while let Some(block) = block_sub.next().await {
+		let block = block?;
+		let block_txs = block.extrinsics().await?;
+		let tx = block_txs.iter().find(|tx| tx.hash() == tx_hash);
+		if let Some(tx) = tx {
+			println!("Transaction was found.");
+			println!("Block Hash: {:?}", block.hash()); // Block Hash: 0x61415b6012005665bac0cf8575a94e509d079a762be2ba6a71a04633efd01c1b
+			println!("Block Number: {:?}", block.number()); // Block Number: 200
+			println!("Tx Hash: {:?}", tx.hash()); // Tx Hash: 0x01651a93d55bde0f258504498d4f2164416df5331794d9c905d4c8711d9537ef
+			println!("Tx Index: {:?}", tx.index()); // Tx Index: 1
+
+			let events = tx.events().await?;
+			println!("Event count: {}", events.iter().count()); // Event count: 7
+			if events
+				.find_first::&lt;ExtrinsicSuccess&gt;()
+				.ok()
+				.flatten()
+				.is_some()
+			{
+				println!("Transaction was successful");
+			}
+
+			break;
+		}
+	}
+	// ANCHOR_END: watcher
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="transaction---11"><a class="header" href="#transaction---11">Transaction - 1.1</a></h1>
+<p>Here you can find additional examples on how to correctly construct the payload.</p>
+<pre><code class="language-rs">use avail_rust::{account::account_id_from_str, error::ClientError};
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;(), ClientError&gt; {
+	data_availability_create_key().await?;
+	balances_transfer_keep_alive().await?;
+	identity_set_identity().await?;
+
+	// Payload
+	Ok(())
+}
+
+async fn data_availability_create_key() -&gt; Result&lt;(), ClientError&gt; {
+	use avail_rust::{
+		avail::runtime_types::bounded_collections::bounded_vec::BoundedVec,
+		subxt::{blocks::StaticExtrinsic, ext::subxt_core::tx::payload::StaticPayload},
+	};
+
+	use avail_rust::avail::data_availability::calls::types::CreateApplicationKey;
+	let pallet_name = CreateApplicationKey::PALLET;
+	let call_name = CreateApplicationKey::CALL;
+
+	let key = String::from("My Data").into_bytes();
+	let key = BoundedVec(key);
+	let call_data = CreateApplicationKey { key };
+
+	let _payload = StaticPayload::new(pallet_name, call_name, call_data);
+
+	Ok(())
+}
+
+async fn balances_transfer_keep_alive() -&gt; Result&lt;(), ClientError&gt; {
+	use avail_rust::{
+		subxt::{blocks::StaticExtrinsic, ext::subxt_core::tx::payload::StaticPayload},
+		SDK,
+	};
+
+	use avail_rust::avail::balances::calls::types::TransferKeepAlive;
+	let pallet_name = TransferKeepAlive::PALLET;
+	let call_name = TransferKeepAlive::CALL;
+
+	let dest = account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+	let value = SDK::one_avail();
+	let call_data = TransferKeepAlive {
+		dest: dest.into(),
+		value,
+	};
+
+	let _payload = StaticPayload::new(pallet_name, call_name, call_data);
+
+	Ok(())
+}
+
+async fn identity_set_identity() -&gt; Result&lt;(), ClientError&gt; {
+	use avail_rust::subxt::{blocks::StaticExtrinsic, ext::subxt_core::tx::payload::StaticPayload};
+
+	use avail_rust::avail::{
+		identity::calls::types::{set_identity::Info, SetIdentity},
+		runtime_types::{
+			bounded_collections::bounded_vec::BoundedVec, pallet_identity::types::Data,
+		},
+	};
+	let pallet_name = SetIdentity::PALLET;
+	let call_name = SetIdentity::CALL;
+
+	let display_name: [u8; 7] = String::from("My Name").into_bytes().try_into().unwrap();
+	let info = Info {
+		additional: BoundedVec(vec![(Data::None, Data::None)]),
+		display: Data::Raw7(display_name),
+		legal: Data::None,
+		web: Data::None,
+		riot: Data::None,
+		email: Data::None,
+		pgp_fingerprint: None,
+		image: Data::None,
+		twitter: Data::None,
+	};
+
+	let call_data = SetIdentity {
+		info: Box::new(info),
+	};
+
+	let _payload = StaticPayload::new(pallet_name, call_name, call_data);
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="transaction---2"><a class="header" href="#transaction---2">Transaction - 2</a></h1>
+<p>With everything in place, we can slowly replace and tidy up our code.</p>
+<h2 id="connection-1"><a class="header" href="#connection-1">Connection</a></h2>
+<p>The first change that we have does was to simplify the creation of online and rpc client. Instead of manually creating them there is an convenient helper function that will set it up for us.</p>
+<pre><code class="language-rs">	use avail_rust::sdk::reconnecting_api;
+
+	let endpoint = "ws://127.0.0.1:9944";
+	let (online_client, rpc_client) = reconnecting_api(endpoint).await?;
+</code></pre>
+<p>The  <code>reconnecting_api</code> create an rpc with the following parameters:</p>
+<pre><code class="language-rs">ReconnectingRpcClient::builder().retry_policy(ExponentialBackoff::from_millis(1000).max_delay(Duration::from_secs(3)).take(3))
+</code></pre>
+<h2 id="accounts-1"><a class="header" href="#accounts-1">Accounts</a></h2>
+<p>There are already premade accounts available in the SDK interface. There is one as well for Bob, Eve, and Charlie.</p>
+<pre><code class="language-rs">	use avail_rust::SDK;
+
+	let account = SDK::alice()?;
+</code></pre>
+<h2 id="payload-1"><a class="header" href="#payload-1">Payload</a></h2>
+<p>Manually passing the pallet name, call name and call data is error prone and that's why there is an better way.<br />
+All the payloads are defined in the following path <code>avail_rust::avail::tx().*().**(data)</code> where <code>*</code> is the pallet name and <code>**</code> is the call type.<br />
+For more examples go to the next page.</p>
+<pre><code class="language-rs">	use avail_rust::avail::runtime_types::bounded_collections::bounded_vec::BoundedVec;
+
+	let data = String::from("My Data").into_bytes();
+	let data = BoundedVec(data);
+	let payload = avail_rust::avail::tx()
+		.data_availability()
+		.submit_data(data);
+</code></pre>
+<h2 id="transaction-parameters-signature-submission"><a class="header" href="#transaction-parameters-signature-submission">Transaction Parameters, Signature, Submission</a></h2>
+<p>Transaction parameters, signature, and submission can be combined all into one single call.<br />
+Because we are using the default transaction parameters, we are passing <code>None</code> as the argument. If we wish to alter the parameters, we would pass an optional <code>Options</code> object.</p>
+<pre><code class="language-rs">	use avail_rust::transaction::utils::sign_and_send;
+
+	let tx_hash = sign_and_send(&amp;online_client, &amp;rpc_client, &amp;account, &amp;payload, None).await?;
+</code></pre>
+<h2 id="watcher-1"><a class="header" href="#watcher-1">Watcher</a></h2>
+<p>Just like the rest, the watching part can be abstracted as well.<br />
+Finding if a transaction was successful or not is now just a matter of calling <code>is_successful()</code>. If the transaction failed, it will return an error with the description on why it failed.<br />
+The last arguments, <code>Some(3)</code>, tells the watcher to read the next 4 (this is not a typo, it's X + 1) blocks and if none of the contains the target transaction hash it will return an error.</p>
+<pre><code class="language-rs">	use avail_rust::{transaction::utils::watch, WaitFor};
+
+	let tx_details = watch(&amp;online_client, tx_hash, WaitFor::BlockInclusion, Some(3)).await?;
+	println!("Transaction was found.");
+	println!("Block Hash: {:?}", tx_details.block_hash); // Block Hash: 0x61415b6012005665bac0cf8575a94e509d079a762be2ba6a71a04633efd01c1b
+	println!("Block Number: {:?}", tx_details.block_number); // Block Number: 200
+	println!("Tx Hash: {:?}", tx_details.tx_hash); // Tx Hash: 0x01651a93d55bde0f258504498d4f2164416df5331794d9c905d4c8711d9537ef
+	println!("Tx Index: {:?}", tx_details.tx_index); // Tx Index: 1
+
+	println!("Event count: {}", tx_details.events.iter().count()); // Event count: 7
+	tx_details.is_successful(&amp;online_client)?;
+</code></pre>
+<h2 id="source-code-1"><a class="header" href="#source-code-1">Source Code</a></h2>
+<pre><code class="language-rs">use avail_rust::error::ClientError;
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;(), ClientError&gt; {
+	// RPC Connection
+	// ANCHOR: connection
+	use avail_rust::sdk::reconnecting_api;
+
+	let endpoint = "ws://127.0.0.1:9944";
+	let (online_client, rpc_client) = reconnecting_api(endpoint).await?;
+	// ANCHOR_END: connection
+
+	// Accounts
+	// ANCHOR: accounts
+	use avail_rust::SDK;
+
+	let account = SDK::alice()?;
+	// ANCHOR_END: accounts
+
+	// Payload
+	// ANCHOR: payload
+	use avail_rust::avail::runtime_types::bounded_collections::bounded_vec::BoundedVec;
+
+	let data = String::from("My Data").into_bytes();
+	let data = BoundedVec(data);
+	let payload = avail_rust::avail::tx()
+		.data_availability()
+		.submit_data(data);
+	// ANCHOR_END: payload
+
+	// Transaction Params, Signature, Submission
+	// ANCHOR: signsend
+	use avail_rust::transaction::utils::sign_and_send;
+
+	let tx_hash = sign_and_send(&amp;online_client, &amp;rpc_client, &amp;account, &amp;payload, None).await?;
+	// ANCHOR_END: signsend
+
+	// Watcher
+	// ANCHOR: watcher
+	use avail_rust::{transaction::utils::watch, WaitFor};
+
+	let tx_details = watch(&amp;online_client, tx_hash, WaitFor::BlockInclusion, Some(3)).await?;
+	println!("Transaction was found.");
+	println!("Block Hash: {:?}", tx_details.block_hash); // Block Hash: 0x61415b6012005665bac0cf8575a94e509d079a762be2ba6a71a04633efd01c1b
+	println!("Block Number: {:?}", tx_details.block_number); // Block Number: 200
+	println!("Tx Hash: {:?}", tx_details.tx_hash); // Tx Hash: 0x01651a93d55bde0f258504498d4f2164416df5331794d9c905d4c8711d9537ef
+	println!("Tx Index: {:?}", tx_details.tx_index); // Tx Index: 1
+
+	println!("Event count: {}", tx_details.events.iter().count()); // Event count: 7
+	tx_details.is_successful(&amp;online_client)?;
+	// ANCHOR_END: watcher
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="transaction---21"><a class="header" href="#transaction---21">Transaction - 2.1</a></h1>
+<p>Here you can find additional examples on how to correctly construct the payload.</p>
+<pre><code class="language-rs">use avail_rust::error::ClientError;
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;(), ClientError&gt; {
+	data_availability_create_key().await?;
+	balances_transfer_keep_alive().await?;
+	identity_set_identity().await?;
+
+	// Payload
+	Ok(())
+}
+
+async fn data_availability_create_key() -&gt; Result&lt;(), ClientError&gt; {
+	let key = String::from("My Data").into_bytes();
+	let key = avail_rust::BoundedVec(key);
+	let _payload = avail_rust::avail::tx()
+		.data_availability()
+		.create_application_key(key);
+	Ok(())
+}
+
+async fn balances_transfer_keep_alive() -&gt; Result&lt;(), ClientError&gt; {
+	let dest = avail_rust::account::account_id_from_str(
+		"5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+	)?; // Bob
+	let value = avail_rust::SDK::one_avail();
+	let _payload = avail_rust::avail::tx()
+		.balances()
+		.transfer_keep_alive(dest.into(), value);
+
+	Ok(())
+}
+
+async fn identity_set_identity() -&gt; Result&lt;(), ClientError&gt; {
+	use avail_rust::avail::{
+		identity::calls::types::set_identity::Info,
+		runtime_types::{
+			bounded_collections::bounded_vec::BoundedVec, pallet_identity::types::Data,
+		},
+	};
+
+	let display_name: [u8; 7] = String::from("My Name").into_bytes().try_into().unwrap();
+	let info = Info {
+		additional: BoundedVec(vec![(Data::None, Data::None)]),
+		display: Data::Raw7(display_name),
+		legal: Data::None,
+		web: Data::None,
+		riot: Data::None,
+		email: Data::None,
+		pgp_fingerprint: None,
+		image: Data::None,
+		twitter: Data::None,
+	};
+
+	let _payload = avail_rust::avail::tx().identity().set_identity(info);
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="transaction---3"><a class="header" href="#transaction---3">Transaction - 3</a></h1>
+<p>We are not done yet.</p>
+<h2 id="setting-up-the-stage-1"><a class="header" href="#setting-up-the-stage-1">Setting up the stage</a></h2>
+<p>Here we are using the prelude import to import all the necessary type declarations.</p>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;(), ClientError&gt; {
+    // Code goes here
+
+    Ok(())
+}
+</code></pre>
+<h2 id="connection-2"><a class="header" href="#connection-2">Connection</a></h2>
+<p>Both online_client and rpc_client can be grouped together and now we are using a wrapper to get the local node endpoint instead of writing it manually.<br />
+Together with <code>local_endpoint</code> we have the following other endpoints:</p>
+<ul>
+<li><code>local_http_endpoint</code></li>
+<li><code>turing_endpoint</code></li>
+<li><code>turing_http_endpoint</code></li>
+<li><code>mainnet_endpoint</code></li>
+<li><code>mainnet_http_endpoint</code></li>
+</ul>
+<pre><code class="language-rs">	let sdk = SDK::new(SDK::local_endpoint()).await?;
+</code></pre>
+<p><code>new()</code> method will use a reconnecting websocket rpc. If just HTTP is needed then <code>new_http()</code> will do the trick otherwise for custom clients <code>new_custom(online_client: AOnlineClient, rpc_client: RpcClient)</code> can be used.</p>
+<h2 id="payload-2"><a class="header" href="#payload-2">Payload</a></h2>
+<p>Payload creation has been abstracted away and can now be accessed via <code>sdk.tx.*.**</code> path where <code>*</code> is pallet name and <code>**</code> is call name. Not all transaction have been abstracted away and for some you will still need to use the following path <code>avail_rust::avail::tx().*().**()</code>.</p>
+<pre><code class="language-rs">	let data = String::from("My Data").into_bytes();
+	let tx = sdk.tx.data_availability.submit_data(data);
+</code></pre>
+<p>The object that is returned by the interface has many different helper functions attach to it. Make sure to check them out.</p>
+<p>For some of them you will need to import either <code>avail_rust::transaction::WebSocket</code> or <code>avail_rust::transaction::HTTP</code> in order to get access to the desired <code>execute_*</code> call.<br />
+The prelude import automatically imports the <code>WebSocket</code> one and if that's not desired then you will need avoid prelude import and manually import all the type declarations.</p>
+<h2 id="transaction-parameters-signature-submission-watcher"><a class="header" href="#transaction-parameters-signature-submission-watcher">Transaction Parameters, Signature, Submission, Watcher</a></h2>
+<p>The watcher is now combined with transaction submission. We can now choose if we want to wait for block inclusion, block finalization, and or fire and forget.<br />
+If we choose to wait, the system will automatically resubmit our transaction in case it didn't found it the next X blocks by using the same transaction parameters.<br />
+WebSocket and HTTP interface differ here in types and implementation:</p>
+<ul>
+<li>WebSocket uses block subscription to fetch blocks.</li>
+<li>HTTP cannot use block subscription because that's a websocket features thus we are forced to fetch headers every N (set to 3 by default) seconds in order to know if a new block has been produced.</li>
+</ul>
+<p>The default 3 seconds (sleep_duration) for HTTP can be configured by calling <code>execute_and_watch</code> instead of <code>execute_and_watch_inclusion</code> or <code>execute_and_watch_finalization</code>.</p>
+<pre><code class="language-rs">	let tx_details = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	println!("Transaction was found.");
+	println!("Block Hash: {:?}", tx_details.block_hash); // Block Hash: 0x61415b6012005665bac0cf8575a94e509d079a762be2ba6a71a04633efd01c1b
+	println!("Block Number: {:?}", tx_details.block_number); // Block Number: 200
+	println!("Tx Hash: {:?}", tx_details.tx_hash); // Tx Hash: 0x01651a93d55bde0f258504498d4f2164416df5331794d9c905d4c8711d9537ef
+	println!("Tx Index: {:?}", tx_details.tx_index); // Tx Index: 1
+
+	println!("Event count: {}", tx_details.events.iter().count()); // Event count: 7
+	tx_details.is_successful(&amp;sdk.online_client)?;
+</code></pre>
+<h2 id="source-code-2"><a class="header" href="#source-code-2">Source Code</a></h2>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;(), ClientError&gt; {
+	// RPC Connection
+	// ANCHOR: connection
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	// ANCHOR_END: connection
+
+	// Accounts
+	let account = SDK::alice()?;
+
+	// Payload
+	// ANCHOR: payload
+	let data = String::from("My Data").into_bytes();
+	let tx = sdk.tx.data_availability.submit_data(data);
+	// ANCHOR_END: payload
+
+	// Transaction Params, Signature, Submission, Watcher
+	// ANCHOR: signsend
+	let tx_details = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	println!("Transaction was found.");
+	println!("Block Hash: {:?}", tx_details.block_hash); // Block Hash: 0x61415b6012005665bac0cf8575a94e509d079a762be2ba6a71a04633efd01c1b
+	println!("Block Number: {:?}", tx_details.block_number); // Block Number: 200
+	println!("Tx Hash: {:?}", tx_details.tx_hash); // Tx Hash: 0x01651a93d55bde0f258504498d4f2164416df5331794d9c905d4c8711d9537ef
+	println!("Tx Index: {:?}", tx_details.tx_index); // Tx Index: 1
+
+	println!("Event count: {}", tx_details.events.iter().count()); // Event count: 7
+	tx_details.is_successful(&amp;sdk.online_client)?;
+	// ANCHOR_END: signsend
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="transaction---4"><a class="header" href="#transaction---4">Transaction - 4</a></h1>
+<p>The SDK offer much more than just a couple of helper functions for transaction submission. To get a better understanding on what can be done, check all the other examples, especially the following ones:</p>
+<ul>
+<li><code>Data Submission</code> - This one is a must</li>
+<li><code>Block</code></li>
+<li><code>Transactions</code></li>
+<li><code>Events</code></li>
+</ul>
+<p>Not everything is shown in our examples. Open the SDK and take a look what interfaces are available.</p>
+<h2 id="events-and-block"><a class="header" href="#events-and-block">Events and Block</a></h2>
+<p>Here is just a sneak peak on the events and block api that we offer.</p>
+<pre><code class="language-rs">	use avail_rust::avail::data_availability::events::ApplicationKeyCreated;
+	let Some(event) = tx_details.find_first_event::&lt;ApplicationKeyCreated&gt;() else {
+		return Err("Failed to find event".into());
+	};
+	println!("App id: {}", event.id.0);
+</code></pre>
+<pre><code class="language-rs">	let block = Block::new(&amp;sdk.online_client, tx_details.block_hash).await?;
+	let tx_count = block.transactions.iter().count();
+	println!("Transaction count in a block: {}", tx_count);
+</code></pre>
+<h2 id="transaction-with-custom-payload"><a class="header" href="#transaction-with-custom-payload">Transaction with custom payload</a></h2>
+<p>Transaction interface can be created using custom payload.</p>
+<pre><code class="language-rs">	// ! Check Transaction 1(basics_1) or Transaction 2(basics_2) example for custom payload. !
+	let data = String::from("Data").into_bytes();
+	let data = BoundedVec(data);
+	let payload = avail_rust::avail::tx()
+		.data_availability()
+		.submit_data(data);
+	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
+	let tx_details = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	// Checking if the transaction was successful
+	tx_details.is_successful(&amp;sdk.online_client)?;
+</code></pre>
+<h2 id="source-code-3"><a class="header" href="#source-code-3">Source Code</a></h2>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;(), ClientError&gt; {
+	// RPC Connection
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	// Accounts
+	let account = SDK::alice()?;
+
+	// ANCHOR: success
+	let key = String::from("My Data").into_bytes();
+	let tx = sdk.tx.data_availability.create_application_key(key);
+	let tx_details = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	// Checking if the transaction was successful
+	tx_details.is_successful(&amp;sdk.online_client)?;
+	// ANCHOR_END: success
+
+	// Finding ApplicationKeyCreated event
+	// ANCHOR: event
+	use avail_rust::avail::data_availability::events::ApplicationKeyCreated;
+	let Some(event) = tx_details.find_first_event::&lt;ApplicationKeyCreated&gt;() else {
+		return Err("Failed to find event".into());
+	};
+	println!("App id: {}", event.id.0);
+	// ANCHOR_END: event
+
+	// Fetching block
+	// ANCHOR: block
+	let block = Block::new(&amp;sdk.online_client, tx_details.block_hash).await?;
+	let tx_count = block.transactions.iter().count();
+	println!("Transaction count in a block: {}", tx_count);
+	// ANCHOR_END: block
+
+	// Using custom payload with Transaction object
+	// ANCHOR: custompayload
+	// ! Check Transaction 1(basics_1) or Transaction 2(basics_2) example for custom payload. !
+	let data = String::from("Data").into_bytes();
+	let data = BoundedVec(data);
+	let payload = avail_rust::avail::tx()
+		.data_availability()
+		.submit_data(data);
+	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
+	let tx_details = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	// Checking if the transaction was successful
+	tx_details.is_successful(&amp;sdk.online_client)?;
+	// ANCHOR_END: custompayload
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="rpc-and-fee-details"><a class="header" href="#rpc-and-fee-details">RPC and Fee Details</a></h1>
+<pre><code class="language-rs">use avail_rust::{prelude::*, primitives::kate, utils};
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	// author_rotate_keys
+	let value = rpc::author::rotate_keys(&amp;sdk.rpc_client).await?;
+	let value = utils::deconstruct_session_keys(value)?;
+	dbg!(value);
+	/*	Output
+	SessionKeys {
+		babe: Public(...),
+		grandpa: Public(...),
+		im_online: Public(...),
+		authority_discovery: Public(...),
+	}
+	*/
+
+	// author_submit_extrinsic
+	let account = SDK::alice()?;
+	let account_id = account.public_key().to_account_id();
+	let call = avail::tx()
+		.data_availability()
+		.submit_data(BoundedVec(vec![0, 1, 2]));
+	let params = Options::new()
+		.build(&amp;sdk.online_client, &amp;sdk.rpc_client, &amp;account_id)
+		.await?
+		.build()
+		.await?;
+	let signed_call = sdk
+		.online_client
+		.tx()
+		.create_signed(&amp;call, &amp;account, params)
+		.await?;
+	let extrinsic = signed_call.encoded();
+	let value = rpc::author::submit_extrinsic(&amp;sdk.rpc_client, extrinsic).await?;
+	dbg!(value);
+	/*	Output
+		"0x56edc7516bb403f0d812f0f91dea5e36b46bbb31f7b69e78469652f74882377d"
+	*/
+
+	// chain_get_block
+	let value = rpc::chain::get_block(&amp;sdk.rpc_client, None).await?;
+	dbg!(value);
+	/*	Output
+	BlockDetails {
+		block: Block {
+			header: AvailHeader {
+				parent_hash: 0x4753c70a0652f50ee24f19ea402c1377ce5ab08fc5e0f801123e8116e5e1fcf8,
+				number: 495,
+				state_root: 0x22470c3402bee3cd95c10b9303e61019aaec0603cbfc197eca646c94ba9332f1,
+				extrinsics_root: 0x609ed0e14f3252c9f59ab59004ea458d7927a5bd81f241651634266b7098f415,
+				digest: Digest {...},
+				extension: V3(
+					HeaderExtension {
+						app_lookup: CompactDataLookup {
+							size: 0,
+							index: [],
+						},
+						commitment: KateCommitment {
+							rows: 0,
+							cols: 0,
+							commitment: [],
+							data_root: 0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5,
+						},
+					},
+				),
+			},
+			extrinsics: [...],
+		},
+		justifications: None,
+	}
+	*/
+
+	// chain_get_block_hash
+	let value = rpc::chain::get_block_hash(&amp;sdk.rpc_client, None).await?;
+	dbg!(value);
+	/*	Output
+		0xc4e0a9a2ef80ddc1d70c9946d8a6f86ca4b15053b39ba56709222f01ddc64561
+	*/
+
+	// chain_get_finalized_head
+	let value = rpc::chain::get_finalized_head(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+		0x2c896c9faae4e111f1fbeb955be5e999a328846969b59a7a7c64eadc4701122a
+	*/
+
+	// chain_get_header
+	let value = rpc::chain::get_header(&amp;sdk.rpc_client, None).await?;
+	dbg!(value);
+	/*	Output
+	AvailHeader {
+		parent_hash: 0x4753c70a0652f50ee24f19ea402c1377ce5ab08fc5e0f801123e8116e5e1fcf8,
+		number: 495,
+		state_root: 0x22470c3402bee3cd95c10b9303e61019aaec0603cbfc197eca646c94ba9332f1,
+		extrinsics_root: 0x609ed0e14f3252c9f59ab59004ea458d7927a5bd81f241651634266b7098f415,
+		digest: Digest {...},
+		extension: V3(
+			HeaderExtension {
+				app_lookup: CompactDataLookup {
+					size: 0,
+					index: [],
+				},
+				commitment: KateCommitment {
+					rows: 0,
+					cols: 0,
+					commitment: [],
+					data_root: 0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5,
+				},
+			},
+		),
+	}
+	*/
+
+	// system_account_next_index
+	let account = String::from("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
+	let value = rpc::system::account_next_index(&amp;sdk.rpc_client, account).await?;
+	dbg!(value);
+	/*	Output
+		2
+	*/
+
+	// system_chain
+	let value = rpc::system::chain(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+		"Avail Development Network"
+	*/
+
+	// system_chain_type
+	let value = rpc::system::chain_type(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+		"Development"
+	*/
+
+	// system_health
+	let value = rpc::system::health(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+	SystemHealth {
+		peers: 0,
+		is_syncing: false,
+		should_have_peers: false,
+	}
+	*/
+
+	// system_local_listen_addresses
+	let value = rpc::system::local_listen_addresses(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+	value = [
+		"/ip6/fe81::a234:6e32:1034:3c3b/tcp/30333/p2p/12D3KooWRajsCfp1NR15iN7PcwcFAG3LB7iGDKUBosHkevNRQLYs",
+		"/ip4/192.168.1.103/tcp/30333/p2p/12D3KooWRajsCfp1NR15iN7PcwcFAG3LB7iGDKUBosHkevNRQLYs",
+		"/ip6/::1/tcp/30333/p2p/12D3KooWRajsCfp1NR15iN7PcwcFAG3LB7iGDKUBosHkevNRQLYs",
+		"/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWRajsCfp1NR15iN7PcwcFAG3LB7iGDKUBosHkevNRQLYs",
+	]
+	*/
+
+	// system_local_peer_id
+	let value = rpc::system::local_peer_id(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+		"12D3KooWRajsCfp1NR15iN7PcwcFAG3LB7iGDKUBosHkevNRQLYs"
+	*/
+
+	// system_name
+	let value = rpc::system::name(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+		"Avail Node"
+	*/
+
+	// system_node_roles
+	let value = rpc::system::node_roles(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+	[
+		Authority,
+	]
+	*/
+
+	// system_peers
+	let value = rpc::system::peers(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+		[]
+	*/
+
+	// system_properties
+	let value = rpc::system::properties(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+	{
+		"ss58Format": Number(42),
+		"tokenDecimals": Number(18),
+		"tokenSymbol": String("AVAIL"),
+	}
+	*/
+
+	// system_system_sync_state
+	let value = rpc::system::sync_state(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+	SyncState {
+		starting_block: 0,
+		current_block: 495,
+		highest_block: 495,
+	}
+	*/
+
+	// system_version
+	let value = rpc::system::version(&amp;sdk.rpc_client).await?;
+	dbg!(value);
+	/*	Output
+		"2.2.1-55da578d34b"
+	*/
+
+	// TransactionPaymentApi_query_info
+	let payload = avail::tx()
+		.data_availability()
+		.submit_data(BoundedVec(vec![1]));
+	let keypair = SDK::alice()?;
+	let account = keypair.public_key().to_account_id();
+
+	let options = Options::new().app_id(1);
+	let populated_options = options
+		.build(&amp;sdk.online_client, &amp;sdk.rpc_client, &amp;account)
+		.await?;
+
+	let params = populated_options.build().await?;
+	let tx = sdk
+		.online_client
+		.tx()
+		.create_signed(&amp;payload, &amp;keypair, params)
+		.await?;
+	let partial_fee_estimate = tx.partial_fee_estimate().await?;
+	dbg!(partial_fee_estimate);
+	/*	Output
+		124684322202721409
+	*/
+
+	// TransactionPaymentApi_query_fee_details
+	let len_bytes: [u8; 4] = (tx.encoded().len() as u32).to_le_bytes();
+	let encoded_with_len = [tx.encoded(), &amp;len_bytes[..]].concat();
+
+	let fee_details =
+		rpc::payment::query_fee_details(&amp;sdk.rpc_client, encoded_with_len.into(), None).await?;
+	dbg!(fee_details);
+	/*	Output
+	FeeDetails {
+		inclusion_fee: Some(
+			InclusionFee {
+				base_fee: 124414000000000000,
+				len_fee: 11400000000000,
+				adjusted_weight_fee: 259321813738397,
+			},
+		),
+		tip: 0,
+	}
+	*/
+
+	// state_get_runtime_version
+	let value = rpc::state::get_runtime_version(&amp;sdk.rpc_client, None).await?;
+	dbg!(value);
+	/*	Output
+	RuntimeVersion {
+		spec_version: 39,
+		transaction_version: 1,
+		other: {
+			"stateVersion": Number(1),
+			"authoringVersion": Number(12),
+			"specName": String("avail"),
+			"implVersion": Number(0),
+			"apis": Array [...],
+			"implName": String("avail"),
+		},
+	}
+	*/
+
+	// kate_block_length
+	let value = rpc::kate::block_length(&amp;sdk.rpc_client, None).await?;
+	dbg!(value);
+	/*	Output
+	BlockLength {
+		max: PerDispatchClass {
+			normal: 2097152,
+			operational: 2097152,
+			mandatory: 2097152,
+		},
+		cols: BlockLengthColumns(
+			256,
+		),
+		rows: BlockLengthRows(
+			256,
+		),
+		chunk_size: 32,
+	}
+	*/
+
+	// kate_query_data_proof
+	let data = String::from("My Data").into_bytes();
+	let tx = sdk.tx.data_availability.submit_data(data);
+	let result = tx.execute_and_watch_finalization(&amp;keypair, None).await?;
+	let (tx_index, block_hash) = (result.tx_index, Some(result.block_hash));
+	let value = rpc::kate::query_data_proof(&amp;sdk.rpc_client, tx_index, block_hash).await?;
+	dbg!(value);
+	/*	Output
+	ProofResponse {
+		data_proof: DataProof {
+			roots: TxDataRoots {
+				data_root: 0xd6e516bbf0b0d964a6a6a41a18c58a2eac4757001c2338a8601c4cc961332fda,
+				blob_root: 0x29c73490baca9fe2b11095a69294de4b4a86bcb3a2eb3cd04b51dfdd0b4030f9,
+				bridge_root: 0x0000000000000000000000000000000000000000000000000000000000000000,
+			},
+			proof: [],
+			number_of_leaves: 1,
+			leaf_index: 0,
+			leaf: 0x47a59a7805e0bfe350ee0395d426c15770edc03fee72aa6532b5bbcffaf28030,
+		},
+		message: None,
+	}
+	*/
+
+	// kate_query_proof
+	let cells = vec![kate::Cell::from((0u32, 0u32))];
+	let value = rpc::kate::query_proof(&amp;sdk.rpc_client, cells, block_hash).await?;
+	dbg!(value);
+	/*	Output
+	[
+		(
+			2178534751726990040338027377623275511556638494274780568875624948149315822336,
+			GProof(
+				[...],
+			),
+		),
+	]
+	*/
+
+	// kate_query_rows
+	let rows = vec![0u32];
+	let value = rpc::kate::query_rows(&amp;sdk.rpc_client, rows, block_hash).await?;
+	dbg!(value);
+	/*	Output
+	[
+		[
+			2178534751726990040338027377623275511556638494274780568875624948149315822336,
+			69809044805081050561201039752112594468796256047454289799440609083602104564736,
+			26941852917393734161602180963833199552029986735939578666038548832600818441216,
+			14351520191331507525755130937317610561547699892218140156652644610507664261120,
+		],
+	]
+	*/
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="storage"><a class="header" href="#storage">Storage</a></h1>
+<pre><code class="language-rs">use avail_rust::{account, avail, error::ClientError, AccountId, Block, SDK};
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	println!("da_app_keys");
+	da_app_keys().await?;
+	println!("da_app_keys_iter");
+	da_app_keys_iter().await?;
+	println!("da_next_app_id");
+	da_next_app_id().await?;
+	println!("staking_active_era");
+	staking_active_era().await?;
+	println!("staking_bonded");
+	staking_bonded().await?;
+	println!("staking_bonded_iter");
+	staking_bonded_iter().await?;
+	println!("system_account");
+	system_account().await?;
+	println!("system_account_iter");
+	system_account_iter().await?;
+
+	Ok(())
+}
+
+pub async fn da_app_keys() -&gt; Result&lt;(), ClientError&gt; {
+	use avail::data_availability::storage::types::app_keys::Param0;
+
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let (online_client, rpc_client) = (&amp;sdk.online_client, &amp;sdk.rpc_client);
+
+	let key = String::from("Reserved-1").as_bytes().to_vec();
+	let key = Param0 { 0: key };
+
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().data_availability().app_keys(key);
+	let result = storage.fetch(&amp;address).await?;
+
+	dbg!(result);
+	/* Output
+	AppKeyInfo {
+		owner: AccountId32(...),
+		id: AppId(
+			1,
+		),
+	}
+	*/
+
+	Ok(())
+}
+
+pub async fn da_app_keys_iter() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let (online_client, rpc_client) = (&amp;sdk.online_client, &amp;sdk.rpc_client);
+
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().data_availability().app_keys_iter();
+	let mut results = storage.iter(address).await?;
+
+	while let Some(Ok(kv)) = results.next().await {
+		let key = (&amp;kv.key_bytes[49..]).to_vec();
+		let key = String::from_utf8(key).unwrap();
+
+		println!("Key: {:?}", key);
+		println!("Value: {:?}", kv.value);
+	}
+	/* Output
+		Key: "Reserved-2"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(2) }
+		Key: "Reserved-8"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(8) }
+		Key: "Reserved-1"
+		Value: AppKeyInfo { owner: AccountId32(...) id: AppId(1) }
+		Key: "Reserved-9"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(9) }
+		Key: "Reserved-4"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(4) }
+		Key: "Reserved-5"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(5) }
+		Key: "Reserved-7"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(7) }
+		Key: "Avail"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(0) }
+		Key: "Reserved-3"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(3) }
+		Key: "Reserved-6"
+		Value: AppKeyInfo { owner: AccountId32(...), id: AppId(6) }
+	*/
+
+	Ok(())
+}
+
+pub async fn da_next_app_id() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let (online_client, rpc_client) = (&amp;sdk.online_client, &amp;sdk.rpc_client);
+
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().data_availability().next_app_id();
+	let result = storage.fetch_or_default(&amp;address).await?;
+
+	dbg!(result);
+	/* Output
+		AppId(10)
+	*/
+
+	Ok(())
+}
+
+pub async fn staking_active_era() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let (online_client, rpc_client) = (&amp;sdk.online_client, &amp;sdk.rpc_client);
+
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().staking().active_era();
+	let result = storage.fetch(&amp;address).await?;
+
+	dbg!(result);
+	/* Output
+	ActiveEraInfo {
+		index: 13,
+		start: Some(
+			1732612788000,
+		),
+	}
+	*/
+
+	Ok(())
+}
+
+pub async fn staking_bonded() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let (online_client, rpc_client) = (&amp;sdk.online_client, &amp;sdk.rpc_client);
+
+	let account_id =
+		account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice_Stash
+
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().staking().bonded(account_id);
+	let result = storage.fetch(&amp;address).await?;
+
+	dbg!(result);
+	/* Output
+		AccountId32(...)
+	*/
+
+	Ok(())
+}
+
+pub async fn staking_bonded_iter() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let (online_client, rpc_client) = (&amp;sdk.online_client, &amp;sdk.rpc_client);
+
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let storage_query = avail::storage().staking().bonded_iter();
+	let mut results = storage.iter(storage_query).await?;
+
+	while let Some(Ok(kv)) = results.next().await {
+		let key = kv.key_bytes.last_chunk::&lt;32&gt;().unwrap();
+		let key = AccountId::from(*key);
+
+		println!("Key: {:?}", key.to_string());
+		println!("Value: {:?}", kv.value);
+	}
+	/* Output
+		Key: "5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY"
+		Value: AccountId32(...)
+	*/
+
+	Ok(())
+}
+
+pub async fn system_account() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let (online_client, rpc_client) = (&amp;sdk.online_client, &amp;sdk.rpc_client);
+
+	let account = SDK::alice()?;
+	let account_id = account.public_key().to_account_id();
+
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().system().account(account_id);
+	let result = storage.fetch(&amp;address).await?;
+
+	if let Some(account) = result {
+		println!("Consumers: {}", account.consumers);
+		println!("Data: {:?}", account.data);
+		println!("Nonce: {}", account.nonce);
+		println!("Providers: {}", account.providers);
+		println!("Sufficients: {}", account.sufficients);
+	}
+	/* Output
+		Consumers: 0
+		Data: AccountData { free: 10000000000000000000000000, reserved: 0, frozen: 0, flags: ExtraFlags(170141183460469231731687303715884105728) }
+		Nonce: 0
+		Providers: 1
+		Sufficients: 0
+	*/
+
+	Ok(())
+}
+
+pub async fn system_account_iter() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let (online_client, rpc_client) = (&amp;sdk.online_client, &amp;sdk.rpc_client);
+
+	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().system().account_iter();
+	let mut results = storage.iter(address).await?;
+
+	while let Some(Ok(kv)) = results.next().await {
+		let key = kv.key_bytes.last_chunk::&lt;32&gt;().unwrap();
+		let key = AccountId::from(*key);
+
+		println!("Key: {:?}", key.to_string());
+		println!("Value: {:?}", kv.value);
+	}
+	/* Output
+		Key: "5FCfAonRZgTFrTd9HREEyeJjDpT397KMzizE6T3DvebLFE7n"
+		Value: AccountInfo { nonce: 0, consumers: 0, providers: 1, sufficients: 0, data: AccountData { free: 10000000000000000000000000, reserved: 0, frozen: 0, flags: ExtraFlags(170141183460469231731687303715884105728) } }
+
+		Key: "5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL"
+		Value: AccountInfo { nonce: 0, consumers: 0, providers: 1, sufficients: 0, data: AccountData { free: 10000000000000000000000000, reserved: 0, frozen: 0, flags: ExtraFlags(170141183460469231731687303715884105728) } }
+
+		Key: "5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY"
+		Value: AccountInfo { nonce: 0, consumers: 3, providers: 1, sufficients: 0, data: AccountData { free: 10000001075151923366255874, reserved: 0, frozen: 100000000000000000000000, flags: ExtraFlags(170141183460469231731687303715884105728) } }
+
+		Key: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+		Value: AccountInfo { nonce: 0, consumers: 0, providers: 1, sufficients: 0, data: AccountData { free: 10000000000000000000000000, reserved: 0, frozen: 0, flags: ExtraFlags(170141183460469231731687303715884105728) } }
+		...
+	*/
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="account-nonce"><a class="header" href="#account-nonce">Account Nonce</a></h1>
+<pre><code class="language-rs">use avail_rust::{account, avail, error::ClientError, Block, SDK};
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	let account = SDK::alice()?;
+	let account_id = account.public_key().to_account_id();
+	let account_address = account_id.to_string();
+
+	// Fetch nonce from Node (this includes Tx Pool)
+	let nonce = account::fetch_nonce_node(&amp;sdk.rpc_client, &amp;account_address).await?;
+	println!("Nonce from Node: {}", nonce);
+
+	// Fetch nonce from best block state
+	let nonce =
+		account::fetch_nonce_state(&amp;sdk.online_client, &amp;sdk.rpc_client, &amp;account_address, None)
+			.await?;
+	println!("Nonce from best block state: {}", nonce);
+
+	// Fetch nonce from custom block state
+	let block_hash = Block::fetch_finalized_block_hash(&amp;sdk.rpc_client).await?;
+	let block = sdk.online_client.blocks().at(block_hash).await?;
+	let nonce = block.account_nonce(&amp;account_id).await? as u32;
+	println!("Nonce from custom block state: {}", nonce);
+
+	// Fetch nonce from manually reading storage
+	let storage = sdk.online_client.storage().at(block_hash);
+	let address = avail::storage().system().account(account_id);
+	let result = storage.fetch_or_default(&amp;address).await?;
+	println!("Nonce from  manually reading storage: {}", result.nonce);
+
+	Ok(())
+}
+
+/*
+	Expected Output:
+
+	Nonce from Node: 1
+	Nonce from best block state: 1
+	Nonce from custom block state: 1
+	Nonce from  manually reading storage: 1
+*/
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="transaction-options"><a class="header" href="#transaction-options">Transaction Options</a></h1>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+use std::time::Duration;
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	nonce().await?;
+	app_id().await?;
+	tip().await?;
+	mortality().await?;
+
+	Ok(())
+}
+
+async fn nonce() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	let account = SDK::alice()?;
+	let account_address = account.public_key().to_account_id().to_string();
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let mut options = Options::new();
+	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
+
+	/*
+		Using finalized block nonce will not take into consideration nonces from non-finalized blocks.
+	*/
+	options = options.nonce(Nonce::FinalizedBlock);
+	tx.execute(&amp;account, Some(options)).await?;
+	tx.execute(&amp;account, Some(options)).await.expect_err("qed");
+	wait_n_blocks(&amp;sdk, 3).await?;
+
+	/*
+		Using best block nonce will not take into consideration existing transactions in the
+		tx pool.
+	*/
+	options = options.nonce(Nonce::BestBlock);
+	tx.execute(&amp;account, Some(options)).await?;
+	tx.execute(&amp;account, Some(options)).await.expect_err("qed");
+	wait_n_blocks(&amp;sdk, 1).await?;
+
+	/*
+		This is the most commonly used nonce. If correctness is needed, use `Nonce::FinalizedBlock`
+		This is the default behavior,
+	*/
+	options = options.nonce(Nonce::BestBlockAndTxPool);
+	tx.execute(&amp;account, Some(options)).await?;
+	tx.execute(&amp;account, Some(options)).await?;
+
+	/*
+		Managing the nonce manually
+	*/
+	let nonce = account::fetch_nonce_node(&amp;sdk.rpc_client, &amp;account_address).await?;
+
+	options = options.nonce(Nonce::Custom(nonce));
+	tx.execute(&amp;account, Some(options)).await?;
+	options = options.nonce(Nonce::Custom(nonce + 1));
+	tx.execute(&amp;account, Some(options)).await?;
+
+	Ok(())
+}
+
+async fn app_id() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	let account = SDK::alice()?;
+	let tx = sdk.tx.data_availability.submit_data(vec![0, 1, 2]);
+
+	let options = Options::new().app_id(1);
+	tx.execute(&amp;account, Some(options)).await?;
+
+	Ok(())
+}
+
+async fn tip() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	let account = SDK::alice()?;
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
+
+	let options = Options::new().tip(1);
+	tx.execute(&amp;account, Some(options)).await?;
+
+	Ok(())
+}
+
+async fn mortality() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	let account = SDK::alice()?;
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
+
+	let period = 3;
+	let block_hash = None;
+	let mortality = Mortality::new(period, block_hash);
+
+	let options = Options::new().mortality(mortality);
+	tx.execute(&amp;account, Some(options)).await?;
+
+	Ok(())
+}
+
+async fn wait_n_blocks(sdk: &amp;SDK, n: u32) -&gt; Result&lt;(), ClientError&gt; {
+	let mut expected_block_number = None;
+
+	loop {
+		let current_block = rpc::chain::get_block(&amp;sdk.rpc_client, None).await?;
+		let current_block_number = current_block.block.header.number;
+		if expected_block_number.is_none() {
+			expected_block_number = Some(current_block_number + n);
+		}
+		if expected_block_number.is_some_and(|x| x &lt;= current_block_number) {
+			break;
+		}
+
+		tokio::time::sleep(Duration::from_secs(3)).await
+	}
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="transaction-payment"><a class="header" href="#transaction-payment">Transaction Payment</a></h1>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let account = SDK::alice()?;
+
+	let key = String::from("My Key").into_bytes();
+	let tx = sdk.tx.data_availability.create_application_key(key);
+
+	let options = Options::new();
+	let fee_details = tx
+		.payment_query_fee_details(&amp;account, Some(options))
+		.await?;
+	let query_info = tx.payment_query_info(&amp;account, Some(options)).await?;
+
+	dbg!(fee_details);
+	dbg!(query_info);
+
+	Ok(())
+}
+
+/*
+	Expected Output:
+
+	fee_details = FeeDetails {
+	inclusion_fee: Some(
+		InclusionFee {
+			base_fee: 124414000000000000,
+			len_fee: 11900000000000,
+			adjusted_weight_fee: 2743751768732346,
+		},
+	),
+	tip: 0,
+
+	query_info = 127169255884363086
+}
+*/
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="batch"><a class="header" href="#batch">Batch</a></h1>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+
+use avail::{
+	runtime_types::{
+		da_runtime::RuntimeCall,
+		pallet_balances::pallet::Call::transfer_keep_alive as TransferKeepAlive,
+	},
+	utility::events as UtilityEvents,
+};
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	let account = SDK::alice()?;
+
+	let value_1 = SDK::one_avail();
+	let value_2 = SDK::one_avail() * 100_000_000;
+	let dest_bob =
+		account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let dest_charlie =
+		account::account_id_from_str("5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y")?;
+
+	let call_1 = TransferKeepAlive {
+		dest: dest_bob.into(),
+		value: value_1,
+	};
+	let call_1 = RuntimeCall::Balances(call_1);
+	let call_2 = TransferKeepAlive {
+		dest: dest_charlie.into(),
+		value: value_2,
+	};
+	let call_2 = RuntimeCall::Balances(call_2);
+	let calls = vec![call_1.into(), call_2.into()];
+
+	// Batch
+	// This will return `Ok` in all circumstances. To determine the success of the batch, an
+	// event is deposited. If a call failed and the batch was interrupted, then the
+	// `BatchInterrupted` event is deposited, along with the number of successful calls made
+	// and the error of the failed call. If all were successful, then the `BatchCompleted`
+	// event is deposited.
+	let payload = avail::tx().utility().batch(calls.clone());
+	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	println!("-- Batch Call --");
+
+	let batch_interrupted = res.find_event::&lt;UtilityEvents::BatchInterrupted&gt;();
+	if batch_interrupted.len() &gt; 0 {
+		println!("At least one call has failed");
+	}
+
+	let batch_completed = res.find_first_event::&lt;UtilityEvents::BatchCompleted&gt;();
+	if batch_completed.is_some() {
+		println!("All calls were successful");
+	}
+
+	// Batch All
+	// Send a batch of dispatch calls and atomically execute them.
+	// The whole transaction will rollback and fail if any of the calls failed.
+	let payload = avail::tx().utility().batch_all(calls.clone());
+	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	res.is_successful(&amp;sdk.online_client)
+		.expect_err("Batch All should fail");
+
+	// Force Batch
+	// Send a batch of dispatch calls.
+	// Unlike `batch`, it allows errors and won't interrupt.
+	let payload = avail::tx().utility().force_batch(calls.clone());
+	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	println!("-- Force Batch Call --");
+
+	let item_failed = res.find_event::&lt;UtilityEvents::ItemFailed&gt;();
+	if item_failed.len() &gt; 0 {
+		println!("At least one call has failed");
+	}
+
+	let batch_completed_with_error =
+		res.find_first_event::&lt;UtilityEvents::BatchCompletedWithErrors&gt;();
+	if batch_completed_with_error.is_some() {
+		println!("Batch completed even though one or more calls have failed.");
+	}
+
+	let batch_completed = res.find_first_event::&lt;UtilityEvents::BatchCompleted&gt;();
+	if batch_completed.is_some() {
+		println!("All calls were successful");
+	}
+
+	Ok(())
+}
+
+/*
+	Expected Output:
+
+	-- Batch Call --
+	At least one call has failed
+	-- Force Batch Call --
+	At least one call has failed
+	Batch completed even though one or more calls have failed.
+*/
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="batch-1"><a class="header" href="#batch-1">Batch</a></h1>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	// Setup
+	let data = String::from("My Data").into_bytes();
+	let tx = sdk.tx.data_availability.submit_data(data);
+	let res = tx.execute_and_watch_inclusion(&amp;SDK::alice()?, None).await?;
+	res.is_successful(&amp;sdk.online_client)?;
+
+	// Fetching
+	// Fetching best block
+	_ = Block::new_best_block(&amp;sdk.online_client, &amp;sdk.rpc_client).await?;
+
+	// Fetching finalized block
+	_ = Block::new_finalized_block(&amp;sdk.online_client, &amp;sdk.rpc_client).await?;
+
+	// Fetching block with hex string or hash
+	let hex_string = std::format!("{:?}", res.block_hash);
+	let block_hash = avail_rust::utils::hex_string_to_h256(&amp;hex_string)?;
+	_ = Block::new(&amp;sdk.online_client, block_hash).await?;
+
+	// Fetching block with block number
+	let block_number = 0;
+	_ = Block::from_block_number(&amp;sdk.online_client, &amp;sdk.rpc_client, block_number);
+
+	// Transactions
+	let block = Block::new(&amp;sdk.online_client, res.block_hash).await?;
+
+	// Filtering by Transaction Index
+	let tx = block
+		.transaction_by_index(res.tx_index)
+		.ok_or(String::from("Failed to find tx"))?;
+	println!(
+		"Tx Pallet name: {}, Tx Name: {}",
+		tx.pallet_name()?,
+		tx.variant_name()?,
+	);
+
+	// Filtering by Transaction Index with Call Data
+	use avail::data_availability::calls::types::SubmitData;
+	let tx = block
+		.transaction_by_index_static::&lt;SubmitData&gt;(res.tx_index)
+		.ok_or(String::from("Failed to find tx"))?;
+	println!(
+		"Tx Pallet name: {}, Tx Name: {}",
+		tx.details.pallet_name()?,
+		tx.details.variant_name()?,
+	);
+	println!("Tx Call Data: {:?}", tx.value.data);
+	/*
+	Available methods:
+		transaction_all_static
+		transaction_count
+		transaction_by_signer
+		transaction_by_signer_static
+		transaction_by_index
+		transaction_by_index_static
+		transaction_by_hash
+		transaction_by_hash_static
+		transaction_by_app_id
+		transaction_by_app_id_static
+	*/
+
+	// Data Submission
+	// Filtering by Transaction Index
+	let ds = block
+		.data_submissions_by_index(res.tx_index)
+		.ok_or(String::from("Failed to find ds"))?;
+	println!(
+		"Tx Hash: {:?}, Tx Index: {}, Data {:?}, Tx Signer: {:?}, App Id: {}",
+		ds.tx_hash, ds.tx_index, ds.data, ds.tx_signer, ds.app_id
+	);
+	/*
+	Available methods:
+		data_submissions_all
+		data_submissions_by_signer
+		data_submissions_by_index
+		data_submissions_by_hash
+		data_submissions_by_app_id
+	*/
+
+	// Fetching all events from a block
+	let events = block.events(None).await?;
+	println!("Events count: {}", events.len());
+
+	// Fetching all events from a block for a specific transaction
+	let events = block.events(Some(res.tx_index)).await?;
+	println!("Events count: {}", events.len());
+
+	// Finding the tx index with tx hash
+	let tx_index = block
+		.transaction_hash_to_index(res.tx_hash)
+		.ok_or(String::from("Failed to find index"))?;
+	assert_eq!(tx_index, res.tx_index);
+
+	let address = avail::storage().data_availability().next_app_id();
+	let app_id = block.storage_fetch_or_default(&amp;address).await?.0;
+	println!("Next App Id: {}", app_id);
+	/*
+	Available methods:
+		storage_fetch
+		storage_fetch_or_default
+		storage_iter
+	*/
+
+	Ok(())
+}
+
+/*
+	Expected Output:
+
+	Tx Pallet name: DataAvailability, Tx Name: submit_data
+	Tx Pallet name: DataAvailability, Tx Name: submit_data
+	Tx Call Data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
+	Tx Hash: 0x0397b6f23ba5e534771b6963a51886dc475724b8fa2b0393e89eb48ddf2a6d91, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 148, 140, 212, 44, 213, 20, 183, 36, 162, 143, 92, 16, 11, 80, 252, 38, 49, 129, 229, 159, 46, 165, 127, 124, 128, 24, 236, 40, 108, 197, 13, 67, 105, 12, 248, 226, 20, 13, 70, 68, 134, 1, 171, 49, 14, 2, 122, 87, 200, 132, 11, 87, 244, 85, 175, 237, 125, 233, 88, 211, 168, 231, 118, 135], App Id: 0
+	Events count: 3
+	Events count: 1
+	Next App Id: 10
+*/
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="data-submission"><a class="header" href="#data-submission">Data Submission</a></h1>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+
+type DataSubmissionCall = avail::data_availability::calls::types::SubmitData;
+type ApplicationKeyCreatedEvent = avail::data_availability::events::ApplicationKeyCreated;
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let online_client = &amp;sdk.online_client;
+
+	let account = SDK::alice()?;
+
+	// Application Key Creation
+	let key = String::from("My Key").into_bytes();
+	let tx = sdk.tx.data_availability.create_application_key(key);
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	res.is_successful(&amp;online_client)?;
+
+	let Some(event) = res.find_first_event::&lt;ApplicationKeyCreatedEvent&gt;() else {
+		return Err("Failed to get Application Key Created Event".into());
+	};
+	let app_id = event.id.0;
+
+	// Data Submission
+	let data = String::from("My Data").into_bytes();
+	let options = Options::new().app_id(app_id);
+	let tx = sdk.tx.data_availability.submit_data(data);
+	let res = tx
+		.execute_and_watch_inclusion(&amp;account, Some(options))
+		.await?;
+	res.is_successful(&amp;online_client)?;
+
+	println!(
+		"Block Hash: {:?}, Block Number: {}, Tx Hash: {:?}, Tx Index: {}",
+		res.block_hash, res.block_number, res.tx_hash, res.tx_index
+	);
+
+	let Some(call_data) = res.get_call_data::&lt;DataSubmissionCall&gt;(online_client).await else {
+		return Err("Failed to get Data Submission Call data".into());
+	};
+	println!("Call data: {:?}", call_data.data);
+
+	// Getting Data Submission from Block #1
+	let block = Block::new(online_client, res.block_hash).await?;
+
+	// data_submissions_by_signer, data_submissions_by_index, data_submissions_by_hash, data_submissions_by_app_id
+	let data_submissions = block.data_submissions_all();
+	for ds in data_submissions {
+		println!(
+			"Tx Hash: {:?}, Tx Index: {}, Data {:?}, Tx Signer: {:?}, App Id: {}",
+			ds.tx_hash, ds.tx_index, ds.data, ds.tx_signer, ds.app_id
+		);
+
+		println!("Ascii data: {}", ds.to_ascii().expect("qed"));
+	}
+
+	// Getting Data Submission from Block #2
+	for tx in block.transaction_all_static::&lt;DataSubmissionCall&gt;() {
+		println!("Call data: {:?}", tx.value.data);
+
+		let ds = DataSubmission::from_static(tx);
+		println!(
+			"Tx Hash: {:?}, Tx Index: {}, Data {:?}, Tx Signer: {:?}, App Id: {}",
+			ds.tx_hash, ds.tx_index, ds.data, ds.tx_signer, ds.app_id
+		);
+
+		println!("Ascii data: {}", ds.to_ascii().expect("qed"));
+	}
+
+	Ok(())
+}
+
+/*
+	Expected Output:
+
+	Block Hash: 0x3ac87e95a75558510e0fe97530e9905438071e97803fdf1f797f837839f00ab5, Block Number: 4, Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1
+	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
+	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Ascii data: My Data
+	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
+	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Ascii data: My Data
+*/
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="events"><a class="header" href="#events">Events</a></h1>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	let account = SDK::alice()?;
+
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+
+	for event in res.events.iter() {
+		let Ok(event) = event else {
+			return Ok(());
+		};
+
+		println!(
+			"Pallet name: {}, Event Name: {}",
+			event.pallet_name(),
+			event.variant_name()
+		);
+	}
+
+	// find_first_event, find_last_event, find_event
+	let event = res.find_first_event::&lt;avail::balances::events::Transfer&gt;();
+	let Some(event) = event else {
+		return Ok(());
+	};
+
+	println!(
+		"Transfer from: {}, to: {}, amount: {}",
+		event.from, event.to, event.amount
+	);
+
+	Ok(())
+}
+
+/*
+	Expected Output:
+
+	Pallet name: Balances, Event Name: Withdraw
+	Pallet name: Balances, Event Name: Transfer
+	Pallet name: Balances, Event Name: Deposit
+	Pallet name: Balances, Event Name: Deposit
+	Pallet name: Balances, Event Name: Deposit
+	Pallet name: TransactionPayment, Event Name: TransactionFeePaid
+	Pallet name: System, Event Name: ExtrinsicSuccess
+	Transfer from: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY, to: 5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty, amount: 1000000000000000000
+*/
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="transactions"><a class="header" href="#transactions">Transactions</a></h1>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	let account = SDK::alice()?;
+
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+
+	let block = Block::new(&amp;sdk.online_client, res.block_hash).await?;
+
+	// transaction_all_static, transaction_count, transaction_by_signer, transaction_by_signer_static
+	// transaction_by_index, transaction_by_index_static, transaction_by_hash,
+	// transaction_by_hash_static, transaction_by_app_id, transaction_by_app_id_static
+	for tx in block.transactions.iter() {
+		println!(
+			"Tx Pallet name: {}, Tx Name: {}, Tx Hash: {:?}",
+			tx.pallet_name()?,
+			tx.variant_name()?,
+			tx.hash()
+		);
+
+		for event in tx.events().await?.iter() {
+			let Ok(event) = event else {
+				return Ok(());
+			};
+
+			println!(
+				"\tEvent Pallet name: {}, Event Name: {}",
+				event.pallet_name(),
+				event.variant_name()
+			);
+		}
+
+		let balance_tx = tx.as_extrinsic::&lt;avail::balances::calls::types::TransferKeepAlive&gt;();
+		if let Some(tx) = balance_tx.ok().flatten() {
+			println!("Transfer dest: {:?}, value: {}", tx.dest, tx.value);
+		}
+	}
+
+	// Transaction object can be used with custom payload.
+	// ! Check Transaction 1(basics_1) or Transaction 2(basics_2) example for custom payload. !
+	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let payload = avail_rust::avail::tx()
+		.balances()
+		.transfer_keep_alive(dest.into(), SDK::one_avail());
+	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
+	let tx_details = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	// Checking if the transaction was successful
+	tx_details.is_successful(&amp;sdk.online_client)?;
+
+	Ok(())
+}
+
+/*
+	Expected Output:
+
+	Tx Pallet name: Timestamp, Tx Name: set, Tx Hash: 0xdf4e9c7ae69b40936b580ddf2d7c9b0cf5adb55e64f8492d1e160cc0914a8889
+		Event Pallet name: System, Event Name: ExtrinsicSuccess
+	Tx Pallet name: Balances, Tx Name: transfer_keep_alive, Tx Hash: 0x748057951ff79cea6de0e13b2ef70a1e9f443e9c83ed90e5601f8b45144a4ed4
+		Event Pallet name: Balances, Event Name: Withdraw
+		Event Pallet name: Balances, Event Name: Transfer
+		Event Pallet name: Balances, Event Name: Deposit
+		Event Pallet name: Balances, Event Name: Deposit
+		Event Pallet name: Balances, Event Name: Deposit
+		Event Pallet name: TransactionPayment, Event Name: TransactionFeePaid
+		Event Pallet name: System, Event Name: ExtrinsicSuccess
+	Transfer dest: Id(AccountId32([142, 175, 4, 21, 22, 135, 115, 99, 38, 201, 254, 161, 126, 37, 252, 82, 135, 97, 54, 147, 201, 18, 144, 156, 178, 38, 170, 71, 148, 242, 106, 72])), value: 1000000000000000000
+	Tx Pallet name: Vector, Tx Name: failed_send_message_txs, Tx Hash: 0x92cdb77314063a01930b093516d19a453399710cc8ae635ff5ab6cf76b26f218
+		Event Pallet name: System, Event Name: ExtrinsicSuccess
+*/
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="validator"><a class="header" href="#validator">Validator</a></h1>
+<pre><code class="language-rs">use avail_rust::{
+	prelude::*,
+	transactions::staking::{Commission, RewardDestination},
+	utils,
+};
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	let account = SDK::alice()?;
+
+	// Bond min_validator_bond or 1 AVAIL token
+	let storage = sdk.online_client.storage().at_latest().await?;
+	let min_validator_bond = storage
+		.fetch(&amp;avail::storage().staking().min_validator_bond())
+		.await?
+		.unwrap_or_else(|| SDK::one_avail());
+
+	let payee = RewardDestination::Staked;
+
+	// Bond
+	let tx = sdk.tx.staking.bond(min_validator_bond, payee);
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	res.is_successful(&amp;sdk.online_client)?;
+
+	// Generate Session Keys
+	let keys = rpc::author::rotate_keys(&amp;sdk.rpc_client).await?;
+	let keys = utils::deconstruct_session_keys(keys)?;
+
+	// Set Keys
+	let tx = sdk.tx.session.set_keys(keys);
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	res.is_successful(&amp;sdk.online_client)?;
+
+	// Validate
+	let commission = Commission::new(10)?;
+	let tx = sdk.tx.staking.validate(commission, false);
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	res.is_successful(&amp;sdk.online_client)?;
+
+	Ok(())
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="http-rpc-connection"><a class="header" href="#http-rpc-connection">HTTP RPC Connection</a></h1>
+<pre><code class="language-rs">use avail_rust::{
+	avail,
+	block::{Block, DataSubmission},
+	error::ClientError,
+	transaction::HTTP,
+	Options, SDK,
+};
+
+type DataSubmissionCall = avail::data_availability::calls::types::SubmitData;
+type ApplicationKeyCreatedEvent = avail::data_availability::events::ApplicationKeyCreated;
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let sdk = SDK::new_http(SDK::local_http_endpoint()).await?;
+	let online_client = &amp;sdk.online_client;
+
+	let account = SDK::alice()?;
+
+	// Application Key Creation
+	let key = String::from("My Key Http").into_bytes();
+	let tx = sdk.tx.data_availability.create_application_key(key);
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	res.is_successful(&amp;online_client)?;
+
+	let Some(event) = res.find_first_event::&lt;ApplicationKeyCreatedEvent&gt;() else {
+		return Err("Failed to get Application Key Created Event".into());
+	};
+	let app_id = event.id.0;
+
+	// Data Submission
+	let data = String::from("My Data").into_bytes();
+	let options = Options::new().app_id(app_id);
+	let tx = sdk.tx.data_availability.submit_data(data);
+	let res = tx
+		.execute_and_watch_inclusion(&amp;account, Some(options))
+		.await?;
+	res.is_successful(&amp;online_client)?;
+
+	println!(
+		"Block Hash: {:?}, Block Number: {}, Tx Hash: {:?}, Tx Index: {}",
+		res.block_hash, res.block_number, res.tx_hash, res.tx_index
+	);
+
+	let Some(call_data) = res.get_call_data::&lt;DataSubmissionCall&gt;(online_client).await else {
+		return Err("Failed to get Data Submission Call data".into());
+	};
+	println!("Call data: {:?}", call_data.data);
+
+	// Getting Data Submission from Block #1
+	let block = Block::new(online_client, res.block_hash).await?;
+
+	// data_submissions_by_signer, data_submissions_by_index, data_submissions_by_hash, data_submissions_by_app_id
+	let data_submissions = block.data_submissions_all();
+	for ds in data_submissions {
+		println!(
+			"Tx Hash: {:?}, Tx Index: {}, Data {:?}, Tx Signer: {:?}, App Id: {}",
+			ds.tx_hash, ds.tx_index, ds.data, ds.tx_signer, ds.app_id
+		);
+
+		println!("Ascii data: {}", ds.to_ascii().expect("qed"));
+	}
+
+	// Getting Data Submission from Block #2
+	for tx in block.transaction_all_static::&lt;DataSubmissionCall&gt;() {
+		println!("Call data: {:?}", tx.value.data);
+
+		let ds = DataSubmission::from_static(tx);
+		println!(
+			"Tx Hash: {:?}, Tx Index: {}, Data {:?}, Tx Signer: {:?}, App Id: {}",
+			ds.tx_hash, ds.tx_index, ds.data, ds.tx_signer, ds.app_id
+		);
+
+		println!("Ascii data: {}", ds.to_ascii().expect("qed"));
+	}
+
+	Ok(())
+}
+
+/*
+	Expected Output:
+
+	Block Hash: 0x3ac87e95a75558510e0fe97530e9905438071e97803fdf1f797f837839f00ab5, Block Number: 4, Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1
+	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
+	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Ascii data: My Data
+	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
+	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Ascii data: My Data
+*/
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="custom-connection"><a class="header" href="#custom-connection">Custom Connection</a></h1>
+<pre><code class="language-rs">use avail_rust::prelude::*;
+use std::time::Duration;
+use subxt::backend::rpc::{
+	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
+	RpcClient,
+};
+
+type DataSubmissionCall = avail::data_availability::calls::types::SubmitData;
+type ApplicationKeyCreatedEvent = avail::data_availability::events::ApplicationKeyCreated;
+
+pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
+	let rpc_client = ReconnectingRpcClient::builder()
+		.retry_policy(
+			ExponentialBackoff::from_millis(1000)
+				.max_delay(Duration::from_secs(3))
+				.take(3),
+		)
+		.build(SDK::local_endpoint())
+		.await
+		.map_err(|e| e.to_string())?;
+	let rpc_client = RpcClient::new(rpc_client);
+	let online_client = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
+
+	let sdk = SDK::new_custom(online_client, rpc_client).await?;
+	let online_client = &amp;sdk.online_client;
+
+	let account = SDK::alice()?;
+
+	// Application Key Creation
+	let key = String::from("My Key Custom").into_bytes();
+	let tx = sdk.tx.data_availability.create_application_key(key);
+	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
+	res.is_successful(&amp;online_client)?;
+
+	let Some(event) = res.find_first_event::&lt;ApplicationKeyCreatedEvent&gt;() else {
+		return Err("Failed to get Application Key Created Event".into());
+	};
+	let app_id = event.id.0;
+
+	// Data Submission
+	let data = String::from("My Data").into_bytes();
+	let options = Options::new().app_id(app_id);
+	let tx = sdk.tx.data_availability.submit_data(data);
+	let res = tx
+		.execute_and_watch_inclusion(&amp;account, Some(options))
+		.await?;
+	res.is_successful(&amp;online_client)?;
+
+	println!(
+		"Block Hash: {:?}, Block Number: {}, Tx Hash: {:?}, Tx Index: {}",
+		res.block_hash, res.block_number, res.tx_hash, res.tx_index
+	);
+
+	let Some(call_data) = res.get_call_data::&lt;DataSubmissionCall&gt;(online_client).await else {
+		return Err("Failed to get Data Submission Call data".into());
+	};
+	println!("Call data: {:?}", call_data.data);
+
+	// Getting Data Submission from Block #1
+	let block = Block::new(online_client, res.block_hash).await?;
+
+	// data_submissions_by_signer, data_submissions_by_index, data_submissions_by_hash, data_submissions_by_app_id
+	let data_submissions = block.data_submissions_all();
+	for ds in data_submissions {
+		println!(
+			"Tx Hash: {:?}, Tx Index: {}, Data {:?}, Tx Signer: {:?}, App Id: {}",
+			ds.tx_hash, ds.tx_index, ds.data, ds.tx_signer, ds.app_id
+		);
+
+		println!("Ascii data: {}", ds.to_ascii().expect("qed"));
+	}
+
+	// Getting Data Submission from Block #2
+	for tx in block.transaction_all_static::&lt;DataSubmissionCall&gt;() {
+		println!("Call data: {:?}", tx.value.data);
+
+		let ds = DataSubmission::from_static(tx);
+		println!(
+			"Tx Hash: {:?}, Tx Index: {}, Data {:?}, Tx Signer: {:?}, App Id: {}",
+			ds.tx_hash, ds.tx_index, ds.data, ds.tx_signer, ds.app_id
+		);
+
+		println!("Ascii data: {}", ds.to_ascii().expect("qed"));
+	}
+
+	Ok(())
+}
+
+/*
+	Expected Output:
+
+	Block Hash: 0x3ac87e95a75558510e0fe97530e9905438071e97803fdf1f797f837839f00ab5, Block Number: 4, Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1
+	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
+	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Ascii data: My Data
+	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
+	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Ascii data: My Data
+*/
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>

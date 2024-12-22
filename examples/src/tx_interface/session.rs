@@ -26,7 +26,7 @@ mod set_keys {
 
 		res.print_debug();
 		if let Some(data) = res
-			.get_data::<SessionCalls::SetKeys>(&sdk.online_client)
+			.get_call_data::<SessionCalls::SetKeys>(&sdk.online_client)
 			.await
 		{
 			dbg!(data);

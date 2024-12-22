@@ -51,7 +51,7 @@ pub async fn run() -> Result<(), ClientError> {
 		res.block_hash, res.block_number, res.tx_hash, res.tx_index
 	);
 
-	let Some(call_data) = res.get_data::<DataSubmissionCall>(online_client).await else {
+	let Some(call_data) = res.get_call_data::<DataSubmissionCall>(online_client).await else {
 		return Err("Failed to get Data Submission Call data".into());
 	};
 	println!("Call data: {:?}", call_data.data);

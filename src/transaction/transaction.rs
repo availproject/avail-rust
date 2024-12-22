@@ -156,7 +156,7 @@ where
 		account: &Keypair,
 		options: Option<Options>,
 	) -> Result<TransactionDetails, ClientError> {
-		WebSocket::execute_and_watch(self, WaitFor::BlockInclusion, account, options, Some(2)).await
+		WebSocket::execute_and_watch(self, WaitFor::BlockInclusion, account, options, Some(3)).await
 	}
 
 	async fn execute_and_watch_finalization(

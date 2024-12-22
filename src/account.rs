@@ -1,4 +1,7 @@
-use crate::{avail, error::ClientError, rpc, AOnlineClient, AccountId};
+use crate::{
+	avail, avail::system::storage::types::account::Account, error::ClientError, rpc, AOnlineClient,
+	AccountId,
+};
 use primitive_types::H256;
 use subxt::backend::rpc::RpcClient;
 
@@ -62,6 +65,24 @@ pub async fn fetch_app_ids(
 	};
 
 	Ok(keys.into_iter().map(|v| v.1).collect())
+}
+
+pub async fn fetch_balance(
+	online_client: &AOnlineClient,
+	rpc_client: &RpcClient,
+	account_id: AccountId,
+) -> Result<Account, String> {
+	let block_hash = rpc::chain::get_block_hash(rpc_client, None).await;
+	let block_hash = block_hash.map_err(|e| e.to_string())?;
+
+	let storage = online_client.storage().at(block_hash);
+	let address = avail::storage().system().account(account_id);
+	let result = storage
+		.fetch_or_default(&address)
+		.await
+		.map_err(|e| e.to_string())?;
+
+	Ok(result)
 }
 
 pub fn account_id_from_str(value: &str) -> Result<AccountId, String> {

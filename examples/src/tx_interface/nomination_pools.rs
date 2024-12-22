@@ -362,7 +362,7 @@ mod nominate {
 
 		res.print_debug();
 		if let Some(data) = res
-			.get_data::<NominationPoolsCalls::Nominate>(&sdk.online_client)
+			.get_call_data::<NominationPoolsCalls::Nominate>(&sdk.online_client)
 			.await
 		{
 			dbg!(data);

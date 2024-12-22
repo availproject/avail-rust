@@ -37,7 +37,7 @@ mod submit_data {
 		};
 		dbg!(event);
 		let Some(data) = res
-			.get_data::<DataAvailabilityCalls::SubmitData>(&sdk.online_client)
+			.get_call_data::<DataAvailabilityCalls::SubmitData>(&sdk.online_client)
 			.await
 		else {
 			return Err("Failed to find SubmitDataCall data".into());

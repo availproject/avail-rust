@@ -86,7 +86,7 @@ TransactionDetails {{
 		self.events.find::<T>().flatten().collect()
 	}
 
-	pub async fn get_data<T>(&self, client: &AOnlineClient) -> Option<T>
+	pub async fn get_call_data<T>(&self, client: &AOnlineClient) -> Option<T>
 	where
 		T: StaticExtrinsic,
 	{

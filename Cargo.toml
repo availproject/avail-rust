@@ -4,6 +4,7 @@
 name = "avail-rust"
 edition = "2021"
 version = "0.1.0"
+license = "ISC"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -34,8 +35,6 @@ env_logger = { version = "0.11.5" }
 
 jsonrpsee = { version = "0.24.7",  default-features = false, features = [ "http-client" ], optional = true }
 sp-io = { version = "30", default-features = false, features = [ "disable_panic_handler" ], optional = true }
-
-
 
 [features]
 default = [ "native" ]

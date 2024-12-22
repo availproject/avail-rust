@@ -56,8 +56,10 @@ pub async fn run() -> Result<(), ClientError> {
 		transaction_by_signer_static
 		transaction_by_index
 		transaction_by_index_static
-		transaction_by_hash;
+		transaction_by_hash
 		transaction_by_hash_static
+		transaction_by_app_id
+		transaction_by_app_id_static
 	*/
 
 	// Data Submission

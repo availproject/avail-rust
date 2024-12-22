@@ -1,17 +1,20 @@
 build:
     ./build_sdk.sh
-build-metadata:
+metadata-build:
     ./build_api.sh
-build-book:
-    cd ./docs && mdbook build
+book-build:
+    cd ./documentation && mdbook build
+book-serve:
+    cd ./documentation && mdbook serve
+book-deploy:
+    just book-build
+    mv ./documentation/book/html ./docs
 fmt:
     cargo +nightly fmt &&  cd ./examples && cargo +nightly fmt
 lint:
     cargo clippy
 lint-fix:
     cargo clippy --fix
-serve-book:
-    cd ./docs && mdbook serve
 doc:
     cargo doc --open
 examples:
