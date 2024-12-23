@@ -64,7 +64,10 @@ async fn app_id() -> Result<(), ClientError> {
 	let tx = sdk.tx.data_availability.submit_data(vec![0, 1, 2]);
 
 	let options = Options::new().app_id(1);
-	tx.execute(&account, Some(options)).await?;
+	let res = tx
+		.execute_and_watch_inclusion(&account, Some(options))
+		.await?;
+	res.is_successful(&sdk.online_client)?;
 
 	Ok(())
 }
@@ -77,7 +80,10 @@ async fn tip() -> Result<(), ClientError> {
 	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
 
 	let options = Options::new().tip(1);
-	tx.execute(&account, Some(options)).await?;
+	let res = tx
+		.execute_and_watch_inclusion(&account, Some(options))
+		.await?;
+	res.is_successful(&sdk.online_client)?;
 
 	Ok(())
 }
@@ -94,7 +100,10 @@ async fn mortality() -> Result<(), ClientError> {
 	let mortality = Mortality::new(period, block_hash);
 
 	let options = Options::new().mortality(mortality);
-	tx.execute(&account, Some(options)).await?;
+	let res = tx
+		.execute_and_watch_inclusion(&account, Some(options))
+		.await?;
+	res.is_successful(&sdk.online_client)?;
 
 	Ok(())
 }

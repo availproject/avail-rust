@@ -33,7 +33,7 @@ pub async fn run() -> Result<(), ClientError> {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	Nonce from Node: 1
 	Nonce from best block state: 1

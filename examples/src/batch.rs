@@ -5,6 +5,7 @@ use avail::{
 		da_runtime::RuntimeCall,
 		pallet_balances::pallet::Call::transfer_keep_alive as TransferKeepAlive,
 	},
+	system::events as SystemEvents,
 	utility::events as UtilityEvents,
 };
 
@@ -53,6 +54,15 @@ pub async fn run() -> Result<(), ClientError> {
 		println!("All calls were successful");
 	}
 
+	let batch_failed = res.find_first_event::<SystemEvents::ExtrinsicFailed>();
+	if batch_failed.is_some() {
+		println!("Batch call ExtrinsicFailed was emitted.");
+	}
+	let batch_success = res.find_first_event::<SystemEvents::ExtrinsicSuccess>();
+	if batch_success.is_some() {
+		println!("Batch call ExtrinsicSuccess was emitted.");
+	}
+
 	// Batch All
 	// Send a batch of dispatch calls and atomically execute them.
 	// The whole transaction will rollback and fail if any of the calls failed.
@@ -61,6 +71,16 @@ pub async fn run() -> Result<(), ClientError> {
 	let res = tx.execute_and_watch_inclusion(&account, None).await?;
 	res.is_successful(&sdk.online_client)
 		.expect_err("Batch All should fail");
+	println!("-- Batch All Call --");
+
+	let batch_failed = res.find_first_event::<SystemEvents::ExtrinsicFailed>();
+	if batch_failed.is_some() {
+		println!("Batch All call ExtrinsicFailed was emitted.");
+	}
+	let batch_success = res.find_first_event::<SystemEvents::ExtrinsicSuccess>();
+	if batch_success.is_some() {
+		println!("Batch All call ExtrinsicSuccess was emitted.");
+	}
 
 	// Force Batch
 	// Send a batch of dispatch calls.
@@ -86,15 +106,28 @@ pub async fn run() -> Result<(), ClientError> {
 		println!("All calls were successful");
 	}
 
+	let batch_failed = res.find_first_event::<SystemEvents::ExtrinsicFailed>();
+	if batch_failed.is_some() {
+		println!("Force Batch call ExtrinsicFailed was emitted.");
+	}
+	let batch_success = res.find_first_event::<SystemEvents::ExtrinsicSuccess>();
+	if batch_success.is_some() {
+		println!("Force Batch call ExtrinsicSuccess was emitted.");
+	}
+
 	Ok(())
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	-- Batch Call --
 	At least one call has failed
+	Batch call ExtrinsicSuccess was emitted.
+	-- Batch All Call --
+	Batch All call ExtrinsicFailed was emitted.
 	-- Force Batch Call --
 	At least one call has failed
 	Batch completed even though one or more calls have failed.
+	Force Batch call ExtrinsicSuccess was emitted.
 */

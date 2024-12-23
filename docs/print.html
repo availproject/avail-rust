@@ -1488,7 +1488,7 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	Nonce from Node: 1
 	Nonce from best block state: 1
@@ -1563,7 +1563,10 @@ async fn app_id() -&gt; Result&lt;(), ClientError&gt; {
 	let tx = sdk.tx.data_availability.submit_data(vec![0, 1, 2]);
 
 	let options = Options::new().app_id(1);
-	tx.execute(&amp;account, Some(options)).await?;
+	let res = tx
+		.execute_and_watch_inclusion(&amp;account, Some(options))
+		.await?;
+	res.is_successful(&amp;sdk.online_client)?;
 
 	Ok(())
 }
@@ -1576,7 +1579,10 @@ async fn tip() -&gt; Result&lt;(), ClientError&gt; {
 	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
 
 	let options = Options::new().tip(1);
-	tx.execute(&amp;account, Some(options)).await?;
+	let res = tx
+		.execute_and_watch_inclusion(&amp;account, Some(options))
+		.await?;
+	res.is_successful(&amp;sdk.online_client)?;
 
 	Ok(())
 }
@@ -1593,7 +1599,10 @@ async fn mortality() -&gt; Result&lt;(), ClientError&gt; {
 	let mortality = Mortality::new(period, block_hash);
 
 	let options = Options::new().mortality(mortality);
-	tx.execute(&amp;account, Some(options)).await?;
+	let res = tx
+		.execute_and_watch_inclusion(&amp;account, Some(options))
+		.await?;
+	res.is_successful(&amp;sdk.online_client)?;
 
 	Ok(())
 }
@@ -1640,7 +1649,7 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	fee_details = FeeDetails {
 	inclusion_fee: Some(
@@ -1664,6 +1673,7 @@ use avail::{
 		da_runtime::RuntimeCall,
 		pallet_balances::pallet::Call::transfer_keep_alive as TransferKeepAlive,
 	},
+	system::events as SystemEvents,
 	utility::events as UtilityEvents,
 };
 
@@ -1712,6 +1722,15 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 		println!("All calls were successful");
 	}
 
+	let batch_failed = res.find_first_event::&lt;SystemEvents::ExtrinsicFailed&gt;();
+	if batch_failed.is_some() {
+		println!("Batch call ExtrinsicFailed was emitted.");
+	}
+	let batch_success = res.find_first_event::&lt;SystemEvents::ExtrinsicSuccess&gt;();
+	if batch_success.is_some() {
+		println!("Batch call ExtrinsicSuccess was emitted.");
+	}
+
 	// Batch All
 	// Send a batch of dispatch calls and atomically execute them.
 	// The whole transaction will rollback and fail if any of the calls failed.
@@ -1720,6 +1739,16 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 	let res = tx.execute_and_watch_inclusion(&amp;account, None).await?;
 	res.is_successful(&amp;sdk.online_client)
 		.expect_err("Batch All should fail");
+	println!("-- Batch All Call --");
+
+	let batch_failed = res.find_first_event::&lt;SystemEvents::ExtrinsicFailed&gt;();
+	if batch_failed.is_some() {
+		println!("Batch All call ExtrinsicFailed was emitted.");
+	}
+	let batch_success = res.find_first_event::&lt;SystemEvents::ExtrinsicSuccess&gt;();
+	if batch_success.is_some() {
+		println!("Batch All call ExtrinsicSuccess was emitted.");
+	}
 
 	// Force Batch
 	// Send a batch of dispatch calls.
@@ -1745,17 +1774,30 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 		println!("All calls were successful");
 	}
 
+	let batch_failed = res.find_first_event::&lt;SystemEvents::ExtrinsicFailed&gt;();
+	if batch_failed.is_some() {
+		println!("Force Batch call ExtrinsicFailed was emitted.");
+	}
+	let batch_success = res.find_first_event::&lt;SystemEvents::ExtrinsicSuccess&gt;();
+	if batch_success.is_some() {
+		println!("Force Batch call ExtrinsicSuccess was emitted.");
+	}
+
 	Ok(())
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	-- Batch Call --
 	At least one call has failed
+	Batch call ExtrinsicSuccess was emitted.
+	-- Batch All Call --
+	Batch All call ExtrinsicFailed was emitted.
 	-- Force Batch Call --
 	At least one call has failed
 	Batch completed even though one or more calls have failed.
+	Force Batch call ExtrinsicSuccess was emitted.
 */
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="batch-1"><a class="header" href="#batch-1">Batch</a></h1>
@@ -1843,11 +1885,21 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 
 	// Fetching all events from a block
 	let events = block.events(None).await?;
-	println!("Events count: {}", events.len());
+	let total_event_counts: usize = events.iter().map(|e| e.iter().count()).sum();
+	println!(
+		"Events Groups count: {}. Total events count: {}",
+		events.len(),
+		total_event_counts
+	);
 
 	// Fetching all events from a block for a specific transaction
 	let events = block.events(Some(res.tx_index)).await?;
-	println!("Events count: {}", events.len());
+	let total_event_counts: usize = events.iter().map(|e| e.iter().count()).sum();
+	println!(
+		"Events Groups count: {}. Total events count: {}",
+		events.len(),
+		total_event_counts
+	);
 
 	// Finding the tx index with tx hash
 	let tx_index = block
@@ -1869,14 +1921,14 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	Tx Pallet name: DataAvailability, Tx Name: submit_data
 	Tx Pallet name: DataAvailability, Tx Name: submit_data
 	Tx Call Data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
-	Tx Hash: 0x0397b6f23ba5e534771b6963a51886dc475724b8fa2b0393e89eb48ddf2a6d91, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 148, 140, 212, 44, 213, 20, 183, 36, 162, 143, 92, 16, 11, 80, 252, 38, 49, 129, 229, 159, 46, 165, 127, 124, 128, 24, 236, 40, 108, 197, 13, 67, 105, 12, 248, 226, 20, 13, 70, 68, 134, 1, 171, 49, 14, 2, 122, 87, 200, 132, 11, 87, 244, 85, 175, 237, 125, 233, 88, 211, 168, 231, 118, 135], App Id: 0
-	Events count: 3
-	Events count: 1
+	Tx Hash: 0xf0439041a4138217d042c4d2ef75657b3b5c98cfaa2e85dcca94a47a65472a31, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 196, 39, 196, 81, 65, 82, 28, 80, 157, 36, 247, 217, 186, 203, 75, 149, 165, 250, 33, 198, 34, 57, 111, 250, 41, 65, 249, 148, 110, 42, 154, 19, 117, 38, 169, 162, 154, 87, 118, 88, 122, 225, 157, 246, 91, 82, 9, 171, 86, 42, 197, 63, 218, 111, 241, 64, 24, 13, 155, 47, 143, 160, 74, 132], App Id: 0
+	Events Groups count: 3. Total events count: 9
+	Events Groups count: 1. Total events count: 7
 	Next App Id: 10
 */
 </code></pre>
@@ -1953,14 +2005,14 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
-	Block Hash: 0x3ac87e95a75558510e0fe97530e9905438071e97803fdf1f797f837839f00ab5, Block Number: 4, Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1
+	Block Hash: 0x95db9a398c60358ade0504bef2eb6bf77c6cf05dee0525f43516cefab763b60f, Block Number: 485, Tx Hash: 0x6b4abd33d1452c0aa3d2fb9f4f4bbeb4f9d2d20b0b5bfb55696eea551974dcd3, Tx Index: 1
 	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
-	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Tx Hash: 0x6b4abd33d1452c0aa3d2fb9f4f4bbeb4f9d2d20b0b5bfb55696eea551974dcd3, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 202, 251, 108, 14, 95, 87, 191, 103, 174, 23, 201, 117, 10, 32, 139, 45, 55, 84, 14, 101, 67, 180, 132, 224, 20, 88, 26, 241, 244, 83, 32, 2, 45, 179, 41, 23, 165, 8, 7, 65, 52, 143, 32, 5, 60, 109, 132, 22, 89, 98, 198, 151, 88, 202, 92, 229, 70, 49, 127, 101, 254, 166, 81, 131], App Id: 12
 	Ascii data: My Data
 	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
-	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Tx Hash: 0x6b4abd33d1452c0aa3d2fb9f4f4bbeb4f9d2d20b0b5bfb55696eea551974dcd3, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 202, 251, 108, 14, 95, 87, 191, 103, 174, 23, 201, 117, 10, 32, 139, 45, 55, 84, 14, 101, 67, 180, 132, 224, 20, 88, 26, 241, 244, 83, 32, 2, 45, 179, 41, 23, 165, 8, 7, 65, 52, 143, 32, 5, 60, 109, 132, 22, 89, 98, 198, 151, 88, 202, 92, 229, 70, 49, 127, 101, 254, 166, 81, 131], App Id: 12
 	Ascii data: My Data
 */
 </code></pre>
@@ -2003,7 +2055,7 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	Pallet name: Balances, Event Name: Withdraw
 	Pallet name: Balances, Event Name: Transfer
@@ -2073,7 +2125,7 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	Tx Pallet name: Timestamp, Tx Name: set, Tx Hash: 0xdf4e9c7ae69b40936b580ddf2d7c9b0cf5adb55e64f8492d1e160cc0914a8889
 		Event Pallet name: System, Event Name: ExtrinsicSuccess
@@ -2100,7 +2152,7 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
-	let account = SDK::alice()?;
+	let account = SDK::charlie()?;
 
 	// Bond min_validator_bond or 1 AVAIL token
 	let storage = sdk.online_client.storage().at_latest().await?;
@@ -2213,14 +2265,14 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
-	Block Hash: 0x3ac87e95a75558510e0fe97530e9905438071e97803fdf1f797f837839f00ab5, Block Number: 4, Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1
+	Block Hash: 0x434f28e191b0b2bf4e9e379fd21d8a53d52933f7f2df5829f36ec221c583b005, Block Number: 502, Tx Hash: 0xc5dfa3c4b62280febc3cdb9638650441596dbb02c427ebb77d25201b6e52e2ec, Tx Index: 1
 	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
-	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Tx Hash: 0xc5dfa3c4b62280febc3cdb9638650441596dbb02c427ebb77d25201b6e52e2ec, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 152, 76, 87, 244, 106, 83, 18, 214, 247, 138, 6, 162, 56, 34, 56, 182, 50, 22, 174, 89, 219, 133, 176, 244, 24, 155, 213, 201, 63, 146, 181, 36, 247, 60, 134, 221, 14, 102, 58, 148, 247, 218, 33, 47, 13, 103, 227, 186, 13, 221, 104, 243, 209, 74, 163, 74, 212, 168, 101, 255, 150, 88, 251, 142], App Id: 13
 	Ascii data: My Data
 	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
-	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Tx Hash: 0xc5dfa3c4b62280febc3cdb9638650441596dbb02c427ebb77d25201b6e52e2ec, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 152, 76, 87, 244, 106, 83, 18, 214, 247, 138, 6, 162, 56, 34, 56, 182, 50, 22, 174, 89, 219, 133, 176, 244, 24, 155, 213, 201, 63, 146, 181, 36, 247, 60, 134, 221, 14, 102, 58, 148, 247, 218, 33, 47, 13, 103, 227, 186, 13, 221, 104, 243, 209, 74, 163, 74, 212, 168, 101, 255, 150, 88, 251, 142], App Id: 13
 	Ascii data: My Data
 */
 </code></pre>
@@ -2314,14 +2366,14 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
-	Block Hash: 0x3ac87e95a75558510e0fe97530e9905438071e97803fdf1f797f837839f00ab5, Block Number: 4, Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1
+	Block Hash: 0xb8b08997ab5e45c834e28c0ccab4d73eb94b95814500049b11fcf72f5e999c70, Block Number: 475, Tx Hash: 0xd7a62ff853acac85c042f2f42b123b9fab73f0290105107dd081d2aa3785877d, Tx Index: 1
 	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
-	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Tx Hash: 0xd7a62ff853acac85c042f2f42b123b9fab73f0290105107dd081d2aa3785877d, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 48, 143, 125, 91, 21, 60, 171, 139, 249, 159, 63, 160, 208, 148, 213, 254, 200, 128, 124, 163, 191, 18, 226, 173, 62, 86, 20, 219, 248, 100, 60, 71, 220, 201, 196, 171, 104, 203, 65, 100, 96, 66, 56, 89, 109, 100, 63, 40, 151, 206, 46, 200, 73, 10, 63, 154, 226, 232, 161, 146, 143, 249, 94, 142], App Id: 11
 	Ascii data: My Data
 	Call data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
-	Tx Hash: 0x616e0db91aada331ff0d8e3715eae12498bc864c404c52a57d5ec6f1c8086f67, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 76, 49, 233, 247, 107, 175, 178, 67, 177, 86, 243, 89, 171, 207, 135, 49, 157, 73, 105, 5, 136, 199, 183, 130, 70, 194, 78, 148, 86, 73, 198, 104, 253, 46, 12, 41, 87, 53, 106, 144, 116, 91, 199, 71, 177, 23, 100, 187, 38, 11, 239, 58, 241, 206, 34, 154, 246, 185, 217, 145, 237, 148, 152, 143], App Id: 10
+	Tx Hash: 0xd7a62ff853acac85c042f2f42b123b9fab73f0290105107dd081d2aa3785877d, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 48, 143, 125, 91, 21, 60, 171, 139, 249, 159, 63, 160, 208, 148, 213, 254, 200, 128, 124, 163, 191, 18, 226, 173, 62, 86, 20, 219, 248, 100, 60, 71, 220, 201, 196, 171, 104, 203, 65, 100, 96, 66, 56, 89, 109, 100, 63, 40, 151, 206, 46, 200, 73, 10, 63, 154, 226, 232, 161, 146, 143, 249, 94, 142], App Id: 11
 	Ascii data: My Data
 */
 </code></pre>

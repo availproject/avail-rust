@@ -1,6 +1,6 @@
 use super::{Options, Params, TransactionDetails};
 use crate::{error::ClientError, rpc, AOnlineClient, WaitFor};
-use log::{debug, info, log_enabled, warn};
+use log::{info, log_enabled, warn};
 use primitive_types::H256;
 use std::time::Duration;
 use subxt::{
@@ -74,13 +74,13 @@ pub async fn sign_and_send_raw_params<T>(
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	if log_enabled!(log::Level::Debug) {
+	if log_enabled!(log::Level::Info) {
 		let address = account.public_key().to_account_id().to_string();
 		let call_name = call.call_name();
 		let pallet_name = call.pallet_name();
 		let nonce = &params.4 .0;
 		let app_id = &params.6 .0;
-		debug!(
+		info!(
 			target: "transaction",
 			"Signing and submitting new transaction. Account: {}, Nonce: {:?}, Pallet Name: {}, Call Name: {}, App Id: {}",
 			address, nonce, pallet_name, call_name, app_id
@@ -110,7 +110,7 @@ pub async fn watch(
 	let mut current_block_number: Option<u32> = None;
 	let mut timeout_block_number: Option<u32> = None;
 
-	debug!(target: "watcher", "Watching for Tx Hash: {:?}. Waiting for: {}, Block timeout: {:?}", tx_hash, wait_for.to_str(), block_timeout);
+	info!(target: "watcher", "Watching for Tx Hash: {:?}. Waiting for: {}, Block timeout: {:?}", tx_hash, wait_for.to_str(), block_timeout);
 	loop {
 		let Some(block) = stream.next().await else {
 			return Err(TransactionExecutionError::BlockStreamFailure);
@@ -130,7 +130,7 @@ pub async fn watch(
 		block_hash = block.hash();
 		block_number = block.number();
 
-		debug!(target: "watcher", "New block fetched. Hash: {:?}, Number: {}", block_hash, block_number);
+		info!(target: "watcher", "New block fetched. Hash: {:?}, Number: {}", block_hash, block_number);
 
 		let transactions = block.extrinsics().await?;
 		let tx_found = transactions.iter().find(|e| e.hash() == tx_hash);
@@ -147,7 +147,7 @@ pub async fn watch(
 		if current_block_number.is_none() {
 			current_block_number = Some(block_number);
 			timeout_block_number = Some(block_number + block_timeout);
-			debug!(target: "watcher", "Current Block Number: {}, Timeout Block Number: {}", block_number, block_number + block_timeout + 1);
+			info!(target: "watcher", "Current Block Number: {}, Timeout Block Number: {}", block_number, block_number + block_timeout + 1);
 		}
 		if timeout_block_number.is_some_and(|timeout| block_number > timeout) {
 			return Err(TransactionExecutionError::TransactionNotFound);
@@ -157,7 +157,7 @@ pub async fn watch(
 	let events = tx_details.events().await?;
 	let tx_index = tx_details.index();
 
-	debug!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
+	info!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
 
 	Ok(TransactionDetails::new(
 		events,
@@ -255,7 +255,7 @@ where
 		let pallet_name = call.pallet_name();
 		let nonce = &params.4 .0;
 		let app_id = &params.6 .0;
-		debug!(
+		info!(
 			target: "transaction",
 			"Signing and submitting new transaction. Account: {}, Nonce: {:?}, Pallet Name: {}, Call Name: {}, App Id: {}",
 			address, nonce, pallet_name, call_name, app_id
@@ -285,7 +285,7 @@ pub async fn http_watch(
 	let tx_details;
 	let mut should_sleep = false;
 
-	debug!(target: "watcher", "Watching for Tx Hash: {:?}. Waiting for: {}, Block timeout: {:?}", tx_hash, wait_for.to_str(), block_timeout);
+	info!(target: "watcher", "Watching for Tx Hash: {:?}. Waiting for: {}, Block timeout: {:?}", tx_hash, wait_for.to_str(), block_timeout);
 
 	loop {
 		if should_sleep {
@@ -308,7 +308,7 @@ pub async fn http_watch(
 		let block = online_client.blocks().at(block_hash).await?;
 		block_number = block.number();
 		block_hash = block.hash();
-		debug!(target: "watcher", "New block fetched. Hash: {:?}, Number: {}", block_hash, block_number);
+		info!(target: "watcher", "New block fetched. Hash: {:?}, Number: {}", block_hash, block_number);
 
 		let transactions = block.extrinsics().await?;
 		let tx_found = transactions.iter().find(|e| e.hash() == tx_hash);
@@ -324,7 +324,7 @@ pub async fn http_watch(
 
 		if timeout_block_number.is_none() {
 			timeout_block_number = Some(block_number + block_timeout);
-			debug!(target: "watcher", "Current Block Number: {}, Timeout Block Number: {}", block_number, block_number + block_timeout + 1);
+			info!(target: "watcher", "Current Block Number: {}, Timeout Block Number: {}", block_number, block_number + block_timeout + 1);
 		}
 		if timeout_block_number.is_some_and(|timeout| block_number > timeout) {
 			return Err(TransactionExecutionError::TransactionNotFound);
@@ -334,7 +334,7 @@ pub async fn http_watch(
 	let events = tx_details.events().await?;
 	let tx_index = tx_details.index();
 
-	debug!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
+	info!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
 
 	Ok(TransactionDetails::new(
 		events,

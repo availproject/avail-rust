@@ -58,7 +58,7 @@ mod create_application_key {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let key = String::from("MyAwesomeKey").as_bytes().to_vec();
+		let key = String::from("My Tx Interface Key").as_bytes().to_vec();
 
 		let tx = sdk.tx.data_availability.create_application_key(key);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;

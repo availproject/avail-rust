@@ -7,7 +7,7 @@ use avail_rust::{
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
-	let account = SDK::alice()?;
+	let account = SDK::charlie()?;
 
 	// Bond min_validator_bond or 1 AVAIL token
 	let storage = sdk.online_client.storage().at_latest().await?;

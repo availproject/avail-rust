@@ -36,7 +36,7 @@ pub async fn run() -> Result<(), ClientError> {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	Pallet name: Balances, Event Name: Withdraw
 	Pallet name: Balances, Event Name: Transfer

@@ -238,11 +238,21 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 
 	// Fetching all events from a block
 	let events = block.events(None).await?;
-	println!("Events count: {}", events.len());
+	let total_event_counts: usize = events.iter().map(|e| e.iter().count()).sum();
+	println!(
+		"Events Groups count: {}. Total events count: {}",
+		events.len(),
+		total_event_counts
+	);
 
 	// Fetching all events from a block for a specific transaction
 	let events = block.events(Some(res.tx_index)).await?;
-	println!("Events count: {}", events.len());
+	let total_event_counts: usize = events.iter().map(|e| e.iter().count()).sum();
+	println!(
+		"Events Groups count: {}. Total events count: {}",
+		events.len(),
+		total_event_counts
+	);
 
 	// Finding the tx index with tx hash
 	let tx_index = block
@@ -264,14 +274,14 @@ pub async fn run() -&gt; Result&lt;(), ClientError&gt; {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	Tx Pallet name: DataAvailability, Tx Name: submit_data
 	Tx Pallet name: DataAvailability, Tx Name: submit_data
 	Tx Call Data: BoundedVec([77, 121, 32, 68, 97, 116, 97])
-	Tx Hash: 0x0397b6f23ba5e534771b6963a51886dc475724b8fa2b0393e89eb48ddf2a6d91, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 148, 140, 212, 44, 213, 20, 183, 36, 162, 143, 92, 16, 11, 80, 252, 38, 49, 129, 229, 159, 46, 165, 127, 124, 128, 24, 236, 40, 108, 197, 13, 67, 105, 12, 248, 226, 20, 13, 70, 68, 134, 1, 171, 49, 14, 2, 122, 87, 200, 132, 11, 87, 244, 85, 175, 237, 125, 233, 88, 211, 168, 231, 118, 135], App Id: 0
-	Events count: 3
-	Events count: 1
+	Tx Hash: 0xf0439041a4138217d042c4d2ef75657b3b5c98cfaa2e85dcca94a47a65472a31, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 196, 39, 196, 81, 65, 82, 28, 80, 157, 36, 247, 217, 186, 203, 75, 149, 165, 250, 33, 198, 34, 57, 111, 250, 41, 65, 249, 148, 110, 42, 154, 19, 117, 38, 169, 162, 154, 87, 118, 88, 122, 225, 157, 246, 91, 82, 9, 171, 86, 42, 197, 63, 218, 111, 241, 64, 24, 13, 155, 47, 143, 160, 74, 132], App Id: 0
+	Events Groups count: 3. Total events count: 9
+	Events Groups count: 1. Total events count: 7
 	Next App Id: 10
 */
 </code></pre>

@@ -20,7 +20,7 @@ pub async fn run() -> Result<(), ClientError> {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	fee_details = FeeDetails {
 	inclusion_fee: Some(

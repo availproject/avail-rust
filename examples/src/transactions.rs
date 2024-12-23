@@ -55,7 +55,7 @@ pub async fn run() -> Result<(), ClientError> {
 }
 
 /*
-	Expected Output:
+	Example Output:
 
 	Tx Pallet name: Timestamp, Tx Name: set, Tx Hash: 0xdf4e9c7ae69b40936b580ddf2d7c9b0cf5adb55e64f8492d1e160cc0914a8889
 		Event Pallet name: System, Event Name: ExtrinsicSuccess
