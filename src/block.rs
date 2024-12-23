@@ -95,14 +95,14 @@ impl Block {
 		transaction_by_index_static::<T>(&self.transactions, tx_index)
 	}
 
-	pub fn transaction_by_hash(&self, tx_hash: H256) -> Vec<AExtrinsicDetails> {
+	pub fn transaction_by_hash(&self, tx_hash: H256) -> Option<AExtrinsicDetails> {
 		transaction_by_hash(&self.transactions, tx_hash)
 	}
 
 	pub fn transaction_by_hash_static<T: StaticExtrinsic>(
 		&self,
 		tx_hash: H256,
-	) -> Vec<AFoundExtrinsic<T>> {
+	) -> Option<AFoundExtrinsic<T>> {
 		transaction_by_hash_static::<T>(&self.transactions, tx_hash)
 	}
 
@@ -139,7 +139,7 @@ impl Block {
 		data_submissions_by_hash(&self.transactions, tx_hash)
 	}
 
-	pub fn data_submissions_by_app_id(&self, app_id: u32) -> Option<DataSubmission> {
+	pub fn data_submissions_by_app_id(&self, app_id: u32) -> Vec<DataSubmission> {
 		data_submissions_by_app_id(&self.transactions, app_id)
 	}
 
@@ -279,35 +279,27 @@ pub fn data_submissions_by_index(
 		.map(DataSubmission::from_static)
 }
 
-pub fn transaction_by_hash(transactions: &AExtrinsics, tx_hash: H256) -> Vec<AExtrinsicDetails> {
-	transactions
-		.iter()
-		.filter(|tx| tx.hash() == tx_hash)
-		.collect()
+pub fn transaction_by_hash(transactions: &AExtrinsics, tx_hash: H256) -> Option<AExtrinsicDetails> {
+	transactions.iter().filter(|tx| tx.hash() == tx_hash).next()
 }
 
 pub fn transaction_by_hash_static<T: StaticExtrinsic>(
 	transactions: &AExtrinsics,
 	tx_hash: H256,
-) -> Vec<AFoundExtrinsic<T>> {
+) -> Option<AFoundExtrinsic<T>> {
 	transactions
 		.find::<T>()
 		.flatten()
 		.filter(|tx| tx.details.hash() == tx_hash)
-		.collect()
+		.next()
 }
 
 pub fn data_submissions_by_hash(
 	transactions: &AExtrinsics,
 	tx_hash: H256,
 ) -> Option<DataSubmission> {
-	let all_submissions: Vec<DataSubmission> =
-		transaction_by_hash_static::<DataAvailabilityCalls::SubmitData>(transactions, tx_hash)
-			.into_iter()
-			.map(DataSubmission::from_static)
-			.collect();
-
-	all_submissions.into_iter().next()
+	transaction_by_hash_static::<DataAvailabilityCalls::SubmitData>(transactions, tx_hash)
+		.map(DataSubmission::from_static)
 }
 
 pub fn transaction_by_app_id(transactions: &AExtrinsics, app_id: u32) -> Vec<AExtrinsicDetails> {
@@ -328,17 +320,11 @@ pub fn transaction_by_app_id_static<T: StaticExtrinsic>(
 		.collect()
 }
 
-pub fn data_submissions_by_app_id(
-	transactions: &AExtrinsics,
-	app_id: u32,
-) -> Option<DataSubmission> {
-	let all_submissions: Vec<DataSubmission> =
-		transaction_by_app_id_static::<DataAvailabilityCalls::SubmitData>(transactions, app_id)
-			.into_iter()
-			.map(DataSubmission::from_static)
-			.collect();
-
-	all_submissions.into_iter().next()
+pub fn data_submissions_by_app_id(transactions: &AExtrinsics, app_id: u32) -> Vec<DataSubmission> {
+	transaction_by_app_id_static::<DataAvailabilityCalls::SubmitData>(transactions, app_id)
+		.into_iter()
+		.map(DataSubmission::from_static)
+		.collect()
 }
 
 pub fn transaction_hash_to_index(transactions: &AExtrinsics, tx_hash: H256) -> Vec<u32> {
