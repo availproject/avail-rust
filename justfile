@@ -1,5 +1,7 @@
 build:
     ./build_sdk.sh
+check:
+    just build
 metadata-build:
     ./build_api.sh
 book-build:

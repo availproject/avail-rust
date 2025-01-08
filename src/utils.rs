@@ -5,6 +5,8 @@ use crate::{
 use primitive_types::H256;
 use subxt::{backend::legacy::rpc_methods::Bytes, error::DispatchError};
 
+/// Returns Ok if the transaction was successful
+/// Returns Err if the transaction failed
 pub fn check_if_transaction_was_successful(
 	client: &AOnlineClient,
 	events: &AExtrinsicEvents,

@@ -67,7 +67,10 @@ async fn app_id() -> Result<(), ClientError> {
 	let res = tx
 		.execute_and_watch_inclusion(&account, Some(options))
 		.await?;
-	res.is_successful(&sdk.online_client)?;
+	match res.is_successful(&sdk.online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 
 	Ok(())
 }
@@ -83,7 +86,10 @@ async fn tip() -> Result<(), ClientError> {
 	let res = tx
 		.execute_and_watch_inclusion(&account, Some(options))
 		.await?;
-	res.is_successful(&sdk.online_client)?;
+	match res.is_successful(&sdk.online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 
 	Ok(())
 }
@@ -103,7 +109,10 @@ async fn mortality() -> Result<(), ClientError> {
 	let res = tx
 		.execute_and_watch_inclusion(&account, Some(options))
 		.await?;
-	res.is_successful(&sdk.online_client)?;
+	match res.is_successful(&sdk.online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 
 	Ok(())
 }

@@ -29,7 +29,10 @@ mod submit_data {
 		let res = tx
 			.execute_and_watch_inclusion(&account, Some(options))
 			.await?;
-		res.is_successful(&sdk.online_client)?;
+		match res.is_successful(&sdk.online_client) {
+			Some(x) => x?,
+			None => panic!("Failed to decode events."),
+		};
 
 		res.print_debug();
 		let Some(event) = res.find_first_event::<DataAvailabilityEvents::DataSubmitted>() else {
@@ -62,7 +65,10 @@ mod create_application_key {
 
 		let tx = sdk.tx.data_availability.create_application_key(key);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		res.is_successful(&sdk.online_client)?;
+		match res.is_successful(&sdk.online_client) {
+			Some(x) => x?,
+			None => panic!("Failed to decode events."),
+		};
 
 		res.print_debug();
 		let Some(event) = res.find_first_event::<DataAvailabilityEvents::ApplicationKeyCreated>()

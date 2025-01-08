@@ -8,8 +8,12 @@ pub async fn run() -> Result<(), ClientError> {
 	let dest = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
 	let tx = sdk.tx.balances.transfer_keep_alive(dest, SDK::one_avail());
 	let res = tx.execute_and_watch_inclusion(&account, None).await?;
+	let events = match &res.events {
+		Some(x) => x,
+		None => panic!("Failed to decode events."),
+	};
 
-	for event in res.events.iter() {
+	for event in events.iter() {
 		let Ok(event) = event else {
 			return Ok(());
 		};

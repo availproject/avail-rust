@@ -47,9 +47,12 @@ pub async fn run() -> Result<(), ClientError> {
 		.balances()
 		.transfer_keep_alive(dest.into(), SDK::one_avail());
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
-	let tx_details = tx.execute_and_watch_inclusion(&account, None).await?;
+	let res = tx.execute_and_watch_inclusion(&account, None).await?;
 	// Checking if the transaction was successful
-	tx_details.is_successful(&sdk.online_client)?;
+	match res.is_successful(&sdk.online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 
 	Ok(())
 }
