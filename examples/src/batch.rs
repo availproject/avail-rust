@@ -69,8 +69,10 @@ pub async fn run() -> Result<(), ClientError> {
 	let payload = avail::tx().utility().batch_all(calls.clone());
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
 	let res = tx.execute_and_watch_inclusion(&account, None).await?;
-	res.is_successful(&sdk.online_client)
-		.expect_err("Batch All should fail");
+	match res.is_successful(&sdk.online_client) {
+		Some(x) => x.expect_err("Batch All should fail"),
+		None => panic!("Failed to decode events."),
+	};
 	println!("-- Batch All Call --");
 
 	let batch_failed = res.find_first_event::<SystemEvents::ExtrinsicFailed>();

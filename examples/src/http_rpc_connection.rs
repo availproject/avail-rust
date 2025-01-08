@@ -19,7 +19,10 @@ pub async fn run() -> Result<(), ClientError> {
 	let key = String::from("My Key Http").into_bytes();
 	let tx = sdk.tx.data_availability.create_application_key(key);
 	let res = tx.execute_and_watch_inclusion(&account, None).await?;
-	res.is_successful(&online_client)?;
+	match res.is_successful(&sdk.online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 
 	let Some(event) = res.find_first_event::<ApplicationKeyCreatedEvent>() else {
 		return Err("Failed to get Application Key Created Event".into());
@@ -33,7 +36,10 @@ pub async fn run() -> Result<(), ClientError> {
 	let res = tx
 		.execute_and_watch_inclusion(&account, Some(options))
 		.await?;
-	res.is_successful(&online_client)?;
+	match res.is_successful(&sdk.online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 
 	println!(
 		"Block Hash: {:?}, Block Number: {}, Tx Hash: {:?}, Tx Index: {}",

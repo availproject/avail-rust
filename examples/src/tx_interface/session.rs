@@ -22,7 +22,10 @@ mod set_keys {
 
 		let tx = sdk.tx.session.set_keys(keys);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		res.is_successful(&sdk.online_client)?;
+		match res.is_successful(&sdk.online_client) {
+			Some(x) => x?,
+			None => panic!("Failed to decode events."),
+		};
 
 		res.print_debug();
 		if let Some(data) = res

@@ -154,7 +154,7 @@ pub async fn watch(
 		}
 	}
 
-	let events = tx_details.events().await?;
+	let events = tx_details.events().await.ok();
 	let tx_index = tx_details.index();
 
 	info!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
@@ -331,7 +331,7 @@ pub async fn http_watch(
 		}
 	}
 
-	let events = tx_details.events().await?;
+	let events = tx_details.events().await.ok();
 	let tx_index = tx_details.index();
 
 	info!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);

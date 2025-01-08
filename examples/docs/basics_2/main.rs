@@ -47,7 +47,10 @@ async fn main() -> Result<(), ClientError> {
 	println!("Tx Index: {:?}", tx_details.tx_index); // Tx Index: 1
 
 	println!("Event count: {}", tx_details.events.iter().count()); // Event count: 7
-	tx_details.is_successful(&online_client)?;
+	match tx_details.is_successful(&online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 	// ANCHOR_END: watcher
 
 	Ok(())
