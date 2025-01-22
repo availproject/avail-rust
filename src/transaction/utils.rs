@@ -400,8 +400,12 @@ where
 {
 	let account_id = account.public_key().to_account_id();
 
-	let options = options
-		.unwrap_or_default()
+	let options = options.unwrap_or_default();
+	let regenerate_mortality = match &options.mortality {
+		Some(x) => x.block_hash.is_none(),
+		None => true,
+	};
+	let mut options = options
 		.build(online_client, rpc_client, &account_id)
 		.await?;
 
@@ -438,6 +442,10 @@ where
 		if retry_count == 0 {
 			warn!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Aborting", tx_hash);
 			return Err(ClientError::TransactionExecution(error));
+		}
+
+		if regenerate_mortality {
+			options.regenerate_mortality(rpc_client).await?;
 		}
 
 		info!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Trying again.", tx_hash);
