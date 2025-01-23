@@ -31,7 +31,10 @@ mod transfer_all {
 
 		let tx = sdk.tx.balances.transfer_all(dest, keep_alive);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		res.is_successful(&sdk.online_client)?;
+		match res.is_successful(&sdk.online_client) {
+			Some(x) => x?,
+			None => panic!("Failed to decode events."),
+		};
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<BalancesEvents::Transfer>() {
@@ -80,7 +83,10 @@ mod transfer_allow_death {
 
 		let tx = sdk.tx.balances.transfer_allow_death(dest, amount);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		res.is_successful(&sdk.online_client)?;
+		match res.is_successful(&sdk.online_client) {
+			Some(x) => x?,
+			None => panic!("Failed to decode events."),
+		};
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<BalancesEvents::Transfer>() {
@@ -110,7 +116,10 @@ mod transfer_keep_alive {
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, amount);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		res.is_successful(&sdk.online_client)?;
+		match res.is_successful(&sdk.online_client) {
+			Some(x) => x?,
+			None => panic!("Failed to decode events."),
+		};
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<BalancesEvents::Transfer>() {

@@ -13,7 +13,10 @@ async fn main() -> Result<(), ClientError> {
 	let tx = sdk.tx.data_availability.create_application_key(key);
 	let tx_details = tx.execute_and_watch_inclusion(&account, None).await?;
 	// Checking if the transaction was successful
-	tx_details.is_successful(&sdk.online_client)?;
+	match tx_details.is_successful(&sdk.online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 	// ANCHOR_END: success
 
 	// Finding ApplicationKeyCreated event
@@ -43,7 +46,10 @@ async fn main() -> Result<(), ClientError> {
 	let tx = Transaction::new(sdk.online_client.clone(), sdk.rpc_client.clone(), payload);
 	let tx_details = tx.execute_and_watch_inclusion(&account, None).await?;
 	// Checking if the transaction was successful
-	tx_details.is_successful(&sdk.online_client)?;
+	match tx_details.is_successful(&sdk.online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 	// ANCHOR_END: custompayload
 
 	Ok(())

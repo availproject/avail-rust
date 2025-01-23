@@ -110,7 +110,10 @@ pub async fn watch(
 	let mut current_block_number: Option<u32> = None;
 	let mut timeout_block_number: Option<u32> = None;
 
-	info!(target: "watcher", "Watching for Tx Hash: {:?}. Waiting for: {}, Block timeout: {:?}", tx_hash, wait_for.to_str(), block_timeout);
+	if log_enabled!(log::Level::Info) {
+		let marker = &format!("{:?}", tx_hash)[0..10];
+		info!(target: "watcher", "{}: Watching for Tx Hash: {:?}. Waiting for: {}, Block timeout: {:?}", marker, tx_hash, wait_for.to_str(), block_timeout);
+	}
 	loop {
 		let Some(block) = stream.next().await else {
 			return Err(TransactionExecutionError::BlockStreamFailure);
@@ -130,7 +133,10 @@ pub async fn watch(
 		block_hash = block.hash();
 		block_number = block.number();
 
-		info!(target: "watcher", "New block fetched. Hash: {:?}, Number: {}", block_hash, block_number);
+		if log_enabled!(log::Level::Info) {
+			let marker = &format!("{:?}", tx_hash)[0..10];
+			info!(target: "watcher", "{}: New block fetched. Hash: {:?}, Number: {}", marker, block_hash, block_number);
+		}
 
 		let transactions = block.extrinsics().await?;
 		let tx_found = transactions.iter().find(|e| e.hash() == tx_hash);
@@ -147,17 +153,24 @@ pub async fn watch(
 		if current_block_number.is_none() {
 			current_block_number = Some(block_number);
 			timeout_block_number = Some(block_number + block_timeout);
-			info!(target: "watcher", "Current Block Number: {}, Timeout Block Number: {}", block_number, block_number + block_timeout + 1);
+
+			if log_enabled!(log::Level::Info) {
+				let marker = &format!("{:?}", tx_hash)[0..10];
+				info!(target: "watcher", "{}: Current Block Number: {}, Timeout Block Number: {}", marker, block_number, block_number + block_timeout + 1);
+			}
 		}
 		if timeout_block_number.is_some_and(|timeout| block_number > timeout) {
 			return Err(TransactionExecutionError::TransactionNotFound);
 		}
 	}
 
-	let events = tx_details.events().await?;
+	let events = tx_details.events().await.ok();
 	let tx_index = tx_details.index();
 
-	info!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
+	if log_enabled!(log::Level::Info) {
+		let marker = &format!("{:?}", tx_hash)[0..10];
+		info!(target: "watcher", "{}: Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", marker, tx_hash, tx_index, block_hash, block_number);
+	}
 
 	Ok(TransactionDetails::new(
 		events,
@@ -183,15 +196,34 @@ where
 {
 	let account_id = account.public_key().to_account_id();
 
-	let options = options
-		.unwrap_or_default()
+	let options = options.unwrap_or_default();
+	let regenerate_mortality = match &options.mortality {
+		Some(x) => x.block_hash.is_none(),
+		None => true,
+	};
+	let mut options = options
 		.build(online_client, rpc_client, &account_id)
 		.await?;
 
 	let mut retry_count = retry_count.unwrap_or(0);
+	let retry_count_max = retry_count;
 	loop {
 		let params = options.build().await?;
 		let tx_hash = sign_and_send_raw_params(online_client, account, call, params).await?;
+		if log_enabled!(log::Level::Info) {
+			let address = account.public_key().to_account_id().to_string();
+			let mortality = options.mortality.block_number + options.mortality.period as u32;
+			let marker = &format!("{:?}", tx_hash)[0..10];
+			info!(
+				target: "transaction",
+				"{}: Transaction was submitted. Account: {}, TxHash: {:?}, Mortality Block: {:?}",
+				marker,
+				address,
+				tx_hash,
+				mortality
+			);
+		}
+
 		let result = watch(online_client, tx_hash, wait_for, block_timeout).await;
 		let error = match result {
 			Ok(details) => return Ok(details),
@@ -209,12 +241,19 @@ where
 		};
 
 		if retry_count == 0 {
-			warn!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Aborting", tx_hash);
+			if log_enabled!(log::Level::Warn) {
+				let marker = &format!("{:?}", tx_hash)[0..10];
+				warn!(target: "watcher", "{}: Failed to find transaction. Tx Hash: {:?}. Aborting", marker, tx_hash);
+			}
 			return Err(ClientError::TransactionExecution(error));
 		}
 
-		info!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Trying again.", tx_hash);
+		if regenerate_mortality {
+			options.regenerate_mortality(rpc_client).await?;
+		}
+
 		retry_count -= 1;
+		info!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Trying again. {:?}/{:?}", tx_hash, retry_count_max, retry_count);
 	}
 }
 
@@ -331,7 +370,7 @@ pub async fn http_watch(
 		}
 	}
 
-	let events = tx_details.events().await?;
+	let events = tx_details.events().await.ok();
 	let tx_index = tx_details.index();
 
 	info!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
@@ -361,8 +400,12 @@ where
 {
 	let account_id = account.public_key().to_account_id();
 
-	let options = options
-		.unwrap_or_default()
+	let options = options.unwrap_or_default();
+	let regenerate_mortality = match &options.mortality {
+		Some(x) => x.block_hash.is_none(),
+		None => true,
+	};
+	let mut options = options
 		.build(online_client, rpc_client, &account_id)
 		.await?;
 
@@ -399,6 +442,10 @@ where
 		if retry_count == 0 {
 			warn!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Aborting", tx_hash);
 			return Err(ClientError::TransactionExecution(error));
+		}
+
+		if regenerate_mortality {
+			options.regenerate_mortality(rpc_client).await?;
 		}
 
 		info!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Trying again.", tx_hash);

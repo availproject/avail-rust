@@ -105,6 +105,18 @@ impl PopulatedOptions {
 
 		Ok(builder.build())
 	}
+
+	pub async fn regenerate_mortality(
+		&mut self,
+		rpc_client: &RpcClient,
+	) -> Result<(), ClientError> {
+		let mortality = Mortality {
+			period: self.mortality.period,
+			block_hash: None,
+		};
+		self.mortality = CheckedMortality::from_mortality(&mortality, rpc_client).await?;
+		return Ok(());
+	}
 }
 
 #[derive(Debug, Clone, Copy)]

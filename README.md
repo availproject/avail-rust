@@ -14,9 +14,18 @@ Here is the list of available `just` commands (`just -l`):
 # Release Strategy
 This project uses [GitHub Flow](https://www.alexhyett.com/git-flow-github-flow/) to manage release and branches.
 
+# Documentation
+[Link](https://availproject.github.io/avail-rust/) to documentation (web preview of examples)
+
+
 # Logging
 You can enable logging by calling `SDK::enable_logging()` in your code and by using the `RUST_LOG` env variable. 
-Example:
+Example for just our logs:
+```bash
+RUST_LOG=info cargo run
+```
+
+Example for all Logs:
 ```bash
 RUST_LOG=debug cargo run
 ```

@@ -6,7 +6,10 @@ pub async fn run() -> Result<(), ClientError> {
 	let data = String::from("My Data").into_bytes();
 	let tx = sdk.tx.data_availability.submit_data(data);
 	let res = tx.execute_and_watch_inclusion(&SDK::alice()?, None).await?;
-	res.is_successful(&sdk.online_client)?;
+	match res.is_successful(&sdk.online_client) {
+		Some(x) => x?,
+		None => panic!("Failed to decode events."),
+	};
 
 	// Fetching
 	// Fetching best block
