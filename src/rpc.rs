@@ -2,7 +2,7 @@ use crate::{
 	avail::runtime_types::frame_system::limits::BlockLength,
 	error::ClientError,
 	from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState},
-	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, GDataProof, GRow, H256,
+	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, GDataProof, GMultiProof, GRow, H256,
 };
 use avail_core::data_proof::ProofResponse;
 use subxt::{
@@ -220,6 +220,16 @@ pub mod kate {
 	) -> Result<Vec<GDataProof>, ClientError> {
 		let params = rpc_params![cells, at];
 		let value = client.request("kate_queryProof", params).await?;
+		Ok(value)
+	}
+
+	pub async fn query_multi_proof(
+		client: &RpcClient,
+		cells: Vec<Cell>,
+		at: Option<H256>,
+	) -> Result<Vec<GMultiProof>, ClientError> {
+		let params = rpc_params![cells, at];
+		let value = client.request("kate_queryMultiProof", params).await?;
 		Ok(value)
 	}
 

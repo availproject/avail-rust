@@ -30,7 +30,7 @@ pub use primitives::{
 	block::{
 		AppUncheckedExtrinsic, AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder,
 	},
-	kate::{Cell, GDataProof, GRow},
+	kate::{Cell, GDataProof, GMultiProof, GRow},
 };
 pub use sdk::{WaitFor, SDK};
 pub use sp_core;
