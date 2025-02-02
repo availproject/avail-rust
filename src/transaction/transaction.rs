@@ -141,6 +141,14 @@ impl<T> WebSocket for Transaction<T>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
+	async fn execute(
+		&self,
+		account: &Keypair,
+		options: Option<Options>,
+	) -> Result<H256, ClientError> {
+		utils::sign_and_send(&self.client, account, &self.payload, options).await
+	}
+
 	async fn execute_and_watch_inclusion(
 		&self,
 		account: &Keypair,
@@ -176,20 +184,20 @@ where
 		)
 		.await
 	}
-
-	async fn execute(
-		&self,
-		account: &Keypair,
-		options: Option<Options>,
-	) -> Result<H256, ClientError> {
-		utils::sign_and_send(&self.client, account, &self.payload, options).await
-	}
 }
 
 impl<T> HTTP for Transaction<T>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
+	async fn execute(
+		&self,
+		account: &Keypair,
+		options: Option<Options>,
+	) -> Result<H256, ClientError> {
+		utils::http_sign_and_send(&self.client, account, &self.payload, options).await
+	}
+
 	async fn execute_and_watch_inclusion(
 		&self,
 		account: &Keypair,
@@ -241,13 +249,5 @@ where
 			sleep_duration,
 		)
 		.await
-	}
-
-	async fn execute(
-		&self,
-		account: &Keypair,
-		options: Option<Options>,
-	) -> Result<H256, ClientError> {
-		utils::http_sign_and_send(&self.client, account, &self.payload, options).await
 	}
 }
