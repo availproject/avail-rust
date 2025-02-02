@@ -8,6 +8,7 @@ pub mod http;
 // Export types for internal and external consumption
 pub mod account;
 pub mod block;
+pub mod block_transaction;
 pub mod error;
 pub mod primitives;
 pub mod rpc;
@@ -22,6 +23,7 @@ pub use avail::runtime_types::{
 };
 pub use avail_core;
 pub use block::Block;
+pub use block_transaction::BlockTransaction;
 pub use config::*;
 pub use hex;
 pub use kate_recovery;
@@ -44,8 +46,8 @@ pub mod prelude {
 	pub use super::{
 		account, avail, avail::runtime_types::bounded_collections::bounded_vec::BoundedVec,
 		avail_core, block::DataSubmission, config::*, error::ClientError, hex, kate_recovery,
-		primitives, rpc, subxt, subxt_signer, transaction::WebSocket, Block, Client, Keypair,
-		Mortality, Nonce, Options, Perbill, PopulatedOptions, SecretUri, Transaction,
-		TransactionDetails, WaitFor, H256, SDK, U256,
+		primitives, rpc, subxt, subxt_signer, transaction::WebSocket, Block, BlockTransaction,
+		Client, Keypair, Mortality, Nonce, Options, Perbill, PopulatedOptions, SecretUri,
+		Transaction, TransactionDetails, WaitFor, H256, SDK, U256,
 	};
 }

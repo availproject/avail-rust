@@ -1,7 +1,10 @@
 use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 use subxt::{
 	backend::legacy::rpc_methods::{Block as BlockRPC, BlockDetails as BlockDetailsRPC},
-	blocks::{Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, Extrinsics, FoundExtrinsic},
+	blocks::{
+		Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, ExtrinsicSignedExtensions,
+		Extrinsics, FoundExtrinsic,
+	},
 	config::substrate::BlakeTwo256,
 	storage::StorageClient,
 	tx::{TxClient, TxInBlock, TxProgress},
@@ -22,14 +25,15 @@ pub type AOnlineClient = OnlineClient<AvailConfig>;
 pub type ABlocksClient = BlocksClient<AvailConfig, AOnlineClient>;
 pub type AStorageClient = StorageClient<AvailConfig, AOnlineClient>;
 pub type ATxClient = TxClient<AvailConfig, AOnlineClient>;
+pub type AExtrinsicSignedExtensions<'a> = ExtrinsicSignedExtensions<'a, AvailConfig>;
 
 /// TX status
 pub type ATxProgress = TxProgress<AvailConfig, AOnlineClient>;
 pub type ATxInBlock = TxInBlock<AvailConfig, AOnlineClient>;
 pub type AExtrinsicEvents = ExtrinsicEvents<AvailConfig>;
 pub type AExtrinsicDetails = ExtrinsicDetails<AvailConfig, AOnlineClient>;
-pub type AExtrinsics = Extrinsics<AvailConfig, AOnlineClient>;
 pub type AFoundExtrinsic<T> = FoundExtrinsic<AvailConfig, AOnlineClient, T>;
+pub type AExtrinsics = Extrinsics<AvailConfig, AOnlineClient>;
 pub type ABlock = Block<AvailConfig, AOnlineClient>;
 
 /// Used only when chain_getBlock RPC is called. This is part of legacy baggage.

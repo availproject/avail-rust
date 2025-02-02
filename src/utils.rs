@@ -11,11 +11,15 @@ pub fn check_if_transaction_was_successful(events: &AExtrinsicEvents) -> Option<
 	// Try to find any errors; return the first one we encounter.
 	for ev in events.iter() {
 		let Ok(ev) = ev else { continue };
-		if ev.pallet_name() == "System" && ev.variant_name() == "ExtrinsicFailed" {
+		if ev.pallet_name() != "System" {
+			continue;
+		}
+
+		if ev.variant_name() == "ExtrinsicFailed" {
 			return Some(false);
 		}
 
-		if ev.pallet_name() == "System" && ev.variant_name() == "ExtrinsicSuccess" {
+		if ev.variant_name() == "ExtrinsicSuccess" {
 			return Some(true);
 		}
 	}
