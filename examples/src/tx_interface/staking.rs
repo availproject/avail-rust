@@ -279,7 +279,7 @@ mod payout_stakers {
 		let validator_stash =
 			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
 		let era_storage = avail::storage().staking().active_era();
-		let storage = sdk.online_client.storage().at_latest().await?;
+		let storage = sdk.client.storage().at_latest().await?;
 		let era = storage.fetch(&era_storage).await?;
 		let mut era = era.map(|e| e.index).unwrap_or(0);
 		if era > 0 {

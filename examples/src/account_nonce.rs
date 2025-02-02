@@ -1,33 +1,19 @@
-use avail_rust::{account, avail, error::ClientError, Block, SDK};
+use avail_rust::{account, error::ClientError, SDK};
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
-	let account = SDK::alice()?;
-	let account_id = account.public_key().to_account_id();
-	let account_address = account_id.to_string();
+	let alice_address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
 
-	// Fetch nonce from Node (this includes Tx Pool)
-	let nonce = account::fetch_nonce_node(&sdk.rpc_client, &account_address).await?;
-	println!("Nonce from Node: {}", nonce);
+	// Fetch nonce via RPC
+	let nonce = account::fetch_nonce(&sdk.rpc_client, alice_address).await?;
+	println!("RPC Nonce: {}", nonce);
 
-	// Fetch nonce from best block state
+	// Fetch nonce via state
 	let nonce =
-		account::fetch_nonce_state(&sdk.online_client, &sdk.rpc_client, &account_address, None)
+		account::fetch_nonce_state(&sdk.online_client, &sdk.rpc_client, alice_address, None)
 			.await?;
-	println!("Nonce from best block state: {}", nonce);
-
-	// Fetch nonce from custom block state
-	let block_hash = Block::fetch_finalized_block_hash(&sdk.rpc_client).await?;
-	let block = sdk.online_client.blocks().at(block_hash).await?;
-	let nonce = block.account_nonce(&account_id).await? as u32;
-	println!("Nonce from custom block state: {}", nonce);
-
-	// Fetch nonce from manually reading storage
-	let storage = sdk.online_client.storage().at(block_hash);
-	let address = avail::storage().system().account(account_id);
-	let result = storage.fetch_or_default(&address).await?;
-	println!("Nonce from  manually reading storage: {}", result.nonce);
+	println!("State Nonce: {}", nonce);
 
 	Ok(())
 }

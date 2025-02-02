@@ -2,9 +2,8 @@ use crate::{
 	api_dev::api::runtime_types::{
 		pallet_staking::ValidatorPrefs, sp_arithmetic::per_things::Perbill,
 	},
-	avail, AOnlineClient, AccountId, Transaction,
+	avail, AccountId, Client, Transaction,
 };
-use subxt::backend::rpc::RpcClient;
 use subxt_core::utils::MultiAddress;
 
 pub type BondCall = avail::staking::calls::types::Bond;
@@ -19,8 +18,7 @@ pub type RewardDestination = avail::runtime_types::pallet_staking::RewardDestina
 
 #[derive(Clone)]
 pub struct Staking {
-	online_client: AOnlineClient,
-	rpc_client: RpcClient,
+	pub(crate) client: Client,
 }
 
 pub struct Commission(u8);
@@ -35,31 +33,24 @@ impl Commission {
 }
 
 impl Staking {
-	pub fn new(online_client: AOnlineClient, rpc_client: RpcClient) -> Self {
-		Self {
-			online_client,
-			rpc_client,
-		}
-	}
-
 	pub fn bond(&self, value: u128, payee: RewardDestination) -> Transaction<BondCall> {
 		let payload = avail::tx().staking().bond(value, payee);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn bond_extra(&self, max_additional: u128) -> Transaction<BondExtraCall> {
 		let payload = avail::tx().staking().bond_extra(max_additional);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn chill(&self) -> Transaction<ChillCall> {
 		let payload = avail::tx().staking().chill();
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn chill_other(&self, stash: AccountId) -> Transaction<ChillOtherCall> {
 		let payload = avail::tx().staking().chill_other(stash);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn nominate(&self, targets: &[AccountId]) -> Transaction<NominateCall> {
@@ -69,12 +60,12 @@ impl Staking {
 			.collect();
 
 		let payload = avail::tx().staking().nominate(targets);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn unbond(&self, value: u128) -> Transaction<UnbondCall> {
 		let payload = avail::tx().staking().unbond(value);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn validate(&self, commission: Commission, blocked: bool) -> Transaction<ValidateCall> {
@@ -85,7 +76,7 @@ impl Staking {
 		};
 
 		let payload = avail::tx().staking().validate(perfs);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn payout_stakers(
@@ -94,6 +85,6 @@ impl Staking {
 		era: u32,
 	) -> Transaction<PayoutStakersCall> {
 		let payload = avail::tx().staking().payout_stakers(validator_stash, era);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 }

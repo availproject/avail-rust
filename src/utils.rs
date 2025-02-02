@@ -1,26 +1,26 @@
 use crate::{
-	avail::runtime_types::da_runtime::primitives::SessionKeys, AExtrinsicEvents, AOnlineClient,
+	avail::runtime_types::da_runtime::primitives::SessionKeys, AExtrinsicEvents,
 	AppUncheckedExtrinsic,
 };
 use primitive_types::H256;
-use subxt::{backend::legacy::rpc_methods::Bytes, error::DispatchError};
+use subxt::backend::legacy::rpc_methods::Bytes;
 
 /// Returns Ok if the transaction was successful
 /// Returns Err if the transaction failed
-pub fn check_if_transaction_was_successful(
-	client: &AOnlineClient,
-	events: &AExtrinsicEvents,
-) -> Result<(), subxt::Error> {
+pub fn check_if_transaction_was_successful(events: &AExtrinsicEvents) -> Option<bool> {
 	// Try to find any errors; return the first one we encounter.
 	for ev in events.iter() {
-		let ev = ev?;
+		let Ok(ev) = ev else { continue };
 		if ev.pallet_name() == "System" && ev.variant_name() == "ExtrinsicFailed" {
-			let dispatch_error = DispatchError::decode_from(ev.field_bytes(), client.metadata())?;
-			return Err(dispatch_error.into());
+			return Some(false);
+		}
+
+		if ev.pallet_name() == "System" && ev.variant_name() == "ExtrinsicSuccess" {
+			return Some(true);
 		}
 	}
 
-	Ok(())
+	None
 }
 
 pub fn decode_raw_block_rpc_extrinsics(

@@ -1,40 +1,42 @@
 use crate::{
-	avail, avail::system::storage::types::account::Account, error::ClientError, rpc, AOnlineClient,
-	AccountId,
+	avail::{self, system::storage::types::account::Account},
+	error::ClientError,
+	rpc, AccountId, Client,
 };
 use primitive_types::H256;
-use subxt::backend::rpc::RpcClient;
 
 pub async fn fetch_nonce_state(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
+	client: &Client,
 	address: &str,
 	block_hash: Option<H256>,
 ) -> Result<u32, ClientError> {
 	let account = account_id_from_str(address)?;
 	let block_hash = match block_hash {
 		Some(x) => x,
-		None => rpc::chain::get_block_hash(rpc_client, None).await?,
+		None => rpc::chain::get_block_hash(client, None).await?,
 	};
-	let block = online_client.blocks().at(block_hash).await?;
+	let block = client.online_client.blocks().at(block_hash).await?;
 
 	Ok(block.account_nonce(&account).await? as u32)
 }
 
-pub async fn fetch_nonce_node(client: &RpcClient, address: &str) -> Result<u32, ClientError> {
+pub async fn fetch_nonce_node(client: &Client, address: &str) -> Result<u32, ClientError> {
 	let account = account_id_from_str(address)?;
 	rpc::system::account_next_index(client, account.to_string()).await
 }
 
+pub async fn fetch_nonce(client: &Client, address: &str) -> Result<u32, ClientError> {
+	fetch_nonce_node(client, address).await
+}
+
 pub async fn fetch_app_keys(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
+	client: &Client,
 	account_id: AccountId,
 ) -> Result<Vec<(String, u32)>, String> {
-	let block_hash = rpc::chain::get_block_hash(rpc_client, None).await;
+	let block_hash = rpc::chain::get_block_hash(client, None).await;
 	let block_hash = block_hash.map_err(|e| e.to_string())?;
 
-	let storage = online_client.storage().at(block_hash);
+	let storage = client.storage().at(block_hash);
 	let address = avail::storage().data_availability().app_keys_iter();
 
 	let mut app_keys = storage.iter(address).await.map_err(|e| e.to_string())?;
@@ -54,12 +56,8 @@ pub async fn fetch_app_keys(
 	Ok(result)
 }
 
-pub async fn fetch_app_ids(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
-	account_id: AccountId,
-) -> Result<Vec<u32>, String> {
-	let keys = match fetch_app_keys(online_client, rpc_client, account_id).await {
+pub async fn fetch_app_ids(client: &Client, account_id: AccountId) -> Result<Vec<u32>, String> {
+	let keys = match fetch_app_keys(client, account_id).await {
 		Ok(k) => k,
 		Err(e) => return Err(e),
 	};
@@ -67,15 +65,11 @@ pub async fn fetch_app_ids(
 	Ok(keys.into_iter().map(|v| v.1).collect())
 }
 
-pub async fn fetch_balance(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
-	account_id: AccountId,
-) -> Result<Account, String> {
-	let block_hash = rpc::chain::get_block_hash(rpc_client, None).await;
+pub async fn fetch_balance(client: &Client, account_id: AccountId) -> Result<Account, String> {
+	let block_hash = rpc::chain::get_block_hash(client, None).await;
 	let block_hash = block_hash.map_err(|e| e.to_string())?;
 
-	let storage = online_client.storage().at(block_hash);
+	let storage = client.storage().at(block_hash);
 	let address = avail::storage().system().account(account_id);
 	let result = storage
 		.fetch_or_default(&address)

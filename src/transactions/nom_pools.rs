@@ -8,9 +8,8 @@ use crate::{
 		nomination_pools::calls::types::set_commission::NewCommission as NewCommissionOriginal,
 		runtime_types::sp_arithmetic::per_things::Perbill,
 	},
-	AOnlineClient, AccountId, Transaction,
+	AccountId, Client, Transaction,
 };
-use subxt::backend::rpc::RpcClient;
 
 pub type NominateCall = avail::nomination_pools::calls::types::Nominate;
 pub type JoinCall = avail::nomination_pools::calls::types::Join;
@@ -37,26 +36,18 @@ pub struct NewCommission {
 
 #[derive(Clone)]
 pub struct NominationPools {
-	online_client: AOnlineClient,
-	rpc_client: RpcClient,
+	pub(crate) client: Client,
 }
 
 impl NominationPools {
-	pub fn new(online_client: AOnlineClient, rpc_client: RpcClient) -> Self {
-		Self {
-			online_client,
-			rpc_client,
-		}
-	}
-
 	pub fn nominate(&self, pool_id: u32, validators: Vec<AccountId>) -> Transaction<NominateCall> {
 		let payload = avail::tx().nomination_pools().nominate(pool_id, validators);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn join(&self, amount: u128, pool_id: u32) -> Transaction<JoinCall> {
 		let payload = avail::tx().nomination_pools().join(amount, pool_id);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn create_with_pool_id(
@@ -74,7 +65,7 @@ impl NominationPools {
 			bouncer.into(),
 			pool_id,
 		);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn create(
@@ -90,12 +81,12 @@ impl NominationPools {
 			nominator.into(),
 			bouncer.into(),
 		);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn bond_extra(&self, extra: BondExtra<u128>) -> Transaction<BondExtraCall> {
 		let payload = avail::tx().nomination_pools().bond_extra(extra);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn set_commission(
@@ -111,22 +102,22 @@ impl NominationPools {
 		let payload = avail::tx()
 			.nomination_pools()
 			.set_commission(pool_id, new_commission);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn set_state(&self, pool_id: u32, state: State) -> Transaction<SetStateCall> {
 		let payload = avail::tx().nomination_pools().set_state(pool_id, state);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn claim_payout(&self) -> Transaction<ClaimPayoutCall> {
 		let payload = avail::tx().nomination_pools().claim_payout();
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn chill(&self, pool_id: u32) -> Transaction<ChillCall> {
 		let payload = avail::tx().nomination_pools().chill(pool_id);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn set_claim_permission(
@@ -136,17 +127,17 @@ impl NominationPools {
 		let payload = avail::tx()
 			.nomination_pools()
 			.set_claim_permission(permission);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn claim_commission(&self, pool_id: u32) -> Transaction<ClaimCommissionCall> {
 		let payload = avail::tx().nomination_pools().claim_commission(pool_id);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn claim_payout_other(&self, other: AccountId) -> Transaction<ClaimPayoutOtherCall> {
 		let payload = avail::tx().nomination_pools().claim_payout_other(other);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn unbond(
@@ -157,14 +148,14 @@ impl NominationPools {
 		let payload = avail::tx()
 			.nomination_pools()
 			.unbond(member_account.into(), unbonding_points);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn set_metadata(&self, pool_id: u32, metadata: Vec<u8>) -> Transaction<SetMetadataCall> {
 		let payload = avail::tx()
 			.nomination_pools()
 			.set_metadata(pool_id, metadata);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn withdraw_unbonded(
@@ -175,6 +166,6 @@ impl NominationPools {
 		let payload = avail::tx()
 			.nomination_pools()
 			.withdraw_unbonded(member_account.into(), num_slashing_spans);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 }

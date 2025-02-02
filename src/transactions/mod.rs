@@ -5,9 +5,6 @@ pub mod session;
 pub mod staking;
 pub mod vector;
 
-use crate::AOnlineClient;
-use subxt::backend::rpc::RpcClient;
-
 pub use crate::avail::{
 	balances::events as BalancesEvents, data_availability::events as DataAvailabilityEvents,
 	nomination_pools::events as NominationPoolsEvents, session::events as SessionEvents,
@@ -20,6 +17,7 @@ pub use crate::avail::{
 	nomination_pools::calls::types as NominationPoolsCalls, session::calls::types as SessionCalls,
 	staking::calls::types as StakingCalls, system::calls::types as SystemCalls,
 };
+use crate::Client;
 
 #[derive(Clone)]
 pub struct Transactions {
@@ -31,16 +29,23 @@ pub struct Transactions {
 }
 
 impl Transactions {
-	pub fn new(online_client: AOnlineClient, rpc_client: RpcClient) -> Self {
+	pub fn new(client: Client) -> Self {
 		Self {
-			balances: balances::Balances::new(online_client.clone(), rpc_client.clone()),
-			staking: staking::Staking::new(online_client.clone(), rpc_client.clone()),
-			data_availability: da::DataAvailability::new(online_client.clone(), rpc_client.clone()),
-			session: session::Session::new(online_client.clone(), rpc_client.clone()),
-			nomination_pools: nom_pools::NominationPools::new(
-				online_client.clone(),
-				rpc_client.clone(),
-			),
+			balances: balances::Balances {
+				client: client.clone(),
+			},
+			staking: staking::Staking {
+				client: client.clone(),
+			},
+			data_availability: da::DataAvailability {
+				client: client.clone(),
+			},
+			session: session::Session {
+				client: client.clone(),
+			},
+			nomination_pools: nom_pools::NominationPools {
+				client: client.clone(),
+			},
 		}
 	}
 }

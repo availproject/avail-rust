@@ -32,7 +32,7 @@ pub use primitives::{
 	},
 	kate::{Cell, GDataProof, GRow},
 };
-pub use sdk::{WaitFor, SDK};
+pub use sdk::{Client, WaitFor, SDK};
 pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
@@ -44,8 +44,8 @@ pub mod prelude {
 	pub use super::{
 		account, avail, avail::runtime_types::bounded_collections::bounded_vec::BoundedVec,
 		avail_core, block::DataSubmission, config::*, error::ClientError, hex, kate_recovery,
-		primitives, rpc, subxt, subxt_signer, transaction::WebSocket, Block, Keypair, Mortality,
-		Nonce, Options, Perbill, PopulatedOptions, SecretUri, Transaction, TransactionDetails,
-		WaitFor, H256, SDK, U256,
+		primitives, rpc, subxt, subxt_signer, transaction::WebSocket, Block, Client, Keypair,
+		Mortality, Nonce, Options, Perbill, PopulatedOptions, SecretUri, Transaction,
+		TransactionDetails, WaitFor, H256, SDK, U256,
 	};
 }

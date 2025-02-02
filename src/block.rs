@@ -1,14 +1,11 @@
 use crate::{
 	avail::data_availability::calls::types as DataAvailabilityCalls, error::ClientError,
 	primitives::block::extrinsics_params::CheckAppId, rpc, ABlock, AExtrinsicDetails,
-	AExtrinsicEvents, AExtrinsics, AFoundExtrinsic, AOnlineClient,
+	AExtrinsicEvents, AExtrinsics, AFoundExtrinsic, Client,
 };
 use primitive_types::H256;
 use subxt::{
-	backend::{rpc::RpcClient, StreamOfResults},
-	blocks::StaticExtrinsic,
-	storage::StorageKeyValuePair,
-	utils::Yes,
+	backend::StreamOfResults, blocks::StaticExtrinsic, storage::StorageKeyValuePair, utils::Yes,
 };
 
 pub struct Block {
@@ -17,7 +14,7 @@ pub struct Block {
 }
 
 impl Block {
-	pub async fn new(client: &AOnlineClient, block_hash: H256) -> Result<Self, ClientError> {
+	pub async fn new(client: &Client, block_hash: H256) -> Result<Self, ClientError> {
 		let (block, transactions) = fetch_transactions(client, block_hash).await?;
 		Ok(Self {
 			block,
@@ -25,20 +22,14 @@ impl Block {
 		})
 	}
 
-	pub async fn new_best_block(
-		online_client: &AOnlineClient,
-		rpc_client: &RpcClient,
-	) -> Result<Self, ClientError> {
-		let block_hash = Self::fetch_best_block_hash(rpc_client).await?;
-		Self::new(online_client, block_hash).await
+	pub async fn new_best_block(client: &Client) -> Result<Self, ClientError> {
+		let block_hash = Self::fetch_best_block_hash(client).await?;
+		Self::new(client, block_hash).await
 	}
 
-	pub async fn new_finalized_block(
-		online_client: &AOnlineClient,
-		rpc_client: &RpcClient,
-	) -> Result<Self, ClientError> {
-		let block_hash = Self::fetch_finalized_block_hash(rpc_client).await?;
-		Self::new(online_client, block_hash).await
+	pub async fn new_finalized_block(client: &Client) -> Result<Self, ClientError> {
+		let block_hash = Self::fetch_finalized_block_hash(client).await?;
+		Self::new(client, block_hash).await
 	}
 
 	pub async fn from_block(block: ABlock) -> Result<Self, subxt::Error> {
@@ -50,12 +41,11 @@ impl Block {
 	}
 
 	pub async fn from_block_number(
-		online_client: &AOnlineClient,
-		rpc_client: &RpcClient,
+		client: &Client,
 		block_number: u32,
 	) -> Result<Self, ClientError> {
-		let block_hash = rpc::chain::get_block_hash(rpc_client, Some(block_number)).await?;
-		Self::new(online_client, block_hash).await
+		let block_hash = rpc::chain::get_block_hash(client, Some(block_number)).await?;
+		Self::new(client, block_hash).await
 	}
 
 	pub async fn events(
@@ -174,17 +164,17 @@ impl Block {
 		self.block.storage().iter(address).await
 	}
 
-	pub async fn fetch_best_block_hash(client: &RpcClient) -> Result<H256, ClientError> {
+	pub async fn fetch_best_block_hash(client: &Client) -> Result<H256, ClientError> {
 		rpc::chain::get_block_hash(client, None).await
 	}
 
-	pub async fn fetch_finalized_block_hash(client: &RpcClient) -> Result<H256, ClientError> {
+	pub async fn fetch_finalized_block_hash(client: &Client) -> Result<H256, ClientError> {
 		rpc::chain::get_finalized_head(client).await
 	}
 }
 
 pub async fn fetch_transactions(
-	client: &AOnlineClient,
+	client: &Client,
 	block_hash: H256,
 ) -> Result<(ABlock, AExtrinsics), subxt::Error> {
 	let block = client.blocks().at(block_hash).await?;

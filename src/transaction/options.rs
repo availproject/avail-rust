@@ -1,12 +1,9 @@
 use crate::{
 	error::ClientError,
-	rpc::{
-		chain::{get_block_hash, get_header},
-		system::account_next_index,
-	},
-	AOnlineClient, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Block, H256,
+	rpc::{chain::get_header, system::account_next_index},
+	AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Block, Client, H256,
 };
-use subxt::{backend::rpc::RpcClient, config::Header};
+use subxt::config::Header;
 
 pub type Params =
 	<<AvailConfig as subxt::Config>::ExtrinsicParams as subxt::config::ExtrinsicParams<
@@ -53,19 +50,15 @@ impl Options {
 
 	pub async fn build(
 		self,
-		online_client: &AOnlineClient,
-		rpc_client: &RpcClient,
+		client: &Client,
 		account_id: &AccountId,
 	) -> Result<PopulatedOptions, ClientError> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
-		let nonce = self.nonce.unwrap_or(Nonce::BestBlockAndTxPool);
-		let nonce = parse_nonce(online_client, rpc_client, nonce, account_id).await?;
-		let mortality = self.mortality.unwrap_or(Mortality {
-			period: 32,
-			block_hash: None,
-		});
-		let mortality = CheckedMortality::from_mortality(&mortality, rpc_client).await?;
+		let nonce = self.nonce.unwrap_or(Nonce::BestBlock);
+		let nonce = parse_nonce(client, nonce, account_id).await?;
+		let mortality = self.mortality.unwrap_or(Mortality { period: 32 });
+		let mortality = CheckedMortality::from_mortality(&mortality, client).await?;
 
 		Ok(PopulatedOptions {
 			app_id,
@@ -106,15 +99,11 @@ impl PopulatedOptions {
 		Ok(builder.build())
 	}
 
-	pub async fn regenerate_mortality(
-		&mut self,
-		rpc_client: &RpcClient,
-	) -> Result<(), ClientError> {
+	pub async fn regenerate_mortality(&mut self, client: &Client) -> Result<(), ClientError> {
 		let mortality = Mortality {
 			period: self.mortality.period,
-			block_hash: None,
 		};
-		self.mortality = CheckedMortality::from_mortality(&mortality, rpc_client).await?;
+		self.mortality = CheckedMortality::from_mortality(&mortality, client).await?;
 		return Ok(());
 	}
 }
@@ -122,12 +111,6 @@ impl PopulatedOptions {
 #[derive(Debug, Clone, Copy)]
 pub struct Mortality {
 	pub period: u64,
-	pub block_hash: Option<H256>,
-}
-impl Mortality {
-	pub fn new(period: u64, block_hash: Option<H256>) -> Self {
-		Self { period, block_hash }
-	}
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -145,8 +128,8 @@ impl CheckedMortality {
 		}
 	}
 
-	pub async fn from_mortality(m: &Mortality, client: &RpcClient) -> Result<Self, ClientError> {
-		let header = get_header(client, m.block_hash).await?;
+	pub async fn from_mortality(m: &Mortality, client: &Client) -> Result<Self, ClientError> {
+		let header = get_header(client, None).await?;
 		let (block_hash, block_number) = (header.hash(), header.number());
 		Ok(Self {
 			period: m.period,
@@ -160,30 +143,21 @@ impl CheckedMortality {
 pub enum Nonce {
 	BestBlock,
 	FinalizedBlock,
-	BestBlockAndTxPool,
 	Custom(u32),
 }
 
 pub async fn parse_nonce(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
+	client: &Client,
 	nonce: Nonce,
 	account_id: &AccountId,
 ) -> Result<u64, ClientError> {
 	let nonce = match nonce {
-		Nonce::BestBlock => {
-			let hash = get_block_hash(rpc_client, None).await?;
-			let block = online_client.blocks().at(hash).await?;
-			block.account_nonce(account_id).await?
-		},
 		Nonce::FinalizedBlock => {
-			let hash = Block::fetch_finalized_block_hash(rpc_client).await?;
-			let block = online_client.blocks().at(hash).await?;
+			let hash = Block::fetch_finalized_block_hash(client).await?;
+			let block = client.blocks().at(hash).await?;
 			block.account_nonce(account_id).await?
 		},
-		Nonce::BestBlockAndTxPool => {
-			account_next_index(rpc_client, account_id.to_string()).await? as u64
-		},
+		Nonce::BestBlock => account_next_index(client, account_id.to_string()).await? as u64,
 		Nonce::Custom(x) => x as u64,
 	};
 

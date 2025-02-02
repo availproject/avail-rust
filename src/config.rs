@@ -3,6 +3,7 @@ use subxt::{
 	backend::legacy::rpc_methods::{Block as BlockRPC, BlockDetails as BlockDetailsRPC},
 	blocks::{Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, Extrinsics, FoundExtrinsic},
 	config::substrate::BlakeTwo256,
+	storage::StorageClient,
 	tx::{TxClient, TxInBlock, TxProgress},
 	utils::{AccountId32, MultiAddress, MultiSignature, H256},
 	Config, OnlineClient,
@@ -19,6 +20,7 @@ pub type BlockHash = H256;
 /// Clients
 pub type AOnlineClient = OnlineClient<AvailConfig>;
 pub type ABlocksClient = BlocksClient<AvailConfig, AOnlineClient>;
+pub type AStorageClient = StorageClient<AvailConfig, AOnlineClient>;
 pub type ATxClient = TxClient<AvailConfig, AOnlineClient>;
 
 /// TX status

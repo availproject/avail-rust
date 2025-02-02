@@ -1,12 +1,9 @@
 use super::{Options, Params, TransactionDetails};
-use crate::{error::ClientError, rpc, AOnlineClient, WaitFor};
+use crate::{error::ClientError, rpc, Client, WaitFor};
 use log::{info, log_enabled, warn};
 use primitive_types::H256;
 use std::time::Duration;
-use subxt::{
-	backend::rpc::RpcClient, blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields,
-	tx::DefaultPayload,
-};
+use subxt::{blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
 use subxt_signer::sr25519::Keypair;
 
 #[derive(Debug)]
@@ -45,8 +42,7 @@ impl From<subxt::Error> for TransactionExecutionError {
 /// Success does not mean the extrinsic has been included in the block, just that it is valid
 /// and has been included in the transaction pool.
 pub async fn sign_and_send<T>(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
+	client: &Client,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	options: Option<Options>,
@@ -57,16 +53,16 @@ where
 	let account_id = account.public_key().to_account_id();
 	let options = options
 		.unwrap_or_default()
-		.build(online_client, rpc_client, &account_id)
+		.build(&client, &account_id)
 		.await?;
 
 	let params = options.build().await?;
 
-	sign_and_send_raw_params(online_client, account, call, params).await
+	sign_and_send_raw_params(client, account, call, params).await
 }
 
 pub async fn sign_and_send_raw_params<T>(
-	client: &AOnlineClient,
+	client: &Client,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	params: Params,
@@ -87,13 +83,17 @@ where
 		);
 	}
 
-	let tx_hash = client.tx().sign_and_submit(call, account, params).await?;
+	let tx_hash = client
+		.online_client
+		.tx()
+		.sign_and_submit(call, account, params)
+		.await?;
 
 	Ok(tx_hash)
 }
 
 pub async fn watch(
-	online_client: &AOnlineClient,
+	client: &Client,
 	tx_hash: H256,
 	wait_for: WaitFor,
 	block_timeout: Option<u32>,
@@ -103,8 +103,8 @@ pub async fn watch(
 	let tx_details;
 
 	let mut stream = match wait_for == WaitFor::BlockInclusion {
-		true => online_client.blocks().subscribe_all().await,
-		false => online_client.blocks().subscribe_finalized().await,
+		true => client.blocks().subscribe_all().await,
+		false => client.blocks().subscribe_finalized().await,
 	}?;
 
 	let mut current_block_number: Option<u32> = None;
@@ -182,8 +182,7 @@ pub async fn watch(
 }
 
 pub async fn sign_send_and_watch<T>(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
+	client: &Client,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	wait_for: WaitFor,
@@ -197,19 +196,13 @@ where
 	let account_id = account.public_key().to_account_id();
 
 	let options = options.unwrap_or_default();
-	let regenerate_mortality = match &options.mortality {
-		Some(x) => x.block_hash.is_none(),
-		None => true,
-	};
-	let mut options = options
-		.build(online_client, rpc_client, &account_id)
-		.await?;
+	let mut options = options.build(&client, &account_id).await?;
 
 	let mut retry_count = retry_count.unwrap_or(0);
 	let retry_count_max = retry_count;
 	loop {
 		let params = options.build().await?;
-		let tx_hash = sign_and_send_raw_params(online_client, account, call, params).await?;
+		let tx_hash = sign_and_send_raw_params(client, account, call, params).await?;
 		if log_enabled!(log::Level::Info) {
 			let address = account.public_key().to_account_id().to_string();
 			let mortality = options.mortality.block_number + options.mortality.period as u32;
@@ -224,7 +217,7 @@ where
 			);
 		}
 
-		let result = watch(online_client, tx_hash, wait_for, block_timeout).await;
+		let result = watch(client, tx_hash, wait_for, block_timeout).await;
 		let error = match result {
 			Ok(details) => return Ok(details),
 			Err(err) => err,
@@ -248,9 +241,7 @@ where
 			return Err(ClientError::TransactionExecution(error));
 		}
 
-		if regenerate_mortality {
-			options.regenerate_mortality(rpc_client).await?;
-		}
+		options.regenerate_mortality(client).await?;
 
 		retry_count -= 1;
 		info!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Trying again. {:?}/{:?}", tx_hash, retry_count_max, retry_count);
@@ -258,8 +249,7 @@ where
 }
 
 pub async fn http_sign_and_send<T>(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
+	client: &Client,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	options: Option<Options>,
@@ -270,17 +260,16 @@ where
 	let account_id = account.public_key().to_account_id();
 	let options = options
 		.unwrap_or_default()
-		.build(online_client, rpc_client, &account_id)
+		.build(client, &account_id)
 		.await?;
 
 	let params = options.build().await?;
 
-	http_sign_and_send_raw_params(online_client, rpc_client, account, call, params).await
+	http_sign_and_send_raw_params(client, account, call, params).await
 }
 
 pub async fn http_sign_and_send_raw_params<T>(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
+	client: &Client,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	params: Params,
@@ -301,17 +290,16 @@ where
 		);
 	}
 
-	let tx_client = online_client.tx();
+	let tx_client = client.online_client.tx();
 	let signed_call = tx_client.create_signed(call, account, params).await?;
 	let extrinsic = signed_call.encoded();
-	let tx_hash = rpc::author::submit_extrinsic(rpc_client, extrinsic).await?;
+	let tx_hash = rpc::author::submit_extrinsic(client, extrinsic).await?;
 
 	Ok(tx_hash)
 }
 
 pub async fn http_watch(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
+	client: &Client,
 	tx_hash: H256,
 	wait_for: WaitFor,
 	sleep_duration: Duration,
@@ -335,8 +323,8 @@ pub async fn http_watch(
 		}
 
 		block_hash = match wait_for {
-			WaitFor::BlockInclusion => rpc::chain::get_block_hash(rpc_client, None).await.unwrap(),
-			WaitFor::BlockFinalization => rpc::chain::get_finalized_head(rpc_client).await.unwrap(),
+			WaitFor::BlockInclusion => rpc::chain::get_block_hash(client, None).await.unwrap(),
+			WaitFor::BlockFinalization => rpc::chain::get_finalized_head(client).await.unwrap(),
 		};
 
 		if current_block_hash.is_some_and(|x| x == block_hash) {
@@ -344,7 +332,8 @@ pub async fn http_watch(
 		}
 		current_block_hash = Some(block_hash);
 
-		let block = online_client.blocks().at(block_hash).await?;
+		let blocks = client.blocks();
+		let block = blocks.at(block_hash).await?;
 		block_number = block.number();
 		block_hash = block.hash();
 		info!(target: "watcher", "New block fetched. Hash: {:?}, Number: {}", block_hash, block_number);
@@ -385,8 +374,7 @@ pub async fn http_watch(
 }
 
 pub async fn http_sign_send_and_watch<T>(
-	online_client: &AOnlineClient,
-	rpc_client: &RpcClient,
+	client: &Client,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	wait_for: WaitFor,
@@ -401,29 +389,14 @@ where
 	let account_id = account.public_key().to_account_id();
 
 	let options = options.unwrap_or_default();
-	let regenerate_mortality = match &options.mortality {
-		Some(x) => x.block_hash.is_none(),
-		None => true,
-	};
-	let mut options = options
-		.build(online_client, rpc_client, &account_id)
-		.await?;
+	let mut options = options.build(client, &account_id).await?;
 
 	let mut retry_count = retry_count.unwrap_or(0);
 	let sleep_duration = sleep_duration.unwrap_or_else(|| Duration::from_secs(3));
 	loop {
 		let params = options.build().await?;
-		let tx_hash =
-			http_sign_and_send_raw_params(online_client, rpc_client, account, call, params).await?;
-		let result = http_watch(
-			online_client,
-			rpc_client,
-			tx_hash,
-			wait_for,
-			sleep_duration,
-			block_timeout,
-		)
-		.await;
+		let tx_hash = http_sign_and_send_raw_params(client, account, call, params).await?;
+		let result = http_watch(client, tx_hash, wait_for, sleep_duration, block_timeout).await;
 		let error = match result {
 			Ok(details) => return Ok(details),
 			Err(err) => err,
@@ -444,9 +417,7 @@ where
 			return Err(ClientError::TransactionExecution(error));
 		}
 
-		if regenerate_mortality {
-			options.regenerate_mortality(rpc_client).await?;
-		}
+		options.regenerate_mortality(client).await?;
 
 		info!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Trying again.", tx_hash);
 		retry_count -= 1;

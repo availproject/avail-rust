@@ -1,4 +1,4 @@
-use crate::{error::ClientError, utils, AExtrinsicEvents, AOnlineClient, H256};
+use crate::{error::ClientError, utils, AExtrinsicEvents, Client, H256};
 use std::sync::Arc;
 use subxt::{blocks::StaticExtrinsic, events::StaticEvent};
 
@@ -48,10 +48,7 @@ TransactionDetails {{
 		println!("{}", formatted_string);
 	}
 
-	pub async fn fetch_block(
-		&self,
-		client: &AOnlineClient,
-	) -> Result<crate::block::Block, ClientError> {
+	pub async fn fetch_block(&self, client: &Client) -> Result<crate::block::Block, ClientError> {
 		crate::block::Block::new(client, self.block_hash).await
 	}
 
@@ -99,7 +96,7 @@ TransactionDetails {{
 
 	/// Returns None if we failed to get the call data OR if it was not possible to get the block that contains the call data
 	/// Returns Some if we managed to get the call data
-	pub async fn get_call_data<T>(&self, client: &AOnlineClient) -> Option<T>
+	pub async fn get_call_data<T>(&self, client: &Client) -> Option<T>
 	where
 		T: StaticExtrinsic,
 	{
@@ -112,9 +109,9 @@ TransactionDetails {{
 	/// If Some is returned then
 	/// 	Ok means the transaction was successful
 	/// 	Err means the transaction failed
-	pub fn is_successful(&self, client: &AOnlineClient) -> Option<Result<(), subxt::Error>> {
+	pub fn is_successful(&self) -> Option<bool> {
 		match &self.events {
-			Some(events) => Some(utils::check_if_transaction_was_successful(client, events)),
+			Some(events) => utils::check_if_transaction_was_successful(events),
 			None => None,
 		}
 	}
