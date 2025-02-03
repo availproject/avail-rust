@@ -25,8 +25,7 @@ mod transfer_all {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let dest = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let keep_alive = false;
 
 		let tx = sdk.tx.balances.transfer_all(dest, keep_alive);
@@ -53,8 +52,7 @@ mod transfer_all {
 		// Input
 		let secret_uri = SecretUri::from_str("//Eve")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest =
-			account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?; // Alice
+		let dest = account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?; // Alice
 		let value = SDK::one_avail() * 900_000;
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, value);
@@ -77,8 +75,7 @@ mod transfer_allow_death {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let dest = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
 		let tx = sdk.tx.balances.transfer_allow_death(dest, amount);
@@ -110,8 +107,7 @@ mod transfer_keep_alive {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let dest = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, amount);

@@ -4,8 +4,33 @@ use crate::{
 	rpc, AccountId, Client,
 };
 use primitive_types::H256;
+use subxt_signer::sr25519::Keypair;
 
-pub async fn fetch_nonce_state(
+pub fn alice() -> Keypair {
+	subxt_signer::sr25519::dev::alice()
+}
+
+pub fn bob() -> Keypair {
+	subxt_signer::sr25519::dev::bob()
+}
+
+pub fn charlie() -> Keypair {
+	subxt_signer::sr25519::dev::charlie()
+}
+
+pub fn dave() -> Keypair {
+	subxt_signer::sr25519::dev::dave()
+}
+
+pub fn eve() -> Keypair {
+	subxt_signer::sr25519::dev::eve()
+}
+
+pub fn ferdie() -> Keypair {
+	subxt_signer::sr25519::dev::ferdie()
+}
+
+pub async fn nonce_state(
 	client: &Client,
 	address: &str,
 	block_hash: Option<H256>,
@@ -20,16 +45,16 @@ pub async fn fetch_nonce_state(
 	Ok(block.account_nonce(&account).await? as u32)
 }
 
-pub async fn fetch_nonce_node(client: &Client, address: &str) -> Result<u32, ClientError> {
+pub async fn nonce_node(client: &Client, address: &str) -> Result<u32, ClientError> {
 	let account = account_id_from_str(address)?;
 	rpc::system::account_next_index(client, account.to_string()).await
 }
 
-pub async fn fetch_nonce(client: &Client, address: &str) -> Result<u32, ClientError> {
-	fetch_nonce_node(client, address).await
+pub async fn nonce(client: &Client, address: &str) -> Result<u32, ClientError> {
+	nonce_node(client, address).await
 }
 
-pub async fn fetch_app_keys(
+pub async fn app_keys(
 	client: &Client,
 	account_id: AccountId,
 ) -> Result<Vec<(String, u32)>, String> {
@@ -56,8 +81,8 @@ pub async fn fetch_app_keys(
 	Ok(result)
 }
 
-pub async fn fetch_app_ids(client: &Client, account_id: AccountId) -> Result<Vec<u32>, String> {
-	let keys = match fetch_app_keys(client, account_id).await {
+pub async fn app_ids(client: &Client, account_id: AccountId) -> Result<Vec<u32>, String> {
+	let keys = match app_keys(client, account_id).await {
 		Ok(k) => k,
 		Err(e) => return Err(e),
 	};
@@ -65,7 +90,7 @@ pub async fn fetch_app_ids(client: &Client, account_id: AccountId) -> Result<Vec
 	Ok(keys.into_iter().map(|v| v.1).collect())
 }
 
-pub async fn fetch_balance(client: &Client, account_id: AccountId) -> Result<Account, String> {
+pub async fn account_info(client: &Client, account_id: AccountId) -> Result<Account, String> {
 	let block_hash = rpc::chain::get_block_hash(client, None).await;
 	let block_hash = block_hash.map_err(|e| e.to_string())?;
 

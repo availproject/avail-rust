@@ -19,19 +19,13 @@ pub async fn run() -> Result<(), ClientError> {
 	// author_submit_extrinsic
 	let account = SDK::alice()?;
 	let account_id = account.public_key().to_account_id();
-	let call = avail::tx()
-		.data_availability()
-		.submit_data(BoundedVec(vec![0, 1, 2]));
+	let call = avail::tx().data_availability().submit_data(BoundedVec(vec![0, 1, 2]));
 	let params = Options::new()
 		.build(&sdk.online_client, &sdk.rpc_client, &account_id)
 		.await?
 		.build()
 		.await?;
-	let signed_call = sdk
-		.online_client
-		.tx()
-		.create_signed(&call, &account, params)
-		.await?;
+	let signed_call = sdk.online_client.tx().create_signed(&call, &account, params).await?;
 	let extrinsic = signed_call.encoded();
 	let value = rpc::author::submit_extrinsic(&sdk.rpc_client, extrinsic).await?;
 	dbg!(value);
@@ -218,23 +212,15 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// TransactionPaymentApi_query_info
-	let payload = avail::tx()
-		.data_availability()
-		.submit_data(BoundedVec(vec![1]));
+	let payload = avail::tx().data_availability().submit_data(BoundedVec(vec![1]));
 	let keypair = SDK::alice()?;
 	let account = keypair.public_key().to_account_id();
 
 	let options = Options::new().app_id(1);
-	let populated_options = options
-		.build(&sdk.online_client, &sdk.rpc_client, &account)
-		.await?;
+	let populated_options = options.build(&sdk.online_client, &sdk.rpc_client, &account).await?;
 
 	let params = populated_options.build().await?;
-	let tx = sdk
-		.online_client
-		.tx()
-		.create_signed(&payload, &keypair, params)
-		.await?;
+	let tx = sdk.online_client.tx().create_signed(&payload, &keypair, params).await?;
 	let partial_fee_estimate = tx.partial_fee_estimate().await?;
 	dbg!(partial_fee_estimate);
 	/*	Output
@@ -245,8 +231,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let len_bytes: [u8; 4] = (tx.encoded().len() as u32).to_le_bytes();
 	let encoded_with_len = [tx.encoded(), &len_bytes[..]].concat();
 
-	let fee_details =
-		rpc::payment::query_fee_details(&sdk.rpc_client, encoded_with_len.into(), None).await?;
+	let fee_details = rpc::payment::query_fee_details(&sdk.rpc_client, encoded_with_len.into(), None).await?;
 	dbg!(fee_details);
 	/*	Output
 	FeeDetails {

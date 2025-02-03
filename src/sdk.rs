@@ -1,12 +1,11 @@
 use crate::{
 	error::ClientError, transactions::Transactions, ABlocksClient, AOnlineClient, AStorageClient,
 };
-use std::{str::FromStr, time::Duration};
+use std::time::Duration;
 use subxt::backend::rpc::{
 	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
 	RpcClient,
 };
-use subxt_signer::{sr25519::Keypair, SecretUri};
 
 #[cfg(feature = "native")]
 use crate::http;
@@ -32,26 +31,6 @@ impl SDK {
 
 	pub fn enable_logging() {
 		env_logger::builder().init();
-	}
-
-	pub fn alice() -> Result<Keypair, ClientError> {
-		let secret_uri = SecretUri::from_str("//Alice")?;
-		Ok(Keypair::from_uri(&secret_uri)?)
-	}
-
-	pub fn bob() -> Result<Keypair, ClientError> {
-		let secret_uri = SecretUri::from_str("//Bob")?;
-		Ok(Keypair::from_uri(&secret_uri)?)
-	}
-
-	pub fn charlie() -> Result<Keypair, ClientError> {
-		let secret_uri = SecretUri::from_str("//Charlie")?;
-		Ok(Keypair::from_uri(&secret_uri)?)
-	}
-
-	pub fn eve() -> Result<Keypair, ClientError> {
-		let secret_uri = SecretUri::from_str("//Eve")?;
-		Ok(Keypair::from_uri(&secret_uri)?)
 	}
 
 	pub fn one_avail() -> u128 {

@@ -53,17 +53,11 @@ mod create {
 		let secret_uri = SecretUri::from_str("//Bob")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let amount = SDK::one_avail() * 100_000u128;
-		let root =
-			account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
-		let nominator =
-			account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
-		let bouncer =
-			account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+		let root = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+		let nominator = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+		let bouncer = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
 
-		let tx = sdk
-			.tx
-			.nomination_pools
-			.create(amount, root, nominator, bouncer);
+		let tx = sdk.tx.nomination_pools.create(amount, root, nominator, bouncer);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		match res.is_successful(&sdk.online_client) {
 			Some(x) => x?,
@@ -93,12 +87,9 @@ mod create_with_pool_id {
 		let secret_uri = SecretUri::from_str("//Eve")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let amount = SDK::one_avail() * 100_000u128;
-		let root =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
-		let nominator =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
-		let bouncer =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let root = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let nominator = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let bouncer = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let pool_id = 0;
 
 		let tx = sdk
@@ -196,10 +187,7 @@ mod unbond {
 		let member_account = account.public_key().to_account_id();
 		let unbonding_points = SDK::one_avail();
 
-		let tx = sdk
-			.tx
-			.nomination_pools
-			.unbond(member_account, unbonding_points);
+		let tx = sdk.tx.nomination_pools.unbond(member_account, unbonding_points);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		match res.is_successful(&sdk.online_client) {
 			Some(x) => x?,
@@ -262,16 +250,11 @@ mod set_commission {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let pool_id = 1;
 		let new_commission = NewCommission {
-			payee: account::account_id_from_str(
-				"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-			)?, // Alice
-			amount: Perbill(10_000_000u32), // 1%
+			payee: account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?, // Alice
+			amount: Perbill(10_000_000u32),                                                           // 1%
 		};
 
-		let tx = sdk
-			.tx
-			.nomination_pools
-			.set_commission(pool_id, Some(new_commission));
+		let tx = sdk.tx.nomination_pools.set_commission(pool_id, Some(new_commission));
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		match res.is_successful(&sdk.online_client) {
 			Some(x) => x?,
@@ -279,8 +262,7 @@ mod set_commission {
 		};
 
 		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionUpdated>()
-		{
+		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionUpdated>() {
 			dbg!(event);
 		}
 
@@ -467,8 +449,7 @@ mod claim_payout_other {
 		// Input
 		let secret_uri = SecretUri::from_str("//Bob")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let other =
-			account::account_id_from_str("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy")?; // Dave
+		let other = account::account_id_from_str("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy")?; // Dave
 
 		let tx = sdk.tx.nomination_pools.claim_payout_other(other);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
@@ -506,8 +487,7 @@ mod claim_commission {
 		};
 
 		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionClaimed>()
-		{
+		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionClaimed>() {
 			dbg!(event);
 		}
 
@@ -525,8 +505,7 @@ mod payout_stakers {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let validator_stash =
-			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
+		let validator_stash = account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
 		let era_storage = avail::storage().staking().active_era();
 		let storage = sdk.online_client.storage().at_latest().await?;
 		let era = storage.fetch(&era_storage).await?;

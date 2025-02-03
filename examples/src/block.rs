@@ -34,11 +34,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let tx = block
 		.transaction_by_index(res.tx_index)
 		.ok_or(String::from("Failed to find tx"))?;
-	println!(
-		"Tx Pallet name: {}, Tx Name: {}",
-		tx.pallet_name()?,
-		tx.variant_name()?,
-	);
+	println!("Tx Pallet name: {}, Tx Name: {}", tx.pallet_name()?, tx.variant_name()?,);
 
 	// Filtering by Transaction Index with Call Data
 	use avail::data_availability::calls::types::SubmitData;

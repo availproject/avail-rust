@@ -110,10 +110,7 @@ mod nominate {
 		};
 
 		res.print_debug();
-		if let Some(data) = res
-			.get_call_data::<StakingCalls::Nominate>(&sdk.online_client)
-			.await
-		{
+		if let Some(data) = res.get_call_data::<StakingCalls::Nominate>(&sdk.online_client).await {
 			dbg!(data);
 		}
 
@@ -174,8 +171,7 @@ mod chill_other {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let stash =
-			account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
+		let stash = account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
 
 		let tx = sdk.tx.staking.chill_other(stash);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
@@ -276,8 +272,7 @@ mod payout_stakers {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let validator_stash =
-			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
+		let validator_stash = account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
 		let era_storage = avail::storage().staking().active_era();
 		let storage = sdk.client.storage().at_latest().await?;
 		let era = storage.fetch(&era_storage).await?;

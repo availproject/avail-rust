@@ -8,9 +8,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let tx = sdk.tx.data_availability.create_application_key(key);
 
 	let options = Options::new();
-	let fee_details = tx
-		.payment_query_fee_details(&account, Some(options))
-		.await?;
+	let fee_details = tx.payment_query_fee_details(&account, Some(options)).await?;
 	let query_info = tx.payment_query_info(&account, Some(options)).await?;
 
 	dbg!(fee_details);

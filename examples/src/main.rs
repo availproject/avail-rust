@@ -1,3 +1,6 @@
+mod account;
+mod account_balance;
+mod account_creation;
 mod account_nonce;
 mod batch;
 mod block;
@@ -19,7 +22,7 @@ use avail_rust::{error::ClientError, SDK};
 async fn main() -> Result<(), ClientError> {
 	SDK::enable_logging();
 
-	account_nonce::run().await?;
+	account::run().await?;
 	transaction_payment::run().await?;
 	block::run().await?;
 	batch::run().await?;
@@ -36,3 +39,16 @@ async fn main() -> Result<(), ClientError> {
 
 	Ok(())
 }
+
+/* fn assert_true(v1: bool, msg: &str) {
+	if v1 == false {
+		panic!("{}", msg);
+	}
+}
+
+fn assert_eq<T: Eq>(v1: T, v2: T, msg: &str) {
+	if v1.ne(&v2) {
+		panic!("{}", msg);
+	}
+}
+ */

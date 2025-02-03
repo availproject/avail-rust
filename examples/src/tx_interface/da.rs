@@ -26,9 +26,7 @@ mod submit_data {
 
 		let options = Options::new().nonce(Nonce::BestBlockAndTxPool).app_id(1);
 		let tx = sdk.tx.data_availability.submit_data(data);
-		let res = tx
-			.execute_and_watch_inclusion(&account, Some(options))
-			.await?;
+		let res = tx.execute_and_watch_inclusion(&account, Some(options)).await?;
 		match res.is_successful(&sdk.online_client) {
 			Some(x) => x?,
 			None => panic!("Failed to decode events."),
@@ -71,8 +69,7 @@ mod create_application_key {
 		};
 
 		res.print_debug();
-		let Some(event) = res.find_first_event::<DataAvailabilityEvents::ApplicationKeyCreated>()
-		else {
+		let Some(event) = res.find_first_event::<DataAvailabilityEvents::ApplicationKeyCreated>() else {
 			return Err("Failed to find ApplicationKeyCreated event".into());
 		};
 		dbg!(event);
