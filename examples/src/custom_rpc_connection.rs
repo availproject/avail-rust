@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 use std::time::Duration;
 use subxt::backend::rpc::{
 	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
@@ -101,3 +101,4 @@ pub async fn run() -> Result<(), ClientError> {
 	Tx Hash: 0xd7a62ff853acac85c042f2f42b123b9fab73f0290105107dd081d2aa3785877d, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 48, 143, 125, 91, 21, 60, 171, 139, 249, 159, 63, 160, 208, 148, 213, 254, 200, 128, 124, 163, 191, 18, 226, 173, 62, 86, 20, 219, 248, 100, 60, 71, 220, 201, 196, 171, 104, 203, 65, 100, 96, 66, 56, 89, 109, 100, 63, 40, 151, 206, 46, 200, 73, 10, 63, 154, 226, 232, 161, 146, 143, 249, 94, 142], App Id: 11
 	Ascii data: My Data
 */
+ */

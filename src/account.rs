@@ -107,3 +107,13 @@ pub async fn account_info(client: &Client, account_id: AccountId) -> Result<Acco
 pub fn account_id_from_str(value: &str) -> Result<AccountId, String> {
 	value.parse().map_err(|e| std::format!("{:?}", e))
 }
+
+pub fn account_id_from_slice(value: &[u8]) -> Result<AccountId, String> {
+	dbg!(&value);
+	let account_id: [u8; 32] = match value.try_into() {
+		Ok(x) => x,
+		Err(err) => return Err(err.to_string()),
+	};
+
+	Ok(AccountId { 0: account_id })
+}

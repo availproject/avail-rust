@@ -17,18 +17,15 @@ mod set_keys {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice//stash")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let keys = rpc::author::rotate_keys(&sdk.rpc_client).await?;
+		let keys = rpc::author::rotate_keys(&sdk.client).await?;
 		let keys = utils::deconstruct_session_keys(keys)?;
 
 		let tx = sdk.tx.session.set_keys(keys);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
-		if let Some(data) = res.get_call_data::<SessionCalls::SetKeys>(&sdk.online_client).await {
+		if let Some(data) = res.get_call_data::<SessionCalls::SetKeys>().await {
 			dbg!(data);
 		}
 

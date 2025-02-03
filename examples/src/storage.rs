@@ -1,4 +1,4 @@
-use avail_rust::{account, avail, error::ClientError, AccountId, Block, SDK};
+/* use avail_rust::{account, avail, error::ClientError, AccountId, Block, SDK};
 
 pub async fn run() -> Result<(), ClientError> {
 	println!("da_app_keys");
@@ -235,3 +235,4 @@ pub async fn system_account_iter() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

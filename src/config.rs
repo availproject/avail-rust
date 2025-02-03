@@ -6,6 +6,7 @@ use subxt::{
 		Extrinsics, FoundExtrinsic,
 	},
 	config::substrate::BlakeTwo256,
+	events::{EventDetails, Events},
 	storage::StorageClient,
 	tx::{TxClient, TxInBlock, TxProgress},
 	utils::{AccountId32, MultiAddress, MultiSignature, H256},
@@ -31,6 +32,8 @@ pub type AExtrinsicSignedExtensions<'a> = ExtrinsicSignedExtensions<'a, AvailCon
 pub type ATxProgress = TxProgress<AvailConfig, AOnlineClient>;
 pub type ATxInBlock = TxInBlock<AvailConfig, AOnlineClient>;
 pub type AExtrinsicEvents = ExtrinsicEvents<AvailConfig>;
+pub type AEvents = Events<AvailConfig>;
+pub type AEventDetails = EventDetails<AvailConfig>;
 pub type AExtrinsicDetails = ExtrinsicDetails<AvailConfig, AOnlineClient>;
 pub type AFoundExtrinsic<T> = FoundExtrinsic<AvailConfig, AOnlineClient, T>;
 pub type AExtrinsics = Extrinsics<AvailConfig, AOnlineClient>;

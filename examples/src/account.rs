@@ -7,5 +7,7 @@ pub async fn run() -> Result<(), ClientError> {
 	account_creation::run().await?;
 	account_nonce::run().await?;
 
+	println!("Account finished correctly");
+
 	Ok(())
 }

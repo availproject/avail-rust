@@ -100,6 +100,10 @@ pub fn deconstruct_session_keys_string(session_keys: String) -> Result<SessionKe
 	deconstruct_session_keys(session_keys_u8)
 }
 
+pub fn new_h256_from_hex(s: &str) -> Result<H256, String> {
+	hex_string_to_h256(s)
+}
+
 pub fn hex_string_to_h256(mut s: &str) -> Result<H256, String> {
 	if s.starts_with("0x") {
 		s = &s[2..];

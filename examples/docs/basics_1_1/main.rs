@@ -1,4 +1,11 @@
-use avail_rust::{account::account_id_from_str, error::ClientError};
+use avail_rust::error::ClientError;
+
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
+	Ok(())
+}
+
+/* use avail_rust::{account::account_id_from_str, error::ClientError};
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
@@ -84,3 +91,4 @@ async fn identity_set_identity() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

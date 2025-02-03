@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 type DataSubmissionCall = avail::data_availability::calls::types::SubmitData;
 type ApplicationKeyCreatedEvent = avail::data_availability::events::ApplicationKeyCreated;
@@ -84,3 +84,4 @@ pub async fn run() -> Result<(), ClientError> {
 	Tx Hash: 0x6b4abd33d1452c0aa3d2fb9f4f4bbeb4f9d2d20b0b5bfb55696eea551974dcd3, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 202, 251, 108, 14, 95, 87, 191, 103, 174, 23, 201, 117, 10, 32, 139, 45, 55, 84, 14, 101, 67, 180, 132, 224, 20, 88, 26, 241, 244, 83, 32, 2, 45, 179, 41, 23, 165, 8, 7, 65, 52, 143, 32, 5, 60, 109, 132, 22, 89, 98, 198, 151, 88, 202, 92, 229, 70, 49, 127, 101, 254, 166, 81, 131], App Id: 12
 	Ascii data: My Data
 */
+ */

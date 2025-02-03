@@ -59,10 +59,7 @@ mod create {
 
 		let tx = sdk.tx.nomination_pools.create(amount, root, nominator, bouncer);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Created>() {
@@ -97,10 +94,7 @@ mod create_with_pool_id {
 			.nomination_pools
 			.create_with_pool_id(amount, root, nominator, bouncer, pool_id);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Created>() {
@@ -129,10 +123,7 @@ mod join {
 
 		let tx = sdk.tx.nomination_pools.join(amount, pool_id);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
@@ -160,10 +151,7 @@ mod bond_extra {
 
 		let tx = sdk.tx.nomination_pools.bond_extra(extra);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
@@ -189,10 +177,7 @@ mod unbond {
 
 		let tx = sdk.tx.nomination_pools.unbond(member_account, unbonding_points);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Unbonded>() {
@@ -221,10 +206,7 @@ mod withdraw_unbonded {
 			.nomination_pools
 			.withdraw_unbonded(member_account, num_slashing_spans);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Withdrawn>() {
@@ -256,10 +238,7 @@ mod set_commission {
 
 		let tx = sdk.tx.nomination_pools.set_commission(pool_id, Some(new_commission));
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionUpdated>() {
@@ -285,10 +264,7 @@ mod set_metadata {
 
 		let tx = sdk.tx.nomination_pools.set_metadata(pool_id, metadata);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 
@@ -314,10 +290,7 @@ mod set_state {
 
 		let tx = sdk.tx.nomination_pools.set_state(pool_id, state);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::StateChanged>() {
@@ -342,10 +315,7 @@ mod set_claim_permission {
 
 		let tx = sdk.tx.nomination_pools.set_claim_permission(permission);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 
@@ -370,16 +340,10 @@ mod nominate {
 
 		let tx = sdk.tx.nomination_pools.nominate(pool_id, validators);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
-		if let Some(data) = res
-			.get_call_data::<NominationPoolsCalls::Nominate>(&sdk.online_client)
-			.await
-		{
+		if let Some(data) = res.get_call_data::<NominationPoolsCalls::Nominate>().await {
 			dbg!(data);
 		}
 
@@ -401,10 +365,7 @@ mod chill {
 
 		let tx = sdk.tx.nomination_pools.chill(pool_id);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 
@@ -425,10 +386,7 @@ mod claim_payout {
 
 		let tx = sdk.tx.nomination_pools.claim_payout();
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PaidOut>() {
@@ -453,10 +411,7 @@ mod claim_payout_other {
 
 		let tx = sdk.tx.nomination_pools.claim_payout_other(other);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PaidOut>() {
@@ -481,10 +436,7 @@ mod claim_commission {
 
 		let tx = sdk.tx.nomination_pools.claim_commission(pool_id);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionClaimed>() {
@@ -507,7 +459,7 @@ mod payout_stakers {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let validator_stash = account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
 		let era_storage = avail::storage().staking().active_era();
-		let storage = sdk.online_client.storage().at_latest().await?;
+		let storage = sdk.client.storage().at_latest().await?;
 		let era = storage.fetch(&era_storage).await?;
 		let mut era = era.map(|e| e.index).unwrap_or(0);
 		if era > 0 {
@@ -516,10 +468,7 @@ mod payout_stakers {
 
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())
 	}
@@ -531,7 +480,7 @@ async fn new_era() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	let era_storage = avail::storage().staking().active_era();
-	let storage = sdk.online_client.storage().at_latest().await?;
+	let storage = sdk.client.storage().at_latest().await?;
 	let era = storage.fetch(&era_storage).await?;
 	let target_era = era.map(|e| e.index).unwrap_or(0) + 3;
 

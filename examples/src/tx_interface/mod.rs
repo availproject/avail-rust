@@ -25,7 +25,7 @@ pub async fn wait_for_new_era(mut target_era: Option<u32>) -> Result<(), ClientE
 
 	let era_storage = avail::storage().staking().active_era();
 	loop {
-		let storage = sdk.online_client.storage().at_latest().await?;
+		let storage = sdk.client.storage().at_latest().await?;
 		let era = storage.fetch(&era_storage).await?;
 		let era = era.map(|e| e.index).unwrap_or(0);
 		if target_era.is_none() {

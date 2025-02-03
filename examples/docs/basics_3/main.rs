@@ -1,4 +1,11 @@
-use avail_rust::prelude::*;
+use avail_rust::error::ClientError;
+
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
+	Ok(())
+}
+
+/* use avail_rust::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
@@ -34,3 +41,4 @@ async fn main() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

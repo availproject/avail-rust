@@ -182,6 +182,7 @@ pub async fn watch(
 	}
 
 	Ok(TransactionDetails::new(
+		client.clone(),
 		events,
 		tx_hash,
 		tx_index,
@@ -383,6 +384,7 @@ pub async fn http_watch(
 	info!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
 
 	Ok(TransactionDetails::new(
+		client.clone(),
 		events,
 		tx_hash,
 		tx_index,

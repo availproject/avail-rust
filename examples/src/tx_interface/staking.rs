@@ -46,10 +46,7 @@ mod bond {
 
 		let tx = sdk.tx.staking.bond(value, payee);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<StakingEvents::Bonded>() {
@@ -74,10 +71,7 @@ mod bond_extra {
 
 		let tx = sdk.tx.staking.bond_extra(max_additional);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<StakingEvents::Bonded>() {
@@ -104,13 +98,10 @@ mod nominate {
 
 		let tx = sdk.tx.staking.nominate(&targets);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
-		if let Some(data) = res.get_call_data::<StakingCalls::Nominate>(&sdk.online_client).await {
+		if let Some(data) = res.get_call_data::<StakingCalls::Nominate>().await {
 			dbg!(data);
 		}
 
@@ -131,10 +122,7 @@ mod chill {
 
 		let tx = sdk.tx.staking.chill();
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<StakingEvents::Chilled>() {
@@ -175,10 +163,7 @@ mod chill_other {
 
 		let tx = sdk.tx.staking.chill_other(stash);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<StakingEvents::Chilled>() {
@@ -203,10 +188,7 @@ mod unbond {
 
 		let tx = sdk.tx.staking.unbond(value);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<StakingEvents::Unbonded>() {
@@ -235,10 +217,7 @@ mod validate {
 
 		let tx = sdk.tx.staking.validate(commission, blocked);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		if let Some(event) = res.find_first_event::<StakingEvents::ValidatorPrefsSet>() {
@@ -283,10 +262,7 @@ mod payout_stakers {
 
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 

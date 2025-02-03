@@ -2,6 +2,12 @@ use avail_rust::error::ClientError;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
+	Ok(())
+}
+/* use avail_rust::error::ClientError;
+
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
 	// RPC Connection
 	// ANCHOR: connection
 	use avail_rust::{
@@ -104,3 +110,4 @@ async fn main() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

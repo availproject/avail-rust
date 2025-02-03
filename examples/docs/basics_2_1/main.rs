@@ -2,6 +2,13 @@ use avail_rust::error::ClientError;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
+	Ok(())
+}
+
+/* use avail_rust::error::ClientError;
+
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
 	data_availability_create_key().await?;
 	balances_transfer_keep_alive().await?;
 	identity_set_identity().await?;
@@ -56,3 +63,4 @@ async fn identity_set_identity() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

@@ -149,5 +149,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	println!("-- Force Batch Call Done --");
 
+	println!("Batch finished correctly");
+
 	Ok(())
 }

@@ -24,23 +24,17 @@ mod submit_data {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let data = String::from("My Awesome Data").as_bytes().to_vec();
 
-		let options = Options::new().nonce(Nonce::BestBlockAndTxPool).app_id(1);
+		let options = Options::new().nonce(Nonce::BestBlock).app_id(1);
 		let tx = sdk.tx.data_availability.submit_data(data);
 		let res = tx.execute_and_watch_inclusion(&account, Some(options)).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		let Some(event) = res.find_first_event::<DataAvailabilityEvents::DataSubmitted>() else {
 			return Err("Failed to find DataSubmitted event".into());
 		};
 		dbg!(event);
-		let Some(data) = res
-			.get_call_data::<DataAvailabilityCalls::SubmitData>(&sdk.online_client)
-			.await
-		else {
+		let Some(data) = res.get_call_data::<DataAvailabilityCalls::SubmitData>().await else {
 			return Err("Failed to find SubmitDataCall data".into());
 		};
 		dbg!(data);
@@ -63,10 +57,7 @@ mod create_application_key {
 
 		let tx = sdk.tx.data_availability.create_application_key(key);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		res.print_debug();
 		let Some(event) = res.find_first_event::<DataAvailabilityEvents::ApplicationKeyCreated>() else {

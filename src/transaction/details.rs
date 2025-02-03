@@ -4,6 +4,7 @@ use subxt::{blocks::StaticExtrinsic, events::StaticEvent};
 
 #[derive(Debug, Clone)]
 pub struct TransactionDetails {
+	client: Client,
 	pub events: Option<Arc<AExtrinsicEvents>>,
 	pub tx_hash: H256,
 	pub tx_index: u32,
@@ -13,6 +14,7 @@ pub struct TransactionDetails {
 
 impl TransactionDetails {
 	pub fn new(
+		client: Client,
 		events: Option<AExtrinsicEvents>,
 		tx_hash: H256,
 		tx_index: u32,
@@ -24,6 +26,7 @@ impl TransactionDetails {
 			None => None,
 		};
 		Self {
+			client,
 			events,
 			tx_hash,
 			tx_index,
@@ -96,11 +99,11 @@ TransactionDetails {{
 
 	/// Returns None if we failed to get the call data OR if it was not possible to get the block that contains the call data
 	/// Returns Some if we managed to get the call data
-	pub async fn get_call_data<T>(&self, client: &Client) -> Option<T>
+	pub async fn get_call_data<T>(&self) -> Option<T>
 	where
 		T: StaticExtrinsic,
 	{
-		let block = self.fetch_block(client).await.ok()?;
+		let block = self.fetch_block(&self.client).await.ok()?;
 		let tx = block.transaction_by_index_static::<T>(self.tx_index)?;
 		Some(tx.value)
 	}

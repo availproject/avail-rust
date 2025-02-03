@@ -1,4 +1,4 @@
-use avail_rust::{
+/* use avail_rust::{
 	avail,
 	block::{Block, DataSubmission},
 	error::ClientError,
@@ -90,3 +90,4 @@ pub async fn run() -> Result<(), ClientError> {
 	Tx Hash: 0xc5dfa3c4b62280febc3cdb9638650441596dbb02c427ebb77d25201b6e52e2ec, Tx Index: 1, Data [77, 121, 32, 68, 97, 116, 97], Tx Signer: [1, 152, 76, 87, 244, 106, 83, 18, 214, 247, 138, 6, 162, 56, 34, 56, 182, 50, 22, 174, 89, 219, 133, 176, 244, 24, 155, 213, 201, 63, 146, 181, 36, 247, 60, 134, 221, 14, 102, 58, 148, 247, 218, 33, 47, 13, 103, 227, 186, 13, 221, 104, 243, 209, 74, 163, 74, 212, 168, 101, 255, 150, 88, 251, 142], App Id: 13
 	Ascii data: My Data
 */
+ */

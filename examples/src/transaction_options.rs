@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 use std::time::Duration;
 
 pub async fn run() -> Result<(), ClientError> {
@@ -129,3 +129,4 @@ async fn wait_n_blocks(sdk: &SDK, n: u32) -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */
