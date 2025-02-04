@@ -1,7 +1,7 @@
 use crate::{
 	error::ClientError,
 	rpc::{chain::get_header, system::account_next_index},
-	AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Block, Client, H256,
+	AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
 };
 use subxt::config::Header;
 
@@ -11,8 +11,8 @@ pub type Params =
 #[derive(Debug, Clone, Copy)]
 pub struct Options {
 	pub app_id: Option<u32>,
-	pub mortality: Option<Mortality>,
-	pub nonce: Option<Nonce>,
+	pub mortality: Option<u64>,
+	pub nonce: Option<u32>,
 	pub tip: Option<u128>,
 }
 
@@ -31,12 +31,12 @@ impl Options {
 		self
 	}
 
-	pub fn mortality(mut self, value: Mortality) -> Self {
+	pub fn mortality(mut self, value: u64) -> Self {
 		self.mortality = Some(value);
 		self
 	}
 
-	pub fn nonce(mut self, value: Nonce) -> Self {
+	pub fn nonce(mut self, value: u32) -> Self {
 		self.nonce = Some(value);
 		self
 	}
@@ -49,10 +49,9 @@ impl Options {
 	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<PopulatedOptions, ClientError> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
-		let nonce = self.nonce.unwrap_or(Nonce::BestBlock);
-		let nonce = parse_nonce(client, nonce, account_id).await?;
-		let mortality = self.mortality.unwrap_or(Mortality { period: 32 });
-		let mortality = CheckedMortality::from_mortality(&mortality, client).await?;
+		let nonce = parse_nonce(client, self.nonce, account_id).await?;
+		let period = self.mortality.unwrap_or(32);
+		let mortality = CheckedMortality::from_period(period, client).await?;
 
 		Ok(PopulatedOptions {
 			app_id,
@@ -94,17 +93,9 @@ impl PopulatedOptions {
 	}
 
 	pub async fn regenerate_mortality(&mut self, client: &Client) -> Result<(), ClientError> {
-		let mortality = Mortality {
-			period: self.mortality.period,
-		};
-		self.mortality = CheckedMortality::from_mortality(&mortality, client).await?;
+		self.mortality = CheckedMortality::from_period(self.mortality.period, client).await?;
 		return Ok(());
 	}
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Mortality {
-	pub period: u64,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -122,33 +113,21 @@ impl CheckedMortality {
 		}
 	}
 
-	pub async fn from_mortality(m: &Mortality, client: &Client) -> Result<Self, ClientError> {
+	pub async fn from_period(period: u64, client: &Client) -> Result<Self, ClientError> {
 		let header = get_header(client, None).await?;
 		let (block_hash, block_number) = (header.hash(), header.number());
 		Ok(Self {
-			period: m.period,
+			period,
 			block_hash,
 			block_number,
 		})
 	}
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum Nonce {
-	BestBlock,
-	FinalizedBlock,
-	Custom(u32),
-}
-
-pub async fn parse_nonce(client: &Client, nonce: Nonce, account_id: &AccountId) -> Result<u64, ClientError> {
+pub async fn parse_nonce(client: &Client, nonce: Option<u32>, account_id: &AccountId) -> Result<u64, ClientError> {
 	let nonce = match nonce {
-		Nonce::FinalizedBlock => {
-			let hash = Block::fetch_finalized_block_hash(client).await?;
-			let block = client.blocks().at(hash).await?;
-			block.account_nonce(account_id).await?
-		},
-		Nonce::BestBlock => account_next_index(client, account_id.to_string()).await? as u64,
-		Nonce::Custom(x) => x as u64,
+		Some(x) => x as u64,
+		None => account_next_index(client, account_id.to_string()).await? as u64,
 	};
 
 	Ok(nonce)

@@ -34,13 +34,13 @@ pub use sdk::{Client, WaitFor, SDK};
 pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
-pub use transaction::{Mortality, Nonce, Options, PopulatedOptions, Transaction, TransactionDetails};
+pub use transaction::{Options, PopulatedOptions, Transaction, TransactionDetails};
 
 pub mod prelude {
 	pub use super::{
 		account, avail, avail::runtime_types::bounded_collections::bounded_vec::BoundedVec, avail_core,
 		block::DataSubmission, config::*, error::ClientError, hex, kate_recovery, primitives, rpc, subxt, subxt_signer,
-		transaction::WebSocket, Block, BlockTransaction, Client, Filter, Keypair, Mortality, Nonce, Options, Perbill,
-		PopulatedOptions, SecretUri, Transaction, TransactionDetails, WaitFor, H256, SDK, U256,
+		transaction::WebSocket, Block, BlockTransaction, Client, Filter, Keypair, Options, Perbill, PopulatedOptions,
+		SecretUri, Transaction, TransactionDetails, WaitFor, H256, SDK, U256,
 	};
 }
