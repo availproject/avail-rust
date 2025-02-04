@@ -1,6 +1,6 @@
 use subxt::blocks::StaticExtrinsic;
 
-use crate::{block::EventRecords, error::ClientError, utils, Client, H256};
+use crate::{block::EventRecords, block_transaction::Filter, error::ClientError, utils, Client, H256};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -47,21 +47,20 @@ impl TransactionDetails {
 		}
 	}
 
-	pub async fn decode_as<T: StaticExtrinsic>(&self) -> Result<Option<T>, ClientError> {
+	pub async fn decode_as<T: StaticExtrinsic + Clone>(&self) -> Result<Option<T>, ClientError> {
 		let block = crate::block::Block::new(&self.client, self.block_hash).await?;
-		let tx = block.transaction_by_index_static::<T>(self.tx_index);
-		match tx {
-			Some(x) => Ok(Some(x.value)),
-			None => Ok(None),
+		let filter = Filter::new().tx_index(self.tx_index);
+		let txs = block.transactions_static::<T>(filter);
+		if txs.is_empty() {
+			return Ok(None);
 		}
+		Ok(Some(txs[0].value.clone()))
 	}
 
-	pub async fn is<T: StaticExtrinsic>(&self) -> Result<bool, ClientError> {
+	pub async fn is<T: StaticExtrinsic + Clone>(&self) -> Result<bool, ClientError> {
 		let block = crate::block::Block::new(&self.client, self.block_hash).await?;
-		let tx = block.transaction_by_index_static::<T>(self.tx_index);
-		match tx {
-			Some(_) => Ok(true),
-			None => Ok(false),
-		}
+		let filter = Filter::new().tx_index(self.tx_index);
+		let txs = block.transactions_static::<T>(filter);
+		return Ok(!txs.is_empty());
 	}
 }

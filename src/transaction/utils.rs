@@ -16,12 +16,8 @@ pub enum TransactionExecutionError {
 impl TransactionExecutionError {
 	pub fn to_string(&self) -> String {
 		match self {
-			TransactionExecutionError::TransactionNotFound => {
-				String::from("Transaction not found").to_string()
-			},
-			TransactionExecutionError::BlockStreamFailure => {
-				String::from("Block Stream Failure").to_string()
-			},
+			TransactionExecutionError::TransactionNotFound => String::from("Transaction not found").to_string(),
+			TransactionExecutionError::BlockStreamFailure => String::from("Block Stream Failure").to_string(),
 			TransactionExecutionError::SubxtError(error) => error.to_string(),
 		}
 	}
@@ -51,10 +47,7 @@ where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
-	let options = options
-		.unwrap_or_default()
-		.build(&client, &account_id)
-		.await?;
+	let options = options.unwrap_or_default().build(&client, &account_id).await?;
 
 	let params = options.build().await?;
 
@@ -70,13 +63,8 @@ pub async fn sign_and_send_raw_params<T>(
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	if params.6 .0 .0 != 0
-		&& call.pallet_name() != "DataAvailability"
-		&& call.call_name() != "submit_data"
-	{
-		return Err(ClientError::from(
-			"Transaction is not compatible with non-zero AppIds",
-		));
+	if params.6 .0 .0 != 0 && call.pallet_name() != "DataAvailability" && call.call_name() != "submit_data" {
+		return Err(ClientError::from("Transaction is not compatible with non-zero AppIds"));
 	}
 
 	if log_enabled!(log::Level::Info) {
@@ -92,11 +80,7 @@ where
 		);
 	}
 
-	let tx_hash = client
-		.online_client
-		.tx()
-		.sign_and_submit(call, account, params)
-		.await?;
+	let tx_hash = client.online_client.tx().sign_and_submit(call, account, params).await?;
 
 	Ok(tx_hash)
 }
@@ -238,12 +222,8 @@ where
 
 		match error {
 			TransactionExecutionError::TransactionNotFound => (),
-			TransactionExecutionError::BlockStreamFailure => {
-				return Err(ClientError::TransactionExecution(error))
-			},
-			TransactionExecutionError::SubxtError(_) => {
-				return Err(ClientError::TransactionExecution(error))
-			},
+			TransactionExecutionError::BlockStreamFailure => return Err(ClientError::TransactionExecution(error)),
+			TransactionExecutionError::SubxtError(_) => return Err(ClientError::TransactionExecution(error)),
 		};
 
 		if retry_count == 0 {
@@ -271,10 +251,7 @@ where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
-	let options = options
-		.unwrap_or_default()
-		.build(client, &account_id)
-		.await?;
+	let options = options.unwrap_or_default().build(client, &account_id).await?;
 
 	let params = options.build().await?;
 
@@ -290,13 +267,8 @@ pub async fn http_sign_and_send_raw_params<T>(
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	if params.6 .0 .0 != 0
-		&& call.pallet_name() != "DataAvailability"
-		&& call.call_name() != "submit_data"
-	{
-		return Err(ClientError::from(
-			"Transaction is not compatible with non-zero AppIds",
-		));
+	if params.6 .0 .0 != 0 && call.pallet_name() != "DataAvailability" && call.call_name() != "submit_data" {
+		return Err(ClientError::from("Transaction is not compatible with non-zero AppIds"));
 	}
 
 	if log_enabled!(log::Level::Debug) {
@@ -430,12 +402,8 @@ where
 
 		match error {
 			TransactionExecutionError::TransactionNotFound => (),
-			TransactionExecutionError::BlockStreamFailure => {
-				return Err(ClientError::TransactionExecution(error))
-			},
-			TransactionExecutionError::SubxtError(_) => {
-				return Err(ClientError::TransactionExecution(error))
-			},
+			TransactionExecutionError::BlockStreamFailure => return Err(ClientError::TransactionExecution(error)),
+			TransactionExecutionError::SubxtError(_) => return Err(ClientError::TransactionExecution(error)),
 		};
 
 		if retry_count == 0 {

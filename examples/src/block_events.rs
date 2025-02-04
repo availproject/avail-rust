@@ -45,7 +45,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Convert from Block Transaction Event to Specific ApplicationKeyCreated Event
 	let event = block_events.find_first::<AppKeyCreatedEvent>();
-	assert!(event.as_ref().is_some_and(|x| x.is_ok()), "AppKeyCreatedEvent");
+	assert!(event.as_ref().is_some_and(|x| x.is_some()), "AppKeyCreatedEvent");
 
 	let event = event.unwrap().unwrap();
 	let key: String = to_ascii(event.key.0).unwrap();
@@ -90,7 +90,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Convert from Block Transaction Event to Specific Transaction Event
 	let event = tx_events.find_first::<SuccessEvent>();
-	assert!(event.as_ref().is_some_and(|x| x.is_ok()), "SuccessEvent");
+	assert!(event.as_ref().is_some_and(|x| x.is_some()), "SuccessEvent");
 
 	let event = event.unwrap().unwrap();
 	println!("Weight {:?}", event.dispatch_info.weight);

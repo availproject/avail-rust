@@ -11,9 +11,9 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Transaction filtered by Transaction index
 	let tx_index = 1;
-	let tx = block.transaction_by_index(tx_index);
-	assert!(tx.is_some(), "Transaction must exist");
-	let tx = tx.unwrap();
+	let txs = block.transactions(Filter::new().tx_index(tx_index));
+	assert_eq!(txs.len(), 1, "");
+	let tx = txs.index(0);
 
 	// Printout
 	assert_eq!(tx.tx_index(), tx_index, "Tx Index must be the same");
@@ -72,7 +72,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Convert from Generic Transaction Event to Specific Transaction Event
 	let event = tx_events.find_first::<NetAccountEvent>();
-	assert!(event.as_ref().is_some_and(|x| x.is_ok()), "NetAccountEvent");
+	assert!(event.as_ref().is_some_and(|x| x.is_some()), "NetAccountEvent");
 	let event = event.unwrap().unwrap();
 	println!("Account: {}", event.account);
 

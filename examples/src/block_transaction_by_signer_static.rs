@@ -11,7 +11,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// All Transaction filtered by Signer
 	let account_id = account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
-	let block_transactions = block.transaction_by_signer_static::<CreateAppKeyCall>(account_id.clone());
+	let block_transactions = block.transactions_static::<CreateAppKeyCall>(Filter::new().tx_signer(account_id.clone()));
 	assert_eq!(block_transactions.len(), 1, "Transaction count must be 1");
 
 	// Printout Block Transactions made by Signer
@@ -66,7 +66,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Convert from Generic Transaction Event to Specific Transaction Event
 	let event = tx_events.find_first::<AppKeyCreated>();
-	assert!(event.as_ref().is_some_and(|x| x.is_ok()), "AppKeyCreated");
+	assert!(event.as_ref().is_some_and(|x| x.is_some()), "AppKeyCreated");
 	let event = event.unwrap().unwrap();
 
 	let key = to_ascii(event.key.0).unwrap();

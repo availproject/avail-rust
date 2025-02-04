@@ -1,6 +1,4 @@
-use crate::{
-	error::ClientError, transactions::Transactions, ABlocksClient, AOnlineClient, AStorageClient,
-};
+use crate::{error::ClientError, transactions::Transactions, ABlocksClient, AOnlineClient, AStorageClient};
 use std::time::Duration;
 use subxt::backend::rpc::{
 	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},

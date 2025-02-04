@@ -7,16 +7,46 @@ use codec::Decode;
 use primitive_types::H256;
 use subxt::{blocks::StaticExtrinsic, config::signed_extensions, utils::MultiAddress};
 
+#[derive(Debug, Clone, Default)]
+pub struct Filter {
+	pub app_id: Option<u32>,
+	pub tx_hash: Option<H256>,
+	pub tx_index: Option<u32>,
+	pub tx_signer: Option<AccountId>,
+}
+
+impl Filter {
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub fn app_id(mut self, value: u32) -> Self {
+		self.app_id = Some(value);
+		self
+	}
+
+	pub fn tx_hash(mut self, value: H256) -> Self {
+		self.tx_hash = Some(value);
+		self
+	}
+
+	pub fn tx_index(mut self, value: u32) -> Self {
+		self.tx_index = Some(value);
+		self
+	}
+
+	pub fn tx_signer(mut self, value: AccountId) -> Self {
+		self.tx_signer = Some(value);
+		self
+	}
+}
 pub struct BlockTransactions {
 	pub inner: Vec<BlockTransaction>,
 }
 
 impl BlockTransactions {
 	pub fn iter(&self) -> BlockTransactionsIter {
-		BlockTransactionsIter {
-			inner: self,
-			index: 0,
-		}
+		BlockTransactionsIter { inner: self, index: 0 }
 	}
 
 	pub fn len(&self) -> usize {
@@ -158,10 +188,7 @@ impl BlockTransaction {
 
 	pub fn nonce(&self) -> Option<u32> {
 		let signed = self.signed()?;
-		signed
-			.find::<signed_extensions::CheckNonce>()
-			.ok()?
-			.map(|e| e as u32)
+		signed.find::<signed_extensions::CheckNonce>().ok()?.map(|e| e as u32)
 	}
 
 	pub fn decode<E: StaticExtrinsic>(&self) -> Option<E> {
@@ -251,9 +278,6 @@ impl<E: StaticExtrinsic> StaticBlockTransaction<E> {
 
 	pub fn nonce(&self) -> Option<u32> {
 		let signed = self.signed()?;
-		signed
-			.find::<signed_extensions::CheckNonce>()
-			.ok()?
-			.map(|e| e as u32)
+		signed.find::<signed_extensions::CheckNonce>().ok()?.map(|e| e as u32)
 	}
 }

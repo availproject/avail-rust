@@ -1,10 +1,10 @@
 use crate::{
 	avail::data_availability::calls::types as DataAvailabilityCalls,
-	block_transaction::{BlockTransactions, StaticBlockTransaction},
+	block_transaction::{BlockTransactions, Filter, StaticBlockTransaction},
 	error::ClientError,
 	primitives::block::extrinsics_params::CheckAppId,
-	rpc, ABlock, AEventDetails, AEvents, AExtrinsicDetails, AExtrinsicEvents, AExtrinsics,
-	AFoundExtrinsic, AccountId, BlockTransaction, Client,
+	rpc, ABlock, AEventDetails, AEvents, AExtrinsicDetails, AExtrinsicEvents, AExtrinsics, AccountId, BlockTransaction,
+	Client,
 };
 use codec::Decode;
 use primitive_types::H256;
@@ -50,10 +50,7 @@ impl Block {
 		})
 	}
 
-	pub async fn from_block_number(
-		client: &Client,
-		block_number: u32,
-	) -> Result<Self, ClientError> {
+	pub async fn from_block_number(client: &Client, block_number: u32) -> Result<Self, ClientError> {
 		let block_hash = rpc::chain::get_block_hash(client, Some(block_number)).await?;
 		Self::new(client, block_hash).await
 	}
@@ -72,112 +69,85 @@ impl Block {
 		self.transactions.len()
 	}
 
-	pub fn transaction_all_static<E: StaticExtrinsic>(&self) -> Vec<StaticBlockTransaction<E>> {
-		transaction_all_static::<E>(&self.transactions)
-	}
+	pub fn transactions_static<E: StaticExtrinsic + Clone>(&self, filter: Filter) -> Vec<StaticBlockTransaction<E>> {
+		let mut result = Vec::new();
 
-	pub fn transaction_by_signer_static<E: StaticExtrinsic>(
-		&self,
-		account_id: AccountId,
-	) -> Vec<StaticBlockTransaction<E>> {
-		self.transactions
-			.iter()
-			.flat_map(|details| {
-				let tx_account_id = read_account_id(&details);
-				if tx_account_id != Some(account_id.clone()) {
-					return None;
+		for atx in self.transactions.iter() {
+			if let Some(app_id) = filter.app_id.as_ref() {
+				if read_app_id(&atx) != Some(*app_id) {
+					continue;
 				}
+			}
 
-				return match details.as_extrinsic::<E>().ok().flatten() {
-					Some(x) => Some(StaticBlockTransaction {
-						inner: details,
-						value: x,
-					}),
-					None => None,
-				};
-			})
+			if let Some(tx_hash) = filter.tx_hash.as_ref() {
+				if atx.hash().ne(tx_hash) {
+					continue;
+				}
+			}
+
+			if let Some(tx_index) = filter.tx_index.as_ref() {
+				if atx.index().ne(tx_index) {
+					continue;
+				}
+			}
+
+			if let Some(account_id) = filter.tx_signer.as_ref() {
+				if read_account_id(&atx) != Some(account_id.clone()) {
+					continue;
+				}
+			}
+
+			let Some(value) = atx.as_extrinsic::<E>().ok().flatten() else {
+				continue;
+			};
+
+			let value = StaticBlockTransaction { inner: atx, value };
+			result.push(value);
+		}
+
+		result
+	}
+
+	pub fn transactions(&self, filter: Filter) -> BlockTransactions {
+		let mut result = Vec::new();
+
+		for atx in self.transactions.iter() {
+			if let Some(app_id) = filter.app_id.as_ref() {
+				if read_app_id(&atx) != Some(*app_id) {
+					continue;
+				}
+			}
+
+			if let Some(tx_hash) = filter.tx_hash.as_ref() {
+				if atx.hash().ne(tx_hash) {
+					continue;
+				}
+			}
+
+			if let Some(tx_index) = filter.tx_index.as_ref() {
+				if atx.index().ne(tx_index) {
+					continue;
+				}
+			}
+
+			if let Some(account_id) = filter.tx_signer.as_ref() {
+				if read_account_id(&atx) != Some(account_id.clone()) {
+					continue;
+				}
+			}
+
+			let block_tx = BlockTransaction { inner: atx };
+			result.push(block_tx);
+		}
+
+		BlockTransactions { inner: result }
+	}
+
+	pub fn data_submissions(&self, filter: Filter) -> Vec<DataSubmission> {
+		self.transactions_static(filter)
+			.iter()
+			.map(|tx| DataSubmission::from_static(tx))
 			.collect()
-	}
-
-	pub fn transaction_by_index_static<E: StaticExtrinsic>(
-		&self,
-		tx_index: u32,
-	) -> Option<StaticBlockTransaction<E>> {
-		transaction_by_index_static::<E>(&self.transactions, tx_index)
-	}
-
-	pub fn transaction_by_hash_static<E: StaticExtrinsic>(
-		&self,
-		tx_hash: H256,
-	) -> Option<StaticBlockTransaction<E>> {
-		transaction_by_hash_static::<E>(&self.transactions, tx_hash)
-	}
-
-	pub fn transaction_by_app_id_static<E: StaticExtrinsic>(
-		&self,
-		app_id: u32,
-	) -> Vec<StaticBlockTransaction<E>> {
-		transaction_by_app_id_static::<E>(&self.transactions, app_id)
-	}
-
-	pub fn transaction_all(&self) -> BlockTransactions {
-		let txs = self
-			.transactions
-			.iter()
-			.map(|tx| BlockTransaction { inner: tx })
-			.collect();
-		BlockTransactions { inner: txs }
-	}
-
-	pub fn transaction_by_hash(&self, tx_hash: H256) -> Option<BlockTransaction> {
-		transaction_by_hash(&self.transactions, tx_hash)
-	}
-
-	pub fn transaction_by_signer(&self, account_id: AccountId) -> BlockTransactions {
-		let txs = self
-			.transactions
-			.iter()
-			.filter(|tx| read_account_id(tx) == Some(account_id.clone()))
-			.map(|tx| BlockTransaction { inner: tx })
-			.collect();
-		BlockTransactions { inner: txs }
-	}
-
-	pub fn transaction_by_index(&self, tx_index: u32) -> Option<BlockTransaction> {
-		transaction_by_index(&self.transactions, tx_index)
-	}
-
-	pub fn transaction_by_app_id(&self, app_id: u32) -> BlockTransactions {
-		let txs = self
-			.transactions
-			.iter()
-			.filter(|tx| read_app_id(tx) == Some(app_id))
-			.map(|tx| BlockTransaction { inner: tx })
-			.collect();
-		BlockTransactions { inner: txs }
-	}
-
-	pub fn data_submissions_all(&self) -> Vec<DataSubmission> {
-		data_submissions_all(&self.transactions)
-	}
-
-	pub fn data_submissions_by_signer(&self, account_id: AccountId) -> Vec<DataSubmission> {
-		self.transaction_by_signer_static::<DataAvailabilityCalls::SubmitData>(account_id)
-			.into_iter()
-			.map(DataSubmission::from_static_block_transaction)
-			.collect()
-	}
-
-	pub fn data_submissions_by_index(&self, tx_index: u32) -> Option<DataSubmission> {
-		data_submissions_by_index(&self.transactions, tx_index)
-	}
-
-	pub fn data_submissions_by_hash(&self, tx_hash: H256) -> Option<DataSubmission> {
-		data_submissions_by_hash(&self.transactions, tx_hash)
-	}
-
-	pub fn data_submissions_by_app_id(&self, app_id: u32) -> Vec<DataSubmission> {
-		data_submissions_by_app_id(&self.transactions, app_id)
 	}
 
 	pub async fn storage_fetch<'address, T>(
@@ -200,10 +170,7 @@ impl Block {
 		self.block.storage().fetch_or_default(address).await
 	}
 
-	pub async fn storage_iter<T>(
-		&self,
-		address: T,
-	) -> Result<StreamOfResults<StorageKeyValuePair<T>>, subxt::Error>
+	pub async fn storage_iter<T>(&self, address: T) -> Result<StreamOfResults<StorageKeyValuePair<T>>, subxt::Error>
 	where
 		T: subxt::storage::Address<IsIterable = Yes> + 'static,
 		T::Keys: 'static + Sized,
@@ -220,25 +187,17 @@ impl Block {
 	}
 
 	pub fn transaction_hash_to_index(&self, tx_hash: H256) -> Option<u32> {
-		transaction_hash_to_index(&self.transactions, tx_hash)
-			.first()
-			.cloned()
+		transaction_hash_to_index(&self.transactions, tx_hash).first().cloned()
 	}
 }
 
-pub async fn fetch_transactions(
-	client: &Client,
-	block_hash: H256,
-) -> Result<(ABlock, AExtrinsics), subxt::Error> {
+pub async fn fetch_transactions(client: &Client, block_hash: H256) -> Result<(ABlock, AExtrinsics), subxt::Error> {
 	let block = client.blocks().at(block_hash).await?;
 	let transactions = block.extrinsics().await?;
 	Ok((block, transactions))
 }
 
-pub async fn fetch_tx_events(
-	transactions: &AExtrinsics,
-	tx_index: u32,
-) -> Result<AExtrinsicEvents, ClientError> {
+pub async fn fetch_tx_events(transactions: &AExtrinsics, tx_index: u32) -> Result<AExtrinsicEvents, ClientError> {
 	let iter = transactions.iter();
 	for details in iter {
 		if details.index() != tx_index {
@@ -248,143 +207,11 @@ pub async fn fetch_tx_events(
 		return details.events().await.map_err(ClientError::from);
 	}
 
-	Err(ClientError::from(
-		"Events not found for that transaction index",
-	))
-}
-
-pub fn transaction_all_static<E: StaticExtrinsic>(
-	transactions: &AExtrinsics,
-) -> Vec<StaticBlockTransaction<E>> {
-	transactions
-		.iter()
-		.flat_map(|details| match details.as_extrinsic::<E>().ok().flatten() {
-			Some(x) => Some(StaticBlockTransaction {
-				inner: details,
-				value: x,
-			}),
-			None => None,
-		})
-		.collect()
-}
-
-pub fn transaction_by_index_static<E: StaticExtrinsic>(
-	transactions: &AExtrinsics,
-	tx_index: u32,
-) -> Option<StaticBlockTransaction<E>> {
-	transactions
-		.iter()
-		.flat_map(|details| {
-			if details.index() != tx_index {
-				return None;
-			}
-
-			return match details.as_extrinsic::<E>().ok().flatten() {
-				Some(x) => Some(StaticBlockTransaction {
-					inner: details,
-					value: x,
-				}),
-				None => None,
-			};
-		})
-		.next()
-}
-
-pub fn transaction_by_hash_static<E: StaticExtrinsic>(
-	transactions: &AExtrinsics,
-	tx_hash: H256,
-) -> Option<StaticBlockTransaction<E>> {
-	transactions
-		.iter()
-		.flat_map(|details| {
-			if details.hash() != tx_hash {
-				return None;
-			}
-
-			return match details.as_extrinsic::<E>().ok().flatten() {
-				Some(x) => Some(StaticBlockTransaction {
-					inner: details,
-					value: x,
-				}),
-				None => None,
-			};
-		})
-		.next()
-}
-
-pub fn transaction_by_app_id_static<E: StaticExtrinsic>(
-	transactions: &AExtrinsics,
-	app_id: u32,
-) -> Vec<StaticBlockTransaction<E>> {
-	transactions
-		.iter()
-		.flat_map(|details| {
-			if read_app_id(&details) != Some(app_id) {
-				return None;
-			}
-
-			return match details.as_extrinsic::<E>().ok().flatten() {
-				Some(x) => Some(StaticBlockTransaction {
-					inner: details,
-					value: x,
-				}),
-				None => None,
-			};
-		})
-		.collect()
-}
-
-pub fn transaction_by_index(transactions: &AExtrinsics, tx_index: u32) -> Option<BlockTransaction> {
-	transactions
-		.iter()
-		.find(|tx| tx.index() == tx_index)
-		.map(|tx| BlockTransaction { inner: tx })
-}
-
-pub fn transaction_by_hash(transactions: &AExtrinsics, tx_hash: H256) -> Option<BlockTransaction> {
-	transactions
-		.iter()
-		.filter(|tx| tx.hash() == tx_hash)
-		.next()
-		.map(|tx| BlockTransaction { inner: tx })
-}
-
-pub fn data_submissions_all(transactions: &AExtrinsics) -> Vec<DataSubmission> {
-	transaction_all_static::<DataAvailabilityCalls::SubmitData>(transactions)
-		.into_iter()
-		.map(DataSubmission::from_static_block_transaction)
-		.collect()
-}
-
-pub fn data_submissions_by_index(
-	transactions: &AExtrinsics,
-	tx_index: u32,
-) -> Option<DataSubmission> {
-	transaction_by_index_static::<DataAvailabilityCalls::SubmitData>(transactions, tx_index)
-		.map(DataSubmission::from_static_block_transaction)
-}
-
-pub fn data_submissions_by_hash(
-	transactions: &AExtrinsics,
-	tx_hash: H256,
-) -> Option<DataSubmission> {
-	transaction_by_hash_static::<DataAvailabilityCalls::SubmitData>(transactions, tx_hash)
-		.map(DataSubmission::from_static_block_transaction)
-}
-
-pub fn data_submissions_by_app_id(transactions: &AExtrinsics, app_id: u32) -> Vec<DataSubmission> {
-	transaction_by_app_id_static::<DataAvailabilityCalls::SubmitData>(transactions, app_id)
-		.into_iter()
-		.map(DataSubmission::from_static_block_transaction)
-		.collect()
+	Err(ClientError::from("Events not found for that transaction index"))
 }
 
 pub fn read_app_id(transaction: &AExtrinsicDetails) -> Option<u32> {
-	transaction
-		.signed_extensions()?
-		.find::<CheckAppId>()
-		.ok()?
-		.map(|e| e.0)
+	transaction.signed_extensions()?.find::<CheckAppId>().ok()?.map(|e| e.0)
 }
 
 pub fn read_multi_address(transaction: &AExtrinsicDetails) -> Option<MultiAddress<AccountId, u32>> {
@@ -427,24 +254,7 @@ pub struct DataSubmission {
 }
 
 impl DataSubmission {
-	pub fn from_static(tx: AFoundExtrinsic<DataAvailabilityCalls::SubmitData>) -> Self {
-		let tx_hash = tx.details.hash();
-		let tx_index = tx.details.index();
-		let tx_signer = read_multi_address(&tx.details).expect("There must be an address");
-		let app_id = read_app_id(&tx.details).expect("There must be an app id");
-		let data = tx.value.data.0.clone();
-		Self {
-			tx_hash,
-			tx_index,
-			data,
-			tx_signer,
-			app_id,
-		}
-	}
-
-	pub fn from_static_block_transaction(
-		tx: StaticBlockTransaction<DataAvailabilityCalls::SubmitData>,
-	) -> Self {
+	pub fn from_static(tx: &StaticBlockTransaction<DataAvailabilityCalls::SubmitData>) -> Self {
 		let tx_hash = tx.inner.hash();
 		let tx_index = tx.inner.index();
 		let tx_signer = read_multi_address(&tx.inner).expect("There must be an address");
@@ -522,55 +332,55 @@ impl EventRecords {
 		result
 	}
 
-	pub fn find_checked<E: StaticEvent>(&self) -> Vec<Result<E, subxt_core::Error>> {
-		let mut result: Vec<Result<E, subxt_core::Error>> = Vec::new();
+	pub fn find_checked<E: StaticEvent>(&self) -> Vec<Option<E>> {
+		let mut result: Vec<Option<E>> = Vec::new();
 		for ev in self.inner.iter() {
 			// If result is Err() then we found the tx but failed to decode it
 			let decoded = match ev.as_event::<E>() {
 				Ok(x) => x,
-				Err(e) => {
-					result.push(Err(e));
+				Err(_) => {
+					result.push(None);
 					continue;
 				},
 			};
 
 			// If decoded is None then we can skip it as it doesn't have the correct pallet or event name.
 			if let Some(decoded) = decoded {
-				result.push(Ok(decoded));
+				result.push(Some(decoded));
 			}
 		}
 
 		result
 	}
 
-	pub fn find_first<E: StaticEvent>(&self) -> Option<Result<E, subxt_core::Error>> {
+	pub fn find_first<E: StaticEvent>(&self) -> Option<Option<E>> {
 		for ev in self.inner.iter() {
 			// If result is Err() then we found the tx but failed to decode it
 			let decoded = match ev.as_event::<E>() {
 				Ok(x) => x,
-				Err(e) => return Some(Err(e)),
+				Err(_) => return Some(None),
 			};
 
 			// If decoded is None then we can skip it as it doesn't have the correct pallet or event name.
 			if let Some(decoded) = decoded {
-				return Some(Ok(decoded));
+				return Some(Some(decoded));
 			}
 		}
 
 		None
 	}
 
-	pub fn find_last<E: StaticEvent>(&self) -> Option<Result<E, subxt_core::Error>> {
+	pub fn find_last<E: StaticEvent>(&self) -> Option<Option<E>> {
 		for ev in self.inner.iter().rev() {
 			// If result is Err() then we found the tx but failed to decode it
 			let decoded = match ev.as_event::<E>() {
 				Ok(x) => x,
-				Err(e) => return Some(Err(e)),
+				Err(_) => return Some(None),
 			};
 
 			// If decoded is None then we can skip it as it doesn't have the correct pallet or event name.
 			if let Some(decoded) = decoded {
-				return Some(Ok(decoded));
+				return Some(Some(decoded));
 			}
 		}
 
@@ -609,10 +419,7 @@ impl EventRecords {
 	}
 
 	pub fn iter(&self) -> EventRecordsIter {
-		EventRecordsIter {
-			inner: self,
-			index: 0,
-		}
+		EventRecordsIter { inner: self, index: 0 }
 	}
 }
 

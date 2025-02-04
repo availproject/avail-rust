@@ -8,10 +8,10 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// All Block Blobs by Hash
 	let tx_hash = new_h256_from_hex("0xe7efa71363d11bce370fe71a33e5ff296775f37507075c49316132131420f793")?;
-	let blob = block.data_submissions_by_hash(tx_hash);
-	assert!(blob.is_some(), "Blob must present");
+	let blobs = block.data_submissions(Filter::new().tx_hash(tx_hash));
+	assert_eq!(blobs.len(), 1, "");
 
-	let blob = blob.unwrap();
+	let blob = &blobs[0];
 
 	// Printout All Block Blobs by Hash
 	let blob_data = blob.to_ascii().unwrap();

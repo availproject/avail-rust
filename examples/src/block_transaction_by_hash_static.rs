@@ -11,9 +11,9 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Transaction filtered by Transaction Hash
 	let tx_hash = new_h256_from_hex("0x19c486e107c926ff4af3fa9b1d95aaba130cb0bc89515d0f5b523ef6bac06338")?;
-	let tx = block.transaction_by_hash_static::<TransferKeepAliveCall>(tx_hash);
-	assert!(tx.is_some(), "Transaction must exist");
-	let tx = tx.unwrap();
+	let txs = block.transactions_static::<TransferKeepAliveCall>(Filter::new().tx_hash(tx_hash));
+	assert_eq!(txs.len(), 1, "");
+	let tx = &txs[0];
 
 	// Printout
 	assert_eq!(tx.tx_hash(), tx_hash, "Tx Hash must be the same");
@@ -67,7 +67,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Convert from Generic Transaction Event to Specific Transaction Event
 	let event = tx_events.find_first::<TransferEvent>();
-	assert!(event.as_ref().is_some_and(|x| x.is_ok()), "TransferEvent");
+	assert!(event.as_ref().is_some_and(|x| x.is_some()), "TransferEvent");
 	let event = event.unwrap().unwrap();
 	println!("From: {}, To: {}, Amount: {}", event.from, event.to, event.amount);
 

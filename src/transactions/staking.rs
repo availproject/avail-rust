@@ -1,7 +1,5 @@
 use crate::{
-	api_dev::api::runtime_types::{
-		pallet_staking::ValidatorPrefs, sp_arithmetic::per_things::Perbill,
-	},
+	api_dev::api::runtime_types::{pallet_staking::ValidatorPrefs, sp_arithmetic::per_things::Perbill},
 	avail, AccountId, Client, Transaction,
 };
 use subxt_core::utils::MultiAddress;
@@ -54,10 +52,7 @@ impl Staking {
 	}
 
 	pub fn nominate(&self, targets: &[AccountId]) -> Transaction<NominateCall> {
-		let targets = targets
-			.iter()
-			.map(|a| MultiAddress::Id(a.clone()))
-			.collect();
+		let targets = targets.iter().map(|a| MultiAddress::Id(a.clone())).collect();
 
 		let payload = avail::tx().staking().nominate(targets);
 		Transaction::new(self.client.clone(), payload)
@@ -70,20 +65,13 @@ impl Staking {
 
 	pub fn validate(&self, commission: Commission, blocked: bool) -> Transaction<ValidateCall> {
 		let commission = Perbill(commission.0 as u32);
-		let perfs = ValidatorPrefs {
-			commission,
-			blocked,
-		};
+		let perfs = ValidatorPrefs { commission, blocked };
 
 		let payload = avail::tx().staking().validate(perfs);
 		Transaction::new(self.client.clone(), payload)
 	}
 
-	pub fn payout_stakers(
-		&self,
-		validator_stash: AccountId,
-		era: u32,
-	) -> Transaction<PayoutStakersCall> {
+	pub fn payout_stakers(&self, validator_stash: AccountId, era: u32) -> Transaction<PayoutStakersCall> {
 		let payload = avail::tx().staking().payout_stakers(validator_stash, era);
 		Transaction::new(self.client.clone(), payload)
 	}

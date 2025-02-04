@@ -11,7 +11,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// All Transaction filtered by Signer
 	let app_id = 2;
-	let block_transactions = block.transaction_by_app_id(app_id);
+	let block_transactions = block.transactions(Filter::new().app_id(app_id));
 	assert_eq!(block_transactions.len(), 2, "Transaction count must be 2");
 
 	// Printout Block Transactions made by Signer
@@ -70,7 +70,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Convert from Generic Transaction Event to Specific Transaction Event
 	let event = tx_events.find_first::<DataSubmittedEvent>();
-	assert!(event.as_ref().is_some_and(|x| x.is_ok()), "DataSubmittedEvent");
+	assert!(event.as_ref().is_some_and(|x| x.is_some()), "DataSubmittedEvent");
 	let event = event.unwrap().unwrap();
 	println!("Who: {}, Data Hash: {:?}", event.who, event.data_hash);
 

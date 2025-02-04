@@ -26,10 +26,9 @@ impl Vector {
 		account_proof: AccountProof,
 		storage_proof: StorageProof,
 	) -> Transaction<ExecuteCall> {
-		let payload =
-			avail::tx()
-				.vector()
-				.execute(slot, addr_message, account_proof, storage_proof);
+		let payload = avail::tx()
+			.vector()
+			.execute(slot, addr_message, account_proof, storage_proof);
 		Transaction::new(self.client.clone(), payload)
 	}
 
@@ -51,12 +50,7 @@ impl Vector {
 		Transaction::new(self.client.clone(), payload)
 	}
 
-	pub fn send_message(
-		&self,
-		message: Message,
-		to: H256,
-		domain: u32,
-	) -> Transaction<SendMessageCall> {
+	pub fn send_message(&self, message: Message, to: H256, domain: u32) -> Transaction<SendMessageCall> {
 		let payload = avail::tx().vector().send_message(message, to, domain);
 		Transaction::new(self.client.clone(), payload)
 	}

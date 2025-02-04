@@ -8,7 +8,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// All Block Blobs by Signer
 	let account_id = account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").unwrap();
-	let blobs = block.data_submissions_by_signer(account_id.clone());
+	let blobs = block.data_submissions(Filter::new().tx_signer(account_id.clone()));
 	assert_eq!(blobs.len(), 1, "Blobs must present 1 time");
 
 	// Printout All Block Blobs by Signer

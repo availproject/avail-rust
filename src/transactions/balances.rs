@@ -15,25 +15,13 @@ impl Balances {
 		Transaction::new(self.client.clone(), payload)
 	}
 
-	pub fn transfer_allow_death(
-		&self,
-		dest: AccountId,
-		amount: u128,
-	) -> Transaction<TransferAllowDeathCall> {
-		let payload = avail::tx()
-			.balances()
-			.transfer_allow_death(dest.into(), amount);
+	pub fn transfer_allow_death(&self, dest: AccountId, amount: u128) -> Transaction<TransferAllowDeathCall> {
+		let payload = avail::tx().balances().transfer_allow_death(dest.into(), amount);
 		Transaction::new(self.client.clone(), payload)
 	}
 
-	pub fn transfer_keep_alive(
-		&self,
-		dest: AccountId,
-		value: u128,
-	) -> Transaction<TransferKeepAliveCall> {
-		let payload = avail::tx()
-			.balances()
-			.transfer_keep_alive(dest.into(), value);
+	pub fn transfer_keep_alive(&self, dest: AccountId, value: u128) -> Transaction<TransferKeepAliveCall> {
+		let payload = avail::tx().balances().transfer_keep_alive(dest.into(), value);
 		Transaction::new(self.client.clone(), payload)
 	}
 }

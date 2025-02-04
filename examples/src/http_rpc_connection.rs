@@ -53,7 +53,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let block = Block::new(online_client, res.block_hash).await?;
 
 	// data_submissions_by_signer, data_submissions_by_index, data_submissions_by_hash, data_submissions_by_app_id
-	let data_submissions = block.data_submissions_all();
+	let data_submissions = block.data_submissions();
 	for ds in data_submissions {
 		println!(
 			"Tx Hash: {:?}, Tx Index: {}, Data {:?}, Tx Signer: {:?}, App Id: {}",
@@ -64,7 +64,7 @@ pub async fn run() -> Result<(), ClientError> {
 	}
 
 	// Getting Data Submission from Block #2
-	for tx in block.transaction_all_static::<DataSubmissionCall>() {
+	for tx in block.transactions_static::<DataSubmissionCall>() {
 		println!("Call data: {:?}", tx.value.data);
 
 		let ds = DataSubmission::from_static(tx);

@@ -1,7 +1,4 @@
-use crate::{
-	avail::runtime_types::da_runtime::primitives::SessionKeys, block::EventRecords,
-	AppUncheckedExtrinsic,
-};
+use crate::{avail::runtime_types::da_runtime::primitives::SessionKeys, block::EventRecords, AppUncheckedExtrinsic};
 use primitive_types::H256;
 use subxt::backend::legacy::rpc_methods::Bytes;
 
@@ -26,13 +23,9 @@ pub fn check_if_transaction_was_successful(events: &EventRecords) -> Option<bool
 	None
 }
 
-pub fn decode_raw_block_rpc_extrinsics(
-	extrinsics: Vec<Bytes>,
-) -> Result<Vec<AppUncheckedExtrinsic>, String> {
-	let extrinsics: Result<Vec<AppUncheckedExtrinsic>, String> = extrinsics
-		.into_iter()
-		.map(AppUncheckedExtrinsic::try_from)
-		.collect();
+pub fn decode_raw_block_rpc_extrinsics(extrinsics: Vec<Bytes>) -> Result<Vec<AppUncheckedExtrinsic>, String> {
+	let extrinsics: Result<Vec<AppUncheckedExtrinsic>, String> =
+		extrinsics.into_iter().map(AppUncheckedExtrinsic::try_from).collect();
 
 	extrinsics
 }

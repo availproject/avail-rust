@@ -1,8 +1,5 @@
 use super::{utils, Options, TransactionDetails};
-use crate::{
-	error::ClientError, from_substrate::FeeDetails, rpc::payment::query_fee_details, Client,
-	WaitFor, H256,
-};
+use crate::{error::ClientError, from_substrate::FeeDetails, rpc::payment::query_fee_details, Client, WaitFor, H256};
 use std::time::Duration;
 use subxt::{blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
 use subxt_signer::sr25519::Keypair;
@@ -32,11 +29,7 @@ pub trait WebSocket {
 	) -> Result<TransactionDetails, ClientError>;
 
 	#[allow(async_fn_in_trait)]
-	async fn execute(
-		&self,
-		account: &Keypair,
-		options: Option<Options>,
-	) -> Result<H256, ClientError>;
+	async fn execute(&self, account: &Keypair, options: Option<Options>) -> Result<H256, ClientError>;
 }
 
 pub trait HTTP {
@@ -65,11 +58,7 @@ pub trait HTTP {
 	) -> Result<TransactionDetails, ClientError>;
 
 	#[allow(async_fn_in_trait)]
-	async fn execute(
-		&self,
-		account: &Keypair,
-		options: Option<Options>,
-	) -> Result<H256, ClientError>;
+	async fn execute(&self, account: &Keypair, options: Option<Options>) -> Result<H256, ClientError>;
 }
 
 #[derive(Debug, Clone)]
@@ -89,16 +78,9 @@ where
 		Self { client, payload }
 	}
 
-	pub async fn payment_query_info(
-		&self,
-		account: &Keypair,
-		options: Option<Options>,
-	) -> Result<u128, ClientError> {
+	pub async fn payment_query_info(&self, account: &Keypair, options: Option<Options>) -> Result<u128, ClientError> {
 		let account_id = account.public_key().to_account_id();
-		let options = options
-			.unwrap_or_default()
-			.build(&self.client, &account_id)
-			.await?;
+		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
 		let params = options.build().await?;
 		let tx = self
@@ -117,10 +99,7 @@ where
 		options: Option<Options>,
 	) -> Result<FeeDetails, ClientError> {
 		let account_id = account.public_key().to_account_id();
-		let options = options
-			.unwrap_or_default()
-			.build(&self.client, &account_id)
-			.await?;
+		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
 		let params = options.build().await?;
 		let tx = self
@@ -141,11 +120,7 @@ impl<T> WebSocket for Transaction<T>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	async fn execute(
-		&self,
-		account: &Keypair,
-		options: Option<Options>,
-	) -> Result<H256, ClientError> {
+	async fn execute(&self, account: &Keypair, options: Option<Options>) -> Result<H256, ClientError> {
 		utils::sign_and_send(&self.client, account, &self.payload, options).await
 	}
 
@@ -162,8 +137,7 @@ where
 		account: &Keypair,
 		options: Option<Options>,
 	) -> Result<TransactionDetails, ClientError> {
-		WebSocket::execute_and_watch(self, WaitFor::BlockFinalization, account, options, Some(5))
-			.await
+		WebSocket::execute_and_watch(self, WaitFor::BlockFinalization, account, options, Some(5)).await
 	}
 
 	async fn execute_and_watch(
@@ -190,11 +164,7 @@ impl<T> HTTP for Transaction<T>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	async fn execute(
-		&self,
-		account: &Keypair,
-		options: Option<Options>,
-	) -> Result<H256, ClientError> {
+	async fn execute(&self, account: &Keypair, options: Option<Options>) -> Result<H256, ClientError> {
 		utils::http_sign_and_send(&self.client, account, &self.payload, options).await
 	}
 
@@ -203,15 +173,7 @@ where
 		account: &Keypair,
 		options: Option<Options>,
 	) -> Result<TransactionDetails, ClientError> {
-		HTTP::execute_and_watch(
-			self,
-			WaitFor::BlockInclusion,
-			account,
-			options,
-			Some(2),
-			None,
-		)
-		.await
+		HTTP::execute_and_watch(self, WaitFor::BlockInclusion, account, options, Some(2), None).await
 	}
 
 	async fn execute_and_watch_finalization(
@@ -219,15 +181,7 @@ where
 		account: &Keypair,
 		options: Option<Options>,
 	) -> Result<TransactionDetails, ClientError> {
-		HTTP::execute_and_watch(
-			self,
-			WaitFor::BlockFinalization,
-			account,
-			options,
-			Some(5),
-			None,
-		)
-		.await
+		HTTP::execute_and_watch(self, WaitFor::BlockFinalization, account, options, Some(5), None).await
 	}
 
 	async fn execute_and_watch(

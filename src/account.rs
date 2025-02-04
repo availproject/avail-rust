@@ -30,11 +30,7 @@ pub fn ferdie() -> Keypair {
 	subxt_signer::sr25519::dev::ferdie()
 }
 
-pub async fn nonce_state(
-	client: &Client,
-	address: &str,
-	block_hash: Option<H256>,
-) -> Result<u32, ClientError> {
+pub async fn nonce_state(client: &Client, address: &str, block_hash: Option<H256>) -> Result<u32, ClientError> {
 	let account = account_id_from_str(address)?;
 	let block_hash = match block_hash {
 		Some(x) => x,
@@ -54,10 +50,7 @@ pub async fn nonce(client: &Client, address: &str) -> Result<u32, ClientError> {
 	nonce_node(client, address).await
 }
 
-pub async fn app_keys(
-	client: &Client,
-	account_id: AccountId,
-) -> Result<Vec<(String, u32)>, String> {
+pub async fn app_keys(client: &Client, account_id: AccountId) -> Result<Vec<(String, u32)>, String> {
 	let block_hash = rpc::chain::get_block_hash(client, None).await;
 	let block_hash = block_hash.map_err(|e| e.to_string())?;
 
@@ -96,10 +89,7 @@ pub async fn account_info(client: &Client, account_id: AccountId) -> Result<Acco
 
 	let storage = client.storage().at(block_hash);
 	let address = avail::storage().system().account(account_id);
-	let result = storage
-		.fetch_or_default(&address)
-		.await
-		.map_err(|e| e.to_string())?;
+	let result = storage.fetch_or_default(&address).await.map_err(|e| e.to_string())?;
 
 	Ok(result)
 }

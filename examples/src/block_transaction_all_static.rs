@@ -10,7 +10,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let block = Block::new(&sdk.client, block_hash).await?;
 
 	// All Transactions
-	let block_transactions = block.transaction_all_static::<SubmitDataCall>();
+	let block_transactions = block.transactions_static::<SubmitDataCall>(Filter::default());
 	assert_eq!(block_transactions.len(), 4, "Transaction count must be 4");
 
 	// Printout Block Transactions
@@ -63,7 +63,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Convert from Generic Transaction Event to Specific Transaction Event
 	let event = tx_events.find_first::<DataSubmittedEvent>();
-	assert!(event.as_ref().is_some_and(|x| x.is_ok()), "DataSubmittedEvent");
+	assert!(event.as_ref().is_some_and(|x| x.is_some()), "DataSubmittedEvent");
 	let event = event.unwrap().unwrap();
 	println!("Who: {}, Data Hash: {:?}", event.who, event.data_hash);
 

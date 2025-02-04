@@ -6,9 +6,7 @@ use crate::{
 use subxt::config::Header;
 
 pub type Params =
-	<<AvailConfig as subxt::Config>::ExtrinsicParams as subxt::config::ExtrinsicParams<
-		AvailConfig,
-	>>::Params;
+	<<AvailConfig as subxt::Config>::ExtrinsicParams as subxt::config::ExtrinsicParams<AvailConfig>>::Params;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Options {
@@ -48,11 +46,7 @@ impl Options {
 		self
 	}
 
-	pub async fn build(
-		self,
-		client: &Client,
-		account_id: &AccountId,
-	) -> Result<PopulatedOptions, ClientError> {
+	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<PopulatedOptions, ClientError> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = self.nonce.unwrap_or(Nonce::BestBlock);
@@ -146,11 +140,7 @@ pub enum Nonce {
 	Custom(u32),
 }
 
-pub async fn parse_nonce(
-	client: &Client,
-	nonce: Nonce,
-	account_id: &AccountId,
-) -> Result<u64, ClientError> {
+pub async fn parse_nonce(client: &Client, nonce: Nonce, account_id: &AccountId) -> Result<u64, ClientError> {
 	let nonce = match nonce {
 		Nonce::FinalizedBlock => {
 			let hash = Block::fetch_finalized_block_hash(client).await?;

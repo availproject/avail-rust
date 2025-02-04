@@ -1,7 +1,5 @@
 use crate::{
-	api_dev::api::data_availability::calls::types::{
-		create_application_key::Key, submit_data::Data,
-	},
+	api_dev::api::data_availability::calls::types::{create_application_key::Key, submit_data::Data},
 	avail, Client, Transaction,
 };
 

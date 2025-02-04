@@ -40,9 +40,10 @@ async fn main() -> Result<(), ClientError> {
 	// batch::run().await?;
 	// block::run().await?;
 
+	data_submission::run().await?;
+
 	// transaction_payment::run().await?;
-	custom_rpc_connection::run().await?;
-	// data_submission::run().await?;
+	// custom_rpc_connection::run().await?;
 	// http_rpc_connection::run().await?;
 	// rpc::run().await?;
 	// storage::run().await?;

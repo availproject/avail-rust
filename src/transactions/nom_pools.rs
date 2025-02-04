@@ -4,8 +4,7 @@ pub use crate::avail::{
 };
 use crate::{
 	avail::{
-		self,
-		nomination_pools::calls::types::set_commission::NewCommission as NewCommissionOriginal,
+		self, nomination_pools::calls::types::set_commission::NewCommission as NewCommissionOriginal,
 		runtime_types::sp_arithmetic::per_things::Perbill,
 	},
 	AccountId, Client, Transaction,
@@ -75,12 +74,9 @@ impl NominationPools {
 		nominator: AccountId,
 		bouncer: AccountId,
 	) -> Transaction<CreateCall> {
-		let payload = avail::tx().nomination_pools().create(
-			amount,
-			root.into(),
-			nominator.into(),
-			bouncer.into(),
-		);
+		let payload = avail::tx()
+			.nomination_pools()
+			.create(amount, root.into(), nominator.into(), bouncer.into());
 		Transaction::new(self.client.clone(), payload)
 	}
 
@@ -99,9 +95,7 @@ impl NominationPools {
 			None => None,
 		};
 
-		let payload = avail::tx()
-			.nomination_pools()
-			.set_commission(pool_id, new_commission);
+		let payload = avail::tx().nomination_pools().set_commission(pool_id, new_commission);
 		Transaction::new(self.client.clone(), payload)
 	}
 
@@ -120,13 +114,8 @@ impl NominationPools {
 		Transaction::new(self.client.clone(), payload)
 	}
 
-	pub fn set_claim_permission(
-		&self,
-		permission: Permission,
-	) -> Transaction<SetClaimPermissionCall> {
-		let payload = avail::tx()
-			.nomination_pools()
-			.set_claim_permission(permission);
+	pub fn set_claim_permission(&self, permission: Permission) -> Transaction<SetClaimPermissionCall> {
+		let payload = avail::tx().nomination_pools().set_claim_permission(permission);
 		Transaction::new(self.client.clone(), payload)
 	}
 
@@ -140,11 +129,7 @@ impl NominationPools {
 		Transaction::new(self.client.clone(), payload)
 	}
 
-	pub fn unbond(
-		&self,
-		member_account: AccountId,
-		unbonding_points: u128,
-	) -> Transaction<UnbondCall> {
+	pub fn unbond(&self, member_account: AccountId, unbonding_points: u128) -> Transaction<UnbondCall> {
 		let payload = avail::tx()
 			.nomination_pools()
 			.unbond(member_account.into(), unbonding_points);
@@ -152,9 +137,7 @@ impl NominationPools {
 	}
 
 	pub fn set_metadata(&self, pool_id: u32, metadata: Vec<u8>) -> Transaction<SetMetadataCall> {
-		let payload = avail::tx()
-			.nomination_pools()
-			.set_metadata(pool_id, metadata);
+		let payload = avail::tx().nomination_pools().set_metadata(pool_id, metadata);
 		Transaction::new(self.client.clone(), payload)
 	}
 

@@ -8,10 +8,10 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// All Block Blobs by Index
 	let tx_index = 6;
-	let blob = block.data_submissions_by_index(tx_index);
-	assert!(blob.is_some(), "Blob must present");
+	let blobs = block.data_submissions(Filter::new().tx_index(tx_index));
+	assert_eq!(blobs.len(), 1, "");
 
-	let blob = blob.unwrap();
+	let blob = &blobs[0];
 
 	// Printout All Block Blobs by Index
 	let blob_data = blob.to_ascii().unwrap();

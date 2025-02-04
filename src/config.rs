@@ -2,8 +2,7 @@ use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 use subxt::{
 	backend::legacy::rpc_methods::{Block as BlockRPC, BlockDetails as BlockDetailsRPC},
 	blocks::{
-		Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, ExtrinsicSignedExtensions,
-		Extrinsics, FoundExtrinsic,
+		Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, ExtrinsicSignedExtensions, Extrinsics, FoundExtrinsic,
 	},
 	config::substrate::BlakeTwo256,
 	events::{EventDetails, Events},

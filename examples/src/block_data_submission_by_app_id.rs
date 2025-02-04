@@ -8,7 +8,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// All Block Blobs by App Id
 	let app_id = 2u32;
-	let blobs = block.data_submissions_by_app_id(app_id);
+	let blobs = block.data_submissions(Filter::new().app_id(app_id));
 	assert_eq!(blobs.len(), 2, "Blobs must present 2 times");
 
 	// Printout All Block Blobs by App Id

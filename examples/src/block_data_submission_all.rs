@@ -7,7 +7,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let block = Block::new(&sdk.client, block_hash).await?;
 
 	// All Block Blobs
-	let blobs = block.data_submissions_all();
+	let blobs = block.data_submissions(Filter::default());
 	assert_eq!(blobs.len(), 4, "Blobs must present 4 times");
 
 	// Printout All Block Blobs
