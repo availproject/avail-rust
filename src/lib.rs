@@ -40,7 +40,7 @@ pub mod prelude {
 	pub use super::{
 		account, avail, avail::runtime_types::bounded_collections::bounded_vec::BoundedVec, avail_core,
 		block::DataSubmission, config::*, error::ClientError, hex, kate_recovery, primitives, rpc, subxt, subxt_signer,
-		transaction::WebSocket, Block, BlockTransaction, Client, Filter, Keypair, Options, Perbill, PopulatedOptions,
-		SecretUri, Transaction, TransactionDetails, WaitFor, H256, SDK, U256,
+		transaction::WebSocket, AccountId, Block, BlockTransaction, Client, Filter, Keypair, MultiAddress, Options,
+		Perbill, PopulatedOptions, SecretUri, Transaction, TransactionDetails, WaitFor, H256, SDK, U256,
 	};
 }

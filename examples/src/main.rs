@@ -23,6 +23,7 @@ mod block_transaction_by_signer_static;
 mod custom_rpc_connection;
 mod data_submission;
 mod http_rpc_connection;
+mod proxy;
 mod rpc;
 mod storage;
 mod transaction_options;
@@ -40,7 +41,8 @@ async fn main() -> Result<(), ClientError> {
 	// batch::run().await?;
 	// block::run().await?;
 
-	data_submission::run().await?;
+	// data_submission::run().await?;
+	proxy::run().await?;
 
 	// transaction_payment::run().await?;
 	// custom_rpc_connection::run().await?;

@@ -332,27 +332,30 @@ impl EventRecords {
 		result
 	}
 
-	pub fn find_checked<E: StaticEvent>(&self) -> Vec<Option<E>> {
-		let mut result: Vec<Option<E>> = Vec::new();
+	// Returns an array of E.
+	// Some(Vec<E>) means we were able to decode all E events
+	// None means we failed to decode some E events.
+	pub fn find_checked<E: StaticEvent>(&self) -> Option<Vec<E>> {
+		let mut result: Vec<E> = Vec::new();
 		for ev in self.inner.iter() {
 			// If result is Err() then we found the tx but failed to decode it
 			let decoded = match ev.as_event::<E>() {
 				Ok(x) => x,
-				Err(_) => {
-					result.push(None);
-					continue;
-				},
+				Err(_) => return None,
 			};
 
 			// If decoded is None then we can skip it as it doesn't have the correct pallet or event name.
 			if let Some(decoded) = decoded {
-				result.push(Some(decoded));
+				result.push(decoded);
 			}
 		}
 
-		result
+		Some(result)
 	}
 
+	// Return None if the event has not been found.
+	// Returns Some(None) if the event has been found but we failed to decode it.
+	// Returns Some(E) if the event has been found and we decoded it.
 	pub fn find_first<E: StaticEvent>(&self) -> Option<Option<E>> {
 		for ev in self.inner.iter() {
 			// If result is Err() then we found the tx but failed to decode it
@@ -370,6 +373,9 @@ impl EventRecords {
 		None
 	}
 
+	// Return None if the event has not been found.
+	// Returns Some(None) if the event has been found but we failed to decode it.
+	// Returns Some(E) if the event has been found and we decoded it.
 	pub fn find_last<E: StaticEvent>(&self) -> Option<Option<E>> {
 		for ev in self.inner.iter().rev() {
 			// If result is Err() then we found the tx but failed to decode it

@@ -25,5 +25,7 @@ pub async fn run() -> Result<(), ClientError> {
 	block_transaction_by_index_static::run().await?;
 	block_transaction_by_signer_static::run().await?;
 	block_events::run().await?;
+
+	println!("Block finished correctly");
 	Ok(())
 }

@@ -1,12 +1,12 @@
 use super::extrinsics_params::OnlyCodecExtra;
-use crate::{avail::runtime_types::da_runtime::RuntimeCall, Address, Signature};
+use crate::{avail::runtime_types::da_runtime::RuntimeCall, MultiAddress, Signature};
 
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
 use serde::{Deserialize, Serialize};
 use std::mem::size_of;
 use subxt::backend::legacy::rpc_methods::Bytes;
 
-pub type SignaturePayload = (Address, Signature, OnlyCodecExtra);
+pub type SignaturePayload = (MultiAddress, Signature, OnlyCodecExtra);
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
 ///

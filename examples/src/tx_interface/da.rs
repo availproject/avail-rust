@@ -24,7 +24,7 @@ mod submit_data {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let data = String::from("My Awesome Data").as_bytes().to_vec();
 
-		let options = Options::new().nonce(Nonce::BestBlock).app_id(1);
+		let options = Options::new().app_id(1);
 		let tx = sdk.tx.data_availability.submit_data(data);
 		let res = tx.execute_and_watch_inclusion(&account, Some(options)).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");

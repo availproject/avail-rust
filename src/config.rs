@@ -8,14 +8,14 @@ use subxt::{
 	events::{EventDetails, Events},
 	storage::StorageClient,
 	tx::{TxClient, TxInBlock, TxProgress},
-	utils::{AccountId32, MultiAddress, MultiSignature, H256},
+	utils::{AccountId32, MultiSignature, H256},
 	Config, OnlineClient,
 };
 
 /// Chain Primitives
 pub type AccountId = AccountId32;
 pub type AccountIndex = u32;
-pub type Address = MultiAddress<AccountId, AccountIndex>;
+pub type MultiAddress = subxt::utils::MultiAddress<AccountId, AccountIndex>;
 pub type Signature = MultiSignature;
 pub type BlockNumber = u32;
 pub type BlockHash = H256;
@@ -64,7 +64,7 @@ pub struct AvailConfig;
 
 impl Config for AvailConfig {
 	type AccountId = AccountId;
-	type Address = Address;
+	type Address = MultiAddress;
 	type ExtrinsicParams = AvailExtrinsicParams<Self>;
 	type Hash = BlockHash;
 	type Hasher = BlakeTwo256;
