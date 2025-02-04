@@ -9,12 +9,16 @@ pub async fn run() -> Result<(), ClientError> {
 
 	let block = Block::new(&sdk.client, block_hash).await?;
 
-	// All Transactions
-	let block_transactions = block.transaction_all();
-	assert_eq!(block_transactions.len(), 9, "Transaction count must be 9");
+	// All Transaction filtered by Signer
+	let app_id = 2;
+	let block_transactions = block.transaction_by_app_id_static::<SubmitDataCall>(app_id);
+	assert_eq!(block_transactions.len(), 2, "Transaction count must be 2");
 
-	// Printout Block Transactions
+	// Printout Block Transactions made by Signer
 	for tx in block_transactions.iter() {
+		assert_eq!(tx.app_id(), Some(app_id), "App Id must be the same");
+		let data = to_ascii(tx.value.data.0.clone()).unwrap();
+
 		println!(
 			"Pallet Name: {:?}, Pallet Index: {}, Call Name: {:?}, Call Index: {:?}, Tx Hash: {:?}, Tx Index: {}",
 			tx.pallet_name(),
@@ -26,24 +30,18 @@ pub async fn run() -> Result<(), ClientError> {
 		);
 
 		println!(
-			"Tx Signer: {:?}, App Id: {:?}, Tip: {:?}, Mortality: {:?}, Nonce: {:?}",
+			"Tx Signer: {:?}, App Id: {:?}, Tip: {:?}, Mortality: {:?}, Nonce: {:?}, Data: {}",
 			tx.ss58address(),
 			tx.app_id(),
 			tx.tip(),
 			tx.mortality(),
 			tx.nonce(),
+			data
 		);
 	}
 
-	// Convert from Block Transaction to Specific Transaction
-	let da_tx = block_transactions.index(2).decode::<SubmitDataCall>();
-	assert!(da_tx.is_some(), "SubmitDataCall should exist");
-	let da_tx = da_tx.unwrap();
-	let data = to_ascii(da_tx.data.0).unwrap();
-	println!("Data: {}", data);
-
 	// Printout all Transaction Events
-	let tx_events = block_transactions.index(2).events().await;
+	let tx_events = block_transactions[0].events().await;
 	assert!(tx_events.is_some(), "Events should exist");
 	let tx_events = tx_events.unwrap();
 	assert_eq!(tx_events.len(), 7, "Event count must be 7");

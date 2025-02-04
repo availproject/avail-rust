@@ -11,7 +11,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Transaction filtered by Transaction index
 	let tx_index = 1;
-	let tx = block.transaction_by_index(tx_index);
+	let tx = block.transaction_by_index_static::<TransferKeepAliveCall>(tx_index);
 	assert!(tx.is_some(), "Transaction must exist");
 	let tx = tx.unwrap();
 
@@ -36,16 +36,11 @@ pub async fn run() -> Result<(), ClientError> {
 		tx.nonce(),
 	);
 
-	// Convert from Block Transaction to Specific Transaction
-	let ba_tx = tx.decode::<TransferKeepAliveCall>();
-	assert!(ba_tx.is_some(), "TransferKeepAliveCall should exist");
-	let ba_tx = ba_tx.unwrap();
-
-	let account_id = match ba_tx.dest {
-		subxt::utils::MultiAddress::Id(x) => x,
+	let account_id = match &tx.value.dest {
+		subxt::utils::MultiAddress::Id(x) => x.clone(),
 		_ => panic!("Not decodable."),
 	};
-	println!("Destination: {}, Value: {}", account_id, ba_tx.value);
+	println!("Destination: {}, Value: {}", account_id, tx.value.value);
 
 	// Printout all Transaction Events
 	let tx_events = tx.events().await;

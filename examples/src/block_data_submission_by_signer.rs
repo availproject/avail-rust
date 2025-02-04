@@ -22,7 +22,7 @@ pub async fn run() -> Result<(), ClientError> {
 			blob.tx_index,
 			blob_data,
 			blob.app_id,
-			blob.address(),
+			blob.ss58address(),
 		);
 	}
 

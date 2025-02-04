@@ -30,7 +30,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 		println!(
 			"Tx Signer: {:?}, App Id: {:?}, Tip: {:?}, Mortality: {:?}, Nonce: {:?}",
-			tx.signer(),
+			tx.ss58address(),
 			tx.app_id(),
 			tx.tip(),
 			tx.mortality(),

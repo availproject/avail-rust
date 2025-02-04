@@ -1,7 +1,7 @@
 use crate::{
 	block::{read_account_id, read_multi_address, EventRecords},
 	primitives::block::extrinsics_params::CheckAppId,
-	AExtrinsicDetails, AExtrinsicEvents, AExtrinsicSignedExtensions, AccountId, AvailConfig,
+	AExtrinsicDetails, AExtrinsicSignedExtensions, AccountId,
 };
 use codec::Decode;
 use primitive_types::H256;
@@ -114,13 +114,6 @@ impl BlockTransaction {
 		EventRecords::new_ext(ext_events)
 	}
 
-	pub fn signer(&self) -> Option<String> {
-		match self.account_id() {
-			Some(x) => Some(std::format!("{}", x)),
-			None => None,
-		}
-	}
-
 	pub fn multi_address(&self) -> Option<MultiAddress<AccountId, u32>> {
 		read_multi_address(&self.inner)
 	}
@@ -129,7 +122,7 @@ impl BlockTransaction {
 		read_account_id(&self.inner)
 	}
 
-	pub fn tx_signer(&self) -> Option<String> {
+	pub fn ss58address(&self) -> Option<String> {
 		match self.account_id() {
 			Some(x) => Some(std::format!("{}", x)),
 			None => None,
@@ -209,26 +202,24 @@ impl<E: StaticExtrinsic> StaticBlockTransaction<E> {
 		self.inner.signed_extensions()
 	}
 
-	pub async fn events(&self) -> Result<AExtrinsicEvents, subxt::Error> {
-		self.inner.events().await
+	pub async fn events(&self) -> Option<EventRecords> {
+		let ext_events = self.inner.events().await.ok()?;
+		EventRecords::new_ext(ext_events)
 	}
 
-	pub fn signer(&self) -> Option<String> {
-		match self.account_id() {
-			Some(x) => Some(std::format!("{:?}", x)),
-			None => None,
-		}
+	pub fn multi_address(&self) -> Option<MultiAddress<AccountId, u32>> {
+		read_multi_address(&self.inner)
 	}
 
 	pub fn account_id(&self) -> Option<AccountId> {
-		let bytes = self.inner.signature_bytes()?;
+		read_account_id(&self.inner)
+	}
 
-		let tx_signer: [u8; 32] = match bytes.try_into() {
-			Ok(x) => x,
-			Err(_) => return None,
-		};
-
-		Some(AccountId::from(tx_signer))
+	pub fn ss58address(&self) -> Option<String> {
+		match self.account_id() {
+			Some(x) => Some(std::format!("{}", x)),
+			None => None,
+		}
 	}
 
 	pub fn app_id(&self) -> Option<u32> {
@@ -247,10 +238,15 @@ impl<E: StaticExtrinsic> StaticBlockTransaction<E> {
 
 	pub fn mortality(&self) -> Option<subxt_core::utils::Era> {
 		let signed = self.signed()?;
-		signed
-			.find::<signed_extensions::CheckMortality<AvailConfig>>()
-			.ok()?
-			.map(|e| e)
+		for si in signed.iter() {
+			if si.name() == "CheckMortality" {
+				let mut bytes = si.bytes();
+				let era = subxt_core::utils::Era::decode(&mut bytes).ok()?;
+				return Some(era);
+			}
+		}
+
+		return None;
 	}
 
 	pub fn nonce(&self) -> Option<u32> {

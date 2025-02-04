@@ -11,10 +11,15 @@ mod block_data_submission_by_index;
 mod block_data_submission_by_signer;
 mod block_events;
 mod block_transaction_all;
+mod block_transaction_all_static;
 mod block_transaction_by_app_id;
+mod block_transaction_by_app_id_static;
 mod block_transaction_by_hash;
+mod block_transaction_by_hash_static;
 mod block_transaction_by_index;
+mod block_transaction_by_index_static;
 mod block_transaction_by_signer;
+mod block_transaction_by_signer_static;
 mod custom_rpc_connection;
 mod data_submission;
 mod http_rpc_connection;
@@ -31,8 +36,8 @@ use avail_rust::{error::ClientError, SDK};
 async fn main() -> Result<(), ClientError> {
 	SDK::enable_logging();
 
-	//account::run().await?;
-	//batch::run().await?;
+	// account::run().await?;
+	// batch::run().await?;
 	block::run().await?;
 
 	// transaction_payment::run().await?;

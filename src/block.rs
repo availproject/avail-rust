@@ -468,7 +468,7 @@ impl DataSubmission {
 		}
 	}
 
-	pub fn address(&self) -> Option<String> {
+	pub fn ss58address(&self) -> Option<String> {
 		match self.account_id() {
 			Some(x) => Some(std::format!("{}", x)),
 			_ => None,
