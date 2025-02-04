@@ -1,7 +1,15 @@
 use super::{utils, Options, TransactionDetails};
-use crate::{error::ClientError, from_substrate::FeeDetails, rpc::payment::query_fee_details, Client, WaitFor, H256};
+use crate::{
+	error::ClientError,
+	from_substrate::{FeeDetails, RuntimeDispatchInfo},
+	runtime_api, Client, WaitFor, H256,
+};
 use std::time::Duration;
-use subxt::{blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
+use subxt::{
+	blocks::StaticExtrinsic,
+	ext::scale_encode::EncodeAsFields,
+	tx::{DefaultPayload, Payload},
+};
 use subxt_signer::sr25519::Keypair;
 
 pub trait WebSocket {
@@ -9,14 +17,14 @@ pub trait WebSocket {
 	async fn execute_and_watch_inclusion(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError>;
 
 	#[allow(async_fn_in_trait)]
 	async fn execute_and_watch_finalization(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError>;
 
 	#[allow(async_fn_in_trait)]
@@ -24,12 +32,12 @@ pub trait WebSocket {
 		&self,
 		wait_for: WaitFor,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 		block_timeout: Option<u32>,
 	) -> Result<TransactionDetails, ClientError>;
 
 	#[allow(async_fn_in_trait)]
-	async fn execute(&self, account: &Keypair, options: Option<Options>) -> Result<H256, ClientError>;
+	async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError>;
 }
 
 pub trait HTTP {
@@ -37,14 +45,14 @@ pub trait HTTP {
 	async fn execute_and_watch_inclusion(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError>;
 
 	#[allow(async_fn_in_trait)]
 	async fn execute_and_watch_finalization(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError>;
 
 	#[allow(async_fn_in_trait)]
@@ -52,13 +60,13 @@ pub trait HTTP {
 		&self,
 		wait_for: WaitFor,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 		block_timeout: Option<u32>,
 		sleep_duration: Option<Duration>,
 	) -> Result<TransactionDetails, ClientError>;
 
 	#[allow(async_fn_in_trait)]
-	async fn execute(&self, account: &Keypair, options: Option<Options>) -> Result<H256, ClientError>;
+	async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError>;
 }
 
 #[derive(Debug, Clone)]
@@ -78,7 +86,11 @@ where
 		Self { client, payload }
 	}
 
-	pub async fn payment_query_info(&self, account: &Keypair, options: Option<Options>) -> Result<u128, ClientError> {
+	pub async fn payment_query_info(
+		&self,
+		account: &Keypair,
+		options: Option<Options>,
+	) -> Result<RuntimeDispatchInfo, ClientError> {
 		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
@@ -90,7 +102,9 @@ where
 			.create_signed(&self.payload, account, params)
 			.await?;
 
-		Ok(tx.partial_fee_estimate().await?)
+		let tx = tx.encoded();
+
+		runtime_api::transaction_payment::query_info(&self.client, tx.to_vec(), None).await
 	}
 
 	pub async fn payment_query_fee_details(
@@ -109,10 +123,23 @@ where
 			.create_signed(&self.payload, account, params)
 			.await?;
 
-		let len_bytes: [u8; 4] = (tx.encoded().len() as u32).to_le_bytes();
-		let encoded_with_len = [tx.encoded(), &len_bytes[..]].concat();
+		let tx = tx.encoded();
 
-		query_fee_details(&self.client, encoded_with_len.into(), None).await
+		runtime_api::transaction_payment::query_fee_details(&self.client, tx.to_vec(), None).await
+	}
+
+	pub async fn payment_query_call_info(&self) -> Result<RuntimeDispatchInfo, ClientError> {
+		let metadata = self.client.online_client.metadata();
+		let call = self.payload.encode_call_data(&metadata)?;
+
+		runtime_api::transaction_payment::query_call_info(&self.client, call, None).await
+	}
+
+	pub async fn payment_query_call_fee_details(&self) -> Result<FeeDetails, ClientError> {
+		let metadata = self.client.online_client.metadata();
+		let call = self.payload.encode_call_data(&metadata)?;
+
+		runtime_api::transaction_payment::query_call_fee_details(&self.client, call, None).await
 	}
 }
 
@@ -120,14 +147,14 @@ impl<T> WebSocket for Transaction<T>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	async fn execute(&self, account: &Keypair, options: Option<Options>) -> Result<H256, ClientError> {
+	async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError> {
 		utils::sign_and_send(&self.client, account, &self.payload, options).await
 	}
 
 	async fn execute_and_watch_inclusion(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError> {
 		WebSocket::execute_and_watch(self, WaitFor::BlockInclusion, account, options, Some(3)).await
 	}
@@ -135,7 +162,7 @@ where
 	async fn execute_and_watch_finalization(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError> {
 		WebSocket::execute_and_watch(self, WaitFor::BlockFinalization, account, options, Some(5)).await
 	}
@@ -144,7 +171,7 @@ where
 		&self,
 		wait_for: WaitFor,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 		block_timeout: Option<u32>,
 	) -> Result<TransactionDetails, ClientError> {
 		utils::sign_send_and_watch(
@@ -164,14 +191,14 @@ impl<T> HTTP for Transaction<T>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	async fn execute(&self, account: &Keypair, options: Option<Options>) -> Result<H256, ClientError> {
+	async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError> {
 		utils::http_sign_and_send(&self.client, account, &self.payload, options).await
 	}
 
 	async fn execute_and_watch_inclusion(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError> {
 		HTTP::execute_and_watch(self, WaitFor::BlockInclusion, account, options, Some(2), None).await
 	}
@@ -179,7 +206,7 @@ where
 	async fn execute_and_watch_finalization(
 		&self,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 	) -> Result<TransactionDetails, ClientError> {
 		HTTP::execute_and_watch(self, WaitFor::BlockFinalization, account, options, Some(5), None).await
 	}
@@ -188,7 +215,7 @@ where
 		&self,
 		wait_for: WaitFor,
 		account: &Keypair,
-		options: Option<Options>,
+		options: Options,
 		block_timeout: Option<u32>,
 		sleep_duration: Option<Duration>,
 	) -> Result<TransactionDetails, ClientError> {

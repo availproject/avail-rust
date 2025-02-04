@@ -8,7 +8,7 @@ use subxt_signer::sr25519::Keypair;
 
 #[derive(Debug)]
 pub enum TransactionExecutionError {
-	TransactionNotFound,
+	FailedToSubmitTransaction,
 	BlockStreamFailure,
 	SubxtError(subxt::Error),
 }
@@ -16,7 +16,9 @@ pub enum TransactionExecutionError {
 impl TransactionExecutionError {
 	pub fn to_string(&self) -> String {
 		match self {
-			TransactionExecutionError::TransactionNotFound => String::from("Transaction not found").to_string(),
+			TransactionExecutionError::FailedToSubmitTransaction => {
+				String::from("Failed to submit transaction").to_string()
+			},
 			TransactionExecutionError::BlockStreamFailure => String::from("Block Stream Failure").to_string(),
 			TransactionExecutionError::SubxtError(error) => error.to_string(),
 		}
@@ -41,13 +43,13 @@ pub async fn sign_and_send<T>(
 	client: &Client,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
-	options: Option<Options>,
+	options: Options,
 ) -> Result<H256, ClientError>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
-	let options = options.unwrap_or_default().build(&client, &account_id).await?;
+	let options = options.build(&client, &account_id).await?;
 
 	let params = options.build().await?;
 
@@ -90,7 +92,7 @@ pub async fn watch(
 	tx_hash: H256,
 	wait_for: WaitFor,
 	block_timeout: Option<u32>,
-) -> Result<TransactionDetails, TransactionExecutionError> {
+) -> Result<Option<TransactionDetails>, TransactionExecutionError> {
 	let mut block_hash;
 	let mut block_number;
 	let tx_details;
@@ -153,7 +155,7 @@ pub async fn watch(
 			}
 		}
 		if timeout_block_number.is_some_and(|timeout| block_number > timeout) {
-			return Err(TransactionExecutionError::TransactionNotFound);
+			return Ok(None);
 		}
 	}
 
@@ -168,14 +170,8 @@ pub async fn watch(
 		info!(target: "watcher", "{}: Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", marker, tx_hash, tx_index, block_hash, block_number);
 	}
 
-	Ok(TransactionDetails::new(
-		client.clone(),
-		events,
-		tx_hash,
-		tx_index,
-		block_hash,
-		block_number,
-	))
+	let value = TransactionDetails::new(client.clone(), events, tx_hash, tx_index, block_hash, block_number);
+	Ok(Some(value))
 }
 
 pub async fn sign_send_and_watch<T>(
@@ -183,7 +179,7 @@ pub async fn sign_send_and_watch<T>(
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	wait_for: WaitFor,
-	options: Option<Options>,
+	options: Options,
 	block_timeout: Option<u32>,
 	retry_count: Option<u32>,
 ) -> Result<TransactionDetails, ClientError>
@@ -192,7 +188,6 @@ where
 {
 	let account_id = account.public_key().to_account_id();
 
-	let options = options.unwrap_or_default();
 	let mut options = options.build(&client, &account_id).await?;
 
 	let mut retry_count = retry_count.unwrap_or(0);
@@ -214,24 +209,19 @@ where
 			);
 		}
 
-		let result = watch(client, tx_hash, wait_for, block_timeout).await;
-		let error = match result {
-			Ok(details) => return Ok(details),
-			Err(err) => err,
-		};
-
-		match error {
-			TransactionExecutionError::TransactionNotFound => (),
-			TransactionExecutionError::BlockStreamFailure => return Err(ClientError::TransactionExecution(error)),
-			TransactionExecutionError::SubxtError(_) => return Err(ClientError::TransactionExecution(error)),
-		};
+		let tx_details = watch(client, tx_hash, wait_for, block_timeout).await?;
+		if let Some(tx_details) = tx_details {
+			return Ok(tx_details);
+		}
 
 		if retry_count == 0 {
 			if log_enabled!(log::Level::Warn) {
 				let marker = &format!("{:?}", tx_hash)[0..10];
 				warn!(target: "watcher", "{}: Failed to find transaction. Tx Hash: {:?}. Aborting", marker, tx_hash);
 			}
-			return Err(ClientError::TransactionExecution(error));
+			return Err(ClientError::TransactionExecution(
+				TransactionExecutionError::FailedToSubmitTransaction,
+			));
 		}
 
 		options.regenerate_mortality(client).await?;
@@ -245,13 +235,13 @@ pub async fn http_sign_and_send<T>(
 	client: &Client,
 	account: &Keypair,
 	call: &DefaultPayload<T>,
-	options: Option<Options>,
+	options: Options,
 ) -> Result<H256, ClientError>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
-	let options = options.unwrap_or_default().build(client, &account_id).await?;
+	let options = options.build(client, &account_id).await?;
 
 	let params = options.build().await?;
 
@@ -298,7 +288,7 @@ pub async fn http_watch(
 	wait_for: WaitFor,
 	sleep_duration: Duration,
 	block_timeout: Option<u32>,
-) -> Result<TransactionDetails, TransactionExecutionError> {
+) -> Result<Option<TransactionDetails>, TransactionExecutionError> {
 	let mut current_block_hash: Option<H256> = None;
 	let mut timeout_block_number: Option<u32> = None;
 	let mut block_hash;
@@ -349,7 +339,7 @@ pub async fn http_watch(
 			info!(target: "watcher", "Current Block Number: {}, Timeout Block Number: {}", block_number, block_number + block_timeout + 1);
 		}
 		if timeout_block_number.is_some_and(|timeout| block_number > timeout) {
-			return Err(TransactionExecutionError::TransactionNotFound);
+			return Ok(None);
 		}
 	}
 
@@ -361,14 +351,8 @@ pub async fn http_watch(
 
 	info!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);
 
-	Ok(TransactionDetails::new(
-		client.clone(),
-		events,
-		tx_hash,
-		tx_index,
-		block_hash,
-		block_number,
-	))
+	let value = TransactionDetails::new(client.clone(), events, tx_hash, tx_index, block_hash, block_number);
+	Ok(Some(value))
 }
 
 pub async fn http_sign_send_and_watch<T>(
@@ -376,7 +360,7 @@ pub async fn http_sign_send_and_watch<T>(
 	account: &Keypair,
 	call: &DefaultPayload<T>,
 	wait_for: WaitFor,
-	options: Option<Options>,
+	options: Options,
 	block_timeout: Option<u32>,
 	retry_count: Option<u32>,
 	sleep_duration: Option<Duration>,
@@ -386,7 +370,6 @@ where
 {
 	let account_id = account.public_key().to_account_id();
 
-	let options = options.unwrap_or_default();
 	let mut options = options.build(client, &account_id).await?;
 
 	let mut retry_count = retry_count.unwrap_or(0);
@@ -394,21 +377,16 @@ where
 	loop {
 		let params = options.build().await?;
 		let tx_hash = http_sign_and_send_raw_params(client, account, call, params).await?;
-		let result = http_watch(client, tx_hash, wait_for, sleep_duration, block_timeout).await;
-		let error = match result {
-			Ok(details) => return Ok(details),
-			Err(err) => err,
-		};
-
-		match error {
-			TransactionExecutionError::TransactionNotFound => (),
-			TransactionExecutionError::BlockStreamFailure => return Err(ClientError::TransactionExecution(error)),
-			TransactionExecutionError::SubxtError(_) => return Err(ClientError::TransactionExecution(error)),
-		};
+		let tx_details = http_watch(client, tx_hash, wait_for, sleep_duration, block_timeout).await?;
+		if let Some(tx_details) = tx_details {
+			return Ok(tx_details);
+		}
 
 		if retry_count == 0 {
 			warn!(target: "watcher", "Failed to find transaction. Tx Hash: {:?}. Aborting", tx_hash);
-			return Err(ClientError::TransactionExecution(error));
+			return Err(ClientError::TransactionExecution(
+				TransactionExecutionError::FailedToSubmitTransaction,
+			));
 		}
 
 		options.regenerate_mortality(client).await?;

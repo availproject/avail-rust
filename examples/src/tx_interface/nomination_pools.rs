@@ -58,7 +58,7 @@ mod create {
 		let bouncer = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
 
 		let tx = sdk.tx.nomination_pools.create(amount, root, nominator, bouncer);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -89,7 +89,7 @@ mod create_with_pool_id {
 			.tx
 			.nomination_pools
 			.create_with_pool_id(amount, root, nominator, bouncer, pool_id);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -114,7 +114,7 @@ mod join {
 		let pool_id = 1;
 
 		let tx = sdk.tx.nomination_pools.join(amount, pool_id);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -140,7 +140,7 @@ mod bond_extra {
 		let extra = BondExtra::FreeBalance(SDK::one_avail());
 
 		let tx = sdk.tx.nomination_pools.bond_extra(extra);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -164,7 +164,7 @@ mod unbond {
 		let unbonding_points = SDK::one_avail();
 
 		let tx = sdk.tx.nomination_pools.unbond(member_account, unbonding_points);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -191,7 +191,7 @@ mod withdraw_unbonded {
 			.tx
 			.nomination_pools
 			.withdraw_unbonded(member_account, num_slashing_spans);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -221,7 +221,7 @@ mod set_commission {
 		};
 
 		let tx = sdk.tx.nomination_pools.set_commission(pool_id, Some(new_commission));
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -249,7 +249,7 @@ mod set_metadata {
 		let metadata = String::from("This is metadata").as_bytes().to_vec();
 
 		let tx = sdk.tx.nomination_pools.set_metadata(pool_id, metadata);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())
@@ -273,7 +273,7 @@ mod set_state {
 		let state = State::Destroying;
 
 		let tx = sdk.tx.nomination_pools.set_state(pool_id, state);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -296,7 +296,7 @@ mod set_claim_permission {
 		let permission = Permission::PermissionlessAll;
 
 		let tx = sdk.tx.nomination_pools.set_claim_permission(permission);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())
@@ -319,7 +319,7 @@ mod nominate {
 		];
 
 		let tx = sdk.tx.nomination_pools.nominate(pool_id, validators);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		assert_eq!(res.is::<NominationPoolsCalls::Nominate>().await.unwrap(), true, "");
@@ -341,7 +341,7 @@ mod chill {
 		let pool_id = 0;
 
 		let tx = sdk.tx.nomination_pools.chill(pool_id);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())
@@ -360,7 +360,7 @@ mod claim_payout {
 		let account = Keypair::from_uri(&secret_uri)?;
 
 		let tx = sdk.tx.nomination_pools.claim_payout();
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -383,7 +383,7 @@ mod claim_payout_other {
 		let other = account::account_id_from_str("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy")?; // Dave
 
 		let tx = sdk.tx.nomination_pools.claim_payout_other(other);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -406,7 +406,7 @@ mod claim_commission {
 		let pool_id = 1;
 
 		let tx = sdk.tx.nomination_pools.claim_commission(pool_id);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -440,7 +440,7 @@ mod payout_stakers {
 		};
 
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())

@@ -26,7 +26,7 @@ mod submit_data {
 
 		let options = Options::new().app_id(1);
 		let tx = sdk.tx.data_availability.submit_data(data);
-		let res = tx.execute_and_watch_inclusion(&account, Some(options)).await?;
+		let res = tx.execute_and_watch_inclusion(&account, options).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.as_ref().unwrap();
@@ -50,7 +50,7 @@ mod create_application_key {
 		let key = String::from("My Tx Interface Key").as_bytes().to_vec();
 
 		let tx = sdk.tx.data_availability.create_application_key(key);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();

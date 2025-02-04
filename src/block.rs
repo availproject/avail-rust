@@ -33,12 +33,12 @@ impl Block {
 	}
 
 	pub async fn new_best_block(client: &Client) -> Result<Self, ClientError> {
-		let block_hash = Self::fetch_best_block_hash(client).await?;
+		let block_hash = client.best_block_hash().await?;
 		Self::new(client, block_hash).await
 	}
 
 	pub async fn new_finalized_block(client: &Client) -> Result<Self, ClientError> {
-		let block_hash = Self::fetch_finalized_block_hash(client).await?;
+		let block_hash = client.finalized_block_hash().await?;
 		Self::new(client, block_hash).await
 	}
 
@@ -176,14 +176,6 @@ impl Block {
 		T::Keys: 'static + Sized,
 	{
 		self.block.storage().iter(address).await
-	}
-
-	pub async fn fetch_best_block_hash(client: &Client) -> Result<H256, ClientError> {
-		rpc::chain::get_block_hash(client, None).await
-	}
-
-	pub async fn fetch_finalized_block_hash(client: &Client) -> Result<H256, ClientError> {
-		rpc::chain::get_finalized_head(client).await
 	}
 
 	pub fn transaction_hash_to_index(&self, tx_hash: H256) -> Option<u32> {

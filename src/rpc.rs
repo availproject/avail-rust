@@ -1,7 +1,7 @@
 use crate::{
 	avail::runtime_types::frame_system::limits::BlockLength,
 	error::ClientError,
-	from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState},
+	from_substrate::{NodeRole, PeerInfo, SyncState},
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
 };
 use avail_core::data_proof::ProofResponse;
@@ -13,29 +13,6 @@ use subxt::{
 /// Arbitrary properties defined in chain spec as a JSON object
 pub type SystemProperties = serde_json::map::Map<String, serde_json::Value>;
 
-pub mod payment {
-	use super::*;
-
-	pub async fn query_fee_details(
-		client: &Client,
-		extrinsic: Bytes,
-		at: Option<H256>,
-	) -> Result<FeeDetails, ClientError> {
-		let params = rpc_params![extrinsic, at];
-		let value = client.rpc_client.request("payment_queryFeeDetails", params).await?;
-		Ok(value)
-	}
-
-	pub async fn query_info(
-		client: &Client,
-		extrinsic: Bytes,
-		at: Option<H256>,
-	) -> Result<RuntimeDispatchInfo, ClientError> {
-		let params = rpc_params![extrinsic, at];
-		let value = client.rpc_client.request("payment_queryInfo", params).await?;
-		Ok(value)
-	}
-}
 pub mod system {
 	use super::*;
 
@@ -164,6 +141,13 @@ pub mod state {
 	pub async fn get_runtime_version(client: &Client, at: Option<H256>) -> Result<RuntimeVersion, ClientError> {
 		let params = rpc_params![at];
 		let value = client.rpc_client.request("state_getRuntimeVersion", params).await?;
+		Ok(value)
+	}
+
+	pub async fn call(client: &Client, method: &str, data: &[u8], at: Option<H256>) -> Result<String, ClientError> {
+		let data = std::format!("0x{}", hex::encode(data));
+		let params = rpc_params![method, data, at];
+		let value = client.rpc_client.request("state_call", params).await?;
 		Ok(value)
 	}
 }

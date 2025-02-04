@@ -45,7 +45,7 @@ mod bond {
 		let payee = RewardDestination::Staked;
 
 		let tx = sdk.tx.staking.bond(value, payee);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -68,7 +68,7 @@ mod bond_extra {
 		let max_additional = SDK::one_avail();
 
 		let tx = sdk.tx.staking.bond_extra(max_additional);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -93,7 +93,7 @@ mod nominate {
 		];
 
 		let tx = sdk.tx.staking.nominate(&targets);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 		assert_eq!(res.is::<StakingCalls::Nominate>().await.unwrap(), true, "");
 
@@ -113,7 +113,7 @@ mod chill {
 		let account = Keypair::from_uri(&secret_uri)?;
 
 		let tx = sdk.tx.staking.chill();
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -138,7 +138,7 @@ mod chill_other {
 		];
 
 		let tx = sdk.tx.staking.nominate(&targets);
-		tx.execute_and_watch_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 
 		Ok(())
 	}
@@ -152,7 +152,7 @@ mod chill_other {
 		let stash = account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
 
 		let tx = sdk.tx.staking.chill_other(stash);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -175,7 +175,7 @@ mod unbond {
 		let value = SDK::one_avail();
 
 		let tx = sdk.tx.staking.unbond(value);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -202,7 +202,7 @@ mod validate {
 		let blocked = false;
 
 		let tx = sdk.tx.staking.validate(commission, blocked);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -219,7 +219,7 @@ mod validate {
 		let account = Keypair::from_uri(&secret_uri)?;
 
 		let tx = sdk.tx.staking.chill();
-		tx.execute_and_watch_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 
 		Ok(())
 	}
@@ -245,7 +245,7 @@ mod payout_stakers {
 		};
 
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())

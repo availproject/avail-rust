@@ -1,4 +1,5 @@
-use crate::{error::ClientError, transactions::Transactions, ABlocksClient, AOnlineClient, AStorageClient};
+use crate::{error::ClientError, rpc, transactions::Transactions, ABlocksClient, AOnlineClient, AStorageClient};
+use primitive_types::H256;
 use std::time::Duration;
 use subxt::backend::rpc::{
 	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
@@ -133,5 +134,13 @@ impl Client {
 
 	pub fn storage(&self) -> AStorageClient {
 		self.online_client.storage()
+	}
+
+	pub async fn best_block_hash(&self) -> Result<H256, ClientError> {
+		rpc::chain::get_block_hash(self, None).await
+	}
+
+	pub async fn finalized_block_hash(&self) -> Result<H256, ClientError> {
+		rpc::chain::get_finalized_head(self).await
 	}
 }

@@ -12,6 +12,7 @@ pub mod block_transaction;
 pub mod error;
 pub mod primitives;
 pub mod rpc;
+pub mod runtime_api;
 pub mod sdk;
 pub mod transaction;
 pub mod transactions;
@@ -39,8 +40,9 @@ pub use transaction::{Options, PopulatedOptions, Transaction, TransactionDetails
 pub mod prelude {
 	pub use super::{
 		account, avail, avail::runtime_types::bounded_collections::bounded_vec::BoundedVec, avail_core,
-		block::DataSubmission, config::*, error::ClientError, hex, kate_recovery, primitives, rpc, subxt, subxt_signer,
-		transaction::WebSocket, AccountId, Block, BlockTransaction, Client, Filter, Keypair, MultiAddress, Options,
-		Perbill, PopulatedOptions, SecretUri, Transaction, TransactionDetails, WaitFor, H256, SDK, U256,
+		block::to_ascii, block::DataSubmission, config::*, error::ClientError, hex, kate_recovery, primitives, rpc,
+		subxt, subxt_signer, transaction::WebSocket, AccountId, Block, BlockTransaction, Client, Filter, Keypair,
+		MultiAddress, Options, Perbill, PopulatedOptions, SecretUri, Transaction, TransactionDetails, WaitFor, H256,
+		SDK, U256,
 	};
 }

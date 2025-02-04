@@ -29,7 +29,7 @@ mod transfer_all {
 		let keep_alive = false;
 
 		let tx = sdk.tx.balances.transfer_all(dest, keep_alive);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -49,7 +49,7 @@ mod transfer_all {
 		let value = SDK::one_avail() * 900_000;
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, value);
-		tx.execute_and_watch_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 
 		Ok(())
 	}
@@ -69,7 +69,7 @@ mod transfer_allow_death {
 		let amount = SDK::one_avail();
 
 		let tx = sdk.tx.balances.transfer_allow_death(dest, amount);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
@@ -93,7 +93,7 @@ mod transfer_keep_alive {
 		let amount = SDK::one_avail();
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, amount);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		let events = res.events.unwrap();
