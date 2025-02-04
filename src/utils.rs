@@ -1,5 +1,5 @@
 use crate::{
-	avail::runtime_types::da_runtime::primitives::SessionKeys, AExtrinsicEvents,
+	avail::runtime_types::da_runtime::primitives::SessionKeys, block::EventRecords,
 	AppUncheckedExtrinsic,
 };
 use primitive_types::H256;
@@ -7,10 +7,9 @@ use subxt::backend::legacy::rpc_methods::Bytes;
 
 /// Returns Ok if the transaction was successful
 /// Returns Err if the transaction failed
-pub fn check_if_transaction_was_successful(events: &AExtrinsicEvents) -> Option<bool> {
+pub fn check_if_transaction_was_successful(events: &EventRecords) -> Option<bool> {
 	// Try to find any errors; return the first one we encounter.
 	for ev in events.iter() {
-		let Ok(ev) = ev else { continue };
 		if ev.pallet_name() != "System" {
 			continue;
 		}

@@ -61,13 +61,9 @@ mod create {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Created>() {
-			dbg!(event);
-		}
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Created>(), Some(true), "");
+		assert_eq!(events.has::<NominationPoolsEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -96,13 +92,9 @@ mod create_with_pool_id {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Created>() {
-			dbg!(event);
-		}
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Created>(), Some(true), "");
+		assert_eq!(events.has::<NominationPoolsEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -125,10 +117,8 @@ mod join {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -153,10 +143,8 @@ mod bond_extra {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -179,10 +167,8 @@ mod unbond {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Unbonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Unbonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -208,10 +194,8 @@ mod withdraw_unbonded {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Withdrawn>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Withdrawn>(), Some(true), "");
 
 		Ok(())
 	}
@@ -240,10 +224,12 @@ mod set_commission {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionUpdated>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(
+			events.has::<NominationPoolsEvents::PoolCommissionUpdated>(),
+			Some(true),
+			""
+		);
 
 		Ok(())
 	}
@@ -265,8 +251,6 @@ mod set_metadata {
 		let tx = sdk.tx.nomination_pools.set_metadata(pool_id, metadata);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
-
-		res.print_debug();
 
 		Ok(())
 	}
@@ -292,10 +276,8 @@ mod set_state {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::StateChanged>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::StateChanged>(), Some(true), "");
 
 		Ok(())
 	}
@@ -316,8 +298,6 @@ mod set_claim_permission {
 		let tx = sdk.tx.nomination_pools.set_claim_permission(permission);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
-
-		res.print_debug();
 
 		Ok(())
 	}
@@ -342,10 +322,7 @@ mod nominate {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(data) = res.get_call_data::<NominationPoolsCalls::Nominate>().await {
-			dbg!(data);
-		}
+		assert_eq!(res.is::<NominationPoolsCalls::Nominate>().await.unwrap(), true, "");
 
 		Ok(())
 	}
@@ -367,8 +344,6 @@ mod chill {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-
 		Ok(())
 	}
 }
@@ -388,10 +363,8 @@ mod claim_payout {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PaidOut>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::PaidOut>(), Some(true), "");
 
 		Ok(())
 	}
@@ -413,10 +386,8 @@ mod claim_payout_other {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PaidOut>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::PaidOut>(), Some(true), "");
 
 		Ok(())
 	}
@@ -438,10 +409,12 @@ mod claim_commission {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionClaimed>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(
+			events.has::<NominationPoolsEvents::PoolCommissionClaimed>(),
+			Some(true),
+			""
+		);
 
 		Ok(())
 	}

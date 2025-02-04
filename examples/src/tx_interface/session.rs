@@ -23,11 +23,7 @@ mod set_keys {
 		let tx = sdk.tx.session.set_keys(keys);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
-
-		res.print_debug();
-		if let Some(data) = res.get_call_data::<SessionCalls::SetKeys>().await {
-			dbg!(data);
-		}
+		assert_eq!(res.is::<SessionCalls::SetKeys>().await.unwrap(), true, "");
 
 		Ok(())
 	}

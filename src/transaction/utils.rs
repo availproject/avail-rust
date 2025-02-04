@@ -1,5 +1,5 @@
 use super::{Options, Params, TransactionDetails};
-use crate::{error::ClientError, rpc, Client, WaitFor};
+use crate::{block::EventRecords, error::ClientError, rpc, Client, WaitFor};
 use log::{info, log_enabled, warn};
 use primitive_types::H256;
 use std::time::Duration;
@@ -173,7 +173,10 @@ pub async fn watch(
 		}
 	}
 
-	let events = tx_details.events().await.ok();
+	let events = match tx_details.events().await.ok() {
+		Some(x) => EventRecords::new_ext(x),
+		None => None,
+	};
 	let tx_index = tx_details.index();
 
 	if log_enabled!(log::Level::Info) {
@@ -378,7 +381,10 @@ pub async fn http_watch(
 		}
 	}
 
-	let events = tx_details.events().await.ok();
+	let events = match tx_details.events().await.ok() {
+		Some(x) => EventRecords::new_ext(x),
+		None => None,
+	};
 	let tx_index = tx_details.index();
 
 	info!(target: "watcher", "Transaction was found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Number: {}", tx_hash, tx_index, block_hash, block_number);

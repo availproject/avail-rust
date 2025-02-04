@@ -48,10 +48,8 @@ mod bond {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -73,10 +71,8 @@ mod bond_extra {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -99,11 +95,7 @@ mod nominate {
 		let tx = sdk.tx.staking.nominate(&targets);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
-
-		res.print_debug();
-		if let Some(data) = res.get_call_data::<StakingCalls::Nominate>().await {
-			dbg!(data);
-		}
+		assert_eq!(res.is::<StakingCalls::Nominate>().await.unwrap(), true, "");
 
 		Ok(())
 	}
@@ -124,10 +116,8 @@ mod chill {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Chilled>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Chilled>(), Some(true), "");
 
 		Ok(())
 	}
@@ -165,10 +155,8 @@ mod chill_other {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Chilled>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Chilled>(), Some(true), "");
 
 		Ok(())
 	}
@@ -190,10 +178,8 @@ mod unbond {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Unbonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Unbonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -219,10 +205,8 @@ mod validate {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::ValidatorPrefsSet>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::ValidatorPrefsSet>(), Some(true), "");
 
 		Ok(())
 	}
@@ -263,8 +247,6 @@ mod payout_stakers {
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
-
-		res.print_debug();
 
 		Ok(())
 	}

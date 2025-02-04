@@ -34,10 +34,10 @@ pub async fn run() -> Result<(), ClientError> {
 	println!("Alice Address: {}", account_id);
 
 	// MultiAddress can be created from Public Key...
-	let address = acc.public_key().to_address::<u32>();
+	let _address = acc.public_key().to_address::<u32>();
 
 	// ...or from account id
-	let address = MultiAddress::<AccountId, u32>::from(account_id);
+	let _address = MultiAddress::<AccountId, u32>::from(account_id);
 
 	Ok(())
 }

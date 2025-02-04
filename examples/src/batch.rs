@@ -43,13 +43,11 @@ pub async fn run() -> Result<(), ClientError> {
 	let payload = avail::tx().utility().batch(calls.clone());
 	let tx = Transaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch_inclusion(&account, None).await?;
-	assert_eq!(res.is_successful(), Some(true), "Transactions needs to be successful");
+	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
-	let event = res.find_first_event::<UtilityEvents::BatchCompleted>();
-	assert!(event.is_some(), "BatchCompleted event must be present.");
-
-	let event_count = res.find_event::<UtilityEvents::ItemCompleted>().len();
-	assert_eq!(event_count, 2, "ItemCompleted events must be produced twice");
+	let events = res.events.unwrap();
+	assert_eq!(events.has::<UtilityEvents::BatchCompleted>(), Some(true), "");
+	assert_eq!(events.count::<UtilityEvents::ItemCompleted>(), 2, "");
 
 	println!("-- Batch Call Done --");
 
@@ -60,13 +58,11 @@ pub async fn run() -> Result<(), ClientError> {
 	let payload = avail::tx().utility().batch_all(calls.clone());
 	let tx = Transaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch_inclusion(&account, None).await?;
-	assert_eq!(res.is_successful(), Some(true), "Transactions needs to be successful");
+	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
-	let event = res.find_first_event::<UtilityEvents::BatchCompleted>();
-	assert!(event.is_some(), "BatchCompleted event must be present.");
-
-	let event_count = res.find_event::<UtilityEvents::ItemCompleted>().len();
-	assert_eq!(event_count, 2, "ItemCompleted events must be produced twice");
+	let events = res.events.unwrap();
+	assert_eq!(events.has::<UtilityEvents::BatchCompleted>(), Some(true), "");
+	assert_eq!(events.count::<UtilityEvents::ItemCompleted>(), 2, "");
 
 	println!("-- Batch All Call Done --");
 
@@ -78,13 +74,11 @@ pub async fn run() -> Result<(), ClientError> {
 	let payload = avail::tx().utility().force_batch(calls.clone());
 	let tx = Transaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch_inclusion(&account, None).await?;
-	assert_eq!(res.is_successful(), Some(true), "Transactions needs to be successful");
+	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
-	let event = res.find_first_event::<UtilityEvents::BatchCompleted>();
-	assert!(event.is_some(), "BatchCompleted event must be present.");
-
-	let event_count = res.find_event::<UtilityEvents::ItemCompleted>().len();
-	assert_eq!(event_count, 2, "ItemCompleted events must be produced twice");
+	let events = res.events.unwrap();
+	assert_eq!(events.has::<UtilityEvents::BatchCompleted>(), Some(true), "");
+	assert_eq!(events.count::<UtilityEvents::ItemCompleted>(), 2, "");
 
 	println!("-- Force Batch Call Done --");
 
@@ -111,16 +105,12 @@ pub async fn run() -> Result<(), ClientError> {
 	let payload = avail::tx().utility().batch(calls.clone());
 	let tx = Transaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch_inclusion(&account, None).await?;
-	assert_eq!(res.is_successful(), Some(true), "Transactions needs to be successful");
+	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
-	let event = res.find_first_event::<UtilityEvents::BatchInterrupted>();
-	assert!(event.is_some(), "BatchInterrupted event must be present.");
-
-	let event = res.find_first_event::<UtilityEvents::BatchCompleted>();
-	assert!(event.is_none(), "BatchCompleted event must NOT be present.");
-
-	let event_count = res.find_event::<UtilityEvents::ItemCompleted>().len();
-	assert_eq!(event_count, 2, "ItemCompleted events must be produced twice");
+	let events = res.events.unwrap();
+	assert_eq!(events.has::<UtilityEvents::BatchInterrupted>(), Some(true), "");
+	assert_eq!(events.has::<UtilityEvents::BatchCompleted>(), Some(false), "");
+	assert_eq!(events.count::<UtilityEvents::ItemCompleted>(), 2, "");
 
 	println!("-- Batch Call Done --");
 
@@ -136,16 +126,12 @@ pub async fn run() -> Result<(), ClientError> {
 	let payload = avail::tx().utility().force_batch(calls.clone());
 	let tx = Transaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch_inclusion(&account, None).await?;
-	assert_eq!(res.is_successful(), Some(true), "Transactions needs to be successful");
+	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
-	let event = res.find_first_event::<UtilityEvents::BatchCompletedWithErrors>();
-	assert!(event.is_some(), "BatchCompletedWithErrors event must be present.");
-
-	let event_count = res.find_event::<UtilityEvents::ItemCompleted>().len();
-	assert_eq!(event_count, 3, "ItemCompleted events must be produced thrice");
-
-	let event_count = res.find_event::<UtilityEvents::ItemFailed>().len();
-	assert_eq!(event_count, 1, "ItemFailed events must be produced once");
+	let events = res.events.unwrap();
+	assert_eq!(events.has::<UtilityEvents::BatchCompletedWithErrors>(), Some(true), "");
+	assert_eq!(events.count::<UtilityEvents::ItemFailed>(), 1, "");
+	assert_eq!(events.count::<UtilityEvents::ItemCompleted>(), 3, "");
 
 	println!("-- Force Batch Call Done --");
 

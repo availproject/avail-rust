@@ -8,6 +8,7 @@ use crate::{
 };
 use codec::Decode;
 use primitive_types::H256;
+use std::sync::Arc;
 use subxt::{
 	backend::StreamOfResults,
 	blocks::StaticExtrinsic,
@@ -16,17 +17,18 @@ use subxt::{
 	utils::{MultiAddress, Yes},
 };
 
+#[derive(Clone)]
 pub struct Block {
-	pub block: ABlock,
-	pub transactions: AExtrinsics,
+	pub block: Arc<ABlock>,
+	pub transactions: Arc<AExtrinsics>,
 }
 
 impl Block {
 	pub async fn new(client: &Client, block_hash: H256) -> Result<Self, ClientError> {
 		let (block, transactions) = fetch_transactions(client, block_hash).await?;
 		Ok(Self {
-			block,
-			transactions,
+			block: block.into(),
+			transactions: transactions.into(),
 		})
 	}
 
@@ -43,8 +45,8 @@ impl Block {
 	pub async fn from_block(block: ABlock) -> Result<Self, subxt::Error> {
 		let transactions = block.extrinsics().await?;
 		Ok(Self {
-			block,
-			transactions,
+			block: block.into(),
+			transactions: transactions.into(),
 		})
 	}
 
@@ -520,26 +522,90 @@ impl EventRecords {
 		result
 	}
 
-	pub fn find_first<E: StaticEvent>(&self) -> Result<Option<E>, subxt_core::Error> {
+	pub fn find_checked<E: StaticEvent>(&self) -> Vec<Result<E, subxt_core::Error>> {
+		let mut result: Vec<Result<E, subxt_core::Error>> = Vec::new();
+		for ev in self.inner.iter() {
+			// If result is Err() then we found the tx but failed to decode it
+			let decoded = match ev.as_event::<E>() {
+				Ok(x) => x,
+				Err(e) => {
+					result.push(Err(e));
+					continue;
+				},
+			};
+
+			// If decoded is None then we can skip it as it doesn't have the correct pallet or event name.
+			if let Some(decoded) = decoded {
+				result.push(Ok(decoded));
+			}
+		}
+
+		result
+	}
+
+	pub fn find_first<E: StaticEvent>(&self) -> Option<Result<E, subxt_core::Error>> {
+		for ev in self.inner.iter() {
+			// If result is Err() then we found the tx but failed to decode it
+			let decoded = match ev.as_event::<E>() {
+				Ok(x) => x,
+				Err(e) => return Some(Err(e)),
+			};
+
+			// If decoded is None then we can skip it as it doesn't have the correct pallet or event name.
+			if let Some(decoded) = decoded {
+				return Some(Ok(decoded));
+			}
+		}
+
+		None
+	}
+
+	pub fn find_last<E: StaticEvent>(&self) -> Option<Result<E, subxt_core::Error>> {
+		for ev in self.inner.iter().rev() {
+			// If result is Err() then we found the tx but failed to decode it
+			let decoded = match ev.as_event::<E>() {
+				Ok(x) => x,
+				Err(e) => return Some(Err(e)),
+			};
+
+			// If decoded is None then we can skip it as it doesn't have the correct pallet or event name.
+			if let Some(decoded) = decoded {
+				return Some(Ok(decoded));
+			}
+		}
+
+		None
+	}
+
+	pub fn has<E: StaticEvent>(&self) -> Option<bool> {
+		for ev in self.inner.iter() {
+			// If result is Err() then we found the tx but failed to decode it
+			let decoded = match ev.as_event::<E>() {
+				Ok(x) => x,
+				Err(_) => return None,
+			};
+
+			// If decoded is None then we can skip it as it doesn't have the correct pallet or event name.
+			if decoded.is_some() {
+				return Some(true);
+			}
+		}
+
+		Some(false)
+	}
+
+	pub fn count<E: StaticEvent>(&self) -> usize {
+		let mut result = 0;
 		for ev in self.inner.iter() {
 			if ev.pallet_name() != E::PALLET || ev.variant_name() != E::EVENT {
 				continue;
 			}
-			return ev.as_event::<E>();
-		}
-
-		Ok(None)
-	}
-
-	pub fn find_last<E: StaticEvent>(&self) -> Result<Option<E>, subxt_core::Error> {
-		for ev in self.inner.iter().rev() {
-			if ev.pallet_name() != E::PALLET || ev.variant_name() != E::EVENT {
-				continue;
+			if ev.as_event::<E>().is_ok() {
+				result += 1;
 			}
-			return ev.as_event::<E>();
 		}
 
-		Ok(None)
+		result
 	}
 
 	pub fn iter(&self) -> EventRecordsIter {

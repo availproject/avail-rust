@@ -65,11 +65,8 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Convert from Generic Transaction Event to Specific Transaction Event
 	let event = tx_events.find_first::<DataSubmittedEvent>();
-	assert!(
-		event.as_ref().is_ok_and(|e| e.is_some()),
-		"DataSubmitted event must be present"
-	);
-	let event = event.ok().flatten().unwrap();
+	assert!(event.as_ref().is_some_and(|x| x.is_ok()), "DataSubmittedEvent");
+	let event = event.unwrap().unwrap();
 	println!("Who: {}, Data Hash: {:?}", event.who, event.data_hash);
 
 	Ok(())

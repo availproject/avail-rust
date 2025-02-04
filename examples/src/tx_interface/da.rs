@@ -29,15 +29,9 @@ mod submit_data {
 		let res = tx.execute_and_watch_inclusion(&account, Some(options)).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		let Some(event) = res.find_first_event::<DataAvailabilityEvents::DataSubmitted>() else {
-			return Err("Failed to find DataSubmitted event".into());
-		};
-		dbg!(event);
-		let Some(data) = res.get_call_data::<DataAvailabilityCalls::SubmitData>().await else {
-			return Err("Failed to find SubmitDataCall data".into());
-		};
-		dbg!(data);
+		let events = res.events.as_ref().unwrap();
+		assert_eq!(events.has::<DataAvailabilityEvents::DataSubmitted>(), Some(true), "");
+		assert_eq!(res.is::<DataAvailabilityCalls::SubmitData>().await.unwrap(), true, "");
 
 		Ok(())
 	}
@@ -59,12 +53,12 @@ mod create_application_key {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		let Some(event) = res.find_first_event::<DataAvailabilityEvents::ApplicationKeyCreated>() else {
-			return Err("Failed to find ApplicationKeyCreated event".into());
-		};
-		dbg!(event);
-
+		let events = res.events.unwrap();
+		assert_eq!(
+			events.has::<DataAvailabilityEvents::ApplicationKeyCreated>(),
+			Some(true),
+			""
+		);
 		Ok(())
 	}
 }

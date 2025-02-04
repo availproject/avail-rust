@@ -72,11 +72,8 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Convert from Generic Transaction Event to Specific Transaction Event
 	let event = tx_events.find_first::<TransferEvent>();
-	assert!(
-		event.as_ref().is_ok_and(|e| e.is_some()),
-		"Transfer event must be present"
-	);
-	let event = event.ok().flatten().unwrap();
+	assert!(event.as_ref().is_some_and(|x| x.is_ok()), "TransferEvent");
+	let event = event.unwrap().unwrap();
 	println!("From: {}, To: {}, Amount: {}", event.from, event.to, event.amount);
 
 	Ok(())

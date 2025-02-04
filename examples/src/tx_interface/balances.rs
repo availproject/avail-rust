@@ -32,13 +32,9 @@ mod transfer_all {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<BalancesEvents::Transfer>() {
-			dbg!(event);
-		}
-		if let Some(event) = res.find_first_event::<SystemEvents::KilledAccount>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<BalancesEvents::Transfer>(), Some(true), "");
+		assert_eq!(events.has::<SystemEvents::KilledAccount>(), Some(true), "");
 
 		Ok(())
 	}
@@ -60,10 +56,7 @@ mod transfer_all {
 }
 
 mod transfer_allow_death {
-	use avail_rust::{
-		prelude::*,
-		transactions::{BalancesEvents, SystemEvents},
-	};
+	use avail_rust::{prelude::*, transactions::BalancesEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -79,13 +72,8 @@ mod transfer_allow_death {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<BalancesEvents::Transfer>() {
-			dbg!(event);
-		}
-		if let Some(event) = res.find_first_event::<SystemEvents::KilledAccount>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<BalancesEvents::Transfer>(), Some(true), "");
 
 		Ok(())
 	}
@@ -108,10 +96,8 @@ mod transfer_keep_alive {
 		let res = tx.execute_and_watch_inclusion(&account, None).await?;
 		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<BalancesEvents::Transfer>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<BalancesEvents::Transfer>(), Some(true), "");
 
 		Ok(())
 	}
