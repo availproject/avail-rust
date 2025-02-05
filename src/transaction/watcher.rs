@@ -57,6 +57,11 @@ impl Watcher {
 		self
 	}
 
+	pub fn tx_hash(mut self, value: H256) -> Self {
+		self.tx_hash = value;
+		self
+	}
+
 	pub fn block_count_timeout(mut self, value: u32) -> Self {
 		self.block_count_timeout = Some(value);
 		self
