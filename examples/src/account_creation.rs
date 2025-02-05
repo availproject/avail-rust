@@ -3,9 +3,13 @@ use std::str::FromStr;
 use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
-	// Use SecretUri and Keypair to create your own account
+	// Use SecretUri and Keypair to create your own account...
 	let secret_uri = SecretUri::from_str("//Alice")?;
 	let acc = Keypair::from_uri(&secret_uri)?;
+	println!("Alice Address: {}", acc.public_key().to_account_id());
+
+	// ... or from_secret_uri function
+	let acc = account::from_secret_uri("//Alice")?;
 	println!("Alice Address: {}", acc.public_key().to_account_id());
 
 	// There are predefined testing accounts available to be used on local dev networks.
