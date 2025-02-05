@@ -1,4 +1,4 @@
-use avail_rust::{account, avail, error::ClientError, AccountId, Block, SDK};
+use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
 	println!("da_app_keys");
@@ -18,6 +18,8 @@ pub async fn run() -> Result<(), ClientError> {
 	println!("system_account_iter");
 	system_account_iter().await?;
 
+	println!("Storage finished correctly");
+
 	Ok(())
 }
 
@@ -25,13 +27,12 @@ pub async fn da_app_keys() -> Result<(), ClientError> {
 	use avail::data_availability::storage::types::app_keys::Param0;
 
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
-	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
 	let key = String::from("Reserved-1").as_bytes().to_vec();
 	let key = Param0 { 0: key };
 
-	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(block_hash);
+	let block_hash = sdk.client.best_block_hash().await?;
+	let storage = sdk.client.storage().at(block_hash);
 	let address = avail::storage().data_availability().app_keys(key);
 	let result = storage.fetch(&address).await?;
 
@@ -50,10 +51,9 @@ pub async fn da_app_keys() -> Result<(), ClientError> {
 
 pub async fn da_app_keys_iter() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
-	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(block_hash);
+	let block_hash = sdk.client.best_block_hash().await?;
+	let storage = sdk.client.storage().at(block_hash);
 	let address = avail::storage().data_availability().app_keys_iter();
 	let mut results = storage.iter(address).await?;
 
@@ -92,10 +92,9 @@ pub async fn da_app_keys_iter() -> Result<(), ClientError> {
 
 pub async fn da_next_app_id() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
-	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(block_hash);
+	let block_hash = sdk.client.best_block_hash().await?;
+	let storage = sdk.client.storage().at(block_hash);
 	let address = avail::storage().data_availability().next_app_id();
 	let result = storage.fetch_or_default(&address).await?;
 
@@ -109,10 +108,9 @@ pub async fn da_next_app_id() -> Result<(), ClientError> {
 
 pub async fn staking_active_era() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
-	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(block_hash);
+	let block_hash = sdk.client.best_block_hash().await?;
+	let storage = sdk.client.storage().at(block_hash);
 	let address = avail::storage().staking().active_era();
 	let result = storage.fetch(&address).await?;
 
@@ -131,13 +129,11 @@ pub async fn staking_active_era() -> Result<(), ClientError> {
 
 pub async fn staking_bonded() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
-	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let account_id =
-		account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice_Stash
+	let account_id = account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice_Stash
 
-	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(block_hash);
+	let block_hash = sdk.client.best_block_hash().await?;
+	let storage = sdk.client.storage().at(block_hash);
 	let address = avail::storage().staking().bonded(account_id);
 	let result = storage.fetch(&address).await?;
 
@@ -151,10 +147,9 @@ pub async fn staking_bonded() -> Result<(), ClientError> {
 
 pub async fn staking_bonded_iter() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
-	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(block_hash);
+	let block_hash = sdk.client.best_block_hash().await?;
+	let storage = sdk.client.storage().at(block_hash);
 	let storage_query = avail::storage().staking().bonded_iter();
 	let mut results = storage.iter(storage_query).await?;
 
@@ -175,13 +170,12 @@ pub async fn staking_bonded_iter() -> Result<(), ClientError> {
 
 pub async fn system_account() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
-	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let account = SDK::alice()?;
+	let account = account::alice();
 	let account_id = account.public_key().to_account_id();
 
-	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(block_hash);
+	let block_hash = sdk.client.best_block_hash().await?;
+	let storage = sdk.client.storage().at(block_hash);
 	let address = avail::storage().system().account(account_id);
 	let result = storage.fetch(&address).await?;
 
@@ -205,10 +199,9 @@ pub async fn system_account() -> Result<(), ClientError> {
 
 pub async fn system_account_iter() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
-	let (online_client, rpc_client) = (&sdk.online_client, &sdk.rpc_client);
 
-	let block_hash = Block::fetch_best_block_hash(rpc_client).await?;
-	let storage = online_client.storage().at(block_hash);
+	let block_hash = sdk.client.best_block_hash().await?;
+	let storage = sdk.client.storage().at(block_hash);
 	let address = avail::storage().system().account_iter();
 	let mut results = storage.iter(address).await?;
 

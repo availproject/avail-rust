@@ -25,24 +25,16 @@ mod transfer_all {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let dest = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let keep_alive = false;
 
 		let tx = sdk.tx.balances.transfer_all(dest, keep_alive);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<BalancesEvents::Transfer>() {
-			dbg!(event);
-		}
-		if let Some(event) = res.find_first_event::<SystemEvents::KilledAccount>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<BalancesEvents::Transfer>(), Some(true), "");
+		assert_eq!(events.has::<SystemEvents::KilledAccount>(), Some(true), "");
 
 		Ok(())
 	}
@@ -53,22 +45,18 @@ mod transfer_all {
 		// Input
 		let secret_uri = SecretUri::from_str("//Eve")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest =
-			account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?; // Alice
+		let dest = account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?; // Alice
 		let value = SDK::one_avail() * 900_000;
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, value);
-		tx.execute_and_watch_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 
 		Ok(())
 	}
 }
 
 mod transfer_allow_death {
-	use avail_rust::{
-		prelude::*,
-		transactions::{BalancesEvents, SystemEvents},
-	};
+	use avail_rust::{prelude::*, transactions::BalancesEvents};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -77,24 +65,15 @@ mod transfer_allow_death {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let dest = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
 		let tx = sdk.tx.balances.transfer_allow_death(dest, amount);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<BalancesEvents::Transfer>() {
-			dbg!(event);
-		}
-		if let Some(event) = res.find_first_event::<SystemEvents::KilledAccount>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<BalancesEvents::Transfer>(), Some(true), "");
 
 		Ok(())
 	}
@@ -110,21 +89,15 @@ mod transfer_keep_alive {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let dest =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let dest = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let amount = SDK::one_avail();
 
 		let tx = sdk.tx.balances.transfer_keep_alive(dest, amount);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<BalancesEvents::Transfer>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<BalancesEvents::Transfer>(), Some(true), "");
 
 		Ok(())
 	}

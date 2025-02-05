@@ -1,12 +1,12 @@
 use super::extrinsics_params::OnlyCodecExtra;
-use crate::{avail::runtime_types::da_runtime::RuntimeCall, Address, Signature};
+use crate::{avail::runtime_types::da_runtime::RuntimeCall, MultiAddress, Signature};
 
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
 use serde::{Deserialize, Serialize};
 use std::mem::size_of;
 use subxt::backend::legacy::rpc_methods::Bytes;
 
-pub type SignaturePayload = (Address, Signature, OnlyCodecExtra);
+pub type SignaturePayload = (MultiAddress, Signature, OnlyCodecExtra);
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
 ///
@@ -98,9 +98,7 @@ impl Decode for AppUncheckedExtrinsic {
 		let signature = is_signed.then(|| Decode::decode(input)).transpose()?;
 		let function = Decode::decode(input)?;
 
-		if let Some((before_length, after_length)) = input
-			.remaining_len()?
-			.and_then(|a| before_length.map(|b| (b, a)))
+		if let Some((before_length, after_length)) = input.remaining_len()?.and_then(|a| before_length.map(|b| (b, a)))
 		{
 			let length = before_length.saturating_sub(after_length);
 
@@ -109,10 +107,7 @@ impl Decode for AppUncheckedExtrinsic {
 			}
 		}
 
-		Ok(Self {
-			signature,
-			function,
-		})
+		Ok(Self { signature, function })
 	}
 }
 
@@ -122,8 +117,7 @@ impl<'a> Deserialize<'a> for AppUncheckedExtrinsic {
 		D: serde::Deserializer<'a>,
 	{
 		let r = sp_core::bytes::deserialize(de)?;
-		Decode::decode(&mut &r[..])
-			.map_err(|e| serde::de::Error::custom(format!("Decode error: {}", e)))
+		Decode::decode(&mut &r[..]).map_err(|e| serde::de::Error::custom(format!("Decode error: {}", e)))
 	}
 }
 

@@ -5,34 +5,6 @@ name = "sdk-examples"
 edition = "2021"
 default-run = "sdk-examples"
 
-[[bin]]
-name = "sdk-examples"
-path = "./src/main.rs"
-
-[[bin]]
-name = "docs-basics-1"
-path = "./docs/basics_1/main.rs"
-
-[[bin]]
-name = "docs-basics-1_1"
-path = "./docs/basics_1_1/main.rs"
-
-[[bin]]
-name = "docs-basics-2"
-path = "./docs/basics_2/main.rs"
-
-[[bin]]
-name = "docs-basics-2_1"
-path = "./docs/basics_2_1/main.rs"
-
-[[bin]]
-name = "docs-basics-3"
-path = "./docs/basics_3/main.rs"
-
-[[bin]]
-name = "docs-basics-4"
-path = "./docs/basics_4/main.rs"
-
 
 [dependencies]
 avail-rust = { path = "../." }

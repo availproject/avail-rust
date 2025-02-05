@@ -1,4 +1,4 @@
-# RPC and Fee Details
+# RPC
 
 ```rs
 {{#include ./../../examples/src/rpc.rs}}
