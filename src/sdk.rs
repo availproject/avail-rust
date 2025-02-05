@@ -1,4 +1,6 @@
-use crate::{error::ClientError, rpc, transactions::Transactions, ABlocksClient, AOnlineClient, AStorageClient};
+use crate::{
+	error::ClientError, rpc, transactions::Transactions, ABlock, ABlocksClient, AOnlineClient, AStorageClient,
+};
 use primitive_types::H256;
 use std::{fmt::Debug, time::Duration};
 use subxt::backend::rpc::{
@@ -104,8 +106,10 @@ pub async fn http_api(endpoint: &str) -> Result<Client, ClientError> {
 
 	// Cloning RpcClient is cheaper and doesn't create a new WS connection
 	let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
+	let mut client = Client::new(api, rpc_client);
+	client.set_mode(ClientMode::HTTP);
 
-	Ok(Client::new(api, rpc_client))
+	Ok(client)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -127,6 +131,7 @@ impl WaitFor {
 pub struct Client {
 	pub online_client: AOnlineClient,
 	pub rpc_client: RpcClient,
+	pub mode: ClientMode,
 }
 
 impl Client {
@@ -134,7 +139,12 @@ impl Client {
 		Self {
 			online_client,
 			rpc_client,
+			mode: ClientMode::WS,
 		}
+	}
+
+	pub fn set_mode(&mut self, value: ClientMode) {
+		self.mode = value;
 	}
 
 	pub fn blocks(&self) -> ABlocksClient {
@@ -145,11 +155,32 @@ impl Client {
 		self.online_client.storage()
 	}
 
-	pub async fn best_block_hash(&self) -> Result<H256, ClientError> {
+	pub async fn block_at(&self, at: H256) -> Result<ABlock, subxt::Error> {
+		self.online_client.blocks().at(at).await
+	}
+
+	pub async fn best_block_hash(&self) -> Result<H256, subxt::Error> {
 		rpc::chain::get_block_hash(self, None).await
 	}
 
-	pub async fn finalized_block_hash(&self) -> Result<H256, ClientError> {
+	pub async fn finalized_block_hash(&self) -> Result<H256, subxt::Error> {
 		rpc::chain::get_finalized_head(self).await
 	}
+
+	pub async fn best_block_number(&self) -> Result<u32, subxt::Error> {
+		let header = rpc::chain::get_header(self, None).await?;
+		Ok(header.number)
+	}
+
+	pub async fn finalized_block_number(&self) -> Result<u32, subxt::Error> {
+		let block_hash = self.finalized_block_hash().await?;
+		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
+		Ok(header.number)
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ClientMode {
+	WS,
+	HTTP,
 }

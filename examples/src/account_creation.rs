@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use avail_rust::{account, error::ClientError, Keypair, MultiAddress, SecretUri};
+use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
 	// Use SecretUri and Keypair to create your own account

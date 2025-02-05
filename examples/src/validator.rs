@@ -1,7 +1,6 @@
 use avail_rust::{
 	prelude::*,
 	transactions::staking::{Commission, RewardDestination},
-	utils,
 };
 
 pub async fn run() -> Result<(), ClientError> {
@@ -25,7 +24,6 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Generate Session Keys
 	let keys = rpc::author::rotate_keys(&sdk.client).await?;
-	let keys = utils::deconstruct_session_keys(keys)?;
 
 	// Set Keys
 	let tx = sdk.tx.session.set_keys(keys);

@@ -1,4 +1,4 @@
-use avail_rust::{prelude::*, utils::new_h256_from_hex};
+use avail_rust::prelude::*;
 
 type TransferKeepAliveCall = avail::balances::calls::types::TransferKeepAlive;
 type NetAccountEvent = avail::system::events::NewAccount;

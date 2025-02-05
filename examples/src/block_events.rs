@@ -1,4 +1,4 @@
-use avail_rust::{block::to_ascii, prelude::*, utils::new_h256_from_hex};
+use avail_rust::prelude::*;
 
 type TransferEvent = avail::balances::events::Transfer;
 type AppKeyCreatedEvent = avail::data_availability::events::ApplicationKeyCreated;

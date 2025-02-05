@@ -1,4 +1,4 @@
-use avail_rust::{block::to_ascii, prelude::*};
+use avail_rust::prelude::*;
 use std::time::SystemTime;
 
 type DataSubmissionCall = avail::data_availability::calls::types::SubmitData;
@@ -62,6 +62,8 @@ pub async fn run() -> Result<(), ClientError> {
 
 	let data = to_ascii(decoded.data.0).unwrap();
 	println!("Call data: {:?}", data);
+
+	println!("Data Submission finished correctly");
 
 	Ok(())
 }

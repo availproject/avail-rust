@@ -1,11 +1,10 @@
-use avail_rust::{prelude::*, primitives::kate, utils};
+use avail_rust::{prelude::*, primitives::kate};
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	// author_rotate_keys
 	let value = rpc::author::rotate_keys(&sdk.client).await?;
-	let value = utils::deconstruct_session_keys(value)?;
 	dbg!(value);
 	/*	Output
 	SessionKeys {

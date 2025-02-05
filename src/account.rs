@@ -43,7 +43,8 @@ pub async fn nonce_state(client: &Client, address: &str, block_hash: Option<H256
 
 pub async fn nonce_node(client: &Client, address: &str) -> Result<u32, ClientError> {
 	let account = account_id_from_str(address)?;
-	rpc::system::account_next_index(client, account.to_string()).await
+	let nonce = rpc::system::account_next_index(client, account.to_string()).await;
+	nonce.map_err(ClientError::from)
 }
 
 pub async fn nonce(client: &Client, address: &str) -> Result<u32, ClientError> {

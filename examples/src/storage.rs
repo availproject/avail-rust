@@ -1,4 +1,4 @@
-use avail_rust::{account, avail, error::ClientError, AccountId, SDK};
+use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
 	println!("da_app_keys");
@@ -17,6 +17,8 @@ pub async fn run() -> Result<(), ClientError> {
 	system_account().await?;
 	println!("system_account_iter");
 	system_account_iter().await?;
+
+	println!("Storage finished correctly");
 
 	Ok(())
 }

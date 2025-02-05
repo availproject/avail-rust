@@ -8,7 +8,7 @@ pub async fn run() -> Result<(), ClientError> {
 }
 
 mod set_keys {
-	use avail_rust::{prelude::*, transactions::SessionCalls, utils};
+	use avail_rust::{prelude::*, transactions::SessionCalls};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -18,7 +18,6 @@ mod set_keys {
 		let secret_uri = SecretUri::from_str("//Alice//stash")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let keys = rpc::author::rotate_keys(&sdk.client).await?;
-		let keys = utils::deconstruct_session_keys(keys)?;
 
 		let tx = sdk.tx.session.set_keys(keys);
 		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;

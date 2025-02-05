@@ -39,10 +39,20 @@ pub use transaction::{Options, PopulatedOptions, Transaction, TransactionDetails
 
 pub mod prelude {
 	pub use super::{
-		account, avail, avail::runtime_types::bounded_collections::bounded_vec::BoundedVec, avail_core,
-		block::to_ascii, block::DataSubmission, config::*, error::ClientError, hex, kate_recovery, primitives, rpc,
-		subxt, subxt_signer, transaction::WebSocket, AccountId, Block, BlockTransaction, Client, Filter, Keypair,
-		MultiAddress, Options, Perbill, PopulatedOptions, SecretUri, Transaction, TransactionDetails, WaitFor, H256,
-		SDK, U256,
+		account,
+		account::account_id_from_str,
+		avail,
+		avail::runtime_types::bounded_collections::bounded_vec::BoundedVec,
+		avail_core,
+		block::{to_ascii, DataSubmission},
+		config::*,
+		error::ClientError,
+		hex, kate_recovery, primitives, rpc,
+		sdk::ClientMode,
+		subxt, subxt_signer,
+		transaction::watcher::Watcher,
+		utils::new_h256_from_hex,
+		AccountId, Block, BlockTransaction, Client, Filter, Keypair, MultiAddress, Options, Perbill, PopulatedOptions,
+		SecretUri, Transaction, TransactionDetails, WaitFor, H256, SDK, U256,
 	};
 }

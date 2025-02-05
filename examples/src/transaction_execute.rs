@@ -1,6 +1,5 @@
-use avail::data_availability::calls::types::SubmitData;
-use avail::data_availability::events::DataSubmitted;
-use avail_rust::{prelude::*, transaction::utils::watch};
+use avail::data_availability::{calls::types::SubmitData, events::DataSubmitted};
+use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -18,7 +17,9 @@ pub async fn run() -> Result<(), ClientError> {
 	//
 	// It's not necessary to use the builtin watcher. A custom watcher
 	// might yield better results in some cases.
-	let res = watch(&sdk.client, tx_hash, WaitFor::BlockInclusion, Some(3)).await?;
+	let watcher = Watcher::new(sdk.client.clone(), tx_hash);
+	let watcher = watcher.wait_for(WaitFor::BlockInclusion);
+	let res = watcher.run().await?;
 	let res = res.unwrap();
 	assert_eq!(res.is_successful(), Some(true));
 

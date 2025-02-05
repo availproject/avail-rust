@@ -1,4 +1,4 @@
-use avail_rust::{block::to_ascii, prelude::*, utils::new_h256_from_hex};
+use avail_rust::prelude::*;
 
 type SubmitDataCall = avail::data_availability::calls::types::SubmitData;
 type DataSubmittedEvent = avail::data_availability::events::DataSubmitted;

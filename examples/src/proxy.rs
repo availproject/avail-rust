@@ -1,6 +1,9 @@
-use avail::proxy::events::{ProxyAdded, ProxyExecuted, ProxyRemoved, PureCreated};
-use avail::runtime_types::da_control::pallet::Call::create_application_key;
-use avail::runtime_types::pallet_balances::pallet::Call::transfer_keep_alive;
+use avail::{
+	proxy::events::{ProxyAdded, ProxyExecuted, ProxyRemoved, PureCreated},
+	runtime_types::{
+		da_control::pallet::Call::create_application_key, pallet_balances::pallet::Call::transfer_keep_alive,
+	},
+};
 use avail_rust::{
 	avail::runtime_types::da_runtime::{impls::ProxyType, RuntimeCall},
 	prelude::*,

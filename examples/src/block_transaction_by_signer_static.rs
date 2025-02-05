@@ -1,4 +1,4 @@
-use avail_rust::{account::account_id_from_str, block::to_ascii, prelude::*, utils::new_h256_from_hex};
+use avail_rust::prelude::*;
 
 type CreateAppKeyCall = avail::data_availability::calls::types::CreateApplicationKey;
 type AppKeyCreated = avail::data_availability::events::ApplicationKeyCreated;

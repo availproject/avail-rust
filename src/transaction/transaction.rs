@@ -4,70 +4,12 @@ use crate::{
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
 	runtime_api, Client, WaitFor, H256,
 };
-use std::time::Duration;
 use subxt::{
 	blocks::StaticExtrinsic,
 	ext::scale_encode::EncodeAsFields,
 	tx::{DefaultPayload, Payload},
 };
 use subxt_signer::sr25519::Keypair;
-
-pub trait WebSocket {
-	#[allow(async_fn_in_trait)]
-	async fn execute_and_watch_inclusion(
-		&self,
-		account: &Keypair,
-		options: Options,
-	) -> Result<TransactionDetails, ClientError>;
-
-	#[allow(async_fn_in_trait)]
-	async fn execute_and_watch_finalization(
-		&self,
-		account: &Keypair,
-		options: Options,
-	) -> Result<TransactionDetails, ClientError>;
-
-	#[allow(async_fn_in_trait)]
-	async fn execute_and_watch(
-		&self,
-		wait_for: WaitFor,
-		account: &Keypair,
-		options: Options,
-		block_timeout: Option<u32>,
-	) -> Result<TransactionDetails, ClientError>;
-
-	#[allow(async_fn_in_trait)]
-	async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError>;
-}
-
-pub trait HTTP {
-	#[allow(async_fn_in_trait)]
-	async fn execute_and_watch_inclusion(
-		&self,
-		account: &Keypair,
-		options: Options,
-	) -> Result<TransactionDetails, ClientError>;
-
-	#[allow(async_fn_in_trait)]
-	async fn execute_and_watch_finalization(
-		&self,
-		account: &Keypair,
-		options: Options,
-	) -> Result<TransactionDetails, ClientError>;
-
-	#[allow(async_fn_in_trait)]
-	async fn execute_and_watch(
-		&self,
-		wait_for: WaitFor,
-		account: &Keypair,
-		options: Options,
-		block_timeout: Option<u32>,
-		sleep_duration: Option<Duration>,
-	) -> Result<TransactionDetails, ClientError>;
-
-	#[allow(async_fn_in_trait)]
-	async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError>;
-}
 
 #[derive(Debug, Clone)]
 pub struct Transaction<T>
@@ -141,93 +83,30 @@ where
 
 		runtime_api::transaction_payment::query_call_fee_details(&self.client, call, None).await
 	}
-}
 
-impl<T> WebSocket for Transaction<T>
-where
-	T: StaticExtrinsic + EncodeAsFields,
-{
-	async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError> {
+	pub async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError> {
 		utils::sign_and_send(&self.client, account, &self.payload, options).await
 	}
 
-	async fn execute_and_watch_inclusion(
+	pub async fn execute_and_watch_inclusion(
 		&self,
 		account: &Keypair,
 		options: Options,
 	) -> Result<TransactionDetails, ClientError> {
-		WebSocket::execute_and_watch(self, WaitFor::BlockInclusion, account, options, Some(3)).await
+		utils::sign_send_and_watch(&self.client, account, &self.payload, WaitFor::BlockInclusion, options).await
 	}
 
-	async fn execute_and_watch_finalization(
+	pub async fn execute_and_watch_finalization(
 		&self,
 		account: &Keypair,
 		options: Options,
-	) -> Result<TransactionDetails, ClientError> {
-		WebSocket::execute_and_watch(self, WaitFor::BlockFinalization, account, options, Some(5)).await
-	}
-
-	async fn execute_and_watch(
-		&self,
-		wait_for: WaitFor,
-		account: &Keypair,
-		options: Options,
-		block_timeout: Option<u32>,
 	) -> Result<TransactionDetails, ClientError> {
 		utils::sign_send_and_watch(
 			&self.client,
 			account,
 			&self.payload,
-			wait_for,
+			WaitFor::BlockFinalization,
 			options,
-			block_timeout,
-			Some(3),
-		)
-		.await
-	}
-}
-
-impl<T> HTTP for Transaction<T>
-where
-	T: StaticExtrinsic + EncodeAsFields,
-{
-	async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError> {
-		utils::http_sign_and_send(&self.client, account, &self.payload, options).await
-	}
-
-	async fn execute_and_watch_inclusion(
-		&self,
-		account: &Keypair,
-		options: Options,
-	) -> Result<TransactionDetails, ClientError> {
-		HTTP::execute_and_watch(self, WaitFor::BlockInclusion, account, options, Some(2), None).await
-	}
-
-	async fn execute_and_watch_finalization(
-		&self,
-		account: &Keypair,
-		options: Options,
-	) -> Result<TransactionDetails, ClientError> {
-		HTTP::execute_and_watch(self, WaitFor::BlockFinalization, account, options, Some(5), None).await
-	}
-
-	async fn execute_and_watch(
-		&self,
-		wait_for: WaitFor,
-		account: &Keypair,
-		options: Options,
-		block_timeout: Option<u32>,
-		sleep_duration: Option<Duration>,
-	) -> Result<TransactionDetails, ClientError> {
-		utils::http_sign_send_and_watch(
-			&self.client,
-			account,
-			&self.payload,
-			wait_for,
-			options,
-			block_timeout,
-			Some(3),
-			sleep_duration,
 		)
 		.await
 	}
