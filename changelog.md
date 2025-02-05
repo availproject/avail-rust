@@ -35,7 +35,7 @@ Starting from version 0.1.0, `execute_and_watch` has been removed, and the other
 
 The `sign_send_and_watch` function now uses the new `Logger` instance for logging, reducing code complexity. An improved `Watcher` instance is also introduced, capable of handling both HTTP and WS operations simultaneously.
 
-The parameters for `sign_send_and_watch` have been changed. It no longer accepts `retry_count` or `block_timeout` as inputs. The number of retries is fixed at 3, and transactions are resubmitted after scanning 5 blocks. The watcher only quits when `(best_block_number + 5)` is reached.
+The parameters for `sign_send_and_watch` have been changed. It no longer accepts `retry_count` or `block_timeout` as inputs. The number of retries is fixed at 2, and transactions are resubmitted after scanning 5 blocks. The watcher only quits when `(best_block_number + 5)` is reached.
 
 In HTTP mode, the client fetches a new header every 3 seconds to check if a new block has been imported by the node. This interval is not adjustable through transaction execution interfaces.
 
@@ -77,7 +77,7 @@ All field members have appropriate setters, making the watcher fully customizabl
 ## Simplifying Nonce and Mortality
 `Nonce` was its own enum type with four variants: `BestBlock`, `FinalizedBlock`, `BestBlockAndTxPool`, and `Custom(u32)`. `Mortality` was a structure containing `period` and `block_hash` fields.
 
-Starting from version 0.1.0, `Nonce` and `Mortality` structures have been removed. Nonce is now defined as `Option<u32>`, defaulting to `BestBlockAndTxPool`. Mortality is defined as `Option<u64>`, defaulting to 32 blocks. Mortality can be set to any value but will be clipped to a power-of-two value.
+Starting from version 0.1.0, `Nonce` and `Mortality` structures have been removed. Nonce is now defined as `Option<u32>`, defaulting to `BestBlockAndTxPool`. Mortality is defined as `Option<u64>`, defaulting to 32 blocks. Mortality can be set to any value but will be clipped to a power-of-two value. Instead of using best block hash for mortality, it now uses finalized block hash as the former didn't perform as expected.
 
 ## New Transaction Payments API
 The old transaction payment API used `payment.queryFeeDetails` and `payment.queryInfo` RPCs. Unfortunately, using these required `keyring` and `TransactionOptions`.
@@ -158,8 +158,12 @@ pub struct Filter {
 }
 ```
 
+```rust
+let blobs = block.data_submissions(Filter::new().app_id(app_id));
+let txs = block.transactions(Filter::new().tx_index(tx_index));
+```
+
 ## Transaction Execution State
 The old transaction execution state interface was confusing as it returned a `Result` inside an `Option`.
 
 Starting from version 0.1.0, the interface has been streamlined to return `Option<bool>`, where `None` indicates that the execution status couldn't be determined. `Some(true)` indicates success, while `Some(false)` indicates failure.
-
