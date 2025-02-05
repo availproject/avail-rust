@@ -1,10 +1,18 @@
+use std::str::FromStr;
+
 use crate::{
 	avail::{self, system::storage::types::account::Account},
 	error::ClientError,
 	rpc, AccountId, Client,
 };
 use primitive_types::H256;
-use subxt_signer::sr25519::Keypair;
+use subxt_signer::{sr25519::Keypair, SecretUri};
+
+pub fn from_secret_uri(uri: &str) -> Result<Keypair, ClientError> {
+	let secret_uri = SecretUri::from_str(uri)?;
+	let keypair = Keypair::from_uri(&secret_uri)?;
+	Ok(keypair)
+}
 
 pub fn alice() -> Keypair {
 	subxt_signer::sr25519::dev::alice()

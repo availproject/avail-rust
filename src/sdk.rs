@@ -1,5 +1,6 @@
 use crate::{
 	error::ClientError, rpc, transactions::Transactions, ABlock, ABlocksClient, AOnlineClient, AStorageClient,
+	AvailHeader,
 };
 use primitive_types::H256;
 use std::{fmt::Debug, time::Duration};
@@ -157,6 +158,10 @@ impl Client {
 
 	pub async fn block_at(&self, at: H256) -> Result<ABlock, subxt::Error> {
 		self.online_client.blocks().at(at).await
+	}
+
+	pub async fn header_at(&self, at: H256) -> Result<AvailHeader, subxt::Error> {
+		rpc::chain::get_header(self, Some(at)).await
 	}
 
 	pub async fn best_block_hash(&self) -> Result<H256, subxt::Error> {

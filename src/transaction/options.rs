@@ -1,7 +1,6 @@
 use crate::{
-	error::ClientError,
-	rpc::{chain::get_header, system::account_next_index},
-	AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
+	error::ClientError, rpc::system::account_next_index, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client,
+	H256,
 };
 use subxt::config::Header;
 
@@ -114,7 +113,8 @@ impl CheckedMortality {
 	}
 
 	pub async fn from_period(period: u64, client: &Client) -> Result<Self, ClientError> {
-		let header = get_header(client, None).await?;
+		let finalized_hash = client.finalized_block_hash().await?;
+		let header = client.header_at(finalized_hash).await?;
 		let (block_hash, block_number) = (header.hash(), header.number());
 		Ok(Self {
 			period,
