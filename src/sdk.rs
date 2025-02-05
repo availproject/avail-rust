@@ -1,6 +1,6 @@
 use crate::{error::ClientError, rpc, transactions::Transactions, ABlocksClient, AOnlineClient, AStorageClient};
 use primitive_types::H256;
-use std::time::Duration;
+use std::{fmt::Debug, time::Duration};
 use subxt::backend::rpc::{
 	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
 	RpcClient,
@@ -67,6 +67,15 @@ impl SDK {
 		let client = http_api(endpoint).await?;
 
 		Self::new_custom(client).await
+	}
+}
+
+impl Debug for SDK {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let genesis_hash = self.client.online_client.genesis_hash();
+		f.debug_struct("SDK")
+			.field("Genesis Hash", &genesis_hash)
+			.finish_non_exhaustive()
 	}
 }
 

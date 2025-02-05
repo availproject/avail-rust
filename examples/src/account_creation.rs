@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use avail_rust::{account, error::ClientError, subxt::utils::MultiAddress, AccountId, Keypair, SecretUri};
+use avail_rust::{account, error::ClientError, Keypair, MultiAddress, SecretUri};
 
 pub async fn run() -> Result<(), ClientError> {
 	// Use SecretUri and Keypair to create your own account
@@ -37,7 +37,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let _address = acc.public_key().to_address::<u32>();
 
 	// ...or from account id
-	let _address = MultiAddress::<AccountId, u32>::from(account_id);
+	let _address = MultiAddress::from(account_id);
 
 	Ok(())
 }
