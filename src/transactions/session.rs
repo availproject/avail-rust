@@ -8,6 +8,9 @@ pub struct Session {
 }
 
 impl Session {
+	/// Sets the session key(s) of the function caller to `keys`.
+	/// Allows an account to set its session key prior to becoming a validator.
+	/// This doesn't take effect until the next session.
 	pub fn set_keys(&self, keys: SessionKeys) -> Transaction<SetKeysCall> {
 		let payload = avail::tx().session().set_keys(keys, vec![]);
 		Transaction::new(self.client.clone(), payload)
