@@ -1,10 +1,16 @@
 use crate::{
-	avail::runtime_types::frame_system::limits::BlockLength,
+	avail::runtime_types::{
+		avail_core::header::extension::{v3, HeaderExtension},
+		frame_system::limits::BlockLength,
+	},
 	error::ClientError,
 	from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState},
+	kate_recovery::{data::Cell as KateCell, matrix::Position},
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, GDataProof, GMultiProof, GRow, H256,
+	U256,
 };
 use avail_core::data_proof::ProofResponse;
+use codec::Encode;
 use subxt::{
 	backend::{
 		legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
@@ -192,6 +198,11 @@ pub mod state {
 }
 
 pub mod kate {
+	use kate_recovery::matrix::{Dimensions, Partition, Position};
+	use log::{error, info};
+
+	use crate::primitives::kate::{Cells, GProof, GRawScalar};
+
 	use super::*;
 
 	pub async fn block_length(
@@ -233,6 +244,58 @@ pub mod kate {
 		Ok(value)
 	}
 
+	pub async fn query_multi_proof_using_hash(
+		client: &RpcClient,
+		at: Option<H256>,
+		block_matrix_partition: Partition,
+	) -> Result<Vec<GMultiProof>, ClientError> {
+		let header = chain::get_header(client, at).await?;
+
+		let Some((rows, cols, _, _)) = extract_kate(&header.extension) else {
+			info!("Skipping block without header extension");
+			return Ok(vec![]);
+		};
+		let Some(dimensions) = Dimensions::new(rows, cols) else {
+			info!("Skipping block with invalid dimensions {rows}x{cols}",);
+			return Ok(vec![]);
+		};
+
+		if dimensions.cols().get() <= 2 {
+			error!("More than 2 columns are required");
+			return Ok(vec![]);
+		}
+
+		let positions: Vec<Position> = dimensions
+			.iter_extended_partition_positions(&block_matrix_partition)
+			.collect();
+
+		let cells: Cells = positions
+			.iter()
+			.map(|p| Cell {
+				row: p.row,
+				col: p.col as u32,
+			})
+			.collect::<Vec<_>>()
+			.try_into()
+			.map_err(|_| ClientError::Custom("Failed to convert to cells".to_string()))?;
+
+		let proofs: Vec<(Vec<GRawScalar>, GProof)> = query_multi_proof(client, cells.to_vec(), at)
+			.await
+			.map_err(|error| ClientError::Custom(format!("{:?}", error)))?;
+
+		Ok(proofs)
+	}
+
+	pub async fn verify_multi_proof(
+		client: &RpcClient,
+		proof: Vec<GMultiProof>,
+		at: Option<H256>,
+	) -> Result<bool, ClientError> {
+		let params = rpc_params![proof, at];
+		let value = client.request("kate_verifyProof", params).await?;
+		Ok(value)
+	}
+
 	pub async fn query_rows(
 		client: &RpcClient,
 		rows: Vec<u32>,
@@ -241,5 +304,29 @@ pub mod kate {
 		let params = rpc_params![rows, at];
 		let value = client.request("kate_queryRows", params).await?;
 		Ok(value)
+	}
+}
+
+pub(crate) fn extract_kate(extension: &HeaderExtension) -> Option<(u16, u16, H256, Vec<u8>)> {
+	match &extension.option()? {
+		HeaderExtension::V3(v3::HeaderExtension {
+			commitment: kate, ..
+		}) => Some((
+			kate.rows,
+			kate.cols,
+			kate.data_root,
+			kate.commitment.clone(),
+		)),
+	}
+}
+
+pub trait OptionalExtension {
+	fn option(&self) -> Option<&Self>;
+}
+
+impl OptionalExtension for HeaderExtension {
+	fn option(&self) -> Option<&Self> {
+		let HeaderExtension::V3(v3::HeaderExtension { app_lookup, .. }) = self;
+		(app_lookup.size > 0).then_some(self)
 	}
 }
