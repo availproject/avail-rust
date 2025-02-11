@@ -15,7 +15,7 @@ tokio = { version = "1.42.0", default-features = false }
 subxt = { version = "0.38.1", default-features = false, features = ["reconnecting-rpc-client", "jsonrpsee"] }
 subxt-core = { version = "0.38.1", default-features = false  }
 subxt-signer = { version = "0.38.1", default-features = false }
-kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, rev = "53987ca475f531857a2ec2d471f2b1972dadb8fd", features = ["serde"] }
+kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, branch="mmp-integration", features = ["serde"] }
 serde = { version = "1.0.195", features = ["derive", ] }
 serde_json = { version = "1.0.124", features = ["raw_value"] }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = [
@@ -24,10 +24,11 @@ codec = { package = "parity-scale-codec", version = "3", default-features = fals
 	"bit-vec",
 ] }
 scale-info = { version = "2.5.0", features = ["bit-vec"] }
-avail-core = {  git = "https://github.com/availproject/avail-core", rev = "53987ca475f531857a2ec2d471f2b1972dadb8fd", default-features = false, features = ["serde", "runtime", "std"] }
+avail-core = {  git = "https://github.com/availproject/avail-core", default-features = false,branch="mmp-integration", features = ["serde", "runtime", "std"] }
+kate = {  git = "https://github.com/availproject/avail-core", branch="mmp-integration", features = ["std"] }
 hex = { version = "0.4" }
 base58 = { version = "0.2.0" }
-poly-multiproof = { git = "https://github.com/aphoh/poly-multiproof", ref="494468b86ac8e16dca21d465d921990c578eaad3", default-features = false, features = ['ark-bls12-381']}
+poly-multiproof = { git = "https://github.com/aphoh/poly-multiproof", ref="494468b86ac8e16dca21d465d921990c578eaad3", default-features = false, features = ['ark-bls12-381', "blst"]}
 sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10", default-features = false }
 bounded-collections = { version = "0.2.0", features = ["serde"] }
 primitive-types = { version = "0.13.1", default-features = false }

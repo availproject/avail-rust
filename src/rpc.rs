@@ -5,15 +5,14 @@ use crate::{
 	},
 	error::ClientError,
 	from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState},
-	kate_recovery::{data::Cell as KateCell, matrix::Position},
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, GDataProof, GMultiProof, GRow, H256,
-	U256,
 };
 use avail_core::data_proof::ProofResponse;
-use poly_multiproof::method1::M1NoPrecomp;
+use kate::{ArkScalar, DomainPoints};
+use poly_multiproof::method1::{M1NoPrecomp, Proof};
 use poly_multiproof::msm::blst::BlstMSMEngine;
-
-use codec::Encode;
+use poly_multiproof::traits::PolyMultiProofNoPrecomp;
+use poly_multiproof::Commitment;
 use subxt::{
 	backend::{
 		legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
@@ -201,8 +200,9 @@ pub mod state {
 }
 
 pub mod kate {
+	use ::kate::gridgen::AsBytes;
 	use kate_recovery::matrix::{Dimensions, Partition, Position};
-	use log::{error, info};
+	use log::error;
 	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
 	use subxt_signer::bip39::rand::thread_rng;
 
@@ -253,17 +253,15 @@ pub mod kate {
 		client: &RpcClient,
 		at: Option<H256>,
 		block_matrix_partition: Partition,
-	) -> Result<(Vec<GMultiProof>, u16, u16, Vec<u8>), ClientError> {
+	) -> Result<(Vec<GMultiProof>, Vec<Cell>, u16, u16, Vec<u8>), ClientError> {
 		let header = chain::get_header(client, at).await?;
 
 		let Some((rows, cols, _, commitment)) = extract_kate(&header.extension) else {
-			info!("Skipping block without header extension");
 			return Err(ClientError::Custom(
 				"Skipping block without header extension".to_string(),
 			));
 		};
 		let Some(dimensions) = Dimensions::new(rows, cols) else {
-			info!("Skipping block with invalid dimensions {rows}x{cols}",);
 			return Err(ClientError::Custom(
 				"Skipping block with invalid dimensions".to_string(),
 			));
@@ -271,7 +269,7 @@ pub mod kate {
 
 		if dimensions.cols().get() <= 2 {
 			error!("More than 2 columns are required");
-			return Ok((vec![], rows, cols, commitment));
+			return Ok((vec![], vec![], rows, cols, commitment));
 		}
 
 		let positions: Vec<Position> = dimensions
@@ -292,42 +290,44 @@ pub mod kate {
 			.await
 			.map_err(|error| ClientError::Custom(format!("{:?}", error)))?;
 
-		Ok((proofs, rows, cols, commitment))
+		Ok((proofs, cells.to_vec(), rows, cols, commitment))
 	}
 
-	pub async fn verify_multi_proof_using_hash(
-		client: &RpcClient,
-		at: Option<H256>,
-		proof: Vec<GMultiProof>,
-		rows: u16,
-		cols: u16,
-		commitment: Vec<u8>,
-	) -> Result<bool, ClientError> {
-		let params = rpc_params![at, rows, cols, commitment, proof];
-		let value = client
-			.request("kate_verifyMultiProofUsingHash", params)
-			.await?;
+	// pub async fn verify_multi_proof_using_hash(
+	// 	client: &RpcClient,
+	// 	at: Option<H256>,
+	// 	proof: Vec<GMultiProof>,
+	// 	rows: u16,
+	// 	cols: u16,
+	// 	commitment: Vec<u8>,
+	// ) -> Result<bool, ClientError> {
+	// 	let commitments = Commitment::from_bytes(&commitment.try_into().unwrap()).unwrap();
+	// 	let params = rpc_params![at, rows, cols, commitment, proof];
+	// 	let value = client
+	// 		.request("kate_verifyMultiProofUsingHash", params)
+	// 		.await?;
 
-		type E = Bls12_381;
-		type M = BlstMSMEngine;
-		let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
+	// 	type E = Bls12_381;
+	// 	type M = BlstMSMEngine;
+	// 	let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
 
-		let evals_flat = proof
-			.chunks_exact(32)
-			.map(|e| kate::gridgen::ArkScalar::from_bytes(e.try_into().unwrap()))
-			.collect::<Result<Vec<_>, _>>()
-			.unwrap();
-		let evals_grid = evals_flat.chunks_exact(cols as usize).collect::<Vec<_>>();
-		let points = kate::gridgen::domain_points(256)?;
-		let verified = pmp.verify(
-			&mut Transcript::new(b"avail-mp"),
-			commitment,
-			&points[0..cols as usize],
-			&evals_grid,
-			&proof,
-		)?;
-		Ok(verified)
-	}
+	// 	let evals_flat = proof
+	// 		.chunks_exact(32)
+	// 		.map(|e| ArkScalar::from_bytes(e.try_into().unwrap()))
+	// 		.collect::<Result<Vec<_>, _>>()
+	// 		.unwrap();
+	// 	let evals_grid = evals_flat.chunks_exact(cols as usize).collect::<Vec<_>>();
+	// 	let points = DomainPoints::new(256)?;
+	// 	let proofs = Proof::from_bytes(&proof.try_into().unwrap()).unwrap();
+	// 	let verified = pmp.verify(
+	// 		&mut Transcript::new(b"avail-mp"),
+	// 		&[commitments],
+	// 		&points[0..cols as usize],
+	// 		&evals_grid,
+	// 		&[proofs],
+	// 	)?;
+	// 	Ok(verified)
+	// }
 
 	pub async fn verify_multi_proof(
 		client: &RpcClient,
