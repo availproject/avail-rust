@@ -324,8 +324,8 @@ pub mod kate {
 
 		for (eval, proof) in proof.iter() {
 			let evals_flat = eval
-				.chunks_exact(32)
-				.map(|e| ArkScalar::from_bytes(&u256_to_bytes(e)))
+				.into_iter()
+				.map(|e| ArkScalar::from_bytes(&e.to_little_endian()))
 				.collect::<Result<Vec<_>, _>>()
 				.unwrap();
 			let evals_grid = evals_flat.chunks_exact(cols as usize).collect::<Vec<_>>();
@@ -392,12 +392,4 @@ impl OptionalExtension for HeaderExtension {
 		let HeaderExtension::V3(v3::HeaderExtension { app_lookup, .. }) = self;
 		(app_lookup.size > 0).then_some(self)
 	}
-}
-
-pub fn u256_to_bytes(value: &[U256]) -> [u8; 32] {
-	let mut bytes = [0u8; 32];
-	for i in 0..4 {
-		bytes[i * 8..(i + 1) * 8].copy_from_slice(&value[0].0[i].to_be_bytes());
-	}
-	bytes
 }
