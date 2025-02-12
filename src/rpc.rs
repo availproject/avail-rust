@@ -13,6 +13,7 @@ use poly_multiproof::method1::{M1NoPrecomp, Proof};
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::PolyMultiProofNoPrecomp;
 use poly_multiproof::Commitment;
+use primitive_types::U256;
 use subxt::{
 	backend::{
 		legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
@@ -200,23 +201,18 @@ pub mod state {
 }
 
 pub mod kate {
-	use std::num::NonZeroU16;
-
 	use ::kate::{
-		gridgen::{domain_points, multiproof_block, AsBytes, Commitment, EvaluationGrid},
-		testnet::multiproof_params,
-		ArkScalar, Seed,
+		gridgen::{domain_points, multiproof_block, AsBytes, Commitment},
+		ArkScalar,
 	};
-	use avail_core::{AppExtrinsic, BlockLengthColumns, BlockLengthRows};
+
 	use kate_recovery::matrix::{Dimensions, Partition, Position};
 	use log::error;
 	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
+
 	use subxt_signer::bip39::rand::thread_rng;
 
-	use crate::{
-		avail_core::AppId,
-		primitives::kate::{Cells, GProof, GRawScalar},
-	};
+	use crate::primitives::kate::{Cells, GProof, GRawScalar};
 
 	use super::*;
 
@@ -304,8 +300,6 @@ pub mod kate {
 	}
 
 	pub async fn verify_multi_proof_using_hash(
-		client: &RpcClient,
-		at: Option<H256>,
 		proof: Vec<GMultiProof>,
 		rows: u16,
 		cols: u16,
@@ -314,8 +308,6 @@ pub mod kate {
 		type E = Bls12_381;
 		type M = BlstMSMEngine;
 		let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
-
-		let pp = multiproof_params::<E, M>(256, 256);
 
 		let target_dims = Dimensions::new_from(16, 64).unwrap();
 		let dimensions = Dimensions::new(rows, cols).unwrap();
@@ -333,7 +325,7 @@ pub mod kate {
 		for (eval, proof) in proof.iter() {
 			let evals_flat = eval
 				.chunks_exact(32)
-				.map(|e| ArkScalar::from_bytes(e))
+				.map(|e| ArkScalar::from_bytes(&u256_to_bytes(e)))
 				.collect::<Result<Vec<_>, _>>()
 				.unwrap();
 			let evals_grid = evals_flat.chunks_exact(cols as usize).collect::<Vec<_>>();
@@ -400,4 +392,12 @@ impl OptionalExtension for HeaderExtension {
 		let HeaderExtension::V3(v3::HeaderExtension { app_lookup, .. }) = self;
 		(app_lookup.size > 0).then_some(self)
 	}
+}
+
+pub fn u256_to_bytes(value: &[U256]) -> [u8; 32] {
+	let mut bytes = [0u8; 32];
+	for i in 0..4 {
+		bytes[i * 8..(i + 1) * 8].copy_from_slice(&value[0].0[i].to_be_bytes());
+	}
+	bytes
 }
