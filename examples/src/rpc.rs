@@ -306,3 +306,14 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+
+pub async fn new_rpc() -> Result<(), ClientError> {
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
+
+	// author_rotate_keys
+	let tx_hash = new_h256_from_hex("0x92cdb77314063a01930b093516d19a453399710cc8ae635ff5ab6cf76b26f218").unwrap();
+	let value = rpc::system::transaction_state(&sdk.client, tx_hash, false).await?;
+	dbg!(value);
+
+	Ok(())
+}

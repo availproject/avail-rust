@@ -182,6 +182,14 @@ impl Client {
 		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
 		Ok(header.number)
 	}
+
+	pub async fn transaction_state(
+		&self,
+		tx_hash: H256,
+		finalized: bool,
+	) -> Result<Vec<rpc::TransactionState>, subxt::Error> {
+		rpc::system::transaction_state(self, tx_hash, finalized).await
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
