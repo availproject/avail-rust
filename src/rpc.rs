@@ -8,7 +8,7 @@ use crate::{
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, GDataProof, GMultiProof, GRow, H256,
 };
 use avail_core::data_proof::ProofResponse;
-use kate::{ArkScalar, DomainPoints};
+
 use poly_multiproof::method1::{M1NoPrecomp, Proof};
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::PolyMultiProofNoPrecomp;
@@ -200,13 +200,23 @@ pub mod state {
 }
 
 pub mod kate {
-	use ::kate::gridgen::AsBytes;
+	use std::num::NonZeroU16;
+
+	use ::kate::{
+		gridgen::{domain_points, multiproof_block, AsBytes, Commitment, EvaluationGrid},
+		testnet::multiproof_params,
+		ArkScalar, Seed,
+	};
+	use avail_core::{AppExtrinsic, BlockLengthColumns, BlockLengthRows};
 	use kate_recovery::matrix::{Dimensions, Partition, Position};
 	use log::error;
 	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
 	use subxt_signer::bip39::rand::thread_rng;
 
-	use crate::primitives::kate::{Cells, GProof, GRawScalar};
+	use crate::{
+		avail_core::AppId,
+		primitives::kate::{Cells, GProof, GRawScalar},
+	};
 
 	use super::*;
 
@@ -293,41 +303,59 @@ pub mod kate {
 		Ok((proofs, cells.to_vec(), rows, cols, commitment))
 	}
 
-	// pub async fn verify_multi_proof_using_hash(
-	// 	client: &RpcClient,
-	// 	at: Option<H256>,
-	// 	proof: Vec<GMultiProof>,
-	// 	rows: u16,
-	// 	cols: u16,
-	// 	commitment: Vec<u8>,
-	// ) -> Result<bool, ClientError> {
-	// 	let commitments = Commitment::from_bytes(&commitment.try_into().unwrap()).unwrap();
-	// 	let params = rpc_params![at, rows, cols, commitment, proof];
-	// 	let value = client
-	// 		.request("kate_verifyMultiProofUsingHash", params)
-	// 		.await?;
+	pub async fn verify_multi_proof_using_hash(
+		client: &RpcClient,
+		at: Option<H256>,
+		proof: Vec<GMultiProof>,
+		rows: u16,
+		cols: u16,
+		commitments: Vec<u8>,
+	) -> Result<bool, ClientError> {
+		type E = Bls12_381;
+		type M = BlstMSMEngine;
+		let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
 
-	// 	type E = Bls12_381;
-	// 	type M = BlstMSMEngine;
-	// 	let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
+		let pp = multiproof_params::<E, M>(256, 256);
 
-	// 	let evals_flat = proof
-	// 		.chunks_exact(32)
-	// 		.map(|e| ArkScalar::from_bytes(e.try_into().unwrap()))
-	// 		.collect::<Result<Vec<_>, _>>()
-	// 		.unwrap();
-	// 	let evals_grid = evals_flat.chunks_exact(cols as usize).collect::<Vec<_>>();
-	// 	let points = DomainPoints::new(256)?;
-	// 	let proofs = Proof::from_bytes(&proof.try_into().unwrap()).unwrap();
-	// 	let verified = pmp.verify(
-	// 		&mut Transcript::new(b"avail-mp"),
-	// 		&[commitments],
-	// 		&points[0..cols as usize],
-	// 		&evals_grid,
-	// 		&[proofs],
-	// 	)?;
-	// 	Ok(verified)
-	// }
+		let target_dims = Dimensions::new_from(16, 64).unwrap();
+		let dimensions = Dimensions::new(rows, cols).unwrap();
+		let mp_block = multiproof_block(0, 0, dimensions, target_dims).unwrap();
+		let commits = commitments
+			.chunks_exact(48)
+			.skip(cols as usize)
+			.take(rows as usize)
+			.map(|c| Commitment::from_bytes(c.try_into().unwrap()))
+			.collect::<Result<Vec<_>, _>>()
+			.unwrap();
+
+		let block_commits = &commits[mp_block.start_x..mp_block.end_x];
+
+		for (eval, proof) in proof.iter() {
+			let evals_flat = eval
+				.chunks_exact(32)
+				.map(|e| ArkScalar::from_bytes(e))
+				.collect::<Result<Vec<_>, _>>()
+				.unwrap();
+			let evals_grid = evals_flat.chunks_exact(cols as usize).collect::<Vec<_>>();
+			let points = domain_points(256)
+				.map_err(|_| ClientError::Custom("Failed to generate domain points".to_string()))?;
+			let proofs = Proof::from_bytes(&proof.0).unwrap();
+			let verified = pmp
+				.verify(
+					&mut Transcript::new(b"avail-mp"),
+					&block_commits,
+					&points[mp_block.start_x..mp_block.end_x],
+					&evals_grid,
+					&proofs,
+				)
+				.map_err(|_| ClientError::Custom("Failed to verify proof".to_string()))?;
+			if !verified {
+				return Ok(false);
+			}
+		}
+
+		Ok(true)
+	}
 
 	pub async fn verify_multi_proof(
 		client: &RpcClient,
