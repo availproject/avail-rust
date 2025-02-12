@@ -1,6 +1,9 @@
 use crate::{
-	avail::runtime_types::da_runtime::primitives::SessionKeys, AExtrinsicEvents, AOnlineClient,
-	AppUncheckedExtrinsic,
+	avail::runtime_types::{
+		avail_core::header::extension::{v3, HeaderExtension},
+		da_runtime::primitives::SessionKeys,
+	},
+	AExtrinsicEvents, AOnlineClient, AppUncheckedExtrinsic,
 };
 use primitive_types::H256;
 use subxt::{backend::legacy::rpc_methods::Bytes, error::DispatchError};
@@ -118,5 +121,29 @@ pub fn hex_string_to_h256(mut s: &str) -> Result<H256, String> {
 			let msg = std::format!("Failed to covert decoded string to H256. Input {:?}", e);
 			Err(msg)
 		},
+	}
+}
+
+pub(crate) fn extract_kate(extension: &HeaderExtension) -> Option<(u16, u16, H256, Vec<u8>)> {
+	match &extension.option()? {
+		HeaderExtension::V3(v3::HeaderExtension {
+			commitment: kate, ..
+		}) => Some((
+			kate.rows,
+			kate.cols,
+			kate.data_root,
+			kate.commitment.clone(),
+		)),
+	}
+}
+
+pub trait OptionalExtension {
+	fn option(&self) -> Option<&Self>;
+}
+
+impl OptionalExtension for HeaderExtension {
+	fn option(&self) -> Option<&Self> {
+		let HeaderExtension::V3(v3::HeaderExtension { app_lookup, .. }) = self;
+		(app_lookup.size > 0).then_some(self)
 	}
 }

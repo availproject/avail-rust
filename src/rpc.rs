@@ -12,8 +12,7 @@ use avail_core::data_proof::ProofResponse;
 use poly_multiproof::method1::{M1NoPrecomp, Proof};
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::PolyMultiProofNoPrecomp;
-use poly_multiproof::Commitment;
-use primitive_types::U256;
+
 use subxt::{
 	backend::{
 		legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
@@ -212,7 +211,10 @@ pub mod kate {
 
 	use subxt_signer::bip39::rand::thread_rng;
 
-	use crate::primitives::kate::{Cells, GProof, GRawScalar};
+	use crate::{
+		primitives::kate::{Cells, GProof, GRawScalar},
+		utils::extract_kate,
+	};
 
 	use super::*;
 
@@ -367,29 +369,5 @@ pub mod kate {
 		let params = rpc_params![rows, at];
 		let value = client.request("kate_queryRows", params).await?;
 		Ok(value)
-	}
-}
-
-pub(crate) fn extract_kate(extension: &HeaderExtension) -> Option<(u16, u16, H256, Vec<u8>)> {
-	match &extension.option()? {
-		HeaderExtension::V3(v3::HeaderExtension {
-			commitment: kate, ..
-		}) => Some((
-			kate.rows,
-			kate.cols,
-			kate.data_root,
-			kate.commitment.clone(),
-		)),
-	}
-}
-
-pub trait OptionalExtension {
-	fn option(&self) -> Option<&Self>;
-}
-
-impl OptionalExtension for HeaderExtension {
-	fn option(&self) -> Option<&Self> {
-		let HeaderExtension::V3(v3::HeaderExtension { app_lookup, .. }) = self;
-		(app_lookup.size > 0).then_some(self)
 	}
 }
