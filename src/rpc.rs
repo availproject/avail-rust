@@ -2,13 +2,11 @@ use crate::{
 	avail::runtime_types::{
 		avail_core::header::extension::{v3, HeaderExtension},
 		frame_system::limits::BlockLength,
-	},
-	error::ClientError,
-	from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState},
-	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, GDataProof, GMultiProof, GRow, H256,
+	}, error::ClientError, from_substrate::{FeeDetails, NodeRole, PeerInfo, RuntimeDispatchInfo, SyncState}, primitives::kate::Cells, utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, GDataProof, GMultiProof, GRow, H256
 };
 use avail_core::data_proof::ProofResponse;
 
+use kate_recovery::matrix::Position;
 use poly_multiproof::method1::{M1NoPrecomp, Proof};
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::PolyMultiProofNoPrecomp;
@@ -209,7 +207,8 @@ pub mod kate {
 	use log::error;
 	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
 
-	use subxt_signer::bip39::rand::thread_rng;
+	use subxt::ext::futures::future::join_all;
+use subxt_signer::bip39::rand::thread_rng;
 
 	use crate::{
 		primitives::kate::{Cells, GProof, GRawScalar},
@@ -261,7 +260,7 @@ pub mod kate {
 		client: &RpcClient,
 		at: Option<H256>,
 		block_matrix_partition: Partition,
-	) -> Result<(Vec<GMultiProof>, Vec<Cell>, u16, u16, Vec<u8>), ClientError> {
+	) -> Result<(Vec<GMultiProof>, u16, u16, Vec<u8>), ClientError> {
 		let header = chain::get_header(client, at).await?;
 
 		let Some((rows, cols, _, commitment)) = extract_kate(&header.extension) else {
@@ -277,28 +276,31 @@ pub mod kate {
 
 		if dimensions.cols().get() <= 2 {
 			error!("More than 2 columns are required");
-			return Ok((vec![], vec![], rows, cols, commitment));
+			return Ok((vec![], rows, cols, commitment));
 		}
 
 		let positions: Vec<Position> = dimensions
 			.iter_extended_partition_positions(&block_matrix_partition)
 			.collect();
 
-		let cells: Cells = positions
-			.iter()
-			.map(|p| Cell {
-				row: p.row,
-				col: p.col as u32,
-			})
-			.collect::<Vec<_>>()
-			.try_into()
-			.map_err(|_| ClientError::Custom("Failed to convert to cells".to_string()))?;
-
+		let create_cell = |positions: &&[Position]| create_cell((*positions).to_vec());
+		let rpc_batches = positions.chunks(30).collect::<Vec<_>>();
+		let parallel_batches = rpc_batches
+			.chunks(8)
+			.map(|batch| join_all(batch.iter().map(create_cell)));
+	
+		let mut cells = vec![];
+		for batch in parallel_batches {
+			for (i, result) in batch.await.into_iter().enumerate() {
+				cells.append(&mut result.unwrap().to_vec());
+			}
+		}
+		
 		let proofs: Vec<(Vec<GRawScalar>, GProof)> = query_multi_proof(client, cells.to_vec(), at)
 			.await
 			.map_err(|error| ClientError::Custom(format!("{:?}", error)))?;
 
-		Ok((proofs, cells.to_vec(), rows, cols, commitment))
+		Ok((proofs, rows, cols, commitment))
 	}
 
 	pub async fn verify_multi_proof_using_hash(
@@ -369,5 +371,19 @@ pub mod kate {
 		let params = rpc_params![rows, at];
 		let value = client.request("kate_queryRows", params).await?;
 		Ok(value)
+	}
+
+	async fn create_cell(positions: Vec<Position>) -> Result<Cells, ClientError>{
+		let cells: Cells = positions
+			.iter()
+			.map(|p| Cell {
+				row: p.row,
+				col: p.col as u32,
+			})
+			.collect::<Vec<_>>()
+			.try_into()
+			.map_err(|_| ClientError::Custom("Failed to convert to cells".to_string()))?;
+	
+		Ok(cells)
 	}
 }
