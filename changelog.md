@@ -1,3 +1,6 @@
+# v0.1.1 Release
+- Added missing Vector struct to SDK.tx
+
 # v0.1.0 Full Release
 Release v0.1.0 (compared to v0.1.0-rc6) introduces numerous breaking changes and fixes. Here is the list:
 
