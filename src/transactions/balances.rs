@@ -6,7 +6,7 @@ pub type TransferKeepAliveCall = avail::balances::calls::types::TransferKeepAliv
 
 #[derive(Clone)]
 pub struct Balances {
-	pub(crate) client: Client,
+	pub client: Client,
 }
 
 impl Balances {

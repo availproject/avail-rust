@@ -27,6 +27,7 @@ pub struct Transactions {
 	pub session: session::Session,
 	pub nomination_pools: nom_pools::NominationPools,
 	pub proxy: proxy::Proxy,
+	pub vector: vector::Vector,
 }
 
 impl Transactions {
@@ -38,6 +39,7 @@ impl Transactions {
 			session: session::Session { client: client.clone() },
 			nomination_pools: nom_pools::NominationPools { client: client.clone() },
 			proxy: proxy::Proxy { client: client.clone() },
+			vector: vector::Vector { client: client.clone() },
 		}
 	}
 }

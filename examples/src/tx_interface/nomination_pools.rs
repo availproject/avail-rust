@@ -1,4 +1,4 @@
-use avail_rust::error::ClientError;
+/* use avail_rust::error::ClientError;
 
 use super::wait_for_new_era;
 
@@ -461,3 +461,4 @@ async fn new_era() -> Result<(), ClientError> {
 
 	wait_for_new_era(Some(target_era)).await
 }
+ */

@@ -35,7 +35,7 @@ pub struct NewCommission {
 
 #[derive(Clone)]
 pub struct NominationPools {
-	pub(crate) client: Client,
+	pub client: Client,
 }
 
 impl NominationPools {

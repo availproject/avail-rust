@@ -1,4 +1,4 @@
-use avail_rust::error::ClientError;
+/* use avail_rust::error::ClientError;
 
 use super::wait_for_new_era;
 
@@ -251,3 +251,4 @@ mod payout_stakers {
 		Ok(())
 	}
 }
+ */

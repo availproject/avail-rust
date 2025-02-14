@@ -4,7 +4,7 @@ pub type SetKeysCall = avail::session::calls::types::SetKeys;
 
 #[derive(Clone)]
 pub struct Session {
-	pub(crate) client: Client,
+	pub client: Client,
 }
 
 impl Session {

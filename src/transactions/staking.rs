@@ -16,7 +16,7 @@ pub type RewardDestination = avail::runtime_types::pallet_staking::RewardDestina
 
 #[derive(Clone)]
 pub struct Staking {
-	pub(crate) client: Client,
+	pub client: Client,
 }
 
 pub struct Commission(u8);

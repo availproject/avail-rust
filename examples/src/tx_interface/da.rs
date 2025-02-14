@@ -1,4 +1,4 @@
-use avail_rust::error::ClientError;
+/* use avail_rust::error::ClientError;
 
 pub async fn run() -> Result<(), ClientError> {
 	println!("da_submit_data");
@@ -62,3 +62,4 @@ mod create_application_key {
 		Ok(())
 	}
 }
+ */

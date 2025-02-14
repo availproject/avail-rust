@@ -1,4 +1,4 @@
-use avail_rust::error::ClientError;
+/* use avail_rust::error::ClientError;
 
 pub async fn run() -> Result<(), ClientError> {
 	println!("session_set_key");
@@ -27,3 +27,4 @@ mod set_keys {
 		Ok(())
 	}
 }
+ */

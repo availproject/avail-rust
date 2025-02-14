@@ -22,7 +22,7 @@ pub type ProxyAnnouncedCall = avail::proxy::calls::types::ProxyAnnounced;
 
 #[derive(Clone)]
 pub struct Proxy {
-	pub(crate) client: Client,
+	pub client: Client,
 }
 
 impl Proxy {

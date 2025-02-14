@@ -15,7 +15,7 @@ use avail::{
 
 #[derive(Clone)]
 pub struct Vector {
-	client: Client,
+	pub client: Client,
 }
 
 impl Vector {

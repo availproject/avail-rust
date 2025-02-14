@@ -8,7 +8,7 @@ pub type CreateApplicationKeyCall = avail::data_availability::calls::types::Crea
 
 #[derive(Clone)]
 pub struct DataAvailability {
-	pub(crate) client: Client,
+	pub client: Client,
 }
 
 impl DataAvailability {
