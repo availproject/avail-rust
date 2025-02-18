@@ -1,6 +1,5 @@
-use crate::{avail, AOnlineClient, Transaction};
+use crate::{avail, Client, Transaction};
 use primitive_types::H256;
-use subxt::backend::rpc::RpcClient;
 
 pub type ExecuteCall = avail::vector::calls::types::Execute;
 pub type FulfillCallCall = avail::vector::calls::types::FulfillCall;
@@ -16,18 +15,10 @@ use avail::{
 
 #[derive(Clone)]
 pub struct Vector {
-	online_client: AOnlineClient,
-	rpc_client: RpcClient,
+	pub client: Client,
 }
 
 impl Vector {
-	pub fn new(online_client: AOnlineClient, rpc_client: RpcClient) -> Self {
-		Self {
-			online_client,
-			rpc_client,
-		}
-	}
-
 	pub fn execute(
 		&self,
 		slot: u64,
@@ -35,11 +26,10 @@ impl Vector {
 		account_proof: AccountProof,
 		storage_proof: StorageProof,
 	) -> Transaction<ExecuteCall> {
-		let payload =
-			avail::tx()
-				.vector()
-				.execute(slot, addr_message, account_proof, storage_proof);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		let payload = avail::tx()
+			.vector()
+			.execute(slot, addr_message, account_proof, storage_proof);
+		Transaction::new(self.client.clone(), payload)
 	}
 
 	pub fn fulfill_call(
@@ -57,16 +47,11 @@ impl Vector {
 		let payload = avail::tx()
 			.vector()
 			.fulfill_call(function_id, input, output, proof, slot);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 
-	pub fn send_message(
-		&self,
-		message: Message,
-		to: H256,
-		domain: u32,
-	) -> Transaction<SendMessageCall> {
+	pub fn send_message(&self, message: Message, to: H256, domain: u32) -> Transaction<SendMessageCall> {
 		let payload = avail::tx().vector().send_message(message, to, domain);
-		Transaction::new(self.online_client.clone(), self.rpc_client.clone(), payload)
+		Transaction::new(self.client.clone(), payload)
 	}
 }

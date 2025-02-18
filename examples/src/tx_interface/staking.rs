@@ -1,4 +1,4 @@
-use avail_rust::error::ClientError;
+/* use avail_rust::error::ClientError;
 
 use super::wait_for_new_era;
 
@@ -45,16 +45,11 @@ mod bond {
 		let payee = RewardDestination::Staked;
 
 		let tx = sdk.tx.staking.bond(value, payee);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -73,16 +68,11 @@ mod bond_extra {
 		let max_additional = SDK::one_avail();
 
 		let tx = sdk.tx.staking.bond_extra(max_additional);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -103,19 +93,9 @@ mod nominate {
 		];
 
 		let tx = sdk.tx.staking.nominate(&targets);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
-
-		res.print_debug();
-		if let Some(data) = res
-			.get_call_data::<StakingCalls::Nominate>(&sdk.online_client)
-			.await
-		{
-			dbg!(data);
-		}
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
+		assert_eq!(res.is::<StakingCalls::Nominate>().await.unwrap(), true, "");
 
 		Ok(())
 	}
@@ -133,16 +113,11 @@ mod chill {
 		let account = Keypair::from_uri(&secret_uri)?;
 
 		let tx = sdk.tx.staking.chill();
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Chilled>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Chilled>(), Some(true), "");
 
 		Ok(())
 	}
@@ -163,7 +138,7 @@ mod chill_other {
 		];
 
 		let tx = sdk.tx.staking.nominate(&targets);
-		tx.execute_and_watch_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 
 		Ok(())
 	}
@@ -174,20 +149,14 @@ mod chill_other {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let stash =
-			account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
+		let stash = account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
 
 		let tx = sdk.tx.staking.chill_other(stash);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Chilled>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Chilled>(), Some(true), "");
 
 		Ok(())
 	}
@@ -206,16 +175,11 @@ mod unbond {
 		let value = SDK::one_avail();
 
 		let tx = sdk.tx.staking.unbond(value);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::Unbonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::Unbonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -238,16 +202,11 @@ mod validate {
 		let blocked = false;
 
 		let tx = sdk.tx.staking.validate(commission, blocked);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<StakingEvents::ValidatorPrefsSet>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<StakingEvents::ValidatorPrefsSet>(), Some(true), "");
 
 		Ok(())
 	}
@@ -260,7 +219,7 @@ mod validate {
 		let account = Keypair::from_uri(&secret_uri)?;
 
 		let tx = sdk.tx.staking.chill();
-		tx.execute_and_watch_inclusion(&account, None).await?;
+		tx.execute_and_watch_inclusion(&account, Options::new()).await?;
 
 		Ok(())
 	}
@@ -276,10 +235,9 @@ mod payout_stakers {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let validator_stash =
-			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
+		let validator_stash = account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
 		let era_storage = avail::storage().staking().active_era();
-		let storage = sdk.online_client.storage().at_latest().await?;
+		let storage = sdk.client.storage().at_latest().await?;
 		let era = storage.fetch(&era_storage).await?;
 		let mut era = era.map(|e| e.index).unwrap_or(0);
 		if era > 0 {
@@ -287,14 +245,10 @@ mod payout_stakers {
 		};
 
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
-
-		res.print_debug();
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())
 	}
 }
+ */

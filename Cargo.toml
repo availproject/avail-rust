@@ -3,7 +3,7 @@
 [package]
 name = "avail-rust"
 edition = "2021"
-version = "0.1.0"
+version = "0.1.1"
 license = "ISC"
 
 [lib]
@@ -12,10 +12,10 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 derive_more = { version = "1", default-features = false, features = ["from", "constructor"] }
 tokio = { version = "1.42.0", default-features = false }
-subxt = { version = "0.38.1", default-features = false, features = ["reconnecting-rpc-client", "jsonrpsee"] }
-subxt-core = { version = "0.38.1", default-features = false  }
-subxt-signer = { version = "0.38.1", default-features = false }
-kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, branch="mmp-integration", features = ["serde"] }
+subxt = { version = "0.39.0", default-features = false, features = ["reconnecting-rpc-client", "jsonrpsee"] }
+subxt-core = { version = "0.39.0", default-features = false  }
+subxt-signer = { version = "0.39.0", default-features = false }
+kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, tag = "core-node-6", features = ["serde"] }
 serde = { version = "1.0.195", features = ["derive", ] }
 serde_json = { version = "1.0.124", features = ["raw_value"] }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = [

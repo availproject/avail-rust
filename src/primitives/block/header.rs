@@ -84,11 +84,7 @@ where
 
 impl From<Digest> for ApiDigest {
 	fn from(d: Digest) -> Self {
-		let logs = d
-			.logs
-			.into_iter()
-			.map(|xt_item| xt_item.into())
-			.collect::<Vec<_>>();
+		let logs = d.logs.into_iter().map(|xt_item| xt_item.into()).collect::<Vec<_>>();
 		Self { logs }
 	}
 }

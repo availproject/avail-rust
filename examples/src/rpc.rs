@@ -1,11 +1,10 @@
-use avail_rust::{prelude::*, primitives::kate, utils};
+use avail_rust::{prelude::*, primitives::kate};
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	// author_rotate_keys
-	let value = rpc::author::rotate_keys(&sdk.rpc_client).await?;
-	let value = utils::deconstruct_session_keys(value)?;
+	let value = rpc::author::rotate_keys(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 	SessionKeys {
@@ -17,30 +16,25 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// author_submit_extrinsic
-	let account = SDK::alice()?;
+	let account = account::alice();
 	let account_id = account.public_key().to_account_id();
-	let call = avail::tx()
-		.data_availability()
-		.submit_data(BoundedVec(vec![0, 1, 2]));
-	let params = Options::new()
-		.build(&sdk.online_client, &sdk.rpc_client, &account_id)
-		.await?
-		.build()
-		.await?;
+	let call = avail::tx().data_availability().submit_data(BoundedVec(vec![0, 1, 2]));
+	let params = Options::new().build(&sdk.client, &account_id).await?.build().await?;
 	let signed_call = sdk
+		.client
 		.online_client
 		.tx()
 		.create_signed(&call, &account, params)
 		.await?;
 	let extrinsic = signed_call.encoded();
-	let value = rpc::author::submit_extrinsic(&sdk.rpc_client, extrinsic).await?;
+	let value = rpc::author::submit_extrinsic(&sdk.client, extrinsic).await?;
 	dbg!(value);
 	/*	Output
 		"0x56edc7516bb403f0d812f0f91dea5e36b46bbb31f7b69e78469652f74882377d"
 	*/
 
 	// chain_get_block
-	let value = rpc::chain::get_block(&sdk.rpc_client, None).await?;
+	let value = rpc::chain::get_block(&sdk.client, None).await?;
 	dbg!(value);
 	/*	Output
 	BlockDetails {
@@ -73,21 +67,21 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// chain_get_block_hash
-	let value = rpc::chain::get_block_hash(&sdk.rpc_client, None).await?;
+	let value = rpc::chain::get_block_hash(&sdk.client, None).await?;
 	dbg!(value);
 	/*	Output
 		0xc4e0a9a2ef80ddc1d70c9946d8a6f86ca4b15053b39ba56709222f01ddc64561
 	*/
 
 	// chain_get_finalized_head
-	let value = rpc::chain::get_finalized_head(&sdk.rpc_client).await?;
+	let value = rpc::chain::get_finalized_head(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 		0x2c896c9faae4e111f1fbeb955be5e999a328846969b59a7a7c64eadc4701122a
 	*/
 
 	// chain_get_header
-	let value = rpc::chain::get_header(&sdk.rpc_client, None).await?;
+	let value = rpc::chain::get_header(&sdk.client, None).await?;
 	dbg!(value);
 	/*	Output
 	AvailHeader {
@@ -115,28 +109,28 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// system_account_next_index
 	let account = String::from("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
-	let value = rpc::system::account_next_index(&sdk.rpc_client, account).await?;
+	let value = rpc::system::account_next_index(&sdk.client, account).await?;
 	dbg!(value);
 	/*	Output
 		2
 	*/
 
 	// system_chain
-	let value = rpc::system::chain(&sdk.rpc_client).await?;
+	let value = rpc::system::chain(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 		"Avail Development Network"
 	*/
 
 	// system_chain_type
-	let value = rpc::system::chain_type(&sdk.rpc_client).await?;
+	let value = rpc::system::chain_type(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 		"Development"
 	*/
 
 	// system_health
-	let value = rpc::system::health(&sdk.rpc_client).await?;
+	let value = rpc::system::health(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 	SystemHealth {
@@ -147,7 +141,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_local_listen_addresses
-	let value = rpc::system::local_listen_addresses(&sdk.rpc_client).await?;
+	let value = rpc::system::local_listen_addresses(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 	value = [
@@ -159,21 +153,21 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_local_peer_id
-	let value = rpc::system::local_peer_id(&sdk.rpc_client).await?;
+	let value = rpc::system::local_peer_id(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 		"12D3KooWRajsCfp1NR15iN7PcwcFAG3LB7iGDKUBosHkevNRQLYs"
 	*/
 
 	// system_name
-	let value = rpc::system::name(&sdk.rpc_client).await?;
+	let value = rpc::system::name(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 		"Avail Node"
 	*/
 
 	// system_node_roles
-	let value = rpc::system::node_roles(&sdk.rpc_client).await?;
+	let value = rpc::system::node_roles(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 	[
@@ -182,14 +176,14 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_peers
-	let value = rpc::system::peers(&sdk.rpc_client).await?;
+	let value = rpc::system::peers(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 		[]
 	*/
 
 	// system_properties
-	let value = rpc::system::properties(&sdk.rpc_client).await?;
+	let value = rpc::system::properties(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 	{
@@ -200,7 +194,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_system_sync_state
-	let value = rpc::system::sync_state(&sdk.rpc_client).await?;
+	let value = rpc::system::sync_state(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 	SyncState {
@@ -211,58 +205,13 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_version
-	let value = rpc::system::version(&sdk.rpc_client).await?;
+	let value = rpc::system::version(&sdk.client).await?;
 	dbg!(value);
 	/*	Output
 		"2.2.1-55da578d34b"
 	*/
-
-	// TransactionPaymentApi_query_info
-	let payload = avail::tx()
-		.data_availability()
-		.submit_data(BoundedVec(vec![1]));
-	let keypair = SDK::alice()?;
-	let account = keypair.public_key().to_account_id();
-
-	let options = Options::new().app_id(1);
-	let populated_options = options
-		.build(&sdk.online_client, &sdk.rpc_client, &account)
-		.await?;
-
-	let params = populated_options.build().await?;
-	let tx = sdk
-		.online_client
-		.tx()
-		.create_signed(&payload, &keypair, params)
-		.await?;
-	let partial_fee_estimate = tx.partial_fee_estimate().await?;
-	dbg!(partial_fee_estimate);
-	/*	Output
-		124684322202721409
-	*/
-
-	// TransactionPaymentApi_query_fee_details
-	let len_bytes: [u8; 4] = (tx.encoded().len() as u32).to_le_bytes();
-	let encoded_with_len = [tx.encoded(), &len_bytes[..]].concat();
-
-	let fee_details =
-		rpc::payment::query_fee_details(&sdk.rpc_client, encoded_with_len.into(), None).await?;
-	dbg!(fee_details);
-	/*	Output
-	FeeDetails {
-		inclusion_fee: Some(
-			InclusionFee {
-				base_fee: 124414000000000000,
-				len_fee: 11400000000000,
-				adjusted_weight_fee: 259321813738397,
-			},
-		),
-		tip: 0,
-	}
-	*/
-
 	// state_get_runtime_version
-	let value = rpc::state::get_runtime_version(&sdk.rpc_client, None).await?;
+	let value = rpc::state::get_runtime_version(&sdk.client, None).await?;
 	dbg!(value);
 	/*	Output
 	RuntimeVersion {
@@ -280,7 +229,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// kate_block_length
-	let value = rpc::kate::block_length(&sdk.rpc_client, None).await?;
+	let value = rpc::kate::block_length(&sdk.client, None).await?;
 	dbg!(value);
 	/*	Output
 	BlockLength {
@@ -302,9 +251,11 @@ pub async fn run() -> Result<(), ClientError> {
 	// kate_query_data_proof
 	let data = String::from("My Data").into_bytes();
 	let tx = sdk.tx.data_availability.submit_data(data);
-	let result = tx.execute_and_watch_finalization(&keypair, None).await?;
+	let result = tx
+		.execute_and_watch_finalization(&account::alice(), Options::new().app_id(1))
+		.await?;
 	let (tx_index, block_hash) = (result.tx_index, Some(result.block_hash));
-	let value = rpc::kate::query_data_proof(&sdk.rpc_client, tx_index, block_hash).await?;
+	let value = rpc::kate::query_data_proof(&sdk.client, tx_index, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	ProofResponse {
@@ -325,7 +276,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// kate_query_proof
 	let cells = vec![kate::Cell::from((0u32, 0u32))];
-	let value = rpc::kate::query_proof(&sdk.rpc_client, cells, block_hash).await?;
+	let value = rpc::kate::query_proof(&sdk.client, cells, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	[
@@ -340,7 +291,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// kate_query_rows
 	let rows = vec![0u32];
-	let value = rpc::kate::query_rows(&sdk.rpc_client, rows, block_hash).await?;
+	let value = rpc::kate::query_rows(&sdk.client, rows, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	[

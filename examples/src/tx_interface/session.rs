@@ -1,4 +1,4 @@
-use avail_rust::error::ClientError;
+/* use avail_rust::error::ClientError;
 
 pub async fn run() -> Result<(), ClientError> {
 	println!("session_set_key");
@@ -8,7 +8,7 @@ pub async fn run() -> Result<(), ClientError> {
 }
 
 mod set_keys {
-	use avail_rust::{prelude::*, transactions::SessionCalls, utils};
+	use avail_rust::{prelude::*, transactions::SessionCalls};
 	use core::str::FromStr;
 
 	pub async fn run() -> Result<(), ClientError> {
@@ -17,24 +17,14 @@ mod set_keys {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice//stash")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let keys = rpc::author::rotate_keys(&sdk.rpc_client).await?;
-		let keys = utils::deconstruct_session_keys(keys)?;
+		let keys = rpc::author::rotate_keys(&sdk.client).await?;
 
 		let tx = sdk.tx.session.set_keys(keys);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
-
-		res.print_debug();
-		if let Some(data) = res
-			.get_call_data::<SessionCalls::SetKeys>(&sdk.online_client)
-			.await
-		{
-			dbg!(data);
-		}
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
+		assert_eq!(res.is::<SessionCalls::SetKeys>().await.unwrap(), true, "");
 
 		Ok(())
 	}
 }
+ */

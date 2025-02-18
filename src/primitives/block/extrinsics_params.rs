@@ -7,8 +7,7 @@ use scale_info::PortableRegistry;
 use subxt_core::{
 	client::ClientState,
 	config::{
-		signed_extensions, Config, ExtrinsicParams, ExtrinsicParamsEncoder, Header, RefineParams,
-		SignedExtension,
+		signed_extensions, Config, ExtrinsicParams, ExtrinsicParamsEncoder, Header, RefineParams, SignedExtension,
 	},
 	error::ExtrinsicParamsError,
 	utils::Era,
@@ -120,12 +119,7 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 	///
 	/// Prefer to use [`DefaultExtrinsicParamsBuilder::mortal()`], which ensures that the block hash
 	/// and number align.
-	pub fn mortal_unchecked(
-		mut self,
-		from_block_number: u64,
-		from_block_hash: T::Hash,
-		for_n_blocks: u64,
-	) -> Self {
+	pub fn mortal_unchecked(mut self, from_block_number: u64, from_block_hash: T::Hash, for_n_blocks: u64) -> Self {
 		self.mortality = Some(Mortality {
 			checkpoint_hash: from_block_hash,
 			checkpoint_number: from_block_number,
@@ -152,8 +146,7 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 			signed_extensions::CheckMortalityParams::immortal()
 		};
 
-		let charge_transaction_params =
-			signed_extensions::ChargeTransactionPaymentParams::tip(self.tip);
+		let charge_transaction_params = signed_extensions::ChargeTransactionPaymentParams::tip(self.tip);
 
 		let check_nonce_params = signed_extensions::CheckNonceParams(self.nonce);
 

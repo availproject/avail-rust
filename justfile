@@ -20,7 +20,7 @@ lint-fix:
     cargo clippy --fix
 doc:
     cargo doc --open
-examples:
+test:
     cd ./examples && RUST_LOG=info cargo run
 podman:
     podman run -it --rm --network host docker.io/availj/avail:v2.2.5.1 --dev

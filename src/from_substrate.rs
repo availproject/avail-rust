@@ -1,5 +1,6 @@
 use crate::{BlockHash, BlockNumber};
-use serde::{Deserialize, Deserializer};
+use codec::Decode;
+use serde::Deserialize;
 
 /// Network Peer information
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -37,15 +38,13 @@ pub struct SyncState {
 }
 
 /// The base fee and adjusted weight and length fees constitute the _inclusion fee_.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct InclusionFee {
 	/// This is the minimum amount a user pays for a transaction. It is declared
 	/// as a base _weight_ in the runtime and converted to a fee using `WeightToFee`.
-	#[serde(deserialize_with = "number_from_hex")]
 	pub base_fee: u128,
 	/// The length fee, the amount paid for the encoded length (in bytes) of the transaction.
-	#[serde(deserialize_with = "number_from_hex")]
 	pub len_fee: u128,
 	///
 	/// - `targeted_fee_adjustment`: This is a multiplier that can tune the final fee based on the
@@ -54,7 +53,6 @@ pub struct InclusionFee {
 	///    accounts for the execution time of a transaction.
 	///
 	/// adjusted_weight_fee = targeted_fee_adjustment * weight_fee
-	#[serde(deserialize_with = "number_from_hex")]
 	pub adjusted_weight_fee: u128,
 }
 
@@ -75,13 +73,13 @@ impl InclusionFee {
 ///   - (Optional) `inclusion_fee`: Only the `Pays::Yes` transaction can have the inclusion fee.
 ///   - `tip`: If included in the transaction, the tip will be added on top. Only signed
 ///     transactions can have a tip.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct FeeDetails {
 	/// The minimum fee for a transaction to be included in a block.
 	pub inclusion_fee: Option<InclusionFee>,
 	// Do not serialize and deserialize `tip` as we actually can not pass any tip to the RPC.
-	#[serde(skip)]
+	#[codec(skip)]
 	pub tip: u128,
 }
 
@@ -100,31 +98,17 @@ impl FeeDetails {
 	}
 }
 
-fn number_from_hex<'de, D>(deserializer: D) -> Result<u128, D::Error>
-where
-	D: Deserializer<'de>,
-{
-	let buf = String::deserialize(deserializer)?;
-	let without_prefix = buf.trim_start_matches("0x");
-	Ok(u128::from_str_radix(without_prefix, 16).unwrap())
-}
-
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeDispatchInfo {
 	/// Weight of this dispatch.
 	pub weight: Weight,
 	/// Class of this dispatch.
 	pub class: DispatchClass,
-	/// The inclusion fee of this dispatch.
-	///
-	/// This does not include a tip or anything else that
-	/// depends on the signature (i.e. depends on a `SignedExtension`).
-	#[serde(deserialize_with = "number_from_hex_2")]
 	pub partial_fee: u128,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Decode)]
 #[serde(rename_all = "camelCase")]
 pub enum DispatchClass {
 	/// A normal dispatch.
@@ -147,18 +131,12 @@ pub enum DispatchClass {
 	Mandatory,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Decode)]
 pub struct Weight {
 	/// The weight of computational time used based on some reference hardware.
-	ref_time: u64,
+	#[codec(compact)]
+	pub ref_time: u64,
 	/// The weight of storage space used by proof of validity.
-	proof_size: u64,
-}
-
-fn number_from_hex_2<'de, D>(deserializer: D) -> Result<u128, D::Error>
-where
-	D: Deserializer<'de>,
-{
-	let buf = String::deserialize(deserializer)?;
-	Ok(buf.parse::<u128>().unwrap())
+	#[codec(compact)]
+	pub proof_size: u64,
 }

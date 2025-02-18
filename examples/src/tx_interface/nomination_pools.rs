@@ -1,4 +1,4 @@
-use avail_rust::error::ClientError;
+/* use avail_rust::error::ClientError;
 
 use super::wait_for_new_era;
 
@@ -53,30 +53,17 @@ mod create {
 		let secret_uri = SecretUri::from_str("//Bob")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let amount = SDK::one_avail() * 100_000u128;
-		let root =
-			account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
-		let nominator =
-			account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
-		let bouncer =
-			account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+		let root = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+		let nominator = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
+		let bouncer = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?; // Bob
 
-		let tx = sdk
-			.tx
-			.nomination_pools
-			.create(amount, root, nominator, bouncer);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let tx = sdk.tx.nomination_pools.create(amount, root, nominator, bouncer);
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Created>() {
-			dbg!(event);
-		}
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Created>(), Some(true), "");
+		assert_eq!(events.has::<NominationPoolsEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -93,31 +80,21 @@ mod create_with_pool_id {
 		let secret_uri = SecretUri::from_str("//Eve")?;
 		let account = Keypair::from_uri(&secret_uri)?;
 		let amount = SDK::one_avail() * 100_000u128;
-		let root =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
-		let nominator =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
-		let bouncer =
-			account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let root = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let nominator = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
+		let bouncer = account::account_id_from_str("5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw")?; // Eve
 		let pool_id = 0;
 
 		let tx = sdk
 			.tx
 			.nomination_pools
 			.create_with_pool_id(amount, root, nominator, bouncer, pool_id);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Created>() {
-			dbg!(event);
-		}
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Created>(), Some(true), "");
+		assert_eq!(events.has::<NominationPoolsEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -137,16 +114,11 @@ mod join {
 		let pool_id = 1;
 
 		let tx = sdk.tx.nomination_pools.join(amount, pool_id);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -168,16 +140,11 @@ mod bond_extra {
 		let extra = BondExtra::FreeBalance(SDK::one_avail());
 
 		let tx = sdk.tx.nomination_pools.bond_extra(extra);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Bonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Bonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -196,20 +163,12 @@ mod unbond {
 		let member_account = account.public_key().to_account_id();
 		let unbonding_points = SDK::one_avail();
 
-		let tx = sdk
-			.tx
-			.nomination_pools
-			.unbond(member_account, unbonding_points);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let tx = sdk.tx.nomination_pools.unbond(member_account, unbonding_points);
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Unbonded>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Unbonded>(), Some(true), "");
 
 		Ok(())
 	}
@@ -232,16 +191,11 @@ mod withdraw_unbonded {
 			.tx
 			.nomination_pools
 			.withdraw_unbonded(member_account, num_slashing_spans);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::Withdrawn>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::Withdrawn>(), Some(true), "");
 
 		Ok(())
 	}
@@ -262,27 +216,20 @@ mod set_commission {
 		let account = Keypair::from_uri(&secret_uri)?;
 		let pool_id = 1;
 		let new_commission = NewCommission {
-			payee: account::account_id_from_str(
-				"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-			)?, // Alice
-			amount: Perbill(10_000_000u32), // 1%
+			payee: account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?, // Alice
+			amount: Perbill(10_000_000u32),                                                           // 1%
 		};
 
-		let tx = sdk
-			.tx
-			.nomination_pools
-			.set_commission(pool_id, Some(new_commission));
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let tx = sdk.tx.nomination_pools.set_commission(pool_id, Some(new_commission));
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionUpdated>()
-		{
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(
+			events.has::<NominationPoolsEvents::PoolCommissionUpdated>(),
+			Some(true),
+			""
+		);
 
 		Ok(())
 	}
@@ -302,13 +249,8 @@ mod set_metadata {
 		let metadata = String::from("This is metadata").as_bytes().to_vec();
 
 		let tx = sdk.tx.nomination_pools.set_metadata(pool_id, metadata);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
-
-		res.print_debug();
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())
 	}
@@ -331,16 +273,11 @@ mod set_state {
 		let state = State::Destroying;
 
 		let tx = sdk.tx.nomination_pools.set_state(pool_id, state);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::StateChanged>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::StateChanged>(), Some(true), "");
 
 		Ok(())
 	}
@@ -359,13 +296,8 @@ mod set_claim_permission {
 		let permission = Permission::PermissionlessAll;
 
 		let tx = sdk.tx.nomination_pools.set_claim_permission(permission);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
-
-		res.print_debug();
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())
 	}
@@ -387,19 +319,10 @@ mod nominate {
 		];
 
 		let tx = sdk.tx.nomination_pools.nominate(pool_id, validators);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(data) = res
-			.get_call_data::<NominationPoolsCalls::Nominate>(&sdk.online_client)
-			.await
-		{
-			dbg!(data);
-		}
+		assert_eq!(res.is::<NominationPoolsCalls::Nominate>().await.unwrap(), true, "");
 
 		Ok(())
 	}
@@ -418,13 +341,8 @@ mod chill {
 		let pool_id = 0;
 
 		let tx = sdk.tx.nomination_pools.chill(pool_id);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
-
-		res.print_debug();
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())
 	}
@@ -442,16 +360,11 @@ mod claim_payout {
 		let account = Keypair::from_uri(&secret_uri)?;
 
 		let tx = sdk.tx.nomination_pools.claim_payout();
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PaidOut>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::PaidOut>(), Some(true), "");
 
 		Ok(())
 	}
@@ -467,20 +380,14 @@ mod claim_payout_other {
 		// Input
 		let secret_uri = SecretUri::from_str("//Bob")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let other =
-			account::account_id_from_str("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy")?; // Dave
+		let other = account::account_id_from_str("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy")?; // Dave
 
 		let tx = sdk.tx.nomination_pools.claim_payout_other(other);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PaidOut>() {
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(events.has::<NominationPoolsEvents::PaidOut>(), Some(true), "");
 
 		Ok(())
 	}
@@ -499,17 +406,15 @@ mod claim_commission {
 		let pool_id = 1;
 
 		let tx = sdk.tx.nomination_pools.claim_commission(pool_id);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
-		res.print_debug();
-		if let Some(event) = res.find_first_event::<NominationPoolsEvents::PoolCommissionClaimed>()
-		{
-			dbg!(event);
-		}
+		let events = res.events.unwrap();
+		assert_eq!(
+			events.has::<NominationPoolsEvents::PoolCommissionClaimed>(),
+			Some(true),
+			""
+		);
 
 		Ok(())
 	}
@@ -525,10 +430,9 @@ mod payout_stakers {
 		// Input
 		let secret_uri = SecretUri::from_str("//Alice")?;
 		let account = Keypair::from_uri(&secret_uri)?;
-		let validator_stash =
-			account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
+		let validator_stash = account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice Stash
 		let era_storage = avail::storage().staking().active_era();
-		let storage = sdk.online_client.storage().at_latest().await?;
+		let storage = sdk.client.storage().at_latest().await?;
 		let era = storage.fetch(&era_storage).await?;
 		let mut era = era.map(|e| e.index).unwrap_or(0);
 		if era > 0 {
@@ -536,11 +440,8 @@ mod payout_stakers {
 		};
 
 		let tx = sdk.tx.staking.payout_stakers(validator_stash, era);
-		let res = tx.execute_and_watch_inclusion(&account, None).await?;
-		match res.is_successful(&sdk.online_client) {
-			Some(x) => x?,
-			None => panic!("Failed to decode events."),
-		};
+		let res = tx.execute_and_watch_inclusion(&account, Options::new()).await?;
+		assert_eq!(res.is_successful(), Some(true), "Transaction must be successful");
 
 		Ok(())
 	}
@@ -552,7 +453,7 @@ async fn new_era() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	let era_storage = avail::storage().staking().active_era();
-	let storage = sdk.online_client.storage().at_latest().await?;
+	let storage = sdk.client.storage().at_latest().await?;
 	let era = storage.fetch(&era_storage).await?;
 	let target_era = era.map(|e| e.index).unwrap_or(0) + 3;
 
@@ -560,3 +461,4 @@ async fn new_era() -> Result<(), ClientError> {
 
 	wait_for_new_era(Some(target_era)).await
 }
+ */

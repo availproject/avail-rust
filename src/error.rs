@@ -11,6 +11,7 @@ pub enum ClientError {
 	RpcError(RpcError),
 	SerdeJson(serde_json::Error),
 	Subxt(subxt::Error),
+	SubxtCore(subxt_core::Error),
 	SubxtSigner(SecretUriError),
 	Sr25519(sr25519::Error),
 }
@@ -23,6 +24,7 @@ impl ClientError {
 			ClientError::RpcError(e) => e.to_string(),
 			ClientError::SerdeJson(e) => e.to_string(),
 			ClientError::Subxt(e) => e.to_string(),
+			ClientError::SubxtCore(e) => e.to_string(),
 			ClientError::SubxtSigner(e) => e.to_string(),
 			ClientError::Sr25519(e) => e.to_string(),
 		}
@@ -44,6 +46,12 @@ impl From<String> for ClientError {
 impl From<subxt::Error> for ClientError {
 	fn from(value: subxt::Error) -> Self {
 		Self::Subxt(value)
+	}
+}
+
+impl From<subxt_core::Error> for ClientError {
+	fn from(value: subxt_core::Error) -> Self {
+		Self::SubxtCore(value)
 	}
 }
 
