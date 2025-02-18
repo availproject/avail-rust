@@ -1001,37 +1001,6 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 [[package]]
 name = "avail-core"
 version = "0.6.2"
-source = "git+https://github.com/availproject/avail-core?tag=core-node-6#cfceb72adff58967de2f04b5b0827c716fa721e1"
-dependencies = [
- "binary-merkle-tree 13.0.0",
- "blake2b_simd",
- "bounded-collections",
- "derive_more 0.99.19",
- "ethabi-decode 2.0.0",
- "frame-support 28.0.0",
- "hash-db",
- "hash256-std-hasher",
- "hex",
- "log",
- "parity-scale-codec",
- "primitive-types 0.12.2",
- "scale-info",
- "serde",
- "sha2 0.10.8",
- "sha3",
- "sp-arithmetic 23.0.0",
- "sp-runtime 31.0.1",
- "sp-runtime-interface 24.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-10)",
- "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-10)",
- "sp-trie 29.0.0",
- "static_assertions",
- "thiserror-no-std",
- "tiny-keccak",
-]
-
-[[package]]
-name = "avail-core"
-version = "0.6.2"
 source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#b4391e0c27a7ccf9dd06513b8638e3d2095c6608"
 dependencies = [
  "binary-merkle-tree 13.0.0",
@@ -1067,7 +1036,7 @@ dependencies = [
 name = "avail-rust"
 version = "0.1.1"
 dependencies = [
- "avail-core 0.6.2 (git+https://github.com/availproject/avail-core?branch=mmp-integration)",
+ "avail-core",
  "base58",
  "bounded-collections",
  "derive_more 1.0.0",
@@ -1075,7 +1044,7 @@ dependencies = [
  "hex",
  "jsonrpsee",
  "kate",
- "kate-recovery 0.10.0 (git+https://github.com/availproject/avail-core?tag=core-node-6)",
+ "kate-recovery",
  "log",
  "parity-scale-codec",
  "poly-multiproof",
@@ -4888,13 +4857,13 @@ name = "kate"
 version = "0.9.2"
 source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#b4391e0c27a7ccf9dd06513b8638e3d2095c6608"
 dependencies = [
- "avail-core 0.6.2 (git+https://github.com/availproject/avail-core?branch=mmp-integration)",
+ "avail-core",
  "derive_more 0.99.19",
  "dusk-bytes",
  "dusk-plonk",
  "hex",
  "hex-literal 0.3.4",
- "kate-recovery 0.10.0 (git+https://github.com/availproject/avail-core?branch=mmp-integration)",
+ "kate-recovery",
  "log",
  "nalgebra 0.32.6",
  "once_cell",
@@ -4913,29 +4882,9 @@ dependencies = [
 [[package]]
 name = "kate-recovery"
 version = "0.10.0"
-source = "git+https://github.com/availproject/avail-core?tag=core-node-6#cfceb72adff58967de2f04b5b0827c716fa721e1"
-dependencies = [
- "avail-core 0.6.2 (git+https://github.com/availproject/avail-core?tag=core-node-6)",
- "derive_more 0.99.19",
- "dusk-bytes",
- "dusk-plonk",
- "once_cell",
- "parity-scale-codec",
- "rand",
- "rand_chacha",
- "serde",
- "sp-arithmetic 23.0.0",
- "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-10)",
- "static_assertions",
- "thiserror-no-std",
-]
-
-[[package]]
-name = "kate-recovery"
-version = "0.10.0"
 source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#b4391e0c27a7ccf9dd06513b8638e3d2095c6608"
 dependencies = [
- "avail-core 0.6.2 (git+https://github.com/availproject/avail-core?branch=mmp-integration)",
+ "avail-core",
  "derive_more 0.99.19",
  "dusk-bytes",
  "dusk-plonk",

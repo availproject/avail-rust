@@ -3,9 +3,9 @@ use crate::{
 	from_substrate::{NodeRole, PeerInfo, SyncState},
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
 };
+use crate::primitives::kate::GMultiProof;
 use avail_core::data_proof::ProofResponse;
-
-use kate_recovery::matrix::Position;
+use crate::prelude::ClientError;
 use poly_multiproof::method1::{M1NoPrecomp, Proof};
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::PolyMultiProofNoPrecomp;
@@ -168,7 +168,7 @@ pub mod kate {
 	use log::error;
 	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
 
-	use subxt::ext::futures::future::join_all;
+	use subxt::{backend::rpc::RpcClient, ext::futures::future::join_all};
 use subxt_signer::bip39::rand::thread_rng;
 
 	use crate::{
@@ -215,7 +215,7 @@ use subxt_signer::bip39::rand::thread_rng;
 	}
 
 	pub async fn query_multi_proof_using_hash(
-		client: &RpcClient,
+		client: &Client,
 		at: Option<H256>,
 		block_matrix_partition: Partition,
 	) -> Result<(Vec<GMultiProof>, u16, u16, Vec<u8>), ClientError> {
@@ -249,12 +249,12 @@ use subxt_signer::bip39::rand::thread_rng;
 	
 		let mut cells = vec![];
 		for batch in parallel_batches {
-			for (i, result) in batch.await.into_iter().enumerate() {
+			for (_, result) in batch.await.into_iter().enumerate() {
 				cells.append(&mut result.unwrap().to_vec());
 			}
 		}
 		
-		let proofs: Vec<(Vec<GRawScalar>, GProof)> = query_multi_proof(client, cells.to_vec(), at)
+		let proofs: Vec<(Vec<GRawScalar>, GProof)> = query_multi_proof(&client.rpc_client, cells.to_vec(), at)
 			.await
 			.map_err(|error| ClientError::Custom(format!("{:?}", error)))?;
 
@@ -327,7 +327,7 @@ use subxt_signer::bip39::rand::thread_rng;
 		at: Option<H256>,
 	) -> Result<Vec<GRow>, ClientError> {
 		let params = rpc_params![rows, at];
-		let value = client.rpc_client.request("kate_queryRows", params).await?;
+		let value = client.request("kate_queryRows", params).await?;
 		Ok(value)
 	}
 
