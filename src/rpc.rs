@@ -304,7 +304,7 @@ pub mod kate {
 					&evals_grid,
 					&proofs,
 				)
-				.map_err(|_| ClientError::Custom("Failed to verify proof".to_string()))?;
+				.map_err(|e| ClientError::Custom(format!("Failed to verify proof {:?}", e)))?;
 			if !verified {
 				return Ok(false);
 			}
