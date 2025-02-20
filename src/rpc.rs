@@ -1,11 +1,11 @@
+use crate::prelude::ClientError;
+use crate::primitives::kate::GMultiProof;
 use crate::{
 	avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength},
 	from_substrate::{NodeRole, PeerInfo, SyncState},
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
 };
-use crate::primitives::kate::GMultiProof;
 use avail_core::data_proof::ProofResponse;
-use crate::prelude::ClientError;
 use poly_multiproof::method1::{M1NoPrecomp, Proof};
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::PolyMultiProofNoPrecomp;
@@ -160,7 +160,7 @@ pub mod state {
 
 pub mod kate {
 	use ::kate::{
-		gridgen::{domain_points, multiproof_block, AsBytes, Commitment},
+		gridgen::{domain_points, multiproof_block, multiproof_dims, AsBytes, Commitment},
 		ArkScalar,
 	};
 
@@ -169,7 +169,7 @@ pub mod kate {
 	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
 
 	use subxt::{backend::rpc::RpcClient, ext::futures::future::join_all};
-use subxt_signer::bip39::rand::thread_rng;
+	use subxt_signer::bip39::rand::thread_rng;
 
 	use crate::{
 		primitives::kate::{Cells, GProof, GRawScalar},
@@ -226,17 +226,19 @@ use subxt_signer::bip39::rand::thread_rng;
 				"Skipping block without header extension".to_string(),
 			));
 		};
-		let Some(dimensions) = Dimensions::new(rows, cols) else {
+		let Some(dimensions_raw) = Dimensions::new(rows, cols) else {
 			return Err(ClientError::Custom(
 				"Skipping block with invalid dimensions".to_string(),
 			));
 		};
 
-		if dimensions.cols().get() <= 2 {
+		if dimensions_raw.cols().get() <= 2 {
 			error!("More than 2 columns are required");
 			return Ok((vec![], rows, cols, commitment));
 		}
 
+		let target_dims = Dimensions::new_from(16, 64).unwrap();
+		let dimensions = multiproof_dims(dimensions_raw, target_dims).unwrap();
 		let positions: Vec<Position> = dimensions
 			.iter_extended_partition_positions(&block_matrix_partition)
 			.collect();
@@ -246,14 +248,14 @@ use subxt_signer::bip39::rand::thread_rng;
 		let parallel_batches = rpc_batches
 			.chunks(8)
 			.map(|batch| join_all(batch.iter().map(create_cell)));
-	
+
 		let mut cells = vec![];
 		for batch in parallel_batches {
 			for (_, result) in batch.await.into_iter().enumerate() {
 				cells.append(&mut result.unwrap().to_vec());
 			}
 		}
-		
+
 		let proofs: Vec<(Vec<GRawScalar>, GProof)> = query_multi_proof(&client.rpc_client, cells.to_vec(), at)
 			.await
 			.map_err(|error| ClientError::Custom(format!("{:?}", error)))?;
@@ -291,8 +293,8 @@ use subxt_signer::bip39::rand::thread_rng;
 				.collect::<Result<Vec<_>, _>>()
 				.unwrap();
 			let evals_grid = evals_flat.chunks_exact(cols as usize).collect::<Vec<_>>();
-			let points = domain_points(256)
-				.map_err(|_| ClientError::Custom("Failed to generate domain points".to_string()))?;
+			let points =
+				domain_points(256).map_err(|_| ClientError::Custom("Failed to generate domain points".to_string()))?;
 			let proofs = Proof::from_bytes(&proof.0).unwrap();
 			let verified = pmp
 				.verify(
@@ -321,17 +323,13 @@ use subxt_signer::bip39::rand::thread_rng;
 		Ok(value)
 	}
 
-	pub async fn query_rows(
-		client: &RpcClient,
-		rows: Vec<u32>,
-		at: Option<H256>,
-	) -> Result<Vec<GRow>, ClientError> {
+	pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, ClientError> {
 		let params = rpc_params![rows, at];
 		let value = client.request("kate_queryRows", params).await?;
 		Ok(value)
 	}
 
-	async fn create_cell(positions: Vec<Position>) -> Result<Cells, ClientError>{
+	async fn create_cell(positions: Vec<Position>) -> Result<Cells, ClientError> {
 		let cells: Cells = positions
 			.iter()
 			.map(|p| Cell {
@@ -341,7 +339,7 @@ use subxt_signer::bip39::rand::thread_rng;
 			.collect::<Vec<_>>()
 			.try_into()
 			.map_err(|_| ClientError::Custom("Failed to convert to cells".to_string()))?;
-	
+
 		Ok(cells)
 	}
 }
