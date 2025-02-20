@@ -289,7 +289,7 @@ pub mod kate {
 		for (eval, proof) in proof.iter() {
 			let evals_flat = eval
 				.into_iter()
-				.map(|e| ArkScalar::from_bytes(&e.to_little_endian()))
+				.map(|e| ArkScalar::from_bytes(&e.to_big_endian()))
 				.collect::<Result<Vec<_>, _>>()
 				.unwrap();
 			let evals_grid = evals_flat.chunks_exact(cols as usize).collect::<Vec<_>>();
