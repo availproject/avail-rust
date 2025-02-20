@@ -274,7 +274,7 @@ pub mod kate {
 		let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
 
 		let target_dims = Dimensions::new_from(16, 64).unwrap();
-		let dimensions = Dimensions::new(rows, cols).unwrap();
+		let dimensions = multiproof_dims(Dimensions::new(rows, cols).unwrap(), target_dims).unwrap();
 		let mp_block = multiproof_block(0, 0, dimensions, target_dims).unwrap();
 		let commits = commitments
 			.chunks_exact(48)
