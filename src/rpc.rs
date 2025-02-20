@@ -278,8 +278,8 @@ pub mod kate {
 		let mp_block = multiproof_block(0, 0, dimensions, target_dims).unwrap();
 		let commits = commitments
 			.chunks_exact(48)
-			.skip(cols as usize)
-			.take(rows as usize)
+			.skip(mp_block.start_y)
+			.take(mp_block.end_y - mp_block.start_y)
 			.map(|c| Commitment::from_bytes(c.try_into().unwrap()))
 			.collect::<Result<Vec<_>, _>>()
 			.unwrap();
