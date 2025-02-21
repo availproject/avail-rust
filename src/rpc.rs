@@ -205,20 +205,10 @@ pub mod kate {
 	}
 
 	pub async fn query_multi_proof(
-		client: &RpcClient,
-		cells: Vec<Cell>,
-		at: Option<H256>,
-	) -> Result<Vec<GMultiProof>, ClientError> {
-		let params = rpc_params![cells, at];
-		let value = client.request("kate_queryMultiProof", params).await?;
-		Ok(value)
-	}
-
-	pub async fn query_multi_proof_using_hash(
 		client: &Client,
 		at: Option<H256>,
 		block_matrix_partition: Partition,
-	) -> Result<(Vec<GMultiProof>, u16, u16, Vec<u8>), ClientError> {
+	) -> Result<(Vec<GMultiProof>, Vec<u8>), ClientError> {
 		let header = chain::get_header(client, at).await?;
 
 		let Some((rows, cols, _, commitment)) = extract_kate(&header.extension) else {
@@ -234,7 +224,7 @@ pub mod kate {
 
 		if dimensions_raw.cols().get() <= 2 {
 			error!("More than 2 columns are required");
-			return Ok((vec![], rows, cols, commitment));
+			return Ok((vec![], commitment));
 		}
 
 		let target_dims = Dimensions::new_from(16, 64).unwrap();
@@ -256,25 +246,23 @@ pub mod kate {
 			}
 		}
 
-		let proofs: Vec<(Vec<GRawScalar>, GProof)> = query_multi_proof(&client.rpc_client, cells.to_vec(), at)
-			.await
-			.map_err(|error| ClientError::Custom(format!("{:?}", error)))?;
+		let params = rpc_params![cells.to_vec(), at];
+		let proofs: Vec<GMultiProof> = client.rpc_client.request("kate_queryMultiProof", params).await?;
 
-		Ok((proofs, rows, cols, commitment))
+		Ok((proofs, commitment))
 	}
 
-	pub async fn verify_multi_proof_using_hash(
+	pub async fn verify_multi_proof(
 		proof: Vec<GMultiProof>,
-		rows: u16,
-		cols: u16,
 		commitments: Vec<u8>,
+		grid: Dimensions,
 	) -> Result<bool, ClientError> {
 		type E = Bls12_381;
 		type M = BlstMSMEngine;
 		let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
 
 		let target_dims = Dimensions::new_from(16, 64).unwrap();
-		let dimensions = multiproof_dims(Dimensions::new(rows, cols).unwrap(), target_dims).unwrap();
+		let dimensions = multiproof_dims(grid, target_dims).unwrap();
 		let mp_block = multiproof_block(0, 0, dimensions, target_dims).unwrap();
 		let commits = commitments
 			.chunks_exact(48)
@@ -292,7 +280,9 @@ pub mod kate {
 				.map(|e| ArkScalar::from_bytes(&e.to_big_endian()))
 				.collect::<Result<Vec<_>, _>>()
 				.unwrap();
-			let evals_grid = evals_flat.chunks_exact(cols as usize).collect::<Vec<_>>();
+			let evals_grid = evals_flat
+				.chunks_exact(mp_block.end_x - mp_block.start_x)
+				.collect::<Vec<_>>();
 			let points =
 				domain_points(256).map_err(|_| ClientError::Custom("Failed to generate domain points".to_string()))?;
 			let proofs = Proof::from_bytes(&proof.0).unwrap();
@@ -311,16 +301,6 @@ pub mod kate {
 		}
 
 		Ok(true)
-	}
-
-	pub async fn verify_multi_proof(
-		client: &RpcClient,
-		proof: Vec<GMultiProof>,
-		at: Option<H256>,
-	) -> Result<bool, ClientError> {
-		let params = rpc_params![proof, at];
-		let value = client.request("kate_verifyProof", params).await?;
-		Ok(value)
 	}
 
 	pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, ClientError> {
