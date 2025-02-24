@@ -922,7 +922,7 @@ dependencies = [
 
 [[package]]
 name = "avail-rust"
-version = "0.1.1"
+version = "0.1.3"
 dependencies = [
  "avail-core",
  "base58",
@@ -1626,18 +1626,18 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.30"
+version = "4.5.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92b7b18d71fad5313a1e320fa9897994228ce274b60faa4d694fe0ea89cd9e6d"
+checksum = "027bb0d98429ae334a8698531da7077bdf906419543a35a55c2cb1b66437d767"
 dependencies = [
  "clap_builder",
 ]
 
 [[package]]
 name = "clap_builder"
-version = "4.5.30"
+version = "4.5.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a35db2071778a7344791a4fb4f95308b5673d219dee3ae348b86642574ecc90c"
+checksum = "5589e0cba072e0f3d23791efac0fd8627b49c829c196a492e88168e6a669d863"
 dependencies = [
  "anstyle",
  "clap_lex",
@@ -10317,7 +10317,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-ec-utils"
 version = "0.10.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#cf52a0d960a17b4d023bb7c9351e159c60227c85"
+source = "git+https://github.com/paritytech/polkadot-sdk#d189f9e771d937999db4ed17cf2c5d9e1a6a29e7"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-377-ext",
@@ -10427,7 +10427,7 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#cf52a0d960a17b4d023bb7c9351e159c60227c85"
+source = "git+https://github.com/paritytech/polkadot-sdk#d189f9e771d937999db4ed17cf2c5d9e1a6a29e7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -10448,7 +10448,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.25.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#cf52a0d960a17b4d023bb7c9351e159c60227c85"
+source = "git+https://github.com/paritytech/polkadot-sdk#d189f9e771d937999db4ed17cf2c5d9e1a6a29e7"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -10784,7 +10784,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "24.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#cf52a0d960a17b4d023bb7c9351e159c60227c85"
+source = "git+https://github.com/paritytech/polkadot-sdk#d189f9e771d937999db4ed17cf2c5d9e1a6a29e7"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -10836,7 +10836,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "17.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#cf52a0d960a17b4d023bb7c9351e159c60227c85"
+source = "git+https://github.com/paritytech/polkadot-sdk#d189f9e771d937999db4ed17cf2c5d9e1a6a29e7"
 dependencies = [
  "Inflector",
  "expander",
@@ -10992,7 +10992,7 @@ source = "git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.
 [[package]]
 name = "sp-std"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#cf52a0d960a17b4d023bb7c9351e159c60227c85"
+source = "git+https://github.com/paritytech/polkadot-sdk#d189f9e771d937999db4ed17cf2c5d9e1a6a29e7"
 
 [[package]]
 name = "sp-storage"
@@ -11010,7 +11010,7 @@ dependencies = [
 [[package]]
 name = "sp-storage"
 version = "19.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#cf52a0d960a17b4d023bb7c9351e159c60227c85"
+source = "git+https://github.com/paritytech/polkadot-sdk#d189f9e771d937999db4ed17cf2c5d9e1a6a29e7"
 dependencies = [
  "impl-serde 0.5.0",
  "parity-scale-codec",
@@ -11060,7 +11060,7 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "16.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#cf52a0d960a17b4d023bb7c9351e159c60227c85"
+source = "git+https://github.com/paritytech/polkadot-sdk#d189f9e771d937999db4ed17cf2c5d9e1a6a29e7"
 dependencies = [
  "parity-scale-codec",
  "tracing",
@@ -11227,7 +11227,7 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "20.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#cf52a0d960a17b4d023bb7c9351e159c60227c85"
+source = "git+https://github.com/paritytech/polkadot-sdk#d189f9e771d937999db4ed17cf2c5d9e1a6a29e7"
 dependencies = [
  "anyhow",
  "impl-trait-for-tuples",
