@@ -281,6 +281,9 @@ pub mod kate {
 				.collect::<Result<Vec<_>, _>>()
 				.unwrap();
 
+			log::info!("commits: {:?}", commits);
+			log::info!("cellblock: {:?}", cellblock);
+
 			let block_commits = &commits[(cellblock.start_x as usize)..(cellblock.end_x as usize)];
 
 			let verified = pmp
