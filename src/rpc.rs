@@ -172,7 +172,7 @@ pub mod kate {
 	use subxt_signer::bip39::rand::thread_rng;
 
 	use crate::{
-		primitives::kate::{Cells, GProof, GRawScalar},
+		primitives::kate::{Cells, GCellBlock, GProof, GRawScalar},
 		utils::extract_kate,
 	};
 
@@ -208,7 +208,7 @@ pub mod kate {
 		client: &Client,
 		at: Option<H256>,
 		block_matrix_partition: Partition,
-	) -> Result<(Vec<GMultiProof>, Vec<u8>), ClientError> {
+	) -> Result<(Vec<(GMultiProof, GCellBlock)>, Vec<u8>), ClientError> {
 		let header = chain::get_header(client, at).await?;
 
 		let Some((rows, cols, _, commitment)) = extract_kate(&header.extension) else {
@@ -247,50 +247,47 @@ pub mod kate {
 		}
 
 		let params = rpc_params![cells.to_vec(), at];
-		let proofs: Vec<GMultiProof> = client.rpc_client.request("kate_queryMultiProof", params).await?;
+		let proofs: Vec<(GMultiProof, GCellBlock)> = client.rpc_client.request("kate_queryMultiProof", params).await?;
 
 		Ok((proofs, commitment))
 	}
 
 	pub async fn verify_multi_proof(
-		proof: Vec<GMultiProof>,
+		proof: Vec<(GMultiProof, GCellBlock)>,
 		commitments: Vec<u8>,
-		grid: Dimensions,
 	) -> Result<bool, ClientError> {
 		type E = Bls12_381;
 		type M = BlstMSMEngine;
 		let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
 
-		let target_dims = Dimensions::new_from(16, 64).unwrap();
-		let dimensions = multiproof_dims(grid, target_dims).unwrap();
-		let mp_block = multiproof_block(0, 0, dimensions, target_dims).unwrap();
-		let commits = commitments
-			.chunks_exact(48)
-			.skip(mp_block.start_y)
-			.take(mp_block.end_y - mp_block.start_y)
-			.map(|c| Commitment::from_bytes(c.try_into().unwrap()))
-			.collect::<Result<Vec<_>, _>>()
-			.unwrap();
-
-		let block_commits = &commits[mp_block.start_x..mp_block.end_x];
-
-		for (eval, proof) in proof.iter() {
+		for ((eval, proof), cellblock) in proof.iter() {
 			let evals_flat = eval
 				.into_iter()
 				.map(|e| ArkScalar::from_bytes(&e.to_big_endian()))
 				.collect::<Result<Vec<_>, _>>()
 				.unwrap();
 			let evals_grid = evals_flat
-				.chunks_exact(mp_block.end_x - mp_block.start_x)
+				.chunks_exact((cellblock.end_x - cellblock.start_x) as usize)
 				.collect::<Vec<_>>();
 			let points =
 				domain_points(256).map_err(|_| ClientError::Custom("Failed to generate domain points".to_string()))?;
 			let proofs = Proof::from_bytes(&proof.0).unwrap();
+
+			let commits = commitments
+				.chunks_exact(48)
+				.skip(cellblock.start_y as usize)
+				.take((cellblock.end_y - cellblock.start_y) as usize)
+				.map(|c| Commitment::from_bytes(c.try_into().unwrap()))
+				.collect::<Result<Vec<_>, _>>()
+				.unwrap();
+
+			let block_commits = &commits[(cellblock.start_x as usize)..(cellblock.end_x as usize)];
+
 			let verified = pmp
 				.verify(
 					&mut Transcript::new(b"avail-mp"),
 					&block_commits,
-					&points[mp_block.start_x..mp_block.end_x],
+					&points[(cellblock.start_x as usize)..(cellblock.end_x as usize)],
 					&evals_grid,
 					&proofs,
 				)
