@@ -1,3 +1,6 @@
+# v0.1.3 Release
+- Fixed wasm build
+
 # v0.1.2 Release
 - Updated Polkadot SDK version to 12, Avail Core version to 7
 
