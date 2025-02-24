@@ -1,3 +1,6 @@
+# v0.1.2 Release
+- Updated Polkadot SDK version to 12, Avail Core version to 7
+
 # v0.1.1 Release
 - Added missing Vector struct to SDK.tx
 
