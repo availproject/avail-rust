@@ -1,6 +1,6 @@
 use crate::{
 	error::ClientError, rpc, transactions::Transactions, ABlock, ABlocksClient, AOnlineClient, AStorageClient,
-	AvailHeader,
+	AvailHeader, TransactionState,
 };
 use primitive_types::H256;
 use std::{fmt::Debug, time::Duration};
@@ -181,6 +181,14 @@ impl Client {
 		let block_hash = self.finalized_block_hash().await?;
 		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
 		Ok(header.number)
+	}
+
+	pub async fn transaction_state(
+		&self,
+		tx_hash: &H256,
+		finalized: bool,
+	) -> Result<Vec<TransactionState>, subxt::Error> {
+		rpc::transaction::state(self, tx_hash, finalized).await
 	}
 }
 

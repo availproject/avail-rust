@@ -1,3 +1,6 @@
+# v0.1.4 Release
+- Added Transaction State RPC
+
 # v0.1.3 Release
 - Fixed wasm build
 
