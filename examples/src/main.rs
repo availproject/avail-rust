@@ -32,6 +32,7 @@ mod transaction_execute_and_watch_finalization;
 mod transaction_execute_and_watch_inclusion;
 mod transaction_options;
 mod transaction_payment;
+mod transaction_state;
 mod tx_interface;
 mod validator;
 
@@ -53,6 +54,7 @@ async fn main() -> Result<(), ClientError> {
 	custom_rpc_connection::run().await?;
 	transaction_payment::run().await?;
 	transaction::run().await?;
+	transaction_state::run().await?;
 
 	// TODO
 	// tx_interface::run().await?;
