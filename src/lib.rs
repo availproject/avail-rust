@@ -31,6 +31,7 @@ pub use primitives::{
 	block::{AppUncheckedExtrinsic, AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
 	kate::{Cell, GDataProof, GRow},
 };
+pub use rpc::TransactionState;
 pub use sdk::{Client, WaitFor, SDK};
 pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
@@ -53,6 +54,6 @@ pub mod prelude {
 		transaction::watcher::Watcher,
 		utils::new_h256_from_hex,
 		AccountId, Block, BlockTransaction, Client, Filter, Keypair, MultiAddress, Options, Perbill, PopulatedOptions,
-		SecretUri, Transaction, TransactionDetails, WaitFor, H256, SDK, U256,
+		SecretUri, Transaction, TransactionDetails, TransactionState, WaitFor, H256, SDK, U256,
 	};
 }
