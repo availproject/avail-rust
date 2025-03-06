@@ -20,7 +20,9 @@ pub struct HttpClient(pub JsonHttpClient);
 
 impl HttpClient {
 	pub fn new(endpoint: &str) -> Result<Self, jsonrpsee::core::client::Error> {
-		Ok(Self(JsonHttpClient::builder().build(endpoint)?))
+		let builder = JsonHttpClient::builder();
+		let builder = builder.max_request_size(65 * 1024 * 1024);
+		Ok(Self(builder.build(endpoint)?))
 	}
 }
 
