@@ -1,3 +1,6 @@
+# v0.1.5 Release
+- Increased Max RPC Request payload size to 65MB
+
 # v0.1.4 Release
 - Added Transaction State RPC
 
