@@ -84,7 +84,8 @@ impl Debug for SDK {
 
 pub async fn reconnecting_api(endpoint: &str) -> Result<Client, ClientError> {
 	let rpc_client = ReconnectingRpcClient::builder()
-		.max_request_size(65 * 1024 * 1024)
+		.max_request_size(512 * 1024 * 1024)
+		.max_response_size(512 * 1024 * 1024)
 		.retry_policy(
 			ExponentialBackoff::from_millis(1000)
 				.max_delay(Duration::from_secs(3))
