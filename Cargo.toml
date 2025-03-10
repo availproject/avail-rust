@@ -10,9 +10,9 @@ license = "ISC"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-kate-recovery = { git = "https://github.com/availproject/avail-core", rev = "9eef4934f174c4977f379b1c3043a9dab5b51031", default-features = false, features = ["serde"]}
-kate = { git = "https://github.com/availproject/avail-core", rev = "9eef4934f174c4977f379b1c3043a9dab5b51031", features = ["serde"] }
-avail-core = {  git = "https://github.com/availproject/avail-core", rev = "9eef4934f174c4977f379b1c3043a9dab5b51031",default-features = false, features = ["serde", "runtime"] }
+kate-recovery = { git = "https://github.com/availproject/avail-core", rev = "5047d58f6895e5e58a2804200bf741691506044d", default-features = false, features = ["serde"]}
+kate = { git = "https://github.com/availproject/avail-core", rev = "5047d58f6895e5e58a2804200bf741691506044d", features = ["serde"] }
+avail-core = {  git = "https://github.com/availproject/avail-core", rev = "5047d58f6895e5e58a2804200bf741691506044d",default-features = false, features = ["serde", "runtime"] }
 thiserror-no-std = "2.0.2"
 array-bytes = "6.1"
 derive_more = { version = "1", default-features = false, features = ["from", "constructor"] }
@@ -32,14 +32,14 @@ scale-info = { version = "2.5.0", features = ["bit-vec"] }
 # avail-core = {  git = "https://github.com/availproject/avail-core", tag = "core-node-7", default-features = false, features = ["serde", "runtime"] }
 hex = { version = "0.4" }
 base58 = { version = "0.2.0" }
-sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c", default-features = false }
+sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29d8a7e0ed2d36694edc240d97df7b94daa0942", default-features = false }
 bounded-collections = { version = "0.2.0", features = ["serde"] }
 primitive-types = { version = "0.13.1", default-features = false }
 log = { version = "0.4.22", default-features = false }
 env_logger = { version = "0.11.5" }
 
 jsonrpsee = { version = "0.24.7",  default-features = false, features = [ "http-client" ], optional = true }
-sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c", default-features = false, features = [ "disable_panic_handler" ], optional = true }
+sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29d8a7e0ed2d36694edc240d97df7b94daa0942", default-features = false, features = [ "disable_panic_handler" ], optional = true }
 
 [features]
 default = [ "native" ]
@@ -60,7 +60,7 @@ wasm = [
 ]
 
 [patch.crates-io]
-sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c" }
-sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c" }
-sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c" }
-sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c" }
+sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29d8a7e0ed2d36694edc240d97df7b94daa0942" }
+sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29d8a7e0ed2d36694edc240d97df7b94daa0942" }
+sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29d8a7e0ed2d36694edc240d97df7b94daa0942" }
+sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29d8a7e0ed2d36694edc240d97df7b94daa0942" }
