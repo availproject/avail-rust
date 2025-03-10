@@ -889,7 +889,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 [[package]]
 name = "avail-core"
 version = "0.6.2"
-source = "git+https://github.com/availproject/avail-core?rev=5047d58f6895e5e58a2804200bf741691506044d#5047d58f6895e5e58a2804200bf741691506044d"
+source = "git+https://github.com/availproject/avail-core?rev=94259a705d60f6295a68f298fe14f3b3453dc580#94259a705d60f6295a68f298fe14f3b3453dc580"
 dependencies = [
  "binary-merkle-tree 13.0.0",
  "blake2b_simd",
@@ -1197,8 +1197,8 @@ dependencies = [
 
 [[package]]
 name = "blst"
-version = "0.3.10"
-source = "git+https://github.com/availproject/blst?tag=v0.3.10#556e037926d9c526c2eb6cb1522bea39690416ea"
+version = "0.3.11"
+source = "git+https://github.com/ToufeeqP/blst?rev=afdb0a4b7d98d4ff22c3a1d35faca223cde0ef3a#afdb0a4b7d98d4ff22c3a1d35faca223cde0ef3a"
 dependencies = [
  "cc",
  "glob",
@@ -4709,7 +4709,7 @@ dependencies = [
 [[package]]
 name = "kate"
 version = "0.9.2"
-source = "git+https://github.com/availproject/avail-core?rev=5047d58f6895e5e58a2804200bf741691506044d#5047d58f6895e5e58a2804200bf741691506044d"
+source = "git+https://github.com/availproject/avail-core?rev=94259a705d60f6295a68f298fe14f3b3453dc580#94259a705d60f6295a68f298fe14f3b3453dc580"
 dependencies = [
  "avail-core",
  "derive_more 0.99.19",
@@ -4737,7 +4737,7 @@ dependencies = [
 [[package]]
 name = "kate-recovery"
 version = "0.10.0"
-source = "git+https://github.com/availproject/avail-core?rev=5047d58f6895e5e58a2804200bf741691506044d#5047d58f6895e5e58a2804200bf741691506044d"
+source = "git+https://github.com/availproject/avail-core?rev=94259a705d60f6295a68f298fe14f3b3453dc580#94259a705d60f6295a68f298fe14f3b3453dc580"
 dependencies = [
  "avail-core",
  "derive_more 0.99.19",
@@ -8214,7 +8214,7 @@ dependencies = [
 [[package]]
 name = "poly-multiproof"
 version = "0.0.1"
-source = "git+https://github.com/availproject/poly-multiproof?tag=v0.0.1#cd8d31b7eb568dea2fddfc9237e2e31ea7ae7ed3"
+source = "git+https://github.com/availproject/poly-multiproof?branch=toufeeq%2Fblst-0.3.11#e17285c264d7acd6faea0da5950677e8beebe14e"
 dependencies = [
  "ark-bls12-381",
  "ark-ec",
@@ -13523,8 +13523,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "blst"
-version = "0.3.11"
-source = "git+https://github.com/availproject/blst?branch=public-points#afdb0a4b7d98d4ff22c3a1d35faca223cde0ef3a"
