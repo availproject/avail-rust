@@ -9,6 +9,7 @@ pub mod http;
 pub mod account;
 pub mod block;
 pub mod block_transaction;
+pub mod da_commitments;
 pub mod error;
 pub mod primitives;
 pub mod rpc;

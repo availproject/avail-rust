@@ -88,6 +88,23 @@ where
 		utils::sign_and_send(&self.client, account, &self.payload, options).await
 	}
 
+	pub async fn sign(&self, account: &Keypair, options: Options) -> Result<Vec<u8>, ClientError> {
+		let account_id = account.public_key().to_account_id();
+		let options = options.build(&self.client, &account_id).await?;
+
+		let params = options.build().await?;
+		let tx = self
+			.client
+			.online_client
+			.tx()
+			.create_signed(&self.payload, account, params)
+			.await?;
+
+		let tx = tx.encoded();
+		// return the signed transaction bytes
+		Ok(tx.to_vec())
+	}
+
 	pub async fn execute_and_watch_inclusion(
 		&self,
 		account: &Keypair,

@@ -68,7 +68,7 @@ pub async fn sign_and_send_raw_params<T>(
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	if params.6 .0 .0 != 0 && (call.pallet_name() != "DataAvailability" || call.call_name() != "submit_data") {
+	if params.6 .0 .0 != 0 && (call.pallet_name() != "DataAvailability" || (call.call_name() != "submit_data" && call.call_name() != "submit_data_with_commitments")) {
 		return Err(ClientError::from("Transaction is not compatible with non-zero AppIds"));
 	}
 

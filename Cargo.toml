@@ -10,12 +10,17 @@ license = "ISC"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+kate-recovery = { git = "https://github.com/availproject/avail-core", rev = "9eef4934f174c4977f379b1c3043a9dab5b51031", default-features = false, features = ["serde"]}
+kate = { git = "https://github.com/availproject/avail-core", rev = "9eef4934f174c4977f379b1c3043a9dab5b51031", features = ["serde"] }
+avail-core = {  git = "https://github.com/availproject/avail-core", rev = "9eef4934f174c4977f379b1c3043a9dab5b51031",default-features = false, features = ["serde", "runtime"] }
+thiserror-no-std = "2.0.2"
+array-bytes = "6.1"
 derive_more = { version = "1", default-features = false, features = ["from", "constructor"] }
-tokio = { version = "1.42.0", default-features = false }
+tokio = { version = "1.42.0", default-features = false, features = ["rt-multi-thread"] }
 subxt = { version = "0.39.0", default-features = false, features = ["reconnecting-rpc-client", "jsonrpsee"] }
 subxt-core = { version = "0.39.0", default-features = false  }
 subxt-signer = { version = "0.39.0", default-features = false }
-kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, tag = "core-node-7", features = ["serde"] }
+# kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false, tag = "core-node-7", features = ["serde"] }
 serde = { version = "1.0.195", features = ["derive", ] }
 serde_json = { version = "1.0.124", features = ["raw_value"] }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = [
@@ -24,17 +29,17 @@ codec = { package = "parity-scale-codec", version = "3", default-features = fals
 	"bit-vec",
 ] }
 scale-info = { version = "2.5.0", features = ["bit-vec"] }
-avail-core = {  git = "https://github.com/availproject/avail-core", tag = "core-node-7", default-features = false, features = ["serde", "runtime"] }
+# avail-core = {  git = "https://github.com/availproject/avail-core", tag = "core-node-7", default-features = false, features = ["serde", "runtime"] }
 hex = { version = "0.4" }
 base58 = { version = "0.2.0" }
-sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12", default-features = false }
+sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c", default-features = false }
 bounded-collections = { version = "0.2.0", features = ["serde"] }
 primitive-types = { version = "0.13.1", default-features = false }
 log = { version = "0.4.22", default-features = false }
 env_logger = { version = "0.11.5" }
 
 jsonrpsee = { version = "0.24.7",  default-features = false, features = [ "http-client" ], optional = true }
-sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12", default-features = false, features = [ "disable_panic_handler" ], optional = true }
+sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c", default-features = false, features = [ "disable_panic_handler" ], optional = true }
 
 [features]
 default = [ "native" ]
@@ -55,7 +60,7 @@ wasm = [
 ]
 
 [patch.crates-io]
-sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12" }
-sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12" }
-sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12" }
-sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12" }
+sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c" }
+sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c" }
+sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c" }
+sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "6899f04ba1559296b74c3c837a6c929c56f3f84c" }
