@@ -9,12 +9,12 @@ use std::time::Duration;
 use avail_rust::{avail, error::ClientError, SDK};
 
 pub async fn run() -> Result<(), ClientError> {
- 	balances::run().await?;
+	 balances::run().await?;
 	da::run().await?;
 	session::run().await?;
 	staking::run().await?;
-	nomination_pools::run().await? 
-	
+	nomination_pools::run().await?
+
 
 	Ok(())
 }
