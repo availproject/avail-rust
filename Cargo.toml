@@ -64,3 +64,4 @@ sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29
 sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29d8a7e0ed2d36694edc240d97df7b94daa0942" }
 sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29d8a7e0ed2d36694edc240d97df7b94daa0942" }
 sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", rev = "e29d8a7e0ed2d36694edc240d97df7b94daa0942" }
+blst = { git = "https://github.com/availproject/blst", branch = "public-points" }

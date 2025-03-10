@@ -13523,3 +13523,8 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
+
+[[patch.unused]]
+name = "blst"
+version = "0.3.11"
+source = "git+https://github.com/availproject/blst?branch=public-points#afdb0a4b7d98d4ff22c3a1d35faca223cde0ef3a"
