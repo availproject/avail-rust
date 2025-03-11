@@ -90,6 +90,9 @@ pub async fn reconnecting_api(endpoint: &str) -> Result<Client, ClientError> {
 				.max_delay(Duration::from_secs(3))
 				.take(3),
 		)
+		.connection_timeout(Duration::from_secs(300))
+		.request_timeout(Duration::from_secs(300))
+		.disable_ws_ping()
 		.build(endpoint)
 		.await
 		.map_err(|e| e.to_string())?;
