@@ -160,6 +160,7 @@ pub mod state {
 
 pub mod kate {
 	use ::kate::{
+		couscous::multiproof_params,
 		gridgen::{domain_points, multiproof_block, multiproof_dims, AsBytes, Commitment},
 		ArkScalar,
 	};
@@ -169,7 +170,6 @@ pub mod kate {
 	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
 
 	use subxt::{backend::rpc::RpcClient, ext::futures::future::join_all};
-	use subxt_signer::bip39::rand::thread_rng;
 
 	use crate::{
 		primitives::kate::{Cells, GCellBlock, GProof, GRawScalar},
@@ -258,7 +258,7 @@ pub mod kate {
 	) -> Result<bool, ClientError> {
 		type E = Bls12_381;
 		type M = BlstMSMEngine;
-		let pmp = M1NoPrecomp::<E, M>::new(256, 256, &mut thread_rng());
+		let pmp: M1NoPrecomp<E, M> = multiproof_params();
 
 		for ((eval, proof), cellblock) in proof.iter() {
 			let evals_flat = eval
