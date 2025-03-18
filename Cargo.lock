@@ -922,7 +922,7 @@ dependencies = [
 
 [[package]]
 name = "avail-rust"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "avail-core",
  "base58",

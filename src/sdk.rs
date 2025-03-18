@@ -166,12 +166,21 @@ impl Client {
 		rpc::chain::get_header(self, Some(at)).await
 	}
 
+	pub async fn block_hash(&self, block_height: u32) -> Result<H256, subxt::Error> {
+		rpc::chain::get_block_hash(self, Some(block_height)).await
+	}
+
 	pub async fn best_block_hash(&self) -> Result<H256, subxt::Error> {
 		rpc::chain::get_block_hash(self, None).await
 	}
 
 	pub async fn finalized_block_hash(&self) -> Result<H256, subxt::Error> {
 		rpc::chain::get_finalized_head(self).await
+	}
+
+	pub async fn block_number(&self, block_hash: H256) -> Result<u32, subxt::Error> {
+		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
+		Ok(header.number)
 	}
 
 	pub async fn best_block_number(&self) -> Result<u32, subxt::Error> {
