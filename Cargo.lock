@@ -127,7 +127,7 @@ dependencies = [
  "cfg-if",
  "const-hex",
  "derive_more 0.99.19",
- "hex-literal",
+ "hex-literal 0.4.1",
  "itoa",
  "proptest",
  "rand",
@@ -889,7 +889,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 [[package]]
 name = "avail-core"
 version = "0.6.2"
-source = "git+https://github.com/availproject/avail-core?tag=core-node-7#70458d5430a5209f14369c42ded3243fce8fa1cb"
+source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#11058effed49357ba05c4448f7bab64163d3d6f1"
 dependencies = [
  "binary-merkle-tree 13.0.0",
  "blake2b_simd",
@@ -908,7 +908,7 @@ dependencies = [
  "serde",
  "sha2 0.10.8",
  "sha3",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-debug-derive 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-runtime 31.0.1",
  "sp-runtime-interface 24.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
@@ -3376,7 +3376,7 @@ dependencies = [
  "serde_json",
  "smallvec",
  "sp-api 26.0.0",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-core 28.0.0",
  "sp-crypto-hashing-proc-macro 0.0.0",
  "sp-debug-derive 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
@@ -4728,7 +4728,7 @@ dependencies = [
  "rayon",
  "serde",
  "serde_json",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-10)",
  "static_assertions",
  "thiserror-no-std",
 ]
@@ -4736,7 +4736,7 @@ dependencies = [
 [[package]]
 name = "kate-recovery"
 version = "0.10.0"
-source = "git+https://github.com/availproject/avail-core?tag=core-node-7#70458d5430a5209f14369c42ded3243fce8fa1cb"
+source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#11058effed49357ba05c4448f7bab64163d3d6f1"
 dependencies = [
  "avail-core",
  "derive_more 0.99.19",
@@ -4747,7 +4747,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "serde",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "static_assertions",
  "thiserror-no-std",
@@ -8207,9 +8207,9 @@ version = "0.1.1"
 source = "git+https://github.com/aphoh/poly-multiproof#c2794e32ca040e6b2544abde18b7187af3e66feb"
 dependencies = [
  "ark-bls12-381",
- "ark-ec 0.4.2",
+ "ark-ec",
  "ark-ff 0.4.2",
- "ark-poly 0.4.2",
+ "ark-poly",
  "ark-serialize 0.4.2",
  "ark-std 0.4.0",
  "blst",
@@ -10140,6 +10140,20 @@ dependencies = [
 [[package]]
 name = "sp-arithmetic"
 version = "23.0.0"
+source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-10#f5587b380ee596f90482d402844c49aa140781d8"
+dependencies = [
+ "integer-sqrt",
+ "num-traits",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-10)",
+ "static_assertions",
+]
+
+[[package]]
+name = "sp-arithmetic"
+version = "23.0.0"
 source = "git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12#1d7cf63169779258b860de57c72f3efd4026c034"
 dependencies = [
  "integer-sqrt",
@@ -10826,7 +10840,7 @@ dependencies = [
  "serde",
  "simple-mermaid 0.1.0",
  "sp-application-crypto 30.0.0",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
@@ -11080,6 +11094,11 @@ dependencies = [
  "thiserror 1.0.69",
  "x25519-dalek",
 ]
+
+[[package]]
+name = "sp-std"
+version = "14.0.0"
+source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-10#f5587b380ee596f90482d402844c49aa140781d8"
 
 [[package]]
 name = "sp-std"
@@ -11355,7 +11374,7 @@ dependencies = [
  "scale-info",
  "serde",
  "smallvec",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-debug-derive 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
 ]
