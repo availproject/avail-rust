@@ -308,9 +308,6 @@ pub mod kate {
 				.collect::<Result<Vec<_>, _>>()
 				.unwrap();
 
-			log::info!("commits: {:?}", commits);
-			log::info!("cellblock: {:?}", cellblock);
-
 			let verified = pmp
 				.verify(
 					&mut Transcript::new(b"avail-mp"),
