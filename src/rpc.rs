@@ -216,6 +216,8 @@ pub mod kate {
 				"Skipping block without header extension".to_string(),
 			));
 		};
+		println!("rows: {:?}", rows);
+		println!("cols: {:?}", cols);
 		let Some(dimensions_raw) = Dimensions::new(rows, cols) else {
 			return Err(ClientError::Custom(
 				"Skipping block with invalid dimensions".to_string(),
