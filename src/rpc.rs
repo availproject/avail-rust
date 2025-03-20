@@ -9,7 +9,7 @@ use avail_core::data_proof::ProofResponse;
 use poly_multiproof::method1::{M1NoPrecomp, Proof};
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::PolyMultiProofNoPrecomp;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use subxt::{
 	backend::legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
 	rpc_params,
@@ -311,12 +311,10 @@ pub mod kate {
 			log::info!("commits: {:?}", commits);
 			log::info!("cellblock: {:?}", cellblock);
 
-			let block_commits = &commits[(cellblock.start_x as usize)..(cellblock.end_x as usize)];
-
 			let verified = pmp
 				.verify(
 					&mut Transcript::new(b"avail-mp"),
-					&block_commits,
+					&commits[..],
 					&points[(cellblock.start_x as usize)..(cellblock.end_x as usize)],
 					&evals_grid,
 					&proofs,
