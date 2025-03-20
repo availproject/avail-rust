@@ -1,3 +1,19 @@
+# v0.1.6 Release
+- Increased Max RPC Request payload size to 512MiB
+- Increased Max RPC Response payload size to 512MiB
+
+# v0.1.5 Release
+- Increased Max RPC Request payload size to 65MiB
+
+# v0.1.4 Release
+- Added Transaction State RPC
+
+# v0.1.3 Release
+- Fixed wasm build
+
+# v0.1.2 Release
+- Updated Polkadot SDK version to 12, Avail Core version to 7
+
 # v0.1.1 Release
 - Added missing Vector struct to SDK.tx
 

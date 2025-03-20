@@ -23,6 +23,7 @@ mod block_transaction_by_signer_static;
 mod custom_rpc_connection;
 mod data_submission;
 mod http_rpc_connection;
+mod indexer;
 mod proxy;
 mod rpc;
 mod storage;
@@ -32,7 +33,7 @@ mod transaction_execute_and_watch_finalization;
 mod transaction_execute_and_watch_inclusion;
 mod transaction_options;
 mod transaction_payment;
-mod tx_interface;
+mod transaction_state;
 mod validator;
 
 use avail_rust::{error::ClientError, SDK};
@@ -53,9 +54,8 @@ async fn main() -> Result<(), ClientError> {
 	custom_rpc_connection::run().await?;
 	transaction_payment::run().await?;
 	transaction::run().await?;
-
-	// TODO
-	// tx_interface::run().await?;
+	transaction_state::run().await?;
+	indexer::run().await?;
 
 	Ok(())
 }

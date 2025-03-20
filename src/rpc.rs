@@ -9,7 +9,7 @@ use avail_core::data_proof::ProofResponse;
 use poly_multiproof::method1::{M1NoPrecomp, Proof};
 use poly_multiproof::msm::blst::BlstMSMEngine;
 use poly_multiproof::traits::PolyMultiProofNoPrecomp;
-
+use serde::{Serialize, Deserialize};
 use subxt::{
 	backend::legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
 	rpc_params,
@@ -17,6 +17,31 @@ use subxt::{
 
 /// Arbitrary properties defined in chain spec as a JSON object
 pub type SystemProperties = serde_json::map::Map<String, serde_json::Value>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionState {
+	pub block_hash: H256,
+	pub block_height: u32,
+	pub tx_hash: H256,
+	pub tx_index: u32,
+	pub tx_success: bool,
+	pub pallet_index: u8,
+	pub call_index: u8,
+	pub is_finalized: bool,
+}
+
+pub mod transaction {
+	use super::*;
+	pub async fn state(
+		client: &Client,
+		tx_hash: &H256,
+		finalized: bool,
+	) -> Result<Vec<TransactionState>, subxt::Error> {
+		let params = rpc_params![tx_hash, finalized];
+		let value = client.rpc_client.request("transaction_state", params).await?;
+		Ok(value)
+	}
+}
 
 pub mod system {
 	use super::*;
