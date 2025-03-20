@@ -3,7 +3,7 @@
 [package]
 name = "avail-rust"
 edition = "2021"
-version = "0.1.1"
+version = "0.1.7"
 license = "ISC"
 
 [lib]
@@ -29,14 +29,14 @@ kate = {  git = "https://github.com/availproject/avail-core", branch="mmp-integr
 hex = { version = "0.4" }
 base58 = { version = "0.2.0" }
 poly-multiproof = { git = "https://github.com/aphoh/poly-multiproof", ref="494468b86ac8e16dca21d465d921990c578eaad3", default-features = false, features = ['ark-bls12-381', "blst"]}
-sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10", default-features = false }
+sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12", default-features = false }
 bounded-collections = { version = "0.2.0", features = ["serde"] }
 primitive-types = { version = "0.13.1", default-features = false }
 log = { version = "0.4.22", default-features = false }
 env_logger = { version = "0.11.5" }
 
 jsonrpsee = { version = "0.24.7",  default-features = false, features = [ "http-client" ], optional = true }
-sp-io = { version = "30", default-features = false, features = [ "disable_panic_handler" ], optional = true }
+sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12", default-features = false, features = [ "disable_panic_handler" ], optional = true }
 
 [features]
 default = [ "native" ]
@@ -57,7 +57,7 @@ wasm = [
 ]
 
 [patch.crates-io]
-sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10" }
-sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10" }
-sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10" }
-sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-10" }
+sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12" }
+sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12" }
+sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12" }
+sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12" }
