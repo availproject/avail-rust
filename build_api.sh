@@ -35,6 +35,7 @@ subxt codegen --version 14 \
 --url http://localhost:9944 \
 | sed -En "s/pub struct KateCommitment/#\[serde\(rename_all = \"camelCase\"\)\] &/gp" \
 | sed -En "s/pub struct HeaderExtension/#\[serde\(rename_all = \"camelCase\"\)\] &/gp" \
+| sed -En "s/pub struct CompactDataLookup/#\[serde\(rename_all = \"camelCase\"\)\] \0/p" \
 | sed -En "s/pub struct DataLookupItem/#\[serde\(rename_all = \"camelCase\"\)\] \0/p" \
 | sed -En "s/pub struct BlockLength\b/#\[serde\(rename_all = \"camelCase\"\)\] \0/p" \
 | sed -E '1i \#\[allow(clippy::all)]' \
