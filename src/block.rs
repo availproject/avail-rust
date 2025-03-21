@@ -146,7 +146,7 @@ impl Block {
 	pub fn data_submissions(&self, filter: Filter) -> Vec<DataSubmission> {
 		self.transactions_static(filter)
 			.iter()
-			.map(|tx| DataSubmission::from_static(tx))
+			.map(DataSubmission::from_static)
 			.collect()
 	}
 
@@ -273,10 +273,7 @@ impl DataSubmission {
 	}
 
 	pub fn ss58address(&self) -> Option<String> {
-		match self.account_id() {
-			Some(x) => Some(std::format!("{}", x)),
-			_ => None,
-		}
+		self.account_id().map(|x| std::format!("{}", x))
 	}
 }
 
@@ -457,7 +454,7 @@ impl Iterator for EventRecordsIntoIter {
 	type Item = AEventDetails;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if self.inner.inner.len() == 0 {
+		if self.inner.inner.is_empty() {
 			return None;
 		}
 		let result = self.inner.inner.remove(0);

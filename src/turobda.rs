@@ -77,10 +77,10 @@ impl TurboDA {
 			let value = v1::PendingSubmissionInfo::from(json);
 			return Ok(v1::SubmissionInfo::Pending(value));
 		} else if json.state == "Included" {
-			let value = v1::IncludedSubmissionInfo::try_from(json).map_err(|e| Error::Custom(e))?;
+			let value = v1::IncludedSubmissionInfo::try_from(json).map_err(Error::Custom)?;
 			return Ok(v1::SubmissionInfo::Included(value));
 		} else if json.state == "Finalized" {
-			let value = v1::FinalizedSubmissionInfo::try_from(json).map_err(|e| Error::Custom(e))?;
+			let value = v1::FinalizedSubmissionInfo::try_from(json).map_err(Error::Custom)?;
 			return Ok(v1::SubmissionInfo::Finalized(value));
 		}
 
@@ -126,7 +126,7 @@ pub struct Connection {
 
 impl Connection {
 	pub async fn new(endpoint: &str) -> Result<Self, ConnectionError> {
-		let url = format!("{}", endpoint).parse::<hyper::Uri>()?;
+		let url = endpoint.to_string().parse::<hyper::Uri>()?;
 
 		let host = url.host().ok_or(ConnectionError::NoHost)?;
 		let port = url.port_u16().unwrap_or(80);
@@ -136,7 +136,7 @@ impl Connection {
 		let io = TokioIo::new(stream);
 
 		let handshake = hyper::client::conn::http1::handshake::<_, Full<Bytes>>(io).await;
-		let handshake = handshake.map_err(|e| ConnectionError::Handshake(e))?;
+		let handshake = handshake.map_err(ConnectionError::Handshake)?;
 		let (sender, conn) = handshake;
 
 		tokio::task::spawn(async move {
@@ -151,7 +151,7 @@ impl Connection {
 	}
 
 	pub fn url(&self) -> hyper::Uri {
-		return self.url.clone();
+		self.url.clone()
 	}
 
 	pub async fn request_raw<'a>(
@@ -167,10 +167,10 @@ impl Connection {
 		let req = req
 			.header(hyper::header::HOST, self.authority.as_str())
 			.body(Full::<Bytes>::new(data));
-		let req = req.map_err(|e| RequestError::Builder(e))?;
+		let req = req.map_err(RequestError::Builder)?;
 
 		let res = self.sender.send_request(req).await;
-		let res = res.map_err(|e| RequestError::Send(e))?;
+		let res = res.map_err(RequestError::Send)?;
 
 		Ok(res)
 	}
@@ -188,14 +188,14 @@ impl Connection {
 		}
 
 		let body = raw_res.into_body();
-		let buffer = body.collect().await.map_err(|e| RequestError::ReadingBody(e))?;
+		let buffer = body.collect().await.map_err(RequestError::ReadingBody)?;
 		let buffer = buffer.aggregate();
 
 		let mut res = String::new();
 		buffer
 			.reader()
 			.read_to_string(&mut res)
-			.map_err(|e| RequestError::Io(e))?;
+			.map_err(RequestError::Io)?;
 
 		Ok(res)
 	}

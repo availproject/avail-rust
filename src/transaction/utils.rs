@@ -53,7 +53,7 @@ where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
-	let options = options.build(&client, &account_id).await?;
+	let options = options.build(client, &account_id).await?;
 	let params = options.build().await?;
 
 	sign_and_send_raw_params(client, account, call, params).await
@@ -101,7 +101,7 @@ where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
-	let mut options = options.build(&client, &account_id).await?;
+	let mut options = options.build(client, &account_id).await?;
 	let mut retry_count = 2;
 
 	loop {
@@ -109,7 +109,7 @@ where
 		let tx_hash = sign_and_send_raw_params(client, account, call, params).await?;
 
 		let logger = Logger::new(tx_hash, true);
-		logger.log_tx_submitted(&account, &options.mortality);
+		logger.log_tx_submitted(account, &options.mortality);
 
 		let watcher = Watcher::new(client.clone(), tx_hash);
 		let watcher = watcher.logger(logger.clone()).wait_for(wait_for);

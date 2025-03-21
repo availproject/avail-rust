@@ -93,7 +93,7 @@ impl PopulatedOptions {
 
 	pub async fn regenerate_mortality(&mut self, client: &Client) -> Result<(), ClientError> {
 		self.mortality = CheckedMortality::from_period(self.mortality.period, client).await?;
-		return Ok(());
+		Ok(())
 	}
 }
 
