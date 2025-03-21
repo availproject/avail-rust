@@ -4,6 +4,10 @@ mod from_substrate;
 
 #[cfg(feature = "native")]
 pub mod http;
+#[cfg(feature = "native")]
+pub mod turobda;
+#[cfg(feature = "native")]
+pub use turobda::TurboDA;
 
 // Export types for internal and external consumption
 pub mod account;
@@ -16,7 +20,6 @@ pub mod runtime_api;
 pub mod sdk;
 pub mod transaction;
 pub mod transactions;
-pub mod turobda;
 pub mod utils;
 
 pub use api_dev::api as avail;
@@ -38,7 +41,6 @@ pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
 pub use transaction::{Options, PopulatedOptions, Transaction, TransactionDetails};
-pub use turobda::TurboDA;
 
 pub mod prelude {
 	pub use super::{
@@ -56,6 +58,9 @@ pub mod prelude {
 		transaction::watcher::Watcher,
 		utils::new_h256_from_hex,
 		AccountId, Block, BlockTransaction, Client, Filter, Keypair, MultiAddress, Options, Perbill, PopulatedOptions,
-		SecretUri, Transaction, TransactionDetails, TransactionState, TurboDA, WaitFor, H256, SDK, U256,
+		SecretUri, Transaction, TransactionDetails, TransactionState, WaitFor, H256, SDK, U256,
 	};
+
+	#[cfg(feature = "native")]
+	pub use super::TurboDA;
 }

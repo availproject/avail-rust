@@ -145,6 +145,10 @@ impl Connection {
 		Ok(Self { sender, url, authority })
 	}
 
+	pub fn url(&self) -> hyper::Uri {
+		return self.url.clone();
+	}
+
 	pub async fn request_raw<'a>(
 		&mut self,
 		config: RequestConfig<'a>,
