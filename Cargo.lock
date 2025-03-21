@@ -127,7 +127,7 @@ dependencies = [
  "cfg-if",
  "const-hex",
  "derive_more 0.99.19",
- "hex-literal",
+ "hex-literal 0.4.1",
  "itoa",
  "proptest",
  "rand",
@@ -889,7 +889,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 [[package]]
 name = "avail-core"
 version = "0.6.2"
-source = "git+https://github.com/availproject/avail-core?tag=core-node-7#70458d5430a5209f14369c42ded3243fce8fa1cb"
+source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#11058effed49357ba05c4448f7bab64163d3d6f1"
 dependencies = [
  "binary-merkle-tree 13.0.0",
  "blake2b_simd",
@@ -908,7 +908,7 @@ dependencies = [
  "serde",
  "sha2 0.10.8",
  "sha3",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-debug-derive 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-runtime 31.0.1",
  "sp-runtime-interface 24.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
@@ -931,9 +931,11 @@ dependencies = [
  "env_logger 0.11.6",
  "hex",
  "jsonrpsee",
+ "kate",
  "kate-recovery",
  "log",
  "parity-scale-codec",
+ "poly-multiproof",
  "primitive-types 0.13.1",
  "scale-info",
  "serde",
@@ -1190,6 +1192,18 @@ dependencies = [
  "futures-io",
  "futures-lite",
  "piper",
+]
+
+[[package]]
+name = "blst"
+version = "0.3.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47c79a94619fade3c0b887670333513a67ac28a6a7e653eb260bf0d4103db38d"
+dependencies = [
+ "cc",
+ "glob",
+ "threadpool",
+ "zeroize",
 ]
 
 [[package]]
@@ -3362,7 +3376,7 @@ dependencies = [
  "serde_json",
  "smallvec",
  "sp-api 26.0.0",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-core 28.0.0",
  "sp-crypto-hashing-proc-macro 0.0.0",
  "sp-debug-derive 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
@@ -3788,6 +3802,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
 
 [[package]]
+name = "glob"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
+
+[[package]]
 name = "gloo-net"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3974,6 +3994,12 @@ checksum = "5313b072ce3c597065a808dbf612c4c8e8590bdbf8b579508bf7a762c5eae6cd"
 dependencies = [
  "arrayvec 0.7.6",
 ]
+
+[[package]]
+name = "hex-literal"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ebdb29d2ea9ed0083cd8cece49bbd968021bd99b0849edb4a9a7ee0fdf6a4e0"
 
 [[package]]
 name = "hex-literal"
@@ -4681,9 +4707,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "kate"
+version = "0.9.2"
+source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#b4391e0c27a7ccf9dd06513b8638e3d2095c6608"
+dependencies = [
+ "avail-core",
+ "derive_more 0.99.19",
+ "dusk-bytes",
+ "dusk-plonk",
+ "hex",
+ "hex-literal 0.3.4",
+ "kate-recovery",
+ "log",
+ "nalgebra 0.32.6",
+ "once_cell",
+ "parity-scale-codec",
+ "poly-multiproof",
+ "rand",
+ "rand_chacha",
+ "rayon",
+ "serde",
+ "serde_json",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-10)",
+ "static_assertions",
+ "thiserror-no-std",
+]
+
+[[package]]
 name = "kate-recovery"
 version = "0.10.0"
-source = "git+https://github.com/availproject/avail-core?tag=core-node-7#70458d5430a5209f14369c42ded3243fce8fa1cb"
+source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#11058effed49357ba05c4448f7bab64163d3d6f1"
 dependencies = [
  "avail-core",
  "derive_more 0.99.19",
@@ -4694,7 +4747,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "serde",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "static_assertions",
  "thiserror-no-std",
@@ -4811,7 +4864,7 @@ version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9eda9dcf4f2a99787827661f312ac3219292549c2ee992bf9a6248ffb066bf7"
 dependencies = [
- "nalgebra",
+ "nalgebra 0.33.2",
 ]
 
 [[package]]
@@ -5033,6 +5086,21 @@ checksum = "685a9ac4b61f4e728e1d2c6a7844609c16527aeb5e6c865915c08e619c16410f"
 
 [[package]]
 name = "nalgebra"
+version = "0.32.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b5c17de023a86f59ed79891b2e5d5a94c705dbe904a5b5c9c952ea6221b03e4"
+dependencies = [
+ "approx",
+ "matrixmultiply",
+ "num-complex",
+ "num-rational",
+ "num-traits",
+ "simba 0.8.1",
+ "typenum",
+]
+
+[[package]]
+name = "nalgebra"
 version = "0.33.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26aecdf64b707efd1310e3544d709c5c0ac61c13756046aaaba41be5c4f66a3b"
@@ -5042,7 +5110,7 @@ dependencies = [
  "num-complex",
  "num-rational",
  "num-traits",
- "simba",
+ "simba 0.9.0",
  "typenum",
 ]
 
@@ -7490,7 +7558,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b57bc055fa389372ec5fc0001b99aeffd50f3fd379280ce572d935189bb58dd8"
 dependencies = [
  "bitvec",
- "hex-literal",
+ "hex-literal 0.4.1",
  "log",
  "parity-scale-codec",
  "polkadot-core-primitives",
@@ -7517,7 +7585,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bb20b75d33212150242d39890d7ededab55f1084160c337f15d0eb8ca8c3ad4"
 dependencies = [
  "bitvec",
- "hex-literal",
+ "hex-literal 0.4.1",
  "log",
  "parity-scale-codec",
  "polkadot-core-primitives",
@@ -8131,6 +8199,22 @@ dependencies = [
  "rustix 0.38.44",
  "tracing",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "poly-multiproof"
+version = "0.1.1"
+source = "git+https://github.com/aphoh/poly-multiproof#c2794e32ca040e6b2544abde18b7187af3e66feb"
+dependencies = [
+ "ark-bls12-381",
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-poly",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+ "blst",
+ "merlin",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -9424,6 +9508,19 @@ dependencies = [
 
 [[package]]
 name = "simba"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "061507c94fc6ab4ba1c9a0305018408e312e17c041eb63bef8aa726fa33aceae"
+dependencies = [
+ "approx",
+ "num-complex",
+ "num-traits",
+ "paste",
+ "wide",
+]
+
+[[package]]
+name = "simba"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3a386a501cd104797982c15ae17aafe8b9261315b5d07e3ec803f2ea26be0fa"
@@ -9634,7 +9731,7 @@ dependencies = [
  "ethabi-decode 1.0.0",
  "frame-support 38.2.0",
  "frame-system",
- "hex-literal",
+ "hex-literal 0.4.1",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
  "scale-info",
@@ -9658,7 +9755,7 @@ dependencies = [
  "ethabi-decode 1.0.0",
  "ethbloom 0.13.0",
  "ethereum-types 0.14.1",
- "hex-literal",
+ "hex-literal 0.4.1",
  "parity-bytes",
  "parity-scale-codec",
  "rlp",
@@ -9742,7 +9839,7 @@ version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3984b98465af1d862d4e87ba783e1731f2a3f851b148d6cb98d526cebd351185"
 dependencies = [
- "hex-literal",
+ "hex-literal 0.4.1",
  "snowbridge-beacon-primitives",
  "snowbridge-core",
  "sp-core 34.0.0",
@@ -9783,7 +9880,7 @@ version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1f251e579b3d3d93cf833c8e503122808742dee33e7ea53b0f292a76c024d66"
 dependencies = [
- "hex-literal",
+ "hex-literal 0.4.1",
  "snowbridge-beacon-primitives",
  "snowbridge-core",
  "sp-core 34.0.0",
@@ -9841,7 +9938,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aefe74eafeac92e1d9e46b7bb76ec297f6182b4a023f7e7eb7eb8be193f93bef"
 dependencies = [
  "frame-support 38.2.0",
- "hex-literal",
+ "hex-literal 0.4.1",
  "log",
  "parity-scale-codec",
  "scale-info",
@@ -10038,6 +10135,20 @@ dependencies = [
  "serde",
  "sp-core 34.0.0",
  "sp-io 38.0.0",
+]
+
+[[package]]
+name = "sp-arithmetic"
+version = "23.0.0"
+source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-10#f5587b380ee596f90482d402844c49aa140781d8"
+dependencies = [
+ "integer-sqrt",
+ "num-traits",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-10)",
+ "static_assertions",
 ]
 
 [[package]]
@@ -10729,7 +10840,7 @@ dependencies = [
  "serde",
  "simple-mermaid 0.1.0",
  "sp-application-crypto 30.0.0",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
@@ -10983,6 +11094,11 @@ dependencies = [
  "thiserror 1.0.69",
  "x25519-dalek",
 ]
+
+[[package]]
+name = "sp-std"
+version = "14.0.0"
+source = "git+https://github.com/availproject/polkadot-sdk?tag=polkadot-1.7.1-patch-10#f5587b380ee596f90482d402844c49aa140781d8"
 
 [[package]]
 name = "sp-std"
@@ -11258,7 +11374,7 @@ dependencies = [
  "scale-info",
  "serde",
  "smallvec",
- "sp-arithmetic 23.0.0",
+ "sp-arithmetic 23.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-debug-derive 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
  "sp-std 14.0.0 (git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.1-patch-12)",
 ]
@@ -11894,6 +12010,15 @@ checksum = "8b9ef9bad013ada3808854ceac7b46812a6465ba368859a37e2100283d2d719c"
 dependencies = [
  "cfg-if",
  "once_cell",
+]
+
+[[package]]
+name = "threadpool"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
+dependencies = [
+ "num_cpus",
 ]
 
 [[package]]

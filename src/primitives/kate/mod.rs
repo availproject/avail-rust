@@ -29,11 +29,19 @@ where
 pub type GRawScalar = U256;
 pub type GRow = Vec<GRawScalar>;
 pub type GDataProof = (GRawScalar, GProof);
-
+pub type GMultiProof = (Vec<GRawScalar>, GProof);
 pub type MaxCells = ConstU32<64>;
 pub type Cells = bounded_collections::BoundedVec<Cell, MaxCells>;
 pub type MaxRows = ConstU32<64>;
 pub type Rows = bounded_collections::BoundedVec<u32, MaxRows>;
+
+#[derive(Encode, Decode, Debug, Clone, Serialize, Deserialize)]
+pub struct GCellBlock {
+	pub start_x: u32,
+	pub start_y: u32,
+	pub end_x: u32,
+	pub end_y: u32,
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(try_from = "Vec<u8>", into = "Vec<u8>")]
