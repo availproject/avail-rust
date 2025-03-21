@@ -4,7 +4,7 @@ use http_body_util::{BodyExt, Full};
 use hyper::{
 	body::{Buf, Bytes, Incoming},
 	client::conn::http1::SendRequest,
-	Method, Request, Response,
+	Method, Request, Response, StatusCode,
 };
 use hyper_util::rt::TokioIo;
 use serde::Deserialize;
@@ -38,6 +38,10 @@ impl TurboDA {
 	pub async fn new(endpoint: &str, api_key: String) -> Result<Self, ConnectionError> {
 		let con = Connection::new(endpoint).await?;
 		Ok(Self { con, api_key })
+	}
+
+	pub fn url(&self) -> hyper::Uri {
+		self.con.url()
 	}
 
 	pub async fn submit_raw_data(&mut self, data: Vec<u8>) -> Result<v1::SubmitDataRes, Error> {
@@ -111,6 +115,7 @@ pub enum RequestError {
 	Send(hyper::Error),
 	ReadingBody(hyper::Error),
 	Io(std::io::Error),
+	ResponseNotOk(StatusCode),
 }
 
 pub struct Connection {
@@ -174,8 +179,13 @@ impl Connection {
 		use std::io::Read;
 		let raw_res = self.request_raw(config, data).await?;
 
-		println!("Response: {}", raw_res.status());
+		let status = raw_res.status();
+		println!("Response: {}", status);
 		println!("Headers: {:#?}\n", raw_res.headers());
+
+		if status != hyper::http::status::StatusCode::OK {
+			return Err(RequestError::ResponseNotOk(status));
+		}
 
 		let body = raw_res.into_body();
 		let buffer = body.collect().await.map_err(|e| RequestError::ReadingBody(e))?;
