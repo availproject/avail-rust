@@ -232,46 +232,15 @@ pub mod kate {
 	pub async fn query_multi_proof(
 		client: &Client,
 		at: Option<H256>,
-		block_matrix_partition: Partition,
+		cells: Vec<Cell>,
 	) -> Result<(Vec<(GMultiProof, GCellBlock)>, Vec<u8>), ClientError> {
 		let header = chain::get_header(client, at).await?;
 
-		let Some((rows, cols, _, commitment)) = extract_kate(&header.extension) else {
+		let Some((_, _, _, commitment)) = extract_kate(&header.extension) else {
 			return Err(ClientError::Custom(
 				"Skipping block without header extension".to_string(),
 			));
 		};
-		println!("rows: {:?}", rows);
-		println!("cols: {:?}", cols);
-		let Some(dimensions_raw) = Dimensions::new(rows, cols) else {
-			return Err(ClientError::Custom(
-				"Skipping block with invalid dimensions".to_string(),
-			));
-		};
-
-		if dimensions_raw.cols().get() <= 2 {
-			error!("More than 2 columns are required");
-			return Ok((vec![], commitment));
-		}
-
-		let target_dims = Dimensions::new_from(16, 64).unwrap();
-		let dimensions = multiproof_dims(dimensions_raw, target_dims).unwrap();
-		let positions: Vec<Position> = dimensions
-			.iter_extended_partition_positions(&block_matrix_partition)
-			.collect();
-
-		let create_cell = |positions: &&[Position]| create_cell((*positions).to_vec());
-		let rpc_batches = positions.chunks(30).collect::<Vec<_>>();
-		let parallel_batches = rpc_batches
-			.chunks(8)
-			.map(|batch| join_all(batch.iter().map(create_cell)));
-
-		let mut cells = vec![];
-		for batch in parallel_batches {
-			for (_, result) in batch.await.into_iter().enumerate() {
-				cells.append(&mut result.unwrap().to_vec());
-			}
-		}
 
 		let params = rpc_params![cells.to_vec(), at];
 		let proofs: Vec<(GMultiProof, GCellBlock)> = client.rpc_client.request("kate_queryMultiProof", params).await?;
