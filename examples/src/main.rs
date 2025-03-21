@@ -34,6 +34,7 @@ mod transaction_execute_and_watch_inclusion;
 mod transaction_options;
 mod transaction_payment;
 mod transaction_state;
+mod turbo_da;
 mod validator;
 
 use avail_rust::{error::ClientError, SDK};
@@ -42,20 +43,21 @@ use avail_rust::{error::ClientError, SDK};
 async fn main() -> Result<(), ClientError> {
 	SDK::enable_logging();
 
-	account::run().await?;
-	batch::run().await?;
-	block::run().await?;
-	data_submission::run().await?;
-	proxy::run().await?;
-	rpc::run().await?;
-	storage::run().await?;
-	validator::run().await?;
-	http_rpc_connection::run().await?;
-	custom_rpc_connection::run().await?;
-	transaction_payment::run().await?;
-	transaction::run().await?;
-	transaction_state::run().await?;
-	indexer::run().await?;
+	// account::run().await?;
+	// batch::run().await?;
+	// block::run().await?;
+	// data_submission::run().await?;
+	// proxy::run().await?;
+	// rpc::run().await?;
+	// storage::run().await?;
+	// validator::run().await?;
+	// http_rpc_connection::run().await?;
+	// custom_rpc_connection::run().await?;
+	// transaction_payment::run().await?;
+	// transaction::run().await?;
+	// transaction_state::run().await?;
+	// indexer::run().await?;
+	turbo_da::run().await?;
 
 	Ok(())
 }

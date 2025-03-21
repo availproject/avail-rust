@@ -4,6 +4,10 @@ mod from_substrate;
 
 #[cfg(feature = "native")]
 pub mod http;
+#[cfg(feature = "native")]
+pub mod turobda;
+#[cfg(feature = "native")]
+pub use turobda::TurboDA;
 
 // Export types for internal and external consumption
 pub mod account;
@@ -56,4 +60,7 @@ pub mod prelude {
 		AccountId, Block, BlockTransaction, Client, Filter, Keypair, MultiAddress, Options, Perbill, PopulatedOptions,
 		SecretUri, Transaction, TransactionDetails, TransactionState, WaitFor, H256, SDK, U256,
 	};
+
+	#[cfg(feature = "native")]
+	pub use super::TurboDA;
 }

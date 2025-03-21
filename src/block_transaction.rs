@@ -98,7 +98,7 @@ impl Iterator for BlockTransactionsIntoIter {
 	type Item = BlockTransaction;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if self.inner.inner.len() == 0 {
+		if self.inner.inner.is_empty() {
 			return None;
 		}
 		let result = self.inner.inner.remove(0);
@@ -153,10 +153,7 @@ impl BlockTransaction {
 	}
 
 	pub fn ss58address(&self) -> Option<String> {
-		match self.account_id() {
-			Some(x) => Some(std::format!("{}", x)),
-			None => None,
-		}
+		self.account_id().map(|x| std::format!("{}", x))
 	}
 
 	pub fn app_id(&self) -> Option<u32> {
@@ -183,7 +180,7 @@ impl BlockTransaction {
 			}
 		}
 
-		return None;
+		None
 	}
 
 	pub fn nonce(&self) -> Option<u32> {
@@ -243,10 +240,7 @@ impl<E: StaticExtrinsic> StaticBlockTransaction<E> {
 	}
 
 	pub fn ss58address(&self) -> Option<String> {
-		match self.account_id() {
-			Some(x) => Some(std::format!("{}", x)),
-			None => None,
-		}
+		self.account_id().map(|x| std::format!("{}", x))
 	}
 
 	pub fn app_id(&self) -> Option<u32> {
@@ -273,7 +267,7 @@ impl<E: StaticExtrinsic> StaticBlockTransaction<E> {
 			}
 		}
 
-		return None;
+		None
 	}
 
 	pub fn nonce(&self) -> Option<u32> {
