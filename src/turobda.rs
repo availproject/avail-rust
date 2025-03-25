@@ -192,10 +192,7 @@ impl Connection {
 		let buffer = buffer.aggregate();
 
 		let mut res = String::new();
-		buffer
-			.reader()
-			.read_to_string(&mut res)
-			.map_err(RequestError::Io)?;
+		buffer.reader().read_to_string(&mut res).map_err(RequestError::Io)?;
 
 		Ok(res)
 	}

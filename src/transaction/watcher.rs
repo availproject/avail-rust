@@ -1,7 +1,6 @@
-use std::{sync::Arc, time::Duration};
-
 use log::warn;
 use primitive_types::H256;
+use std::{sync::Arc, time::Duration};
 use subxt::backend::StreamOf;
 
 use super::{logger::Logger, utils::TransactionExecutionError, TransactionDetails};
@@ -11,147 +10,117 @@ type Stream = StreamOf<Result<ABlock, subxt::Error>>;
 
 pub const DEFAULT_BLOCK_COUNT_TIMEOUT: u32 = 5;
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum WatcherMode {
+	WS,
+	HTTP,
+	TxStateRPC,
+}
+
 #[derive(Clone)]
 pub struct Watcher {
 	client: Client,
-	tx_hash: H256,
-	wait_for: WaitFor,
-	block_count_timeout: Option<u32>,
-	block_height_timeout: Option<u32>,
-	logger: Arc<Logger>,
-	block_fetch_interval: Duration,
-	client_mode: ClientMode,
+	options: WatcherOptions,
+}
+
+#[derive(Clone)]
+pub struct WatcherOptions {
+	pub wait_for: WaitFor,
+	pub block_count_timeout: Option<u32>,
+	pub block_height_timeout: Option<u32>,
+	// Applicable only to WatcherMode::HTTP. Default os 3 seconds
+	pub block_fetch_interval: Duration,
+	pub tx_hash: H256,
+	pub mode: WatcherMode,
+	pub logger: Arc<Logger>,
+}
+
+impl WatcherOptions {
+	pub fn new(tx_hash: H256, mode: WatcherMode) -> Self {
+		WatcherOptions {
+			wait_for: WaitFor::BlockInclusion,
+			block_count_timeout: None,
+			block_height_timeout: None,
+			block_fetch_interval: Duration::from_secs(3),
+			tx_hash,
+			mode,
+			logger: Logger::new(H256::default(), false),
+		}
+	}
+
+	async fn calculate_block_height_timeout(&self, client: &Client) -> Result<u32, TransactionExecutionError> {
+		if let Some(height) = self.block_height_timeout {
+			return Ok(height);
+		}
+
+		let count = self.block_count_timeout.unwrap_or(DEFAULT_BLOCK_COUNT_TIMEOUT);
+		let current_height = client.best_block_number().await?;
+
+		Ok(current_height + count)
+	}
 }
 
 impl Watcher {
 	pub fn new(client: Client, tx_hash: H256) -> Self {
-		let client_mode = client.mode;
-		Self {
-			client,
-			tx_hash,
-			wait_for: WaitFor::BlockInclusion,
-			block_count_timeout: None,
-			block_height_timeout: None,
-			logger: Logger::new(H256::default(), false),
-			block_fetch_interval: Duration::from_secs(3),
-			client_mode,
-		}
-	}
-	pub fn client_mode(mut self, value: ClientMode) -> Self {
-		self.client_mode = value;
-		self
+		let opt = client.get_options();
+		let mode = if opt.tx_state_rpc_enabled {
+			WatcherMode::TxStateRPC
+		} else if opt.mode == ClientMode::WS {
+			WatcherMode::WS
+		} else {
+			WatcherMode::HTTP
+		};
+
+		let options = WatcherOptions::new(tx_hash, mode);
+		Self { client, options }
 	}
 
-	pub fn block_fetch_interval(mut self, value: Duration) -> Self {
-		self.block_fetch_interval = value;
-		self
-	}
-
-	pub fn logger(mut self, value: Arc<Logger>) -> Self {
-		self.logger = value;
-		self
-	}
-
-	pub fn wait_for(mut self, value: WaitFor) -> Self {
-		self.wait_for = value;
-		self
-	}
-
-	pub fn tx_hash(mut self, value: H256) -> Self {
-		self.tx_hash = value;
-		self
-	}
-
-	pub fn block_count_timeout(mut self, value: u32) -> Self {
-		self.block_count_timeout = Some(value);
-		self
-	}
-
-	pub fn block_height_timeout(mut self, value: u32) -> Self {
-		self.block_height_timeout = Some(value);
-		self
+	pub fn set_options<F: Fn(&mut WatcherOptions)>(&mut self, f: F) {
+		f(&mut self.options)
 	}
 
 	pub async fn run(&self) -> Result<Option<TransactionDetails>, TransactionExecutionError> {
-		match self.client_mode {
-			ClientMode::HTTP => self.http_run().await,
-			ClientMode::WS => self.ws_run().await,
+		match self.options.mode {
+			WatcherMode::HTTP => HTTPWatcher::run(&self.client, &self.options).await,
+			WatcherMode::WS => WSWatcher::run(&self.client, &self.options).await,
+			WatcherMode::TxStateRPC => TxStateRPCWatcher::run(&self.client, &self.options).await,
 		}
 	}
+}
 
-	pub async fn ws_run(&self) -> Result<Option<TransactionDetails>, TransactionExecutionError> {
-		let mut stream = self.pick_stream().await?;
-		let block_height_timeout = self.calculate_block_height_timeout().await?;
-		self.logger
-			.log_watcher_run(self.wait_for, block_height_timeout, self.client.mode);
+pub struct WSWatcher {}
+impl WSWatcher {
+	pub async fn run(
+		client: &Client,
+		options: &WatcherOptions,
+	) -> Result<Option<TransactionDetails>, TransactionExecutionError> {
+		let logger = options.logger.clone();
+
+		let mut stream = match options.wait_for == WaitFor::BlockInclusion {
+			true => client.blocks().subscribe_all().await,
+			false => client.blocks().subscribe_finalized().await,
+		}?;
+
+		let block_height_timeout = options.calculate_block_height_timeout(client).await?;
+		logger.log_watcher_run(options, block_height_timeout);
 
 		loop {
-			let block = self.ws_fetch_next_block(&mut stream).await?;
-			self.logger.log_watcher_new_block(&block);
+			let block = WSWatcher::fetch_next_block(&mut stream).await?;
+			logger.log_watcher_new_block(&block);
 
-			if let Some(tx_details) = self.find_transaction(&block).await? {
-				self.logger.log_watcher_tx_found(&tx_details);
+			if let Some(tx_details) = find_transaction(client, &block, &options.tx_hash).await? {
+				logger.log_watcher_tx_found(&tx_details);
 				return Ok(Some(tx_details));
 			}
 
 			if block.number() >= block_height_timeout {
-				self.logger.log_watcher_stop();
+				logger.log_watcher_stop();
 				return Ok(None);
 			}
 		}
 	}
 
-	pub async fn http_run(&self) -> Result<Option<TransactionDetails>, TransactionExecutionError> {
-		let block_height_timeout = self.calculate_block_height_timeout().await?;
-		self.logger
-			.log_watcher_run(self.wait_for, block_height_timeout, self.client_mode);
-
-		let mut current_block_hash: Option<H256> = None;
-		loop {
-			let block = self.http_fetch_next_block(&mut current_block_hash).await?;
-			self.logger.log_watcher_new_block(&block);
-
-			if let Some(tx_details) = self.find_transaction(&block).await? {
-				self.logger.log_watcher_tx_found(&tx_details);
-				return Ok(Some(tx_details));
-			}
-
-			if block.number() >= block_height_timeout {
-				self.logger.log_watcher_stop();
-				return Ok(None);
-			}
-		}
-	}
-
-	async fn http_fetch_next_block(
-		&self,
-		current_block_hash: &mut Option<H256>,
-	) -> Result<ABlock, TransactionExecutionError> {
-		loop {
-			let block_hash = match self.wait_for {
-				WaitFor::BlockInclusion => self.client.best_block_hash().await?,
-				WaitFor::BlockFinalization => self.client.finalized_block_hash().await?,
-			};
-
-			if current_block_hash.is_some_and(|hash| hash.eq(&block_hash)) {
-				tokio::time::sleep(self.block_fetch_interval).await;
-				continue;
-			}
-
-			*current_block_hash = Some(block_hash);
-
-			return Ok(self.client.block_at(block_hash).await?);
-		}
-	}
-
-	async fn pick_stream(&self) -> Result<Stream, subxt::Error> {
-		match self.wait_for == WaitFor::BlockInclusion {
-			true => self.client.blocks().subscribe_all().await,
-			false => self.client.blocks().subscribe_finalized().await,
-		}
-	}
-
-	async fn ws_fetch_next_block(&self, stream: &mut Stream) -> Result<ABlock, TransactionExecutionError> {
+	async fn fetch_next_block(stream: &mut Stream) -> Result<ABlock, TransactionExecutionError> {
 		loop {
 			let Some(block) = stream.next().await else {
 				return Err(TransactionExecutionError::BlockStreamFailure);
@@ -172,39 +141,150 @@ impl Watcher {
 			return Ok(block);
 		}
 	}
+}
 
-	async fn calculate_block_height_timeout(&self) -> Result<u32, TransactionExecutionError> {
-		if let Some(height) = self.block_height_timeout {
-			return Ok(height);
+pub struct HTTPWatcher {}
+impl HTTPWatcher {
+	pub async fn run(
+		client: &Client,
+		options: &WatcherOptions,
+	) -> Result<Option<TransactionDetails>, TransactionExecutionError> {
+		let logger = options.logger.clone();
+
+		let block_height_timeout = options.calculate_block_height_timeout(client).await?;
+		logger.log_watcher_run(options, block_height_timeout);
+
+		let mut current_block_hash: H256 = H256::zero();
+		loop {
+			let block = HTTPWatcher::fetch_next_block(client, options, &mut current_block_hash).await?;
+			logger.log_watcher_new_block(&block);
+
+			if let Some(tx_details) = find_transaction(client, &block, &options.tx_hash).await? {
+				logger.log_watcher_tx_found(&tx_details);
+				return Ok(Some(tx_details));
+			}
+
+			if block.number() >= block_height_timeout {
+				logger.log_watcher_stop();
+				return Ok(None);
+			}
 		}
-
-		let count = self.block_count_timeout.unwrap_or(DEFAULT_BLOCK_COUNT_TIMEOUT);
-		let current_height = self.client.best_block_number().await?;
-
-		Ok(current_height + count)
 	}
 
-	async fn find_transaction(&self, block: &ABlock) -> Result<Option<TransactionDetails>, subxt::Error> {
-		let transactions = block.extrinsics().await?;
-		let tx_found = transactions.iter().find(|e| e.hash() == self.tx_hash);
-		let Some(ext_details) = tx_found else {
-			return Ok(None);
-		};
+	async fn fetch_next_block(
+		client: &Client,
+		options: &WatcherOptions,
+		current_block_hash: &mut H256,
+	) -> Result<ABlock, TransactionExecutionError> {
+		loop {
+			let block_hash = match options.wait_for {
+				WaitFor::BlockInclusion => client.best_block_hash().await?,
+				WaitFor::BlockFinalization => client.finalized_block_hash().await?,
+			};
 
-		let events = match ext_details.events().await.ok() {
-			Some(x) => EventRecords::new_ext(x),
-			None => None,
-		};
+			if (*current_block_hash).eq(&block_hash) {
+				tokio::time::sleep(options.block_fetch_interval).await;
+				continue;
+			}
 
-		let value = TransactionDetails::new(
-			self.client.clone(),
-			events,
-			self.tx_hash,
-			ext_details.index(),
-			block.hash(),
-			block.number(),
-		);
+			*current_block_hash = block_hash;
 
-		Ok(Some(value))
+			return Ok(client.block_at(block_hash).await?);
+		}
 	}
+}
+
+pub struct TxStateRPCWatcher {}
+impl TxStateRPCWatcher {
+	pub async fn run(
+		client: &Client,
+		options: &WatcherOptions,
+	) -> Result<Option<TransactionDetails>, TransactionExecutionError> {
+		let logger = options.logger.clone();
+
+		let block_height_timeout = options.calculate_block_height_timeout(client).await?;
+		logger.log_watcher_run(options, block_height_timeout);
+
+		let finalized = options.wait_for == WaitFor::BlockFinalization;
+		let mut current_block_hash: H256 = H256::zero();
+		loop {
+			current_block_hash = TxStateRPCWatcher::wait_for_new_block(client, options, &current_block_hash).await?;
+			logger.log_watcher_new_block_hash(&current_block_hash);
+
+			let mut result = client.transaction_state(&options.tx_hash, finalized).await?;
+			if result.is_empty() {
+				tokio::time::sleep(Duration::from_secs(2)).await;
+				result = client.transaction_state(&options.tx_hash, finalized).await?;
+			}
+			result.sort_by(|a, b| b.block_height.cmp(&a.block_height));
+
+			if let Some(state) = result.first() {
+				let events = client.event_records(state.block_hash.clone()).await.unwrap_or_default();
+				let details = TransactionDetails::new(
+					client.clone(),
+					events,
+					state.tx_hash,
+					state.tx_index,
+					state.block_hash,
+					state.block_height,
+				);
+				logger.log_watcher_tx_found(&details);
+				return Ok(Some(details));
+			}
+
+			let block_height = client.block_number(current_block_hash.clone()).await?;
+			if block_height >= block_height_timeout {
+				logger.log_watcher_stop();
+				return Ok(None);
+			}
+		}
+	}
+
+	async fn wait_for_new_block(
+		client: &Client,
+		options: &WatcherOptions,
+		current_block_hash: &H256,
+	) -> Result<H256, TransactionExecutionError> {
+		loop {
+			let block_hash = match options.wait_for {
+				WaitFor::BlockInclusion => client.best_block_hash().await?,
+				WaitFor::BlockFinalization => client.finalized_block_hash().await?,
+			};
+
+			if current_block_hash.eq(&block_hash) {
+				tokio::time::sleep(options.block_fetch_interval).await;
+				continue;
+			}
+
+			return Ok(block_hash);
+		}
+	}
+}
+
+pub async fn find_transaction(
+	client: &Client,
+	block: &ABlock,
+	tx_hash: &H256,
+) -> Result<Option<TransactionDetails>, subxt::Error> {
+	let transactions = block.extrinsics().await?;
+	let tx_found = transactions.iter().find(|e| e.hash() == *tx_hash);
+	let Some(ext_details) = tx_found else {
+		return Ok(None);
+	};
+
+	let events = match ext_details.events().await.ok() {
+		Some(x) => EventRecords::new_ext(x),
+		None => None,
+	};
+
+	let value = TransactionDetails::new(
+		client.clone(),
+		events,
+		*tx_hash,
+		ext_details.index(),
+		block.hash(),
+		block.number(),
+	);
+
+	Ok(Some(value))
 }

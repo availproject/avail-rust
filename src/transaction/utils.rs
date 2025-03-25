@@ -1,8 +1,8 @@
-use super::{Options, Params, TransactionDetails};
+use super::{watcher::WatcherOptions, Options, Params, TransactionDetails};
 use crate::{
 	error::ClientError,
 	rpc,
-	sdk::ClientMode,
+	sdk::{ClientMode, ClientOptions},
 	transaction::{logger::Logger, watcher::Watcher},
 	Client, WaitFor,
 };
@@ -72,10 +72,11 @@ where
 		return Err(ClientError::from("Transaction is not compatible with non-zero AppIds"));
 	}
 
+	let options: ClientOptions = client.get_options();
 	let logger = Logger::new(H256::default(), true);
-	logger.log_tx_submitting(signer, call, &params, client.mode);
+	logger.log_tx_submitting(signer, call, &params, options.mode);
 
-	match client.mode {
+	match options.mode {
 		ClientMode::HTTP => {
 			let tx_client = client.online_client.tx();
 			let signed_call = tx_client.create_signed(call, signer, params).await?;
@@ -111,8 +112,11 @@ where
 		let logger = Logger::new(tx_hash, true);
 		logger.log_tx_submitted(account, &options.mortality);
 
-		let watcher = Watcher::new(client.clone(), tx_hash);
-		let watcher = watcher.logger(logger.clone()).wait_for(wait_for);
+		let mut watcher = Watcher::new(client.clone(), tx_hash);
+		watcher.set_options(|options: &mut WatcherOptions| {
+			options.wait_for = wait_for;
+			options.logger = logger.clone();
+		});
 
 		let tx_details = watcher.run().await?;
 		if let Some(tx_details) = tx_details {

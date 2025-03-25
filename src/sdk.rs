@@ -1,9 +1,13 @@
 use crate::{
-	error::ClientError, rpc, transactions::Transactions, ABlock, ABlocksClient, AOnlineClient, AStorageClient,
-	AvailHeader, TransactionState,
+	block::EventRecords,
+	error::ClientError,
+	rpc::{self, rpc::RpcMethods},
+	transactions::Transactions,
+	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AvailHeader,
+	TransactionState,
 };
 use primitive_types::H256;
-use std::{fmt::Debug, time::Duration};
+use std::{fmt::Debug, sync::Arc, time::Duration};
 use subxt::backend::rpc::{
 	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
 	RpcClient,
@@ -25,9 +29,14 @@ impl SDK {
 		Self::new_custom(client).await
 	}
 
-	pub async fn new_custom(client: Client) -> Result<Self, ClientError> {
-		let tx = Transactions::new(client.clone());
+	pub async fn new_custom(mut client: Client) -> Result<Self, ClientError> {
+		// Check if we have tx_state_rpc available to us.
+		let methods = client.rpc_methods_list().await.unwrap_or_default();
+		if methods.methods.contains(&String::from("transaction_state")) {
+			client.toggle_tx_state_rpc(true);
+		}
 
+		let tx = Transactions::new(client.clone());
 		Ok(SDK { client, tx })
 	}
 
@@ -130,11 +139,28 @@ impl WaitFor {
 	}
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ClientOptions {
+	pub mode: ClientMode,
+	pub tx_state_rpc_enabled: bool,
+}
+
+impl Default for ClientOptions {
+	fn default() -> Self {
+		Self {
+			mode: ClientMode::WS,
+			tx_state_rpc_enabled: false,
+		}
+	}
+}
+
+type SharedClientOptions = Arc<std::sync::Mutex<ClientOptions>>;
+
 #[derive(Debug, Clone)]
 pub struct Client {
 	pub online_client: AOnlineClient,
 	pub rpc_client: RpcClient,
-	pub mode: ClientMode,
+	pub options: SharedClientOptions,
 }
 
 impl Client {
@@ -142,12 +168,24 @@ impl Client {
 		Self {
 			online_client,
 			rpc_client,
-			mode: ClientMode::WS,
+			options: SharedClientOptions::default(),
 		}
 	}
 
 	pub fn set_mode(&mut self, value: ClientMode) {
-		self.mode = value;
+		if let Ok(mut lock) = self.options.lock() {
+			lock.mode = value;
+		}
+	}
+
+	pub fn toggle_tx_state_rpc(&mut self, value: bool) {
+		if let Ok(mut lock) = self.options.lock() {
+			lock.tx_state_rpc_enabled = value;
+		}
+	}
+
+	pub fn get_options(&self) -> ClientOptions {
+		self.options.lock().map(|x| x.clone()).unwrap_or_default()
 	}
 
 	pub fn blocks(&self) -> ABlocksClient {
@@ -156,6 +194,19 @@ impl Client {
 
 	pub fn storage(&self) -> AStorageClient {
 		self.online_client.storage()
+	}
+
+	pub fn constants(&self) -> AConstantsClient {
+		self.online_client.constants()
+	}
+
+	pub fn events(&self) -> AEventsClient {
+		AEventsClient::new(self.online_client.clone())
+	}
+
+	pub async fn event_records(&self, at: H256) -> Result<Option<EventRecords>, subxt::Error> {
+		let events = self.events().at(at).await?;
+		Ok(EventRecords::new(events))
 	}
 
 	pub async fn block_at(&self, at: H256) -> Result<ABlock, subxt::Error> {
@@ -186,6 +237,11 @@ impl Client {
 	pub async fn best_block_number(&self) -> Result<u32, subxt::Error> {
 		let header = rpc::chain::get_header(self, None).await?;
 		Ok(header.number)
+	}
+
+	pub async fn rpc_methods_list(&self) -> Result<RpcMethods, subxt::Error> {
+		let methods = rpc::rpc::methods(self).await?;
+		Ok(methods)
 	}
 
 	pub async fn finalized_block_number(&self) -> Result<u32, subxt::Error> {

@@ -17,8 +17,9 @@ pub async fn run() -> Result<(), ClientError> {
 	//
 	// It's not necessary to use the builtin watcher. A custom watcher
 	// might yield better results in some cases.
-	let watcher = Watcher::new(sdk.client.clone(), tx_hash);
-	let watcher = watcher.wait_for(WaitFor::BlockInclusion);
+	let mut watcher = Watcher::new(sdk.client.clone(), tx_hash);
+	watcher.set_options(|opt: &mut WatcherOptions| opt.wait_for = WaitFor::BlockInclusion);
+
 	let res = watcher.run().await?;
 	let res = res.unwrap();
 	assert_eq!(res.is_successful(), Some(true));
