@@ -46,7 +46,7 @@ async fn main() -> Result<(), ClientError> {
 	// account::run().await?;
 	// batch::run().await?;
 	// block::run().await?;
-	// data_submission::run().await?;
+	data_submission::run().await?;
 	// proxy::run().await?;
 	// rpc::run().await?;
 	// storage::run().await?;
@@ -57,7 +57,7 @@ async fn main() -> Result<(), ClientError> {
 	// transaction::run().await?;
 	// transaction_state::run().await?;
 	// indexer::run().await?;
-	turbo_da::run().await?;
+	// turbo_da::run().await?;
 
 	Ok(())
 }

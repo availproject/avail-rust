@@ -213,3 +213,18 @@ pub mod kate {
 		Ok(value)
 	}
 }
+
+pub mod rpc {
+	use super::*;
+
+	#[derive(Debug, Default, Serialize, Deserialize)]
+	pub struct RpcMethods {
+		pub methods: Vec<String>,
+	}
+
+	pub async fn methods(client: &Client) -> Result<RpcMethods, subxt::Error> {
+		let params = rpc_params![];
+		let value = client.rpc_client.request("rpc_methods", params).await?;
+		Ok(value)
+	}
+}
