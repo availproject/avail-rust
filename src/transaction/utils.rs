@@ -2,9 +2,8 @@ use super::{watcher::WatcherOptions, Options, Params, TransactionDetails};
 use crate::{
 	error::ClientError,
 	rpc,
-	sdk::{ClientMode, ClientOptions},
 	transaction::{logger::Logger, watcher::Watcher},
-	Client, WaitFor,
+	Client, ClientMode, ClientOptions, WaitFor,
 };
 use primitive_types::H256;
 use subxt::{blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};

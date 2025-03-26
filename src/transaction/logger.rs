@@ -1,5 +1,5 @@
 use super::{options::CheckedMortality, watcher::WatcherOptions, Params, TransactionDetails};
-use crate::{sdk::ClientMode, ABlock};
+use crate::{ABlock, ClientMode};
 use log::{info, log_enabled, warn};
 use primitive_types::H256;
 use std::sync::Arc;

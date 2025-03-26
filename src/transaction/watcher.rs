@@ -4,7 +4,7 @@ use std::{sync::Arc, time::Duration};
 use subxt::backend::StreamOf;
 
 use super::{logger::Logger, utils::TransactionExecutionError, TransactionDetails};
-use crate::{block::EventRecords, sdk::ClientMode, ABlock, Client, WaitFor};
+use crate::{block::EventRecords, ABlock, Client, ClientMode, WaitFor};
 
 type Stream = StreamOf<Result<ABlock, subxt::Error>>;
 

@@ -13,6 +13,7 @@ pub use turobda::TurboDA;
 pub mod account;
 pub mod block;
 pub mod block_transaction;
+pub mod client;
 pub mod error;
 pub mod primitives;
 pub mod rpc;
@@ -27,6 +28,7 @@ pub use avail::runtime_types::{bounded_collections::bounded_vec::BoundedVec, sp_
 pub use avail_core;
 pub use block::Block;
 pub use block_transaction::{BlockTransaction, Filter};
+pub use client::{Client, ClientMode, ClientOptions};
 pub use config::*;
 pub use hex;
 pub use kate_recovery;
@@ -36,7 +38,7 @@ pub use primitives::{
 	kate::{Cell, GDataProof, GRow},
 };
 pub use rpc::TransactionState;
-pub use sdk::{Client, ClientOptions, WaitFor, SDK};
+pub use sdk::{WaitFor, SDK};
 pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
@@ -55,13 +57,11 @@ pub mod prelude {
 		block::{to_ascii, DataSubmission},
 		config::*,
 		error::ClientError,
-		hex, kate_recovery, primitives, rpc,
-		sdk::ClientMode,
-		subxt, subxt_signer,
+		hex, kate_recovery, primitives, rpc, subxt, subxt_signer,
 		utils::new_h256_from_hex,
-		AccountId, Block, BlockTransaction, Client, ClientOptions, Filter, Keypair, MultiAddress, Options, Perbill,
-		PopulatedOptions, SecretUri, Transaction, TransactionDetails, TransactionState, WaitFor, Watcher, WatcherMode,
-		WatcherOptions, H256, SDK, U256,
+		AccountId, Block, BlockTransaction, Client, ClientMode, ClientOptions, Filter, Keypair, MultiAddress, Options,
+		Perbill, PopulatedOptions, SecretUri, Transaction, TransactionDetails, TransactionState, WaitFor, Watcher,
+		WatcherMode, WatcherOptions, H256, SDK, U256,
 	};
 
 	#[cfg(feature = "native")]
