@@ -1,10 +1,9 @@
-use super::{Options, Params, TransactionDetails};
+use super::{watcher::WatcherOptions, Options, Params, TransactionDetails};
 use crate::{
 	error::ClientError,
 	rpc,
-	sdk::ClientMode,
 	transaction::{logger::Logger, watcher::Watcher},
-	Client, WaitFor,
+	Client, ClientMode, ClientOptions, WaitFor,
 };
 use primitive_types::H256;
 use subxt::{blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
@@ -53,7 +52,7 @@ where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
-	let options = options.build(&client, &account_id).await?;
+	let options = options.build(client, &account_id).await?;
 	let params = options.build().await?;
 
 	sign_and_send_raw_params(client, account, call, params).await
@@ -72,10 +71,11 @@ where
 		return Err(ClientError::from("Transaction is not compatible with non-zero AppIds"));
 	}
 
+	let options: ClientOptions = client.get_options();
 	let logger = Logger::new(H256::default(), true);
-	logger.log_tx_submitting(signer, call, &params, client.mode);
+	logger.log_tx_submitting(signer, call, &params, options.mode);
 
-	match client.mode {
+	match options.mode {
 		ClientMode::HTTP => {
 			let tx_client = client.online_client.tx();
 			let signed_call = tx_client.create_signed(call, signer, params).await?;
@@ -101,7 +101,7 @@ where
 	T: StaticExtrinsic + EncodeAsFields,
 {
 	let account_id = account.public_key().to_account_id();
-	let mut options = options.build(&client, &account_id).await?;
+	let mut options = options.build(client, &account_id).await?;
 	let mut retry_count = 2;
 
 	loop {
@@ -109,10 +109,13 @@ where
 		let tx_hash = sign_and_send_raw_params(client, account, call, params).await?;
 
 		let logger = Logger::new(tx_hash, true);
-		logger.log_tx_submitted(&account, &options.mortality);
+		logger.log_tx_submitted(account, &options.mortality);
 
-		let watcher = Watcher::new(client.clone(), tx_hash);
-		let watcher = watcher.logger(logger.clone()).wait_for(wait_for);
+		let mut watcher = Watcher::new(client.clone(), tx_hash);
+		watcher.set_options(|options: &mut WatcherOptions| {
+			options.wait_for = wait_for;
+			options.logger = logger.clone();
+		});
 
 		let tx_details = watcher.run().await?;
 		if let Some(tx_details) = tx_details {

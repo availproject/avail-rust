@@ -1,16 +1,5 @@
-use crate::{
-	error::ClientError, rpc, transactions::Transactions, ABlock, ABlocksClient, AOnlineClient, AStorageClient,
-	AvailHeader, TransactionState,
-};
-use primitive_types::H256;
-use std::{fmt::Debug, time::Duration};
-use subxt::backend::rpc::{
-	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
-	RpcClient,
-};
-
-#[cfg(feature = "native")]
-use crate::http;
+use crate::{client::Client, error::ClientError, transactions::Transactions};
+use std::fmt::Debug;
 
 #[derive(Clone)]
 pub struct SDK {
@@ -20,14 +9,13 @@ pub struct SDK {
 
 impl SDK {
 	pub async fn new(endpoint: &str) -> Result<Self, ClientError> {
-		let client = reconnecting_api(endpoint).await?;
+		let client = super::client::reconnecting_api(endpoint).await?;
 
 		Self::new_custom(client).await
 	}
 
 	pub async fn new_custom(client: Client) -> Result<Self, ClientError> {
 		let tx = Transactions::new(client.clone());
-
 		Ok(SDK { client, tx })
 	}
 
@@ -67,7 +55,7 @@ impl SDK {
 #[cfg(feature = "native")]
 impl SDK {
 	pub async fn new_http(endpoint: &str) -> Result<Self, ClientError> {
-		let client = http_api(endpoint).await?;
+		let client = super::client::http_api(endpoint).await?;
 
 		Self::new_custom(client).await
 	}
@@ -80,39 +68,6 @@ impl Debug for SDK {
 			.field("Genesis Hash", &genesis_hash)
 			.finish_non_exhaustive()
 	}
-}
-
-pub async fn reconnecting_api(endpoint: &str) -> Result<Client, ClientError> {
-	let rpc_client = ReconnectingRpcClient::builder()
-		.max_request_size(512 * 1024 * 1024)
-		.max_response_size(512 * 1024 * 1024)
-		.retry_policy(
-			ExponentialBackoff::from_millis(1000)
-				.max_delay(Duration::from_secs(3))
-				.take(3),
-		)
-		.build(endpoint)
-		.await
-		.map_err(|e| e.to_string())?;
-	let rpc_client = RpcClient::new(rpc_client);
-
-	// Cloning RpcClient is cheaper and doesn't create a new WS connection
-	let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
-
-	Ok(Client::new(api, rpc_client))
-}
-
-#[cfg(feature = "native")]
-pub async fn http_api(endpoint: &str) -> Result<Client, ClientError> {
-	let rpc_client = http::HttpClient::new(endpoint).map_err(|e| e.to_string())?;
-	let rpc_client = RpcClient::new(rpc_client);
-
-	// Cloning RpcClient is cheaper and doesn't create a new WS connection
-	let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
-	let mut client = Client::new(api, rpc_client);
-	client.set_mode(ClientMode::HTTP);
-
-	Ok(client)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -128,83 +83,4 @@ impl WaitFor {
 			WaitFor::BlockFinalization => "Block Finalization",
 		}
 	}
-}
-
-#[derive(Debug, Clone)]
-pub struct Client {
-	pub online_client: AOnlineClient,
-	pub rpc_client: RpcClient,
-	pub mode: ClientMode,
-}
-
-impl Client {
-	pub fn new(online_client: AOnlineClient, rpc_client: RpcClient) -> Client {
-		Self {
-			online_client,
-			rpc_client,
-			mode: ClientMode::WS,
-		}
-	}
-
-	pub fn set_mode(&mut self, value: ClientMode) {
-		self.mode = value;
-	}
-
-	pub fn blocks(&self) -> ABlocksClient {
-		self.online_client.blocks()
-	}
-
-	pub fn storage(&self) -> AStorageClient {
-		self.online_client.storage()
-	}
-
-	pub async fn block_at(&self, at: H256) -> Result<ABlock, subxt::Error> {
-		self.online_client.blocks().at(at).await
-	}
-
-	pub async fn header_at(&self, at: H256) -> Result<AvailHeader, subxt::Error> {
-		rpc::chain::get_header(self, Some(at)).await
-	}
-
-	pub async fn block_hash(&self, block_height: u32) -> Result<H256, subxt::Error> {
-		rpc::chain::get_block_hash(self, Some(block_height)).await
-	}
-
-	pub async fn best_block_hash(&self) -> Result<H256, subxt::Error> {
-		rpc::chain::get_block_hash(self, None).await
-	}
-
-	pub async fn finalized_block_hash(&self) -> Result<H256, subxt::Error> {
-		rpc::chain::get_finalized_head(self).await
-	}
-
-	pub async fn block_number(&self, block_hash: H256) -> Result<u32, subxt::Error> {
-		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
-		Ok(header.number)
-	}
-
-	pub async fn best_block_number(&self) -> Result<u32, subxt::Error> {
-		let header = rpc::chain::get_header(self, None).await?;
-		Ok(header.number)
-	}
-
-	pub async fn finalized_block_number(&self) -> Result<u32, subxt::Error> {
-		let block_hash = self.finalized_block_hash().await?;
-		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
-		Ok(header.number)
-	}
-
-	pub async fn transaction_state(
-		&self,
-		tx_hash: &H256,
-		finalized: bool,
-	) -> Result<Vec<TransactionState>, subxt::Error> {
-		rpc::transaction::state(self, tx_hash, finalized).await
-	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ClientMode {
-	WS,
-	HTTP,
 }

@@ -5,7 +5,8 @@ use subxt::{
 		Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, ExtrinsicSignedExtensions, Extrinsics, FoundExtrinsic,
 	},
 	config::substrate::BlakeTwo256,
-	events::{EventDetails, Events},
+	constants::ConstantsClient,
+	events::{EventDetails, Events, EventsClient},
 	storage::StorageClient,
 	tx::{TxClient, TxInBlock, TxProgress},
 	utils::{AccountId32, MultiSignature, H256},
@@ -24,6 +25,8 @@ pub type BlockHash = H256;
 pub type AOnlineClient = OnlineClient<AvailConfig>;
 pub type ABlocksClient = BlocksClient<AvailConfig, AOnlineClient>;
 pub type AStorageClient = StorageClient<AvailConfig, AOnlineClient>;
+pub type AConstantsClient = ConstantsClient<AvailConfig, AOnlineClient>;
+pub type AEventsClient = EventsClient<AvailConfig, AOnlineClient>;
 pub type ATxClient = TxClient<AvailConfig, AOnlineClient>;
 pub type AExtrinsicSignedExtensions<'a> = ExtrinsicSignedExtensions<'a, AvailConfig>;
 

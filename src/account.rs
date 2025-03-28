@@ -108,7 +108,6 @@ pub fn account_id_from_str(value: &str) -> Result<AccountId, String> {
 }
 
 pub fn account_id_from_slice(value: &[u8]) -> Result<AccountId, String> {
-	dbg!(&value);
 	let account_id: [u8; 32] = match value.try_into() {
 		Ok(x) => x,
 		Err(err) => return Err(err.to_string()),

@@ -99,12 +99,12 @@ impl Indexer {
 			let block = self.block.lock().unwrap().clone();
 
 			let Some(block) = block else {
-				tokio::time::sleep(Duration::from_secs(1)).await;
+				tokio::time::sleep(Duration::from_secs(5)).await;
 				continue;
 			};
 
 			if block_height > block.height {
-				tokio::time::sleep(Duration::from_secs(1)).await;
+				tokio::time::sleep(Duration::from_secs(5)).await;
 				continue;
 			}
 
@@ -131,7 +131,7 @@ impl Indexer {
 			};
 
 			if height.is_none() {
-				tokio::time::sleep(Duration::from_secs(1)).await;
+				tokio::time::sleep(Duration::from_secs(5)).await;
 				continue;
 			}
 
@@ -170,7 +170,7 @@ impl Indexer {
 			};
 
 			if cur_hash.is_some_and(|x| x == new_hash) {
-				tokio::time::sleep(Duration::from_secs(1)).await;
+				tokio::time::sleep(Duration::from_secs(15)).await;
 				continue;
 			}
 

@@ -22,10 +22,7 @@ impl TransactionDetails {
 		block_hash: H256,
 		block_number: u32,
 	) -> Self {
-		let events = match events {
-			Some(x) => Some(x.into()),
-			None => None,
-		};
+		let events = events.map(|x| x.into());
 		Self {
 			client,
 			events,
@@ -38,8 +35,8 @@ impl TransactionDetails {
 
 	/// Returns None if it was not possible to determine if the transaction was successful or not
 	/// If Some is returned then
-	/// 	true means the transaction was successful
-	/// 	false means the transaction failed
+	///    true means the transaction was successful
+	///    false means the transaction failed
 	pub fn is_successful(&self) -> Option<bool> {
 		match &self.events {
 			Some(events) => utils::check_if_transaction_was_successful(events),
@@ -49,8 +46,8 @@ impl TransactionDetails {
 
 	/// Returns Err if it was not possible to determine if the transaction was decodable
 	/// If Ok is returned then
-	/// 	Some means the transaction was successfully decoded
-	/// 	None means the transaction cannot be decoded as T
+	///    Some means the transaction was successfully decoded
+	///    None means the transaction cannot be decoded as T
 	pub async fn decode_as<T: StaticExtrinsic + Clone>(&self) -> Result<Option<T>, ClientError> {
 		let block = crate::block::Block::new(&self.client, self.block_hash).await?;
 		let filter = Filter::new().tx_index(self.tx_index);
@@ -63,12 +60,12 @@ impl TransactionDetails {
 
 	/// Returns Err if it was not possible to determine if the transaction was decodable
 	/// If Ok is returned then
-	/// 	true means the transaction was successfully decoded
-	/// 	false means the transaction cannot be decoded as T
+	///    true means the transaction was successfully decoded
+	///    false means the transaction cannot be decoded as T
 	pub async fn is<T: StaticExtrinsic + Clone>(&self) -> Result<bool, ClientError> {
 		let block = crate::block::Block::new(&self.client, self.block_hash).await?;
 		let filter = Filter::new().tx_index(self.tx_index);
 		let txs = block.transactions_static::<T>(filter);
-		return Ok(!txs.is_empty());
+		Ok(!txs.is_empty())
 	}
 }

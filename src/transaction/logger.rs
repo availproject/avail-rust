@@ -1,5 +1,5 @@
-use super::{options::CheckedMortality, Params, TransactionDetails};
-use crate::{sdk::ClientMode, ABlock, WaitFor};
+use super::{options::CheckedMortality, watcher::WatcherOptions, Params, TransactionDetails};
+use crate::{ABlock, ClientMode};
 use log::{info, log_enabled, warn};
 use primitive_types::H256;
 use std::sync::Arc;
@@ -27,12 +27,12 @@ impl Logger {
 		self.enabled = value
 	}
 
-	pub fn log_watcher_run(&self, wait_for: WaitFor, block_height_timeout: u32, mode: ClientMode) {
+	pub fn log_watcher_run(&self, options: &WatcherOptions, block_height_timeout: u32) {
 		if !log_enabled!(log::Level::Info) || !self.enabled {
 			return;
 		}
 
-		info!(target: "watcher", "{}: Watching for Tx Hash: {:?}. Waiting for: {}, Block height timeout: {:?}, Client Mode: {:?}", self.marker, self.tx_hash, wait_for.to_str(), block_height_timeout, mode);
+		info!(target: "watcher", "{}: Watching for Tx Hash: {:?}. Waiting for: {}, Block height timeout: {:?}, Watcher Mode: {:?}", self.marker, self.tx_hash, options.wait_for.to_str(), block_height_timeout, options.mode);
 	}
 
 	pub fn log_watcher_new_block(&self, block: &ABlock) {
@@ -41,6 +41,14 @@ impl Logger {
 		}
 
 		info!(target: "watcher", "{}: New block fetched. Hash: {:?}, Number: {}", self.marker, block.hash(), block.number());
+	}
+
+	pub fn log_watcher_new_block_hash(&self, block_hash: &H256) {
+		if !log_enabled!(log::Level::Info) || !self.enabled {
+			return;
+		}
+
+		info!(target: "watcher", "{}: New block fetched. Hash: {:?}", self.marker, block_hash);
 	}
 
 	pub fn log_watcher_tx_found(&self, details: &TransactionDetails) {
