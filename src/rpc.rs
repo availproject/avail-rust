@@ -277,6 +277,26 @@ pub mod kate {
 				.collect::<Result<Vec<_>, _>>()
 				.unwrap();
 
+			// Print sizes of variables for debugging
+			println!("Proof sizes:");
+			println!("  evals_flat length: {}", evals_flat.len());
+			println!("  evals_grid length: {}", evals_grid.len());
+			println!("  points length: {}", points.len());
+			println!("  proofs size: {} bytes", proof.0.len());
+			println!("  commits length: {}", commits.len());
+			println!("Cell block dimensions:");
+			println!(
+				"  start_x: {}, end_x: {}, width: {}",
+				cellblock.start_x,
+				cellblock.end_x,
+				cellblock.end_x - cellblock.start_x
+			);
+			println!(
+				"  start_y: {}, end_y: {}, height: {}",
+				cellblock.start_y,
+				cellblock.end_y,
+				cellblock.end_y - cellblock.start_y
+			);
 			let verified = pmp
 				.verify(
 					&mut Transcript::new(b"avail-mp"),
