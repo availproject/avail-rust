@@ -24,6 +24,7 @@ mod custom_rpc_connection;
 mod data_submission;
 mod http_rpc_connection;
 mod indexer;
+mod multiproof;
 mod proxy;
 mod rpc;
 mod storage;
@@ -46,7 +47,8 @@ async fn main() -> Result<(), ClientError> {
 	// account::run().await?;
 	// batch::run().await?;
 	// block::run().await?;
-	data_submission::run().await?;
+	// data_submission::run().await?;
+	multiproof::run().await?;
 	// proxy::run().await?;
 	// rpc::run().await?;
 	// storage::run().await?;
