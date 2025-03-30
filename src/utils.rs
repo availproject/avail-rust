@@ -2,7 +2,9 @@ use crate::{
 	avail::runtime_types::{
 		avail_core::header::extension::{v3, HeaderExtension},
 		da_runtime::primitives::SessionKeys,
-	}, block::EventRecords, AppUncheckedExtrinsic,
+	},
+	block::EventRecords,
+	AppUncheckedExtrinsic,
 };
 use primitive_types::H256;
 use subxt::backend::legacy::rpc_methods::Bytes;
