@@ -262,7 +262,7 @@ pub mod kate {
 				.into_iter()
 				.map(|e| ArkScalar::from_bytes(&e.to_big_endian()))
 				.collect::<Result<Vec<_>, _>>()
-				.unwrap();
+				.map_err(|_| ClientError::Custom("Failed to convert evals to ArkScalar".to_string()))?;
 			let evals_grid = evals_flat
 				.chunks_exact((cellblock.end_x - cellblock.start_x) as usize)
 				.collect::<Vec<_>>();
@@ -275,7 +275,7 @@ pub mod kate {
 				.take((cellblock.end_y - cellblock.start_y) as usize)
 				.map(|c| Commitment::from_bytes(c.try_into().unwrap()))
 				.collect::<Result<Vec<_>, _>>()
-				.unwrap();
+				.map_err(|_| ClientError::Custom("Failed to extract Commitments".to_string()))?;
 
 			let verified = pmp
 				.verify(
