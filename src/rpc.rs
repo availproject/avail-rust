@@ -1,7 +1,6 @@
 use crate::{
 	avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength},
 	from_substrate::{NodeRole, PeerInfo, SyncState},
-	prelude::ClientError,
 	primitives::kate::GMultiProof,
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
 };
@@ -230,11 +229,11 @@ pub mod kate {
 		client: &Client,
 		at: Option<H256>,
 		cells: Vec<Cell>,
-	) -> Result<(Vec<(GMultiProof, GCellBlock)>, Vec<u8>), ClientError> {
+	) -> Result<(Vec<(GMultiProof, GCellBlock)>, Vec<u8>), subxt::Error> {
 		let header = chain::get_header(client, at).await?;
 
 		let Some((_, _, _, commitment)) = extract_kate(&header.extension) else {
-			return Err(ClientError::Custom(
+			return Err(subxt::Error::Other(
 				"Skipping block without header extension".to_string(),
 			));
 		};
@@ -254,15 +253,15 @@ pub mod kate {
 		proof: Vec<(GMultiProof, GCellBlock)>,
 		commitments: Vec<u8>,
 		cols: usize, // Number of columns in the original grid
-	) -> Result<bool, ClientError> {
+	) -> Result<bool, subxt::Error> {
 		let points =
-			domain_points(cols).map_err(|_| ClientError::Custom("Failed to generate domain points".to_string()))?;
+			domain_points(cols).map_err(|_| subxt::Error::Other("Failed to generate domain points".to_string()))?;
 		for ((eval, proof), cellblock) in proof.iter() {
 			let evals_flat = eval
 				.into_iter()
 				.map(|e| ArkScalar::from_bytes(&e.to_big_endian()))
 				.collect::<Result<Vec<_>, _>>()
-				.map_err(|_| ClientError::Custom("Failed to convert evals to ArkScalar".to_string()))?;
+				.map_err(|_| subxt::Error::Other("Failed to convert evals to ArkScalar".to_string()))?;
 			let evals_grid = evals_flat
 				.chunks_exact((cellblock.end_x - cellblock.start_x) as usize)
 				.collect::<Vec<_>>();
@@ -275,7 +274,7 @@ pub mod kate {
 				.take((cellblock.end_y - cellblock.start_y) as usize)
 				.map(|c| Commitment::from_bytes(c.try_into().unwrap()))
 				.collect::<Result<Vec<_>, _>>()
-				.map_err(|_| ClientError::Custom("Failed to extract Commitments".to_string()))?;
+				.map_err(|_| subxt::Error::Other("Failed to extract Commitments".to_string()))?;
 
 			let verified = pmp
 				.verify(
@@ -285,7 +284,7 @@ pub mod kate {
 					&evals_grid,
 					&proofs,
 				)
-				.map_err(|e| ClientError::Custom(format!("Failed to verify proof {:?}", e)))?;
+				.map_err(|e| subxt::Error::Other(format!("Failed to verify proof {:?}", e)))?;
 			if !verified {
 				return Ok(false);
 			}
@@ -294,7 +293,7 @@ pub mod kate {
 		Ok(true)
 	}
 
-	pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, ClientError> {
+	pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, subxt::Error> {
 		let params = rpc_params![rows, at];
 		let value = client.request("kate_queryRows", params).await?;
 		Ok(value)
