@@ -266,7 +266,8 @@ pub mod kate {
 				.chunks_exact((cellblock.end_x - cellblock.start_x) as usize)
 				.collect::<Vec<_>>();
 
-			let proofs = Proof::from_bytes(&proof.0).unwrap();
+			let proofs =
+				Proof::from_bytes(&proof.0).map_err(|_| subxt::Error::Other("Failed to parse proof".to_string()))?;
 
 			let commits = commitments
 				.chunks_exact(48)
