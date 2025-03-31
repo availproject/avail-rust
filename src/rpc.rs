@@ -245,15 +245,18 @@ pub mod kate {
 		Ok((proofs, commitment))
 	}
 
+	pub async fn generate_pmp() -> M1NoPrecomp<Bls12_381, BlstMSMEngine> {
+		multiproof_params()
+	}
+
 	pub async fn verify_multi_proof(
+		pmp: M1NoPrecomp<Bls12_381, BlstMSMEngine>,
 		proof: Vec<(GMultiProof, GCellBlock)>,
 		commitments: Vec<u8>,
 		cols: usize, // Number of columns in the original grid
 	) -> Result<bool, ClientError> {
-		type E = Bls12_381;
-		type M = BlstMSMEngine;
-		let pmp: M1NoPrecomp<E, M> = multiproof_params();
-
+		let points =
+			domain_points(cols).map_err(|_| ClientError::Custom("Failed to generate domain points".to_string()))?;
 		for ((eval, proof), cellblock) in proof.iter() {
 			let evals_flat = eval
 				.into_iter()
@@ -263,8 +266,7 @@ pub mod kate {
 			let evals_grid = evals_flat
 				.chunks_exact((cellblock.end_x - cellblock.start_x) as usize)
 				.collect::<Vec<_>>();
-			let points =
-				domain_points(cols).map_err(|_| ClientError::Custom("Failed to generate domain points".to_string()))?;
+
 			let proofs = Proof::from_bytes(&proof.0).unwrap();
 
 			let commits = commitments
