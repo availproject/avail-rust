@@ -1,4 +1,13 @@
-use crate::{avail::runtime_types::da_runtime::primitives::SessionKeys, block::EventRecords, AppUncheckedExtrinsic};
+use crate::{
+	avail::runtime_types::{
+		avail_core::header::extension::{v3, HeaderExtension},
+		da_runtime::primitives::SessionKeys,
+	},
+	block::EventRecords,
+	AppUncheckedExtrinsic,
+};
+use core::cmp::min;
+use kate_recovery::matrix::Dimensions;
 use primitive_types::H256;
 use subxt::backend::legacy::rpc_methods::Bytes;
 
@@ -118,5 +127,36 @@ pub fn hex_string_to_h256(mut s: &str) -> Result<H256, String> {
 			let msg = std::format!("Failed to covert decoded string to H256. Input {:?}", e);
 			Err(msg)
 		},
+	}
+}
+
+pub fn generate_multiproof_grid_dims(grid: Dimensions, target: Dimensions) -> Result<Dimensions, String> {
+	let cols = min(grid.cols(), target.cols());
+	let rows = min(grid.rows(), target.rows());
+	if grid.cols().get() % cols != 0 || grid.rows().get() % rows != 0 {
+		return Err("Grid dimensions are not divisible by generated multiproof dimensions".to_string());
+	}
+
+	let mp_grid_dims =
+		Dimensions::new(rows, cols).ok_or("Failed to generate multiproof grid dimensions".to_string())?;
+
+	Ok(mp_grid_dims)
+}
+pub(crate) fn extract_kate(extension: &HeaderExtension) -> Option<(u16, u16, H256, Vec<u8>)> {
+	match &extension.option()? {
+		HeaderExtension::V3(v3::HeaderExtension { commitment: kate, .. }) => {
+			Some((kate.rows, kate.cols, kate.data_root, kate.commitment.clone()))
+		},
+	}
+}
+
+pub trait OptionalExtension {
+	fn option(&self) -> Option<&Self>;
+}
+
+impl OptionalExtension for HeaderExtension {
+	fn option(&self) -> Option<&Self> {
+		let HeaderExtension::V3(v3::HeaderExtension { app_lookup, .. }) = self;
+		(app_lookup.size > 0).then_some(self)
 	}
 }
