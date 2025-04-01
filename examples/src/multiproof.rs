@@ -13,10 +13,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let res = tx.execute_and_watch_finalization(&account, options).await?;
 	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
-	println!(
-		"Block Hash: {:?}, Block Number: {}",
-		res.block_hash, res.block_number
-	);
+	println!("Block Hash: {:?}, Block Number: {}", res.block_hash, res.block_number);
 
 	let header = chain::get_header(&sdk.client, Some(res.block_hash.clone())).await?;
 
