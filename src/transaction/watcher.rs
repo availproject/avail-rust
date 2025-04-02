@@ -8,7 +8,7 @@ use crate::{block::EventRecords, ABlock, Client, ClientMode, WaitFor};
 
 type Stream = StreamOf<Result<ABlock, subxt::Error>>;
 
-pub const DEFAULT_BLOCK_COUNT_TIMEOUT: u32 = 5;
+pub const DEFAULT_BLOCK_COUNT_TIMEOUT: u32 = 6;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum WatcherMode {
@@ -102,7 +102,11 @@ impl WSWatcher {
 		}?;
 
 		let block_height_timeout = options.calculate_block_height_timeout(client).await?;
-		logger.log_watcher_run(options, block_height_timeout);
+		if logger.is_enabled() {
+			let best = client.best_block_number().await?;
+			let finalized = client.finalized_block_number().await?;
+			logger.log_watcher_run(options, best, finalized, block_height_timeout);
+		}
 
 		loop {
 			let block = WSWatcher::fetch_next_block(&mut stream).await?;
@@ -143,6 +147,70 @@ impl WSWatcher {
 	}
 }
 
+pub struct HTTPBlockFetch {
+	client: Client,
+	options: WatcherOptions,
+	current_block_height: u32,
+	current_block_hash: H256,
+}
+
+impl HTTPBlockFetch {
+	pub fn new(client: Client, options: WatcherOptions, block_height: u32) -> Self {
+		Self {
+			client,
+			options,
+			current_block_height: block_height,
+			current_block_hash: H256::default(),
+		}
+	}
+
+	pub async fn fetch(&mut self) -> Result<ABlock, TransactionExecutionError> {
+		loop {
+			let block_height = match self.options.wait_for {
+				WaitFor::BlockInclusion => self.client.best_block_number().await?,
+				WaitFor::BlockFinalization => self.client.finalized_block_number().await?,
+			};
+
+			if self.options.wait_for == WaitFor::BlockInclusion {
+				// We are in front
+				if self.current_block_height > block_height {
+					tokio::time::sleep(self.options.block_fetch_interval).await;
+					continue;
+				}
+
+				let block_hash = self.client.block_hash(self.current_block_height).await?;
+
+				// We are lagging behind
+				if block_height > self.current_block_height {
+					self.current_block_hash = block_hash;
+					self.current_block_height += 1;
+
+					return Ok(self.client.block_at(block_hash).await?);
+				}
+
+				// We are at same block height
+				if self.current_block_hash.eq(&block_hash) {
+					tokio::time::sleep(self.options.block_fetch_interval).await;
+					continue;
+				}
+
+				self.current_block_hash = block_hash;
+				return Ok(self.client.block_at(block_hash).await?);
+			} else {
+				if self.current_block_height > block_height {
+					tokio::time::sleep(self.options.block_fetch_interval).await;
+					continue;
+				}
+
+				let block_hash = self.client.block_hash(self.current_block_height).await?;
+				self.current_block_height += 1;
+
+				return Ok(self.client.block_at(block_hash).await?);
+			}
+		}
+	}
+}
+
 pub struct HTTPWatcher {}
 impl HTTPWatcher {
 	pub async fn run(
@@ -151,13 +219,23 @@ impl HTTPWatcher {
 	) -> Result<Option<TransactionDetails>, TransactionExecutionError> {
 		let logger = options.logger.clone();
 
-		let block_height_timeout = options.calculate_block_height_timeout(client).await?;
-		logger.log_watcher_run(options, block_height_timeout);
+		let block_height = match options.wait_for {
+			WaitFor::BlockInclusion => client.best_block_number().await?,
+			WaitFor::BlockFinalization => client.finalized_block_number().await?,
+		};
 
-		let mut current_block_hash: H256 = H256::zero();
+		let block_height_timeout = options.calculate_block_height_timeout(client).await?;
+
+		if logger.is_enabled() {
+			let best = client.best_block_number().await?;
+			let finalized = client.finalized_block_number().await?;
+			logger.log_watcher_run(options, best, finalized, block_height_timeout);
+		}
+
+		let mut block_fetcher = HTTPBlockFetch::new(client.clone(), options.clone(), block_height);
+
 		loop {
-			let block = HTTPWatcher::fetch_next_block(client, options, &mut current_block_hash).await?;
-			logger.log_watcher_new_block(&block);
+			let block = block_fetcher.fetch().await?;
 
 			if let Some(tx_details) = find_transaction(client, &block, &options.tx_hash).await? {
 				logger.log_watcher_tx_found(&tx_details);
@@ -168,28 +246,6 @@ impl HTTPWatcher {
 				logger.log_watcher_stop();
 				return Ok(None);
 			}
-		}
-	}
-
-	async fn fetch_next_block(
-		client: &Client,
-		options: &WatcherOptions,
-		current_block_hash: &mut H256,
-	) -> Result<ABlock, TransactionExecutionError> {
-		loop {
-			let block_hash = match options.wait_for {
-				WaitFor::BlockInclusion => client.best_block_hash().await?,
-				WaitFor::BlockFinalization => client.finalized_block_hash().await?,
-			};
-
-			if (*current_block_hash).eq(&block_hash) {
-				tokio::time::sleep(options.block_fetch_interval).await;
-				continue;
-			}
-
-			*current_block_hash = block_hash;
-
-			return Ok(client.block_at(block_hash).await?);
 		}
 	}
 }
@@ -203,7 +259,11 @@ impl TxStateRPCWatcher {
 		let logger = options.logger.clone();
 
 		let block_height_timeout = options.calculate_block_height_timeout(client).await?;
-		logger.log_watcher_run(options, block_height_timeout);
+		if logger.is_enabled() {
+			let best = client.best_block_number().await?;
+			let finalized = client.finalized_block_number().await?;
+			logger.log_watcher_run(options, best, finalized, block_height_timeout);
+		}
 
 		let finalized = options.wait_for == WaitFor::BlockFinalization;
 		let mut current_block_hash: H256 = H256::zero();

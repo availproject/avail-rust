@@ -138,11 +138,7 @@ impl Indexer {
 			break height.unwrap();
 		};
 
-		Subscription {
-			indexer: self.clone(),
-			block_height,
-			shutdown: Arc::new(AtomicBool::new(false)),
-		}
+		Subscription::new(block_height, self.clone())
 	}
 
 	pub async fn callback<F>(&self, cb: fn(IndexedBlock) -> F) -> Subscription
@@ -214,7 +210,7 @@ impl Indexer {
 
 #[derive(Clone)]
 struct Subscription {
-	indexer: Indexer,
+	pub indexer: Indexer,
 	pub block_height: u32,
 	pub shutdown: Arc<AtomicBool>,
 }
