@@ -24,8 +24,8 @@ codec = { package = "parity-scale-codec", version = "3", default-features = fals
 	"bit-vec",
 ] }
 scale-info = { version = "2.5.0", features = ["bit-vec"] }
-avail-core = {  git = "https://github.com/availproject/avail-core", default-features = false, branch="mmp-integration", features = ["serde", "runtime", "std"] }
-kate = {  git = "https://github.com/availproject/avail-core", branch="mmp-integration", features = ["std"] }
+avail-core = {  git = "https://github.com/availproject/avail-core", default-features = false, branch="mmp-integration", features = ["serde", "runtime"] }
+kate = {  git = "https://github.com/availproject/avail-core", branch="mmp-integration"}
 hex = { version = "0.4" }
 base58 = { version = "0.2.0" }
 poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", ref="494468b86ac8e16dca21d465d921990c578eaad3", default-features = false, features = ['ark-bls12-381', "blst"]}
