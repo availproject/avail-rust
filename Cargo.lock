@@ -2942,7 +2942,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33d852cb9b869c2a9b3df2f71a3074817f01e1844f839a144f5fcef059a4eb5d"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4480,7 +4480,7 @@ checksum = "e19b23d53f35ce9f56aebc7d1bb4e6ac1e9c0db7ac85c8d1760c04379edced37"
 dependencies = [
  "hermit-abi 0.4.0",
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8770,7 +8770,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -10417,7 +10417,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-ec-utils"
 version = "0.10.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#c6249dca5928c12c35c577b971277d4211c928b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#3766467f5adc670ff4f71e2ec9f27185fdcf97ca"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-377-ext",
@@ -10527,7 +10527,7 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#c6249dca5928c12c35c577b971277d4211c928b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#3766467f5adc670ff4f71e2ec9f27185fdcf97ca"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -10548,7 +10548,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.25.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#c6249dca5928c12c35c577b971277d4211c928b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#3766467f5adc670ff4f71e2ec9f27185fdcf97ca"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -10884,7 +10884,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "24.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#c6249dca5928c12c35c577b971277d4211c928b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#3766467f5adc670ff4f71e2ec9f27185fdcf97ca"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -10936,7 +10936,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "17.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#c6249dca5928c12c35c577b971277d4211c928b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#3766467f5adc670ff4f71e2ec9f27185fdcf97ca"
 dependencies = [
  "Inflector",
  "expander",
@@ -11092,7 +11092,7 @@ source = "git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.
 [[package]]
 name = "sp-std"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#c6249dca5928c12c35c577b971277d4211c928b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#3766467f5adc670ff4f71e2ec9f27185fdcf97ca"
 
 [[package]]
 name = "sp-storage"
@@ -11110,7 +11110,7 @@ dependencies = [
 [[package]]
 name = "sp-storage"
 version = "19.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#c6249dca5928c12c35c577b971277d4211c928b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#3766467f5adc670ff4f71e2ec9f27185fdcf97ca"
 dependencies = [
  "impl-serde 0.5.0",
  "parity-scale-codec",
@@ -11160,7 +11160,7 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "16.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#c6249dca5928c12c35c577b971277d4211c928b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#3766467f5adc670ff4f71e2ec9f27185fdcf97ca"
 dependencies = [
  "parity-scale-codec",
  "tracing",
@@ -11327,7 +11327,7 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "20.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#c6249dca5928c12c35c577b971277d4211c928b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#3766467f5adc670ff4f71e2ec9f27185fdcf97ca"
 dependencies = [
  "anyhow",
  "impl-trait-for-tuples",
@@ -11898,7 +11898,7 @@ dependencies = [
  "getrandom 0.3.1",
  "once_cell",
  "rustix 0.38.44",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -13023,7 +13023,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

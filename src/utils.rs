@@ -130,17 +130,14 @@ pub fn hex_string_to_h256(mut s: &str) -> Result<H256, String> {
 	}
 }
 
-pub fn generate_multiproof_grid_dims(grid: Dimensions, target: Dimensions) -> Result<Dimensions, String> {
+pub fn generate_multiproof_grid_dims(grid: Dimensions, target: Dimensions) -> Option<Dimensions> {
 	let cols = min(grid.cols(), target.cols());
 	let rows = min(grid.rows(), target.rows());
 	if grid.cols().get() % cols != 0 || grid.rows().get() % rows != 0 {
-		return Err("Grid dimensions are not divisible by generated multiproof dimensions".to_string());
+		return None;
 	}
 
-	let mp_grid_dims =
-		Dimensions::new(rows, cols).ok_or("Failed to generate multiproof grid dimensions".to_string())?;
-
-	Ok(mp_grid_dims)
+	Dimensions::new(rows, cols)
 }
 pub(crate) fn extract_kate(extension: &HeaderExtension) -> Option<(u16, u16, H256, Vec<u8>)> {
 	match &extension.option()? {
