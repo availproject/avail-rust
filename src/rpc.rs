@@ -191,11 +191,12 @@ pub mod kate {
 		ArkScalar,
 	};
 
-	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
+	use kate_recovery::data::GCellBlock;
+use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
 
 	use subxt::backend::rpc::RpcClient;
 
-	use crate::{primitives::kate::GCellBlock, utils::extract_kate};
+	use crate::utils::extract_kate;
 
 	use super::*;
 
