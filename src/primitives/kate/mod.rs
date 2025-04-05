@@ -35,7 +35,6 @@ pub type Cells = bounded_collections::BoundedVec<Cell, MaxCells>;
 pub type MaxRows = ConstU32<64>;
 pub type Rows = bounded_collections::BoundedVec<u32, MaxRows>;
 
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(try_from = "Vec<u8>", into = "Vec<u8>")]
 pub struct GProof(pub [u8; 48]);

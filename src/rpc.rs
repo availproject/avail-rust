@@ -192,7 +192,7 @@ pub mod kate {
 	};
 
 	use kate_recovery::data::GCellBlock;
-use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
+	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
 
 	use subxt::backend::rpc::RpcClient;
 
