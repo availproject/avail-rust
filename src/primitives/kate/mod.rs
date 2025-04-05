@@ -43,6 +43,52 @@ pub struct GCellBlock {
 	pub end_y: u32,
 }
 
+impl GCellBlock {
+    pub const GCELL_BLOCK_SIZE: usize = std::mem::size_of::<GCellBlock>();
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut buf = Vec::with_capacity(16);
+        buf.extend(&self.start_x.to_le_bytes());
+        buf.extend(&self.start_y.to_le_bytes());
+        buf.extend(&self.end_x.to_le_bytes());
+        buf.extend(&self.end_y.to_le_bytes());
+        buf
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, &'static str> {
+        if bytes.len() != Self::GCELL_BLOCK_SIZE {
+            return Err("GCellBlock must be exactly 16 bytes");
+        }
+
+        let start_x = bytes
+            .get(0..4)
+            .and_then(|b| b.try_into().ok())
+            .map(u32::from_le_bytes);
+        let start_y = bytes
+            .get(4..8)
+            .and_then(|b| b.try_into().ok())
+            .map(u32::from_le_bytes);
+        let end_x = bytes
+            .get(8..12)
+            .and_then(|b| b.try_into().ok())
+            .map(u32::from_le_bytes);
+        let end_y = bytes
+            .get(12..16)
+            .and_then(|b| b.try_into().ok())
+            .map(u32::from_le_bytes);
+
+        match (start_x, start_y, end_x, end_y) {
+            (Some(start_x), Some(start_y), Some(end_x), Some(end_y)) => Ok(Self {
+                start_x,
+                start_y,
+                end_x,
+                end_y,
+            }),
+            _ => Err("Failed to convert bytes to GCellBlock"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(try_from = "Vec<u8>", into = "Vec<u8>")]
 pub struct GProof(pub [u8; 48]);
