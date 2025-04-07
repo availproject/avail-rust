@@ -1,4 +1,7 @@
-# v0.1.7 Release
+# v0.1.9 Release
+- Fixed HTTP unwrapping on RPC error.
+
+# v0.1.8 Release
 - HTTP Watcher now takes into account time delays
 
 # v0.1.6 Release

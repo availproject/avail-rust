@@ -35,7 +35,11 @@ impl RpcClientT for HttpClient {
 		params: Option<Box<RawValue>>,
 	) -> subxt::backend::rpc::RawRpcFuture<'a, Box<RawValue>> {
 		Box::pin(async move {
-			let res = self.0.request(method, Params(params)).await.unwrap();
+			let res = self
+				.0
+				.request(method, Params(params))
+				.await
+				.map_err(|e| RpcError::ClientError(Box::new(e)))?;
 			Ok(res)
 		})
 	}
