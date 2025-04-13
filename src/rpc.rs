@@ -187,7 +187,7 @@ pub mod state {
 pub mod kate {
 	use ::kate::{
 		couscous::multiproof_params,
-		gridgen::{domain_points, AsBytes, Commitment},
+		gridgen::utils::{domain_points, AsBytes, Commitment},
 		ArkScalar,
 	};
 

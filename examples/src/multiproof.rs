@@ -41,9 +41,11 @@ pub async fn run() -> Result<(), ClientError> {
 	let query_duration = start_time.elapsed();
 	println!("query_multi_proof completed in {:?}", query_duration);
 
+	let pmp = avail_rust::rpc::kate::generate_pmp().await;
+
 	println!("Starting verify_multi_proof...");
 	let start_time = std::time::Instant::now();
-	let verify = avail_rust::rpc::kate::verify_multi_proof(proofs, commitments, cols as usize)
+	let verify = avail_rust::rpc::kate::verify_multi_proof(pmp, proofs, commitments, cols as usize)
 		.await
 		.unwrap();
 	let verify_duration = start_time.elapsed();
