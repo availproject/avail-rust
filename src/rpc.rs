@@ -191,11 +191,20 @@ pub mod kate {
 		ArkScalar,
 	};
 
+	// use kate_recovery::data::GCellBlock;
 	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
 
 	use subxt::backend::rpc::RpcClient;
+	// use crate::primitives::kate::GCellBlock;
+	use crate::utils::extract_kate;
 
-	use crate::{primitives::kate::GCellBlock, utils::extract_kate};
+	#[derive(Debug, Clone, Serialize, Deserialize)]
+	pub struct GCellBlock {
+		pub start_x: u32,
+		pub start_y: u32,
+		pub end_x: u32,
+		pub end_y: u32,
+	}
 
 	use super::*;
 

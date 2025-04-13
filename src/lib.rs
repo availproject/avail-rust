@@ -32,6 +32,12 @@ pub use client::{Client, ClientMode, ClientOptions};
 pub use config::*;
 pub use hex;
 pub use kate_recovery;
+pub use poly_multiproof::{
+	ark_bls12_381::Bls12_381,
+	method1::{M1NoPrecomp, Proof},
+	msm::blst::BlstMSMEngine,
+	traits::PolyMultiProofNoPrecomp,
+};
 pub use primitive_types::H256;
 pub use primitives::{
 	block::{AppUncheckedExtrinsic, AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
