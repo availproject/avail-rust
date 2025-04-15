@@ -4,7 +4,6 @@ use jsonrpsee::{
 		traits::ToRpcParams,
 	},
 	http_client::HttpClient as JsonHttpClient,
-	ws_client::HeaderMap,
 };
 use serde_json::value::RawValue;
 use subxt::{backend::rpc::RpcClientT, error::RpcError};
@@ -27,14 +26,6 @@ impl HttpClient {
 		let builder = builder.max_response_size(512 * 1024 * 1024); // 512 MiB
 		Ok(Self(builder.build(endpoint)?))
 	}
-
-	pub fn new_w_header(endpoint: &str, headers: HeaderMap) -> Result<Self, jsonrpsee::core::client::Error> {
-		let builder = JsonHttpClient::builder();
-		let builder = builder.max_request_size(512 * 1024 * 1024); // 512 MiB
-		let builder = builder.max_response_size(512 * 1024 * 1024); // 512 MiB
-		let builder = builder.set_headers(headers);
-		Ok(Self(builder.build(endpoint)?))
-	}
 }
 
 impl RpcClientT for HttpClient {
@@ -44,7 +35,11 @@ impl RpcClientT for HttpClient {
 		params: Option<Box<RawValue>>,
 	) -> subxt::backend::rpc::RawRpcFuture<'a, Box<RawValue>> {
 		Box::pin(async move {
-			let res = self.0.request(method, Params(params)).await.unwrap();
+			let res = self
+				.0
+				.request(method, Params(params))
+				.await
+				.map_err(|e| RpcError::ClientError(Box::new(e)))?;
 			Ok(res)
 		})
 	}

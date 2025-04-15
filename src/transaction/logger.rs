@@ -27,16 +27,29 @@ impl Logger {
 		self.enabled = value
 	}
 
-	pub fn log_watcher_run(&self, options: &WatcherOptions, block_height_timeout: u32) {
+	pub fn is_enabled(&self) -> bool {
 		if !log_enabled!(log::Level::Info) || !self.enabled {
+			return false;
+		}
+		true
+	}
+
+	pub fn log_watcher_run(
+		&self,
+		options: &WatcherOptions,
+		current_best_height: u32,
+		current_finalized_height: u32,
+		block_height_timeout: u32,
+	) {
+		if !self.is_enabled() {
 			return;
 		}
 
-		info!(target: "watcher", "{}: Watching for Tx Hash: {:?}. Waiting for: {}, Block height timeout: {:?}, Watcher Mode: {:?}", self.marker, self.tx_hash, options.wait_for.to_str(), block_height_timeout, options.mode);
+		info!(target: "watcher", "{}: Watching for Tx Hash: {:?}. Waiting for: {}, Current Best Height: {}, Current Finalized Height: {},  Block height timeout: {:?}, Watcher Mode: {:?}", self.marker, self.tx_hash, options.wait_for.to_str(), current_best_height, current_finalized_height, block_height_timeout, options.mode);
 	}
 
 	pub fn log_watcher_new_block(&self, block: &ABlock) {
-		if !log_enabled!(log::Level::Info) || !self.enabled {
+		if !self.is_enabled() {
 			return;
 		}
 
@@ -44,7 +57,7 @@ impl Logger {
 	}
 
 	pub fn log_watcher_new_block_hash(&self, block_hash: &H256) {
-		if !log_enabled!(log::Level::Info) || !self.enabled {
+		if !self.is_enabled() {
 			return;
 		}
 
@@ -52,7 +65,7 @@ impl Logger {
 	}
 
 	pub fn log_watcher_tx_found(&self, details: &TransactionDetails) {
-		if !log_enabled!(log::Level::Info) || !self.enabled {
+		if !self.is_enabled() {
 			return;
 		}
 
@@ -60,7 +73,7 @@ impl Logger {
 	}
 
 	pub fn log_watcher_stop(&self) {
-		if !log_enabled!(log::Level::Info) || !self.enabled {
+		if !self.is_enabled() {
 			return;
 		}
 
@@ -68,7 +81,7 @@ impl Logger {
 	}
 
 	pub fn log_tx_submitted(&self, keypair: &Keypair, mortality: &CheckedMortality) {
-		if !log_enabled!(log::Level::Info) || !self.enabled {
+		if !self.is_enabled() {
 			return;
 		}
 
@@ -107,7 +120,7 @@ impl Logger {
 	}
 
 	pub fn log_tx_retry(&self) {
-		if !log_enabled!(log::Level::Info) || !self.enabled {
+		if !self.is_enabled() {
 			return;
 		}
 
