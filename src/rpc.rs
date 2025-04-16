@@ -250,9 +250,9 @@ pub mod kate {
 	}
 
 	pub async fn verify_multi_proof(
-		pmp: M1NoPrecomp<Bls12_381, BlstMSMEngine>,
-		proof: Vec<(GMultiProof, GCellBlock)>,
-		commitments: Vec<u8>,
+		pmp: &M1NoPrecomp<Bls12_381, BlstMSMEngine>,
+		proof: &Vec<(GMultiProof, GCellBlock)>,
+		commitments: &Vec<u8>,
 		cols: usize, // Number of columns in the original grid
 	) -> Result<bool, subxt::Error> {
 		let points =
