@@ -45,7 +45,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	println!("Starting verify_multi_proof...");
 	let start_time = std::time::Instant::now();
-	let verify = avail_rust::rpc::kate::verify_multi_proof(pmp, proofs, commitments, cols as usize)
+	let verify = avail_rust::rpc::kate::verify_multi_proof(&pmp, &proofs, &commitments, cols as usize)
 		.await
 		.unwrap();
 	let verify_duration = start_time.elapsed();
