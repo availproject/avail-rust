@@ -42,33 +42,28 @@ pub async fn http_api(endpoint: &str) -> Result<Client, ClientError> {
 
 	// Cloning RpcClient is cheaper and doesn't create a new WS connection
 	let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
-	let mut client = Client::new(api, rpc_client);
-	client.set_mode(ClientMode::HTTP);
+	let client = Client::new(api, rpc_client);
 
 	Ok(client)
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ClientOptions {
-	pub mode: ClientMode,
 	pub tx_state_rpc_enabled: bool,
 }
 
-impl Default for ClientOptions {
-	fn default() -> Self {
-		Self {
-			mode: ClientMode::WS,
-			tx_state_rpc_enabled: false,
-		}
-	}
+type SharedClientOptions = Arc<std::sync::Mutex<ClientOptions>>;
+type SharedCache = Arc<std::sync::Mutex<Cache>>;
+
+#[derive(Default)]
+pub struct Cache {
+	pub last_fetched_block: Option<(H256, Arc<ABlock>)>,
 }
 
-type SharedClientOptions = Arc<std::sync::Mutex<ClientOptions>>;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ClientMode {
-	WS,
-	HTTP,
+impl Debug for Cache {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("Cache").field("last_fetched_block", &"").finish()
+	}
 }
 
 #[derive(Debug, Clone)]
@@ -76,6 +71,7 @@ pub struct Client {
 	pub online_client: AOnlineClient,
 	pub rpc_client: RpcClient,
 	pub options: SharedClientOptions,
+	pub cache: SharedCache,
 }
 
 impl Client {
@@ -84,12 +80,7 @@ impl Client {
 			online_client,
 			rpc_client,
 			options: SharedClientOptions::default(),
-		}
-	}
-
-	pub fn set_mode(&mut self, value: ClientMode) {
-		if let Ok(mut lock) = self.options.lock() {
-			lock.mode = value;
+			cache: SharedCache::default(),
 		}
 	}
 

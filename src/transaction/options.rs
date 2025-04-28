@@ -45,7 +45,7 @@ impl Options {
 		self
 	}
 
-	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<PopulatedOptions, ClientError> {
+	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<PopulatedOptions, subxt::Error> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = parse_nonce(client, self.nonce, account_id).await?;
@@ -67,7 +67,7 @@ impl Default for Options {
 	}
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct PopulatedOptions {
 	pub app_id: u32,
 	pub mortality: CheckedMortality,
@@ -76,7 +76,7 @@ pub struct PopulatedOptions {
 }
 
 impl PopulatedOptions {
-	pub async fn build(self) -> Result<Params, ClientError> {
+	pub async fn build(self) -> Params {
 		let mut builder = AvailExtrinsicParamsBuilder::new();
 		builder = builder.app_id(self.app_id);
 		builder = builder.tip(self.tip);
@@ -88,12 +88,7 @@ impl PopulatedOptions {
 			self.mortality.period,
 		);
 
-		Ok(builder.build())
-	}
-
-	pub async fn regenerate_mortality(&mut self, client: &Client) -> Result<(), ClientError> {
-		self.mortality = CheckedMortality::from_period(self.mortality.period, client).await?;
-		Ok(())
+		builder.build()
 	}
 }
 
@@ -112,7 +107,7 @@ impl CheckedMortality {
 		}
 	}
 
-	pub async fn from_period(period: u64, client: &Client) -> Result<Self, ClientError> {
+	pub async fn from_period(period: u64, client: &Client) -> Result<Self, subxt::Error> {
 		let finalized_hash = client.finalized_block_hash().await?;
 		let header = client.header_at(finalized_hash).await?;
 		let (block_hash, block_number) = (header.hash(), header.number());
@@ -124,7 +119,7 @@ impl CheckedMortality {
 	}
 }
 
-pub async fn parse_nonce(client: &Client, nonce: Option<u32>, account_id: &AccountId) -> Result<u64, ClientError> {
+pub async fn parse_nonce(client: &Client, nonce: Option<u32>, account_id: &AccountId) -> Result<u64, subxt::Error> {
 	let nonce = match nonce {
 		Some(x) => x as u64,
 		None => account_next_index(client, account_id.to_string()).await? as u64,

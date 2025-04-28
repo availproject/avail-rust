@@ -1,4 +1,7 @@
-use super::{utils, Options, TransactionDetails};
+use super::{
+	utils::{self, SubmissionStateError},
+	Options, TransactionDetails,
+};
 use crate::{
 	error::ClientError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
@@ -36,7 +39,7 @@ where
 		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
-		let params = options.build().await?;
+		let params = options.build().await;
 		let tx = self
 			.client
 			.online_client
@@ -57,7 +60,7 @@ where
 		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
-		let params = options.build().await?;
+		let params = options.build().await;
 		let tx = self
 			.client
 			.online_client
@@ -85,23 +88,24 @@ where
 	}
 
 	pub async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError> {
-		utils::sign_and_send(&self.client, account, &self.payload, options).await
+		let info = utils::sign_and_submit(&self.client, account, &self.payload, options).await?;
+		Ok(info.hash)
 	}
 
 	pub async fn execute_and_watch_inclusion(
 		&self,
 		account: &Keypair,
 		options: Options,
-	) -> Result<TransactionDetails, ClientError> {
-		utils::sign_send_and_watch(&self.client, account, &self.payload, WaitFor::BlockInclusion, options).await
+	) -> Result<TransactionDetails, SubmissionStateError> {
+		utils::sign_submit_and_watch(&self.client, account, &self.payload, WaitFor::BlockInclusion, options).await
 	}
 
 	pub async fn execute_and_watch_finalization(
 		&self,
 		account: &Keypair,
 		options: Options,
-	) -> Result<TransactionDetails, ClientError> {
-		utils::sign_send_and_watch(
+	) -> Result<TransactionDetails, SubmissionStateError> {
+		utils::sign_submit_and_watch(
 			&self.client,
 			account,
 			&self.payload,

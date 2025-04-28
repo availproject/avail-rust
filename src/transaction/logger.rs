@@ -1,5 +1,5 @@
-use super::{options::CheckedMortality, watcher::WatcherOptions, Params, TransactionDetails};
-use crate::{ABlock, ClientMode};
+use super::{options::CheckedMortality, Params, TransactionDetails};
+use crate::ABlock;
 use log::{info, log_enabled, warn};
 use primitive_types::H256;
 use std::sync::Arc;
@@ -34,7 +34,7 @@ impl Logger {
 		true
 	}
 
-	pub fn log_watcher_run(
+	/* 	pub fn log_watcher_run(
 		&self,
 		options: &WatcherOptions,
 		current_best_height: u32,
@@ -46,7 +46,7 @@ impl Logger {
 		}
 
 		info!(target: "watcher", "{}: Watching for Tx Hash: {:?}. Waiting for: {}, Current Best Height: {}, Current Finalized Height: {},  Block height timeout: {:?}, Watcher Mode: {:?}", self.marker, self.tx_hash, options.wait_for.to_str(), current_best_height, current_finalized_height, block_height_timeout, options.mode);
-	}
+	} */
 
 	pub fn log_watcher_new_block(&self, block: &ABlock) {
 		if !self.is_enabled() {
@@ -98,7 +98,7 @@ impl Logger {
 		);
 	}
 
-	pub fn log_tx_submitting<T>(&self, keypair: &Keypair, call: &DefaultPayload<T>, params: &Params, mode: ClientMode) {
+	/* 	pub fn log_tx_submitting<T>(&self, keypair: &Keypair, call: &DefaultPayload<T>, params: &Params, mode: ClientMode) {
 		if !log_enabled!(log::Level::Info) || !self.enabled {
 			return;
 		}
@@ -113,7 +113,7 @@ impl Logger {
 			"Signing and submitting new transaction. Account: {}, Nonce: {:?}, Pallet Name: {}, Call Name: {}, App Id: {}, Client Mode: {:?}",
 			address, nonce, pallet_name, call_name, app_id, mode
 		);
-	}
+	} */
 
 	pub fn log_tx_retry_abort(&self) {
 		warn!(target: "transaction", "{}: Failed to submit and find transaction. Aborting. Tx Hash: {:?}", self.marker, self.tx_hash);

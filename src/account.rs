@@ -38,7 +38,7 @@ pub fn ferdie() -> Keypair {
 	subxt_signer::sr25519::dev::ferdie()
 }
 
-pub async fn nonce_state(client: &Client, address: &str, block_hash: Option<H256>) -> Result<u32, ClientError> {
+pub async fn nonce_state(client: &Client, address: &str, block_hash: Option<H256>) -> Result<u32, subxt::Error> {
 	let account = account_id_from_str(address)?;
 	let block_hash = match block_hash {
 		Some(x) => x,
@@ -49,13 +49,12 @@ pub async fn nonce_state(client: &Client, address: &str, block_hash: Option<H256
 	Ok(block.account_nonce(&account).await? as u32)
 }
 
-pub async fn nonce_node(client: &Client, address: &str) -> Result<u32, ClientError> {
+pub async fn nonce_node(client: &Client, address: &str) -> Result<u32, subxt::Error> {
 	let account = account_id_from_str(address)?;
-	let nonce = rpc::system::account_next_index(client, account.to_string()).await;
-	nonce.map_err(ClientError::from)
+	rpc::system::account_next_index(client, account.to_string()).await
 }
 
-pub async fn nonce(client: &Client, address: &str) -> Result<u32, ClientError> {
+pub async fn nonce(client: &Client, address: &str) -> Result<u32, subxt::Error> {
 	nonce_node(client, address).await
 }
 
