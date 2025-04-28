@@ -1,7 +1,4 @@
-use crate::{
-	error::ClientError, rpc::system::account_next_index, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client,
-	H256,
-};
+use crate::{rpc::system::account_next_index, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256};
 use subxt::config::Header;
 
 pub type Params =

@@ -5,7 +5,7 @@ use super::{
 use crate::{
 	error::ClientError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
-	runtime_api, Client, WaitFor, H256,
+	runtime_api, Client, WaitFor,
 };
 use subxt::{
 	blocks::StaticExtrinsic,

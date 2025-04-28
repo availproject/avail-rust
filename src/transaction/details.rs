@@ -1,7 +1,6 @@
-use subxt::blocks::StaticExtrinsic;
-
 use crate::{block::EventRecords, block_transaction::Filter, error::ClientError, utils, Client, H256};
 use std::sync::Arc;
+use subxt::blocks::StaticExtrinsic;
 
 #[derive(Debug, Clone)]
 pub struct TransactionDetails {

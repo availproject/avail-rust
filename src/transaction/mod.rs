@@ -1,5 +1,4 @@
 pub mod details;
-pub mod logger;
 pub mod options;
 pub mod transaction;
 pub mod utils;

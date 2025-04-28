@@ -1,5 +1,5 @@
 use super::{Options, Params, PopulatedOptions, TransactionDetails};
-use crate::{block::EventRecords, rpc, transaction::logger::Logger, ABlock, AccountId, Client, WaitFor};
+use crate::{block::EventRecords, rpc, ABlock, AccountId, Client, WaitFor};
 use log::info;
 use primitive_types::H256;
 use std::{sync::Arc, time::Duration};
