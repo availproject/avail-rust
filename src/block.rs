@@ -309,6 +309,10 @@ impl EventRecords {
 		self.inner.len()
 	}
 
+	pub fn is_empty(&self) -> bool {
+		self.inner.is_empty()
+	}
+
 	pub fn find<E: StaticEvent>(&self) -> Vec<E> {
 		let mut result: Vec<E> = Vec::new();
 		for ev in self.inner.iter() {

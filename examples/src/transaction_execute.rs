@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use avail::data_availability::{calls::types::SubmitData, events::DataSubmitted};
 use avail_rust::prelude::*;
-use avail_rust::transaction::utils::{find_block_id_finalized, find_transaction};
+use avail_rust::transaction::utils::{find_block_id, find_transaction};
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -20,7 +20,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let account = (info.account_id.clone(), info.nonce());
 	let mortality = (info.period(), info.fork_height());
 	let sleep_duration = Duration::from_secs(10);
-	let block_id = find_block_id_finalized(&sdk.client, account, mortality, sleep_duration)
+	let block_id = find_block_id(&sdk.client, account, mortality, sleep_duration)
 		.await?
 		.unwrap();
 	let block = sdk.client.block_at(block_id.0).await?;

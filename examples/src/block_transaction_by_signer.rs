@@ -39,14 +39,14 @@ pub async fn run() -> Result<(), ClientError> {
 	}
 
 	// Convert from Block Transaction to Specific Transaction
-	let da_tx = block_transactions.index(0).decode::<CreateAppKeyCall>();
+	let da_tx = block_transactions.get(0).decode::<CreateAppKeyCall>();
 	assert!(da_tx.is_some(), "CreateAppKeyCall should exist");
 	let da_tx = da_tx.unwrap();
 	let key = to_ascii(da_tx.key.0).unwrap();
 	println!("Key: {}", key);
 
 	// Printout all Transaction Events
-	let tx_events = block_transactions.index(0).events().await;
+	let tx_events = block_transactions.get(0).events().await;
 	assert!(tx_events.is_some(), "Events should exist");
 	let tx_events = tx_events.unwrap();
 	assert_eq!(tx_events.len(), 7, "Event count must be 7");

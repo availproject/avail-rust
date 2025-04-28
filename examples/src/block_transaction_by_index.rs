@@ -13,7 +13,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let tx_index = 1;
 	let txs = block.transactions(Filter::new().tx_index(tx_index));
 	assert_eq!(txs.len(), 1, "");
-	let tx = txs.index(0);
+	let tx = txs.get(0);
 
 	// Printout
 	assert_eq!(tx.tx_index(), tx_index, "Tx Index must be the same");

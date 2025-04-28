@@ -98,11 +98,14 @@ impl Client {
 			value = lock.tx_state_rpc_enabled;
 		}
 
-		return value;
+		value
 	}
 
 	pub fn get_options(&self) -> ClientOptions {
-		self.options.lock().map(|x| x.clone()).unwrap_or_default()
+		if let Ok(lock) = self.options.lock() {
+			return *lock;
+		}
+		ClientOptions::default()
 	}
 
 	pub fn blocks(&self) -> ABlocksClient {

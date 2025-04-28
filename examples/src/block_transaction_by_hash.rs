@@ -13,7 +13,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let tx_hash = new_h256_from_hex("0x19c486e107c926ff4af3fa9b1d95aaba130cb0bc89515d0f5b523ef6bac06338")?;
 	let txs = block.transactions(Filter::new().tx_hash(tx_hash));
 	assert_eq!(txs.len(), 1, "");
-	let tx = txs.index(0);
+	let tx = txs.get(0);
 
 	// Printout
 	assert_eq!(tx.tx_hash(), tx_hash, "Tx Hash must be the same");

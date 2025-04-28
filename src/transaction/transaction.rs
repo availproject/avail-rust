@@ -5,7 +5,7 @@ use super::{
 use crate::{
 	error::ClientError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
-	runtime_api, Client, WaitFor,
+	runtime_api, Client,
 };
 use subxt::{
 	blocks::StaticExtrinsic,
@@ -87,30 +87,15 @@ where
 		runtime_api::transaction_payment::query_call_fee_details(&self.client, call, None).await
 	}
 
-	pub async fn execute(&self, account: &Keypair, options: Options) -> Result<SubmittedTransaction, subxt::Error> {
-		utils::sign_and_submit(&self.client, account, &self.payload, options).await
+	pub async fn execute(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, subxt::Error> {
+		utils::sign_and_submit(&self.client, signer, &self.payload, options).await
 	}
 
-	pub async fn execute_and_watch_inclusion(
+	pub async fn execute_and_watch(
 		&self,
-		account: &Keypair,
+		signer: &Keypair,
 		options: Options,
 	) -> Result<TransactionDetails, SubmissionStateError> {
-		utils::sign_submit_and_watch(&self.client, account, &self.payload, WaitFor::BlockInclusion, options).await
-	}
-
-	pub async fn execute_and_watch_finalization(
-		&self,
-		account: &Keypair,
-		options: Options,
-	) -> Result<TransactionDetails, SubmissionStateError> {
-		utils::sign_submit_and_watch(
-			&self.client,
-			account,
-			&self.payload,
-			WaitFor::BlockFinalization,
-			options,
-		)
-		.await
+		utils::sign_submit_and_watch(&self.client, signer, &self.payload, options).await
 	}
 }
