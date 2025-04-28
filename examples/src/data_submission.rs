@@ -13,7 +13,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let time = std::format!("{:?}", SystemTime::now());
 	let key = time.into_bytes();
 	let tx = sdk.tx.data_availability.create_application_key(key);
-	let res = tx.execute_and_watch_inclusion(&account, Options::default()).await?;
+	let res = tx.execute_and_watch_finalization(&account, Options::default()).await?;
 	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
 	let events = res.events.as_ref().unwrap();
@@ -27,7 +27,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let data = String::from("My Data").into_bytes();
 	let options = Options::new().app_id(app_id);
 	let tx = sdk.tx.data_availability.submit_data(data);
-	let res = tx.execute_and_watch_inclusion(&account, options).await?;
+	let res = tx.execute_and_watch_finalization(&account, options).await?;
 	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
 	println!(

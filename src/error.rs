@@ -84,3 +84,9 @@ impl From<serde_json::Error> for ClientError {
 		Self::SerdeJson(value)
 	}
 }
+
+impl From<SubmissionStateError> for ClientError {
+	fn from(value: SubmissionStateError) -> Self {
+		Self::Submission(value)
+	}
+}

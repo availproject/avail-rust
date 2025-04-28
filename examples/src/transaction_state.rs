@@ -9,11 +9,11 @@ pub async fn run() -> Result<(), ClientError> {
 	// dropped or discarded for various reasons. The caller is responsible for querying future
 	// blocks in order to determine the execution status of that transaction.
 	let tx = sdk.tx.data_availability.submit_data(vec![0, 1, 2]);
-	let tx_hash = tx.execute(&account::alice(), Options::new().app_id(1)).await?;
-	println!("Tx Hash: {:?}", tx_hash);
+	let info = tx.execute(&account::alice(), Options::new().app_id(1)).await?;
+	println!("Tx Hash: {:?}", info.tx_hash);
 
 	let result = loop {
-		let res = sdk.client.transaction_state(&tx_hash, false).await?;
+		let res = sdk.client.transaction_state(&info.tx_hash, false).await?;
 		if !res.is_empty() {
 			break res;
 		}

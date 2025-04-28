@@ -1,5 +1,5 @@
 use super::{
-	utils::{self, SubmissionStateError},
+	utils::{self, SubmissionStateError, SubmittedTransaction},
 	Options, TransactionDetails,
 };
 use crate::{
@@ -87,9 +87,8 @@ where
 		runtime_api::transaction_payment::query_call_fee_details(&self.client, call, None).await
 	}
 
-	pub async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError> {
-		let info = utils::sign_and_submit(&self.client, account, &self.payload, options).await?;
-		Ok(info.hash)
+	pub async fn execute(&self, account: &Keypair, options: Options) -> Result<SubmittedTransaction, subxt::Error> {
+		utils::sign_and_submit(&self.client, account, &self.payload, options).await
 	}
 
 	pub async fn execute_and_watch_inclusion(

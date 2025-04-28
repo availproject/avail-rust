@@ -1,5 +1,6 @@
 use super::{Options, Params, PopulatedOptions, TransactionDetails};
 use crate::{block::EventRecords, rpc, transaction::logger::Logger, ABlock, AccountId, Client, WaitFor};
+use log::info;
 use primitive_types::H256;
 use std::{sync::Arc, time::Duration};
 use subxt::{blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
@@ -32,30 +33,50 @@ impl SubmissionStateError {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SubmittedTransaction {
-	pub hash: H256,
+	pub tx_hash: H256,
 	pub account_id: AccountId,
 	pub options: PopulatedOptions,
+}
+
+impl SubmittedTransaction {
+	pub fn nonce(&self) -> u32 {
+		self.options.nonce as u32
+	}
+
+	pub fn fork_hash(&self) -> H256 {
+		self.options.mortality.block_hash.clone()
+	}
+
+	pub fn fork_height(&self) -> u32 {
+		self.options.mortality.block_number
+	}
+
+	pub fn period(&self) -> u32 {
+		self.options.mortality.period as u32
+	}
 }
 
 /// TODO
 pub async fn sign_and_submit<T>(
 	client: &Client,
-	account: &Keypair,
+	signer: &Keypair,
 	call: &DefaultPayload<T>,
 	options: Options,
 ) -> Result<SubmittedTransaction, subxt::Error>
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	let account_id = account.public_key().to_account_id();
+	let account_id = signer.public_key().to_account_id();
 	let options = options.build(client, &account_id).await?;
 	let params = options.clone().build().await;
+	let tx_hash = sign_and_submit_raw_params(client, signer, call, params).await?;
 
-	let hash = sign_and_submit_raw_params(client, account, call, params).await?;
+	info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_number, options.mortality.period, options.nonce, account_id);
+
 	Ok(SubmittedTransaction {
-		hash,
+		tx_hash,
 		account_id,
 		options,
 	})
@@ -77,14 +98,9 @@ where
 		));
 	}
 
-	/* 	let logger = Logger::new(H256::default(), true);
-	logger.log_tx_submitting(signer, call, &params, options.mode); */
-
 	let tx_client = client.online_client.tx();
 	let signed_call = tx_client.create_signed(call, signer, params).await?;
-	let extrinsic = signed_call.encoded();
-	let tx_hash = rpc::author::submit_extrinsic(client, extrinsic).await?;
-	Ok(tx_hash)
+	rpc::author::submit_extrinsic(client, signed_call.encoded()).await
 }
 
 /// TODO
@@ -104,7 +120,7 @@ where
 		Err(err) => return Err(SubmissionStateError::FailedToSubmit { reason: err }),
 	};
 
-	let account = (account_id.clone(), info.options.nonce as u32);
+	let account = (account_id.clone(), info.nonce());
 	let mortality = (
 		info.options.mortality.period as u32,
 		info.options.mortality.block_number,
@@ -120,14 +136,14 @@ where
 		Ok(x) => x,
 		Err(err) => {
 			return Err(SubmissionStateError::SubmittedButErrorInSearch {
-				tx_hash: info.hash,
+				tx_hash: info.tx_hash,
 				reason: err,
 			})
 		},
 	};
 
 	let Some(block_id) = block_id else {
-		return Err(SubmissionStateError::Dropped { tx_hash: info.hash });
+		return Err(SubmissionStateError::Dropped { tx_hash: info.tx_hash });
 	};
 
 	let mut block = None;
@@ -146,7 +162,7 @@ where
 			Ok(x) => x,
 			Err(err) => {
 				return Err(SubmissionStateError::SubmittedButErrorInSearch {
-					tx_hash: info.hash,
+					tx_hash: info.tx_hash,
 					reason: err,
 				})
 			},
@@ -158,19 +174,22 @@ where
 		block
 	};
 
-	let details = match find_transaction(client, &block, &info.hash).await {
+	let details = match find_transaction(client, &block, &info.tx_hash).await {
 		Ok(x) => x,
 		Err(err) => {
 			return Err(SubmissionStateError::SubmittedButErrorInSearch {
-				tx_hash: info.hash,
+				tx_hash: info.tx_hash,
 				reason: err,
 			})
 		},
 	};
 
 	match details {
-		Some(x) => Ok(x),
-		None => Err(SubmissionStateError::Dropped { tx_hash: info.hash }),
+		Some(x) => {
+			info!(target: "tx_search", "Transaction Found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Height: {}, Nonce: {}, Account Address: {}", x.tx_hash, x.tx_index, x.block_hash, x.block_number, info.nonce(), account_id);
+			Ok(x)
+		},
+		None => Err(SubmissionStateError::Dropped { tx_hash: info.tx_hash }),
 	}
 }
 
@@ -217,6 +236,7 @@ pub async fn find_block_id_finalized(
 	let mut next_block_height = fork_height + 1;
 	let mut block_height = client.finalized_block_number().await?;
 
+	info!(target: "nonce_search", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", account.1, account.0, block_height, mortality_ends_height);
 	while mortality_ends_height >= next_block_height {
 		if next_block_height > block_height {
 			tokio::time::sleep(sleep_duration).await;
@@ -227,9 +247,11 @@ pub async fn find_block_id_finalized(
 		let next_block_hash = client.block_hash(next_block_height).await?;
 		let state_nonce = crate::account::nonce_state(client, &address, Some(next_block_hash)).await?;
 		if state_nonce > account.1 {
+			info!(target: "nonce_search", "At block height {} and hash {:?} found nonce: {} which is greater than {} for Account address {}. Search is done", next_block_height, next_block_hash, state_nonce, account.1, account.0);
 			return Ok(Some((next_block_hash, next_block_height)));
 		}
 
+		info!(target: "nonce_search", "Looking for nonce > than: {} for Account address {}. At block height {} and hash {:?} found nonce: {}", account.1, account.0, next_block_height, next_block_hash, state_nonce);
 		next_block_height += 1;
 	}
 
@@ -250,6 +272,7 @@ pub async fn find_block_id_best_block(
 	let mut next_block_height = fork_height + 1;
 	let mut block_height = client.best_block_number().await?;
 
+	info!(target: "nonce_search", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", account.1, account.0, block_height, mortality_ends_height);
 	while mortality_ends_height >= next_block_height {
 		if next_block_height > block_height {
 			tokio::time::sleep(sleep_duration).await;
@@ -260,9 +283,11 @@ pub async fn find_block_id_best_block(
 		let next_block_hash = client.block_hash(next_block_height).await?;
 		let state_nonce = crate::account::nonce_state(client, &address, Some(next_block_hash)).await?;
 		if state_nonce > account.1 {
+			info!(target: "nonce_search", "At block height {} and hash {:?} found nonce: {} which is greater than {} for Account address {}. Search is done", next_block_height, next_block_hash, state_nonce, account.1, account.0);
 			return Ok(Some((next_block_hash, next_block_height)));
 		}
 
+		info!(target: "nonce_search", "Looking for nonce > than: {} for Account address {}. At block height {} and hash {:?} found nonce: {}", account.1, account.0, next_block_height, next_block_hash, state_nonce);
 		next_block_height += 1;
 	}
 

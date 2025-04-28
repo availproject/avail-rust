@@ -19,7 +19,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let account = account::alice();
 	let account_id = account.public_key().to_account_id();
 	let call = avail::tx().data_availability().submit_data(BoundedVec(vec![0, 1, 2]));
-	let params = Options::new().build(&sdk.client, &account_id).await?.build().await?;
+	let params = Options::new().build(&sdk.client, &account_id).await?.build().await;
 	let signed_call = sdk
 		.client
 		.online_client
