@@ -29,8 +29,6 @@ mod rpc;
 mod storage;
 mod transaction;
 mod transaction_execute;
-mod transaction_execute_and_watch_finalization;
-mod transaction_execute_and_watch_inclusion;
 mod transaction_options;
 mod transaction_payment;
 mod transaction_state;

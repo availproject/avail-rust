@@ -5,12 +5,12 @@ type TransferEvent = avail::balances::events::Transfer;
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::turing_endpoint()).await?;
-	let block_hash = new_h256_from_hex("0x94746ba186876d7407ee618d10cb6619befc59eeb173cacb00c14d1ff492fc58")?;
+	let block_hash = H256::from_hex("0x94746ba186876d7407ee618d10cb6619befc59eeb173cacb00c14d1ff492fc58")?;
 
 	let block = Block::new(&sdk.client, block_hash).await?;
 
 	// Transaction filtered by Transaction Hash
-	let tx_hash = new_h256_from_hex("0x19c486e107c926ff4af3fa9b1d95aaba130cb0bc89515d0f5b523ef6bac06338")?;
+	let tx_hash = H256::from_hex("0x19c486e107c926ff4af3fa9b1d95aaba130cb0bc89515d0f5b523ef6bac06338")?;
 	let txs = block.transactions_static::<TransferKeepAliveCall>(Filter::new().tx_hash(tx_hash));
 	assert_eq!(txs.len(), 1, "");
 	let tx = &txs[0];

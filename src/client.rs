@@ -3,7 +3,7 @@ use crate::{
 	error::ClientError,
 	rpc::{self, rpc::RpcMethods},
 	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AvailHeader,
-	TransactionState,
+	TransactionDetails,
 };
 use primitive_types::H256;
 use std::{fmt::Debug, sync::Arc, time::Duration};
@@ -133,6 +133,15 @@ impl Client {
 		self.online_client.blocks().at(at).await
 	}
 
+	pub async fn block_transaction_at(
+		&self,
+		tx_hash: H256,
+		at: H256,
+	) -> Result<Option<TransactionDetails>, subxt::Error> {
+		let block = self.online_client.blocks().at(at).await?;
+		super::transaction::utils::find_transaction(self, &block, &tx_hash).await
+	}
+
 	pub async fn header_at(&self, at: H256) -> Result<AvailHeader, subxt::Error> {
 		rpc::chain::get_header(self, Some(at)).await
 	}
@@ -159,22 +168,22 @@ impl Client {
 		Ok(header.number)
 	}
 
-	pub async fn rpc_methods_list(&self) -> Result<RpcMethods, subxt::Error> {
-		let methods = rpc::rpc::methods(self).await?;
-		Ok(methods)
-	}
-
 	pub async fn finalized_block_number(&self) -> Result<u32, subxt::Error> {
 		let block_hash = self.finalized_block_hash().await?;
 		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
 		Ok(header.number)
 	}
 
-	pub async fn transaction_state(
+	pub async fn rpc_methods_list(&self) -> Result<RpcMethods, subxt::Error> {
+		let methods = rpc::rpc::methods(self).await?;
+		Ok(methods)
+	}
+
+	/* 	pub async fn transaction_state(
 		&self,
 		tx_hash: &H256,
 		finalized: bool,
 	) -> Result<Vec<TransactionState>, subxt::Error> {
 		rpc::transaction::state(self, tx_hash, finalized).await
-	}
+	} */
 }

@@ -85,7 +85,7 @@ impl SubmittedTransaction {
 		.await
 	}
 
-	/* 	pub async fn find_block_id_best_block(&self, sleep_duration: Duration) -> Result<Option<BlockId>, subxt::Error> {
+	pub async fn find_block_id_best_block(&self, sleep_duration: Duration) -> Result<Option<BlockId>, subxt::Error> {
 		find_block_id_best_block(
 			&self.client,
 			&self.account_id,
@@ -95,7 +95,7 @@ impl SubmittedTransaction {
 			sleep_duration,
 		)
 		.await
-	} */
+	}
 }
 
 /// TODO
@@ -290,7 +290,7 @@ pub async fn find_block_id(
 	Ok(None)
 }
 
-/* /// TODO
+/// TODO
 pub async fn find_block_id_best_block(
 	client: &Client,
 	account_id: &AccountId,
@@ -325,4 +325,4 @@ pub async fn find_block_id_best_block(
 	}
 
 	Ok(None)
-} */
+}

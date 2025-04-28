@@ -5,7 +5,7 @@ type DataSubmittedEvent = avail::data_availability::events::DataSubmitted;
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::turing_endpoint()).await?;
-	let block_hash = new_h256_from_hex("0x94746ba186876d7407ee618d10cb6619befc59eeb173cacb00c14d1ff492fc58")?;
+	let block_hash = H256::from_hex("0x94746ba186876d7407ee618d10cb6619befc59eeb173cacb00c14d1ff492fc58")?;
 
 	let block = Block::new(&sdk.client, block_hash).await?;
 

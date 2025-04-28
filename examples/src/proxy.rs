@@ -34,7 +34,7 @@ pub async fn run_normal_proxy() -> Result<(), ClientError> {
 		.tx
 		.proxy
 		.add_proxy(prox_account_multi.clone(), proxy_type.clone(), 0);
-	let res = tx.execute_and_watch_inclusion(&main_account, Options::new()).await?;
+	let res = tx.execute_and_watch(&main_account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true));
 
 	// Finding Proxy Added Event
@@ -54,7 +54,7 @@ pub async fn run_normal_proxy() -> Result<(), ClientError> {
 	let call = RuntimeCall::Balances(call);
 
 	let tx = sdk.tx.proxy.proxy(main_account_multi, None, call);
-	let res = tx.execute_and_watch_inclusion(&proxy_account, Options::new()).await?;
+	let res = tx.execute_and_watch(&proxy_account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true));
 
 	// Finding ProxyExecuted event
@@ -65,7 +65,7 @@ pub async fn run_normal_proxy() -> Result<(), ClientError> {
 
 	// Removing Proxy
 	let tx = sdk.tx.proxy.remove_proxy(prox_account_multi, proxy_type, 0);
-	let res = tx.execute_and_watch_inclusion(&main_account, Options::new()).await?;
+	let res = tx.execute_and_watch(&main_account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true));
 
 	// Finding for EventProxyRemoved event.
@@ -88,7 +88,7 @@ pub async fn run_pure_proxy() -> Result<(), ClientError> {
 	// Creating Proxy
 	let proxy_type = ProxyType::Any;
 	let tx = sdk.tx.proxy.create_pure(proxy_type.clone(), 0, 0);
-	let res = tx.execute_and_watch_inclusion(&main_account, Options::new()).await?;
+	let res = tx.execute_and_watch(&main_account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true));
 
 	// Finding PureCreated Event
@@ -109,7 +109,7 @@ pub async fn run_pure_proxy() -> Result<(), ClientError> {
 	let call = RuntimeCall::DataAvailability(call);
 
 	let tx = sdk.tx.proxy.proxy(pure_proxy_multi, None, call);
-	let res = tx.execute_and_watch_inclusion(&main_account, Options::new()).await?;
+	let res = tx.execute_and_watch(&main_account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true));
 
 	// Finding ProxyExecuted event
@@ -135,7 +135,7 @@ pub async fn run_proxy_failure() -> Result<(), ClientError> {
 		.tx
 		.proxy
 		.add_proxy(prox_account_multi.clone(), proxy_type.clone(), 0);
-	let res = tx.execute_and_watch_inclusion(&main_account, Options::new()).await?;
+	let res = tx.execute_and_watch(&main_account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true));
 
 	// Executing the Proxy.Proxy() call
@@ -146,7 +146,7 @@ pub async fn run_proxy_failure() -> Result<(), ClientError> {
 	let call = RuntimeCall::Balances(call);
 
 	let tx = sdk.tx.proxy.proxy(main_account_multi, None, call);
-	let res = tx.execute_and_watch_inclusion(&proxy_account, Options::new()).await?;
+	let res = tx.execute_and_watch(&proxy_account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true));
 
 	// Finding ProxyExecuted event
@@ -158,7 +158,7 @@ pub async fn run_proxy_failure() -> Result<(), ClientError> {
 
 	// Removing Proxy
 	let tx = sdk.tx.proxy.remove_proxy(prox_account_multi, proxy_type, 0);
-	let res = tx.execute_and_watch_inclusion(&main_account, Options::new()).await?;
+	let res = tx.execute_and_watch(&main_account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true));
 	Ok(())
 }

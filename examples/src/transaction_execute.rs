@@ -1,8 +1,6 @@
-use std::time::Duration;
-
 use avail::data_availability::{calls::types::SubmitData, events::DataSubmitted};
 use avail_rust::prelude::*;
-use avail_rust::transaction::utils::{find_block_id, find_transaction};
+use std::time::Duration;
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -17,14 +15,11 @@ pub async fn run() -> Result<(), ClientError> {
 	println!("Tx Hash: {:?}", info.tx_hash);
 
 	// Checking if the transaction was included
-	let account = (info.account_id.clone(), info.nonce());
-	let mortality = (info.period(), info.fork_height());
 	let sleep_duration = Duration::from_secs(10);
-	let block_id = find_block_id(&sdk.client, account, mortality, sleep_duration)
-		.await?
-		.unwrap();
-	let block = sdk.client.block_at(block_id.0).await?;
-	let res = find_transaction(&sdk.client, &block, &info.tx_hash).await?.unwrap();
+	// or `info.find_block_id_best_block(sleep_duration).await?.unwrap();`
+	let block_id = info.find_block_id(sleep_duration).await?.unwrap();
+	let res = sdk.client.block_transaction_at(info.tx_hash, block_id.hash).await?;
+	let res = res.unwrap();
 
 	// Printout Transaction Details
 	println!(

@@ -20,7 +20,7 @@ pub async fn run_transaction() -> Result<(), ClientError> {
 	let time = std::format!("{:?}", SystemTime::now());
 	let key = time.into_bytes();
 	let tx = sdk.tx.data_availability.create_application_key(key);
-	let res = tx.execute_and_watch_inclusion(&account, Options::default()).await?;
+	let res = tx.execute_and_watch(&account, Options::default()).await?;
 	assert_eq!(res.is_successful(), Some(true));
 
 	let events = res.events.unwrap();
@@ -34,7 +34,7 @@ pub async fn run_transaction() -> Result<(), ClientError> {
 	let data = String::from("My Data").into_bytes();
 	let options = Options::new().app_id(app_id);
 	let tx = sdk.tx.data_availability.submit_data(data);
-	let res = tx.execute_and_watch_inclusion(&account, options).await?;
+	let res = tx.execute_and_watch(&account, options).await?;
 	assert_eq!(res.is_successful(), Some(true));
 
 	Ok(())
@@ -42,7 +42,7 @@ pub async fn run_transaction() -> Result<(), ClientError> {
 
 pub async fn run_block() -> Result<(), ClientError> {
 	let sdk = SDK::new_http(SDK::turing_http_endpoint()).await?;
-	let block_hash = new_h256_from_hex("0x94746ba186876d7407ee618d10cb6619befc59eeb173cacb00c14d1ff492fc58")?;
+	let block_hash = H256::from_hex("0x94746ba186876d7407ee618d10cb6619befc59eeb173cacb00c14d1ff492fc58")?;
 
 	let block = Block::new(&sdk.client, block_hash).await?;
 

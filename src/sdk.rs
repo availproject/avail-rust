@@ -69,18 +69,3 @@ impl Debug for SDK {
 			.finish_non_exhaustive()
 	}
 }
-
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum WaitFor {
-	BlockInclusion,
-	BlockFinalization,
-}
-
-impl WaitFor {
-	pub fn to_str(&self) -> &'static str {
-		match self {
-			WaitFor::BlockInclusion => "Block Inclusion",
-			WaitFor::BlockFinalization => "Block Finalization",
-		}
-	}
-}

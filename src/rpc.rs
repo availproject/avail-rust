@@ -1,7 +1,8 @@
 use crate::{
 	avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength},
 	from_substrate::{NodeRole, PeerInfo, SyncState},
-	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
+	utils::{self, H256Utils},
+	ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
 };
 use avail_core::data_proof::ProofResponse;
 use serde::{Deserialize, Serialize};
@@ -156,7 +157,7 @@ pub mod author {
 		let ext = std::format!("0x{}", hex::encode(extrinsic));
 		let params = rpc_params![ext];
 		let value: String = client.rpc_client.request("author_submitExtrinsic", params).await?;
-		let value = utils::hex_string_to_h256(&value)?;
+		let value = H256::from_hex(&value)?;
 		Ok(value)
 	}
 }
