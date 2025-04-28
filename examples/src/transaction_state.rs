@@ -3,7 +3,7 @@ use avail_rust::prelude::*;
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
-	// Transaction will be signed, and sent.
+	/* 	// Transaction will be signed, and sent.
 	//
 	// There is no guarantee that the transaction was executed at all. It might have been
 	// dropped or discarded for various reasons. The caller is responsible for querying future
@@ -32,5 +32,6 @@ pub async fn run() -> Result<(), ClientError> {
 
 	println!("Transaction State finished correctly");
 
+	*/
 	Ok(())
 }
