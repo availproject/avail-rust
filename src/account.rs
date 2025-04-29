@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::{
 	avail::{self, system::storage::types::account::Account},
 	error::ClientError,
-	rpc, AccountId, Client,
+	AccountId, Client,
 };
 use primitive_types::H256;
 use subxt_signer::{sr25519::Keypair, SecretUri};
@@ -42,7 +42,7 @@ pub async fn nonce_state(client: &Client, address: &str, block_hash: Option<H256
 	let account = account_id_from_str(address)?;
 	let block_hash = match block_hash {
 		Some(x) => x,
-		None => rpc::chain::get_block_hash(client, None).await?,
+		None => client.rpc_chain_get_block_hash(None).await?,
 	};
 	let block = client.online_client.blocks().at(block_hash).await?;
 
@@ -51,7 +51,7 @@ pub async fn nonce_state(client: &Client, address: &str, block_hash: Option<H256
 
 pub async fn nonce_node(client: &Client, address: &str) -> Result<u32, subxt::Error> {
 	let account = account_id_from_str(address)?;
-	rpc::system::account_next_index(client, account.to_string()).await
+	client.rpc_system_account_next_index(account.to_string()).await
 }
 
 pub async fn nonce(client: &Client, address: &str) -> Result<u32, subxt::Error> {
@@ -59,7 +59,7 @@ pub async fn nonce(client: &Client, address: &str) -> Result<u32, subxt::Error> 
 }
 
 pub async fn app_keys(client: &Client, account_id: AccountId) -> Result<Vec<(String, u32)>, String> {
-	let block_hash = rpc::chain::get_block_hash(client, None).await;
+	let block_hash = client.rpc_chain_get_block_hash(None).await;
 	let block_hash = block_hash.map_err(|e| e.to_string())?;
 
 	let storage = client.storage().at(block_hash);
@@ -92,7 +92,7 @@ pub async fn app_ids(client: &Client, account_id: AccountId) -> Result<Vec<u32>,
 }
 
 pub async fn account_info(client: &Client, account_id: AccountId) -> Result<Account, String> {
-	let block_hash = rpc::chain::get_block_hash(client, None).await;
+	let block_hash = client.rpc_chain_get_block_hash(None).await;
 	let block_hash = block_hash.map_err(|e| e.to_string())?;
 
 	let storage = client.storage().at(block_hash);

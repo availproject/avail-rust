@@ -23,7 +23,7 @@ pub async fn run() -> Result<(), ClientError> {
 	assert_eq!(res.is_successful(), Some(true));
 
 	// Generate Session Keys
-	let keys = rpc::author::rotate_keys(&sdk.client).await?;
+	let keys = sdk.client.rpc_author_rotate_keys().await?;
 
 	// Set Keys
 	let tx = sdk.tx.session.set_keys(keys);

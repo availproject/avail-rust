@@ -14,10 +14,10 @@ pub mod account;
 pub mod block;
 pub mod block_transaction;
 pub mod client;
+pub mod client_rpc;
+pub mod client_runtime_api;
 pub mod error;
 pub mod primitives;
-pub mod rpc;
-pub mod runtime_api;
 pub mod sdk;
 pub mod transaction;
 pub mod transactions;
@@ -37,7 +37,6 @@ pub use primitives::{
 	block::{AppUncheckedExtrinsic, AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
 	kate::{Cell, GDataProof, GRow},
 };
-pub use rpc::TransactionState;
 pub use sdk::SDK;
 pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
@@ -54,10 +53,10 @@ pub mod prelude {
 		block::{to_ascii, DataSubmission},
 		config::*,
 		error::ClientError,
-		hex, kate_recovery, primitives, rpc, subxt, subxt_signer,
+		hex, kate_recovery, primitives, subxt, subxt_signer,
 		utils::H256Utils,
 		AccountId, Block, BlockTransaction, Client, ClientOptions, Filter, Keypair, MultiAddress, Options, Perbill,
-		PopulatedOptions, SecretUri, SubmittableTransaction, TransactionDetails, TransactionState, H256, SDK, U256,
+		PopulatedOptions, SecretUri, SubmittableTransaction, TransactionDetails, H256, SDK, U256,
 	};
 
 	#[cfg(feature = "native")]

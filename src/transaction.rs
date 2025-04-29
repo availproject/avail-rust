@@ -3,8 +3,7 @@ use crate::{
 	block_transaction::Filter,
 	error::ClientError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
-	rpc::system::account_next_index,
-	runtime_api, ABlock, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
+	ABlock, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
 };
 use log::info;
 use std::sync::Arc;
@@ -52,7 +51,7 @@ where
 
 		let tx = tx.encoded();
 
-		runtime_api::transaction_payment::query_info(&self.client, tx.to_vec(), None).await
+		self.client.api_transaction_payment_query_info(tx.to_vec(), None).await
 	}
 
 	pub async fn payment_query_fee_details(
@@ -73,21 +72,25 @@ where
 
 		let tx = tx.encoded();
 
-		runtime_api::transaction_payment::query_fee_details(&self.client, tx.to_vec(), None).await
+		self.client
+			.api_transaction_payment_query_fee_details(tx.to_vec(), None)
+			.await
 	}
 
 	pub async fn payment_query_call_info(&self) -> Result<RuntimeDispatchInfo, ClientError> {
 		let metadata = self.client.online_client.metadata();
 		let call = self.payload.encode_call_data(&metadata)?;
 
-		runtime_api::transaction_payment::query_call_info(&self.client, call, None).await
+		self.client.api_transaction_payment_query_call_info(call, None).await
 	}
 
 	pub async fn payment_query_call_fee_details(&self) -> Result<FeeDetails, ClientError> {
 		let metadata = self.client.online_client.metadata();
 		let call = self.payload.encode_call_data(&metadata)?;
 
-		runtime_api::transaction_payment::query_call_fee_details(&self.client, call, None).await
+		self.client
+			.api_transaction_payment_query_call_fee_details(call, None)
+			.await
 	}
 
 	pub async fn execute(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, subxt::Error> {
@@ -417,7 +420,7 @@ impl Options {
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {
 			Some(x) => x as u64,
-			None => account_next_index(client, account_id.to_string()).await? as u64,
+			None => client.rpc_system_account_next_index(account_id.to_string()).await? as u64,
 		};
 		let period = self.mortality.unwrap_or(32);
 		let mortality = CheckedMortality::from_period(period, client).await?;

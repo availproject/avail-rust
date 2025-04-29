@@ -3,7 +3,7 @@ use crate::{
 	block_transaction::{BlockTransactions, Filter, StaticBlockTransaction},
 	error::ClientError,
 	primitives::block::extrinsics_params::CheckAppId,
-	rpc, ABlock, AEventDetails, AEvents, AExtrinsicDetails, AExtrinsicEvents, AExtrinsics, AccountId, BlockTransaction,
+	ABlock, AEventDetails, AEvents, AExtrinsicDetails, AExtrinsicEvents, AExtrinsics, AccountId, BlockTransaction,
 	Client,
 };
 use codec::Decode;
@@ -51,7 +51,7 @@ impl Block {
 	}
 
 	pub async fn from_block_number(client: &Client, block_number: u32) -> Result<Self, ClientError> {
-		let block_hash = rpc::chain::get_block_hash(client, Some(block_number)).await?;
+		let block_hash = client.rpc_chain_get_block_hash(Some(block_number)).await?;
 		Self::new(client, block_hash).await
 	}
 

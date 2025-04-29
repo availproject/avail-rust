@@ -1,7 +1,6 @@
 use crate::{
 	block::EventRecords,
 	error::ClientError,
-	rpc::{self, rpc::RpcMethods},
 	transaction::{find_transaction, SubmissionStateError, SubmittedTransaction},
 	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AvailHeader, Options,
 	TransactionDetails,
@@ -96,7 +95,7 @@ impl Client {
 		let mut value = false;
 
 		// Check if we have tx_state_rpc available to us.
-		let methods = self.rpc_methods_list().await.unwrap_or_default();
+		let methods = self.rpc_rpc_methods().await.unwrap_or_default();
 		if !methods.methods.contains(&String::from("transaction_state")) {
 			return value;
 		}
@@ -151,40 +150,35 @@ impl Client {
 	}
 
 	pub async fn header_at(&self, at: H256) -> Result<AvailHeader, subxt::Error> {
-		rpc::chain::get_header(self, Some(at)).await
+		self.rpc_chain_get_header(Some(at)).await
 	}
 
 	pub async fn block_hash(&self, block_height: u32) -> Result<H256, subxt::Error> {
-		rpc::chain::get_block_hash(self, Some(block_height)).await
+		self.rpc_chain_get_block_hash(Some(block_height)).await
 	}
 
 	pub async fn best_block_hash(&self) -> Result<H256, subxt::Error> {
-		rpc::chain::get_block_hash(self, None).await
+		self.rpc_chain_get_block_hash(None).await
 	}
 
 	pub async fn finalized_block_hash(&self) -> Result<H256, subxt::Error> {
-		rpc::chain::get_finalized_head(self).await
+		self.rpc_chain_get_finalized_head().await
 	}
 
 	pub async fn block_number(&self, block_hash: H256) -> Result<u32, subxt::Error> {
-		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
+		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
 		Ok(header.number)
 	}
 
 	pub async fn best_block_number(&self) -> Result<u32, subxt::Error> {
-		let header = rpc::chain::get_header(self, None).await?;
+		let header = self.rpc_chain_get_header(None).await?;
 		Ok(header.number)
 	}
 
 	pub async fn finalized_block_number(&self) -> Result<u32, subxt::Error> {
 		let block_hash = self.finalized_block_hash().await?;
-		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
+		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
 		Ok(header.number)
-	}
-
-	pub async fn rpc_methods_list(&self) -> Result<RpcMethods, subxt::Error> {
-		let methods = rpc::rpc::methods(self).await?;
-		Ok(methods)
 	}
 
 	/// TODO
@@ -209,7 +203,7 @@ impl Client {
 
 		let tx_client = self.online_client.tx();
 		let signed_call = tx_client.create_signed(payload, signer, params).await?;
-		let tx_hash = rpc::author::submit_extrinsic(self, signed_call.encoded()).await?;
+		let tx_hash = self.rpc_author_submit_extrinsic(signed_call.encoded()).await?;
 
 		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_number, options.mortality.period, options.nonce, account_id);
 

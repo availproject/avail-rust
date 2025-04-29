@@ -4,7 +4,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	// author_rotate_keys
-	let value = rpc::author::rotate_keys(&sdk.client).await?;
+	let value = sdk.client.rpc_author_rotate_keys().await?;
 	dbg!(value);
 	/*	Output
 	SessionKeys {
@@ -27,14 +27,14 @@ pub async fn run() -> Result<(), ClientError> {
 		.create_signed(&call, &account, params)
 		.await?;
 	let extrinsic = signed_call.encoded();
-	let value = rpc::author::submit_extrinsic(&sdk.client, extrinsic).await?;
+	let value = sdk.client.rpc_author_submit_extrinsic(extrinsic).await?;
 	dbg!(value);
 	/*	Output
 		"0x56edc7516bb403f0d812f0f91dea5e36b46bbb31f7b69e78469652f74882377d"
 	*/
 
 	// chain_get_block
-	let value = rpc::chain::get_block(&sdk.client, None).await?;
+	let value = sdk.client.rpc_chain_get_block(None).await?;
 	dbg!(value);
 	/*	Output
 	BlockDetails {
@@ -67,21 +67,21 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// chain_get_block_hash
-	let value = rpc::chain::get_block_hash(&sdk.client, None).await?;
+	let value = sdk.client.rpc_chain_get_block_hash(None).await?;
 	dbg!(value);
 	/*	Output
 		0xc4e0a9a2ef80ddc1d70c9946d8a6f86ca4b15053b39ba56709222f01ddc64561
 	*/
 
 	// chain_get_finalized_head
-	let value = rpc::chain::get_finalized_head(&sdk.client).await?;
+	let value = sdk.client.rpc_chain_get_finalized_head().await?;
 	dbg!(value);
 	/*	Output
 		0x2c896c9faae4e111f1fbeb955be5e999a328846969b59a7a7c64eadc4701122a
 	*/
 
 	// chain_get_header
-	let value = rpc::chain::get_header(&sdk.client, None).await?;
+	let value = sdk.client.rpc_chain_get_header(None).await?;
 	dbg!(value);
 	/*	Output
 	AvailHeader {
@@ -109,28 +109,28 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// system_account_next_index
 	let account = String::from("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
-	let value = rpc::system::account_next_index(&sdk.client, account).await?;
+	let value = sdk.client.rpc_system_account_next_index(account).await?;
 	dbg!(value);
 	/*	Output
 		2
 	*/
 
 	// system_chain
-	let value = rpc::system::chain(&sdk.client).await?;
+	let value = sdk.client.rpc_system_chain().await?;
 	dbg!(value);
 	/*	Output
 		"Avail Development Network"
 	*/
 
 	// system_chain_type
-	let value = rpc::system::chain_type(&sdk.client).await?;
+	let value = sdk.client.rpc_system_chain_type().await?;
 	dbg!(value);
 	/*	Output
 		"Development"
 	*/
 
 	// system_health
-	let value = rpc::system::health(&sdk.client).await?;
+	let value = sdk.client.rpc_system_health().await?;
 	dbg!(value);
 	/*	Output
 	SystemHealth {
@@ -141,7 +141,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_local_listen_addresses
-	let value = rpc::system::local_listen_addresses(&sdk.client).await?;
+	let value = sdk.client.rpc_system_local_listen_addresses().await?;
 	dbg!(value);
 	/*	Output
 	value = [
@@ -153,21 +153,21 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_local_peer_id
-	let value = rpc::system::local_peer_id(&sdk.client).await?;
+	let value = sdk.client.rpc_system_local_peer_id().await?;
 	dbg!(value);
 	/*	Output
 		"12D3KooWRajsCfp1NR15iN7PcwcFAG3LB7iGDKUBosHkevNRQLYs"
 	*/
 
 	// system_name
-	let value = rpc::system::name(&sdk.client).await?;
+	let value = sdk.client.rpc_system_name().await?;
 	dbg!(value);
 	/*	Output
 		"Avail Node"
 	*/
 
 	// system_node_roles
-	let value = rpc::system::node_roles(&sdk.client).await?;
+	let value = sdk.client.rpc_system_node_roles().await?;
 	dbg!(value);
 	/*	Output
 	[
@@ -176,14 +176,14 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_peers
-	let value = rpc::system::peers(&sdk.client).await?;
+	let value = sdk.client.rpc_system_peers().await?;
 	dbg!(value);
 	/*	Output
 		[]
 	*/
 
 	// system_properties
-	let value = rpc::system::properties(&sdk.client).await?;
+	let value = sdk.client.rpc_system_properties().await?;
 	dbg!(value);
 	/*	Output
 	{
@@ -194,7 +194,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_system_sync_state
-	let value = rpc::system::sync_state(&sdk.client).await?;
+	let value = sdk.client.rpc_system_sync_state().await?;
 	dbg!(value);
 	/*	Output
 	SyncState {
@@ -205,13 +205,13 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// system_version
-	let value = rpc::system::version(&sdk.client).await?;
+	let value = sdk.client.rpc_system_version().await?;
 	dbg!(value);
 	/*	Output
 		"2.2.1-55da578d34b"
 	*/
 	// state_get_runtime_version
-	let value = rpc::state::get_runtime_version(&sdk.client, None).await?;
+	let value = sdk.client.rpc_state_get_runtime_version(None).await?;
 	dbg!(value);
 	/*	Output
 	RuntimeVersion {
@@ -229,7 +229,7 @@ pub async fn run() -> Result<(), ClientError> {
 	*/
 
 	// kate_block_length
-	let value = rpc::kate::block_length(&sdk.client, None).await?;
+	let value = sdk.client.rpc_kate_block_length(None).await?;
 	dbg!(value);
 	/*	Output
 	BlockLength {
@@ -255,7 +255,7 @@ pub async fn run() -> Result<(), ClientError> {
 		.execute_and_watch(&account::alice(), Options::new().app_id(1))
 		.await?;
 	let (tx_index, block_hash) = (result.tx_index, Some(result.block_hash));
-	let value = rpc::kate::query_data_proof(&sdk.client, tx_index, block_hash).await?;
+	let value = sdk.client.rpc_kate_query_data_proof(tx_index, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	ProofResponse {
@@ -276,7 +276,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// kate_query_proof
 	let cells = vec![kate::Cell::from((0u32, 0u32))];
-	let value = rpc::kate::query_proof(&sdk.client, cells, block_hash).await?;
+	let value = sdk.client.rpc_kate_query_proof(cells, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	[
@@ -291,7 +291,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// kate_query_rows
 	let rows = vec![0u32];
-	let value = rpc::kate::query_rows(&sdk.client, rows, block_hash).await?;
+	let value = sdk.client.rpc_kate_query_rows(rows, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	[
