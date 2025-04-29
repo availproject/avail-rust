@@ -139,7 +139,7 @@ impl Client {
 		at: H256,
 	) -> Result<Option<TransactionDetails>, subxt::Error> {
 		let block = self.online_client.blocks().at(at).await?;
-		super::transaction::utils::find_transaction(self, &block, &tx_hash).await
+		super::transaction::submitting::find_transaction(self, &block, &tx_hash).await
 	}
 
 	pub async fn header_at(&self, at: H256) -> Result<AvailHeader, subxt::Error> {

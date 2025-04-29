@@ -1,27 +1,6 @@
-use crate::{avail::runtime_types::da_runtime::primitives::SessionKeys, block::EventRecords, AppUncheckedExtrinsic};
+use crate::{avail::runtime_types::da_runtime::primitives::SessionKeys, AppUncheckedExtrinsic};
 use primitive_types::H256;
 use subxt::backend::legacy::rpc_methods::Bytes;
-
-/// Returns Ok if the transaction was successful
-/// Returns Err if the transaction failed
-pub fn check_if_transaction_was_successful(events: &EventRecords) -> Option<bool> {
-	// Try to find any errors; return the first one we encounter.
-	for ev in events.iter() {
-		if ev.pallet_name() != "System" {
-			continue;
-		}
-
-		if ev.variant_name() == "ExtrinsicFailed" {
-			return Some(false);
-		}
-
-		if ev.variant_name() == "ExtrinsicSuccess" {
-			return Some(true);
-		}
-	}
-
-	None
-}
 
 pub fn decode_raw_block_rpc_extrinsics(extrinsics: Vec<Bytes>) -> Result<Vec<AppUncheckedExtrinsic>, String> {
 	let extrinsics: Result<Vec<AppUncheckedExtrinsic>, String> =

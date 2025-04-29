@@ -7,7 +7,7 @@ use crate::{
 		self, nomination_pools::calls::types::set_commission::NewCommission as NewCommissionOriginal,
 		runtime_types::sp_arithmetic::per_things::Perbill,
 	},
-	AccountId, Client, Transaction,
+	AccountId, Client, SubmittableTransaction,
 };
 
 pub type NominateCall = avail::nomination_pools::calls::types::Nominate;
@@ -46,9 +46,9 @@ impl NominationPools {
 	///
 	/// This directly forward the call to the staking pallet, on behalf of the pool bonded
 	/// account.
-	pub fn nominate(&self, pool_id: u32, validators: Vec<AccountId>) -> Transaction<NominateCall> {
+	pub fn nominate(&self, pool_id: u32, validators: Vec<AccountId>) -> SubmittableTransaction<NominateCall> {
 		let payload = avail::tx().nomination_pools().nominate(pool_id, validators);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Stake funds with a pool. The amount to bond is transferred from the member to the
@@ -61,9 +61,9 @@ impl NominationPools {
 	///   - This call will *not* dust the member account, so the member must have at least
 	///     `existential deposit + amount` in their account.
 	///   - Only a pool with [`PoolState::Open`] can be joined
-	pub fn join(&self, amount: u128, pool_id: u32) -> Transaction<JoinCall> {
+	pub fn join(&self, amount: u128, pool_id: u32) -> SubmittableTransaction<JoinCall> {
 		let payload = avail::tx().nomination_pools().join(amount, pool_id);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Create a new delegation pool with a previously used pool id
@@ -79,7 +79,7 @@ impl NominationPools {
 		nominator: AccountId,
 		bouncer: AccountId,
 		pool_id: u32,
-	) -> Transaction<CreateWithPoolIdCall> {
+	) -> SubmittableTransaction<CreateWithPoolIdCall> {
 		let payload = avail::tx().nomination_pools().create_with_pool_id(
 			amount,
 			root.into(),
@@ -87,7 +87,7 @@ impl NominationPools {
 			bouncer.into(),
 			pool_id,
 		);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Create a new delegation pool.
@@ -113,11 +113,11 @@ impl NominationPools {
 		root: AccountId,
 		nominator: AccountId,
 		bouncer: AccountId,
-	) -> Transaction<CreateCall> {
+	) -> SubmittableTransaction<CreateCall> {
 		let payload = avail::tx()
 			.nomination_pools()
 			.create(amount, root.into(), nominator.into(), bouncer.into());
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Bond `extra` more funds from `origin` into the pool to which they already belong.
@@ -127,9 +127,9 @@ impl NominationPools {
 	///
 	/// Bonding extra funds implies an automatic payout of all pending rewards as well.
 	/// See `bond_extra_other` to bond pending rewards of `other` members.
-	pub fn bond_extra(&self, extra: BondExtra<u128>) -> Transaction<BondExtraCall> {
+	pub fn bond_extra(&self, extra: BondExtra<u128>) -> SubmittableTransaction<BondExtraCall> {
 		let payload = avail::tx().nomination_pools().bond_extra(extra);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Set the commission of a pool.
@@ -142,14 +142,14 @@ impl NominationPools {
 		&self,
 		pool_id: u32,
 		new_commission: Option<NewCommission>,
-	) -> Transaction<SetCommissionCall> {
+	) -> SubmittableTransaction<SetCommissionCall> {
 		let new_commission: NewCommissionOriginal = match new_commission {
 			Some(x) => Some((x.amount, x.payee)),
 			None => None,
 		};
 
 		let payload = avail::tx().nomination_pools().set_commission(pool_id, new_commission);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Set a new state for the pool.
@@ -162,9 +162,9 @@ impl NominationPools {
 	///  1. signed by the bouncer, or the root role of the pool,
 	///  2. if the pool conditions to be open are NOT met (as described by `ok_to_be_open`), and
 	///     then the state of the pool can be permissionlessly changed to `Destroying`.
-	pub fn set_state(&self, pool_id: u32, state: State) -> Transaction<SetStateCall> {
+	pub fn set_state(&self, pool_id: u32, state: State) -> SubmittableTransaction<SetStateCall> {
 		let payload = avail::tx().nomination_pools().set_state(pool_id, state);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// A bonded member can use this to claim their payout based on the rewards that the pool
@@ -175,9 +175,9 @@ impl NominationPools {
 	/// members in the pools stake. Rewards do not "expire".
 	///
 	/// See `claim_payout_other` to caim rewards on bahalf of some `other` pool member.
-	pub fn claim_payout(&self) -> Transaction<ClaimPayoutCall> {
+	pub fn claim_payout(&self) -> SubmittableTransaction<ClaimPayoutCall> {
 		let payload = avail::tx().nomination_pools().claim_payout();
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Chill on behalf of the pool.
@@ -187,9 +187,9 @@ impl NominationPools {
 	///
 	/// This directly forward the call to the staking pallet, on behalf of the pool bonded
 	/// account.
-	pub fn chill(&self, pool_id: u32) -> Transaction<ChillCall> {
+	pub fn chill(&self, pool_id: u32) -> SubmittableTransaction<ChillCall> {
 		let payload = avail::tx().nomination_pools().chill(pool_id);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Allows a pool member to set a claim permission to allow or disallow permissionless
@@ -204,9 +204,9 @@ impl NominationPools {
 	///
 	/// * `origin` - Member of a pool.
 	/// * `actor` - Account to claim reward. // improve this
-	pub fn set_claim_permission(&self, permission: Permission) -> Transaction<SetClaimPermissionCall> {
+	pub fn set_claim_permission(&self, permission: Permission) -> SubmittableTransaction<SetClaimPermissionCall> {
 		let payload = avail::tx().nomination_pools().set_claim_permission(permission);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Claim pending commission.
@@ -214,18 +214,18 @@ impl NominationPools {
 	/// The dispatch origin of this call must be signed by the `root` role of the pool. Pending
 	/// commission is paid out and added to total claimed commission`. Total pending commission
 	/// is reset to zero. the current.
-	pub fn claim_commission(&self, pool_id: u32) -> Transaction<ClaimCommissionCall> {
+	pub fn claim_commission(&self, pool_id: u32) -> SubmittableTransaction<ClaimCommissionCall> {
 		let payload = avail::tx().nomination_pools().claim_commission(pool_id);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// `origin` can claim payouts on some pool member `other`'s behalf.
 	///
 	/// Pool member `other` must have a `PermissionlessAll` or `PermissionlessWithdraw` in order
 	/// for this call to be successful.
-	pub fn claim_payout_other(&self, other: AccountId) -> Transaction<ClaimPayoutOtherCall> {
+	pub fn claim_payout_other(&self, other: AccountId) -> SubmittableTransaction<ClaimPayoutOtherCall> {
 		let payload = avail::tx().nomination_pools().claim_payout_other(other);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Unbond up to `unbonding_points` of the `member_account`'s funds from the pool. It
@@ -259,20 +259,20 @@ impl NominationPools {
 	/// are available). However, it may not be possible to release the current unlocking chunks,
 	/// in which case, the result of this call will likely be the `NoMoreChunks` error from the
 	/// staking system.
-	pub fn unbond(&self, member_account: AccountId, unbonding_points: u128) -> Transaction<UnbondCall> {
+	pub fn unbond(&self, member_account: AccountId, unbonding_points: u128) -> SubmittableTransaction<UnbondCall> {
 		let payload = avail::tx()
 			.nomination_pools()
 			.unbond(member_account.into(), unbonding_points);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Set a new metadata for the pool.
 	///
 	/// The dispatch origin of this call must be signed by the bouncer, or the root role of the
 	/// pool.
-	pub fn set_metadata(&self, pool_id: u32, metadata: Vec<u8>) -> Transaction<SetMetadataCall> {
+	pub fn set_metadata(&self, pool_id: u32, metadata: Vec<u8>) -> SubmittableTransaction<SetMetadataCall> {
 		let payload = avail::tx().nomination_pools().set_metadata(pool_id, metadata);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Withdraw unbonded funds from `member_account`. If no bonded funds can be unbonded, an
@@ -298,10 +298,10 @@ impl NominationPools {
 		&self,
 		member_account: AccountId,
 		num_slashing_spans: u32,
-	) -> Transaction<WithdrawUnbondedCall> {
+	) -> SubmittableTransaction<WithdrawUnbondedCall> {
 		let payload = avail::tx()
 			.nomination_pools()
 			.withdraw_unbonded(member_account.into(), num_slashing_spans);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 }

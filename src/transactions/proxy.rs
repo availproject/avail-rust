@@ -6,7 +6,7 @@ use crate::{
 		self,
 		runtime_types::da_runtime::{impls::ProxyType, RuntimeCall},
 	},
-	AccountId, Client, Transaction,
+	AccountId, Client, SubmittableTransaction,
 };
 
 pub type ProxyCall = avail::proxy::calls::types::Proxy;
@@ -40,9 +40,9 @@ impl Proxy {
 		real: MultiAddress<AccountId, u32>,
 		force_proxy_type: Option<ProxyType>,
 		call: RuntimeCall,
-	) -> Transaction<ProxyCall> {
+	) -> SubmittableTransaction<ProxyCall> {
 		let payload = avail::tx().proxy().proxy(real, force_proxy_type, call);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Register a proxy account for the sender that is able to make calls on its behalf.
@@ -59,9 +59,9 @@ impl Proxy {
 		delegate: MultiAddress<AccountId, u32>,
 		proxy_type: ProxyType,
 		delay: u32,
-	) -> Transaction<AddProxyCall> {
+	) -> SubmittableTransaction<AddProxyCall> {
 		let payload = avail::tx().proxy().add_proxy(delegate, proxy_type, delay);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Unregister a proxy account for the sender.
@@ -77,9 +77,9 @@ impl Proxy {
 		delegate: MultiAddress<AccountId, u32>,
 		proxy_type: ProxyType,
 		delay: u32,
-	) -> Transaction<RemoveProxyCall> {
+	) -> SubmittableTransaction<RemoveProxyCall> {
 		let payload = avail::tx().proxy().remove_proxy(delegate, proxy_type, delay);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Unregister all proxy accounts for the sender.
@@ -87,9 +87,9 @@ impl Proxy {
 	/// The dispatch origin for this call must be _Signed_.
 	///
 	/// WARNING: This may be called on accounts created by `pure`, however if done, then
-	pub fn remove_proxies(&self) -> Transaction<RemoveProxiesCall> {
+	pub fn remove_proxies(&self) -> SubmittableTransaction<RemoveProxiesCall> {
 		let payload = avail::tx().proxy().remove_proxies();
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Spawn a fresh new account that is guaranteed to be otherwise inaccessible, and
@@ -110,9 +110,9 @@ impl Proxy {
 	/// same sender, with the same parameters.
 	///
 	/// Fails if there are insufficient funds to pay for deposit.
-	pub fn create_pure(&self, proxy_type: ProxyType, delay: u32, index: u16) -> Transaction<CreatePureCall> {
+	pub fn create_pure(&self, proxy_type: ProxyType, delay: u32, index: u16) -> SubmittableTransaction<CreatePureCall> {
 		let payload = avail::tx().proxy().create_pure(proxy_type, delay, index);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Removes a previously spawned pure proxy.
@@ -138,11 +138,11 @@ impl Proxy {
 		index: u16,
 		height: u32,
 		ext_index: u32,
-	) -> Transaction<KillPureCall> {
+	) -> SubmittableTransaction<KillPureCall> {
 		let payload = avail::tx()
 			.proxy()
 			.kill_pure(spawner, proxy_type, index, height, ext_index);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Publish the hash of a proxy-call that will be made in the future.
@@ -160,9 +160,13 @@ impl Proxy {
 	/// Parameters:
 	/// - `real`: The account that the proxy will make a call on behalf of.
 	/// - `call_hash`: The hash of the call to be made by the `real` account.
-	pub fn announce(&self, real: MultiAddress<AccountId, u32>, call_hash: H256) -> Transaction<AnnounceCall> {
+	pub fn announce(
+		&self,
+		real: MultiAddress<AccountId, u32>,
+		call_hash: H256,
+	) -> SubmittableTransaction<AnnounceCall> {
 		let payload = avail::tx().proxy().announce(real, call_hash);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Remove a given announcement.
@@ -179,9 +183,9 @@ impl Proxy {
 		&self,
 		real: MultiAddress<AccountId, u32>,
 		call_hash: H256,
-	) -> Transaction<RemoveAnnouncementCall> {
+	) -> SubmittableTransaction<RemoveAnnouncementCall> {
 		let payload = avail::tx().proxy().remove_announcement(real, call_hash);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Remove the given announcement of a delegate.
@@ -198,9 +202,9 @@ impl Proxy {
 		&self,
 		delegate: MultiAddress<AccountId, u32>,
 		call_hash: H256,
-	) -> Transaction<RejectAnnouncementCall> {
+	) -> SubmittableTransaction<RejectAnnouncementCall> {
 		let payload = avail::tx().proxy().reject_announcement(delegate, call_hash);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Dispatch the given `call` from an account that the sender is authorized for through
@@ -220,10 +224,10 @@ impl Proxy {
 		real: MultiAddress<AccountId, u32>,
 		force_proxy_type: Option<ProxyType>,
 		call: RuntimeCall,
-	) -> Transaction<ProxyAnnouncedCall> {
+	) -> SubmittableTransaction<ProxyAnnouncedCall> {
 		let payload = avail::tx()
 			.proxy()
 			.proxy_announced(delegate, real, force_proxy_type, call);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 }

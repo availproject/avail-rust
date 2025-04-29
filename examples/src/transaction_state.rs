@@ -31,7 +31,7 @@ pub async fn run() -> Result<(), ClientError> {
 	);
 
 	println!("Transaction State finished correctly");
-
 	*/
+
 	Ok(())
 }

@@ -1,8 +1,6 @@
 pub mod details;
 pub mod options;
-pub mod transaction;
-pub mod utils;
+pub mod submitting;
 
 pub use details::TransactionDetails;
 pub use options::{Options, Params, PopulatedOptions};
-pub use transaction::Transaction;

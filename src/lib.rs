@@ -42,7 +42,8 @@ pub use sdk::SDK;
 pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
-pub use transaction::{Options, PopulatedOptions, Transaction, TransactionDetails};
+pub use transaction::details::SubmittableTransaction;
+pub use transaction::{Options, PopulatedOptions, TransactionDetails};
 
 pub mod prelude {
 	pub use super::{
@@ -57,7 +58,7 @@ pub mod prelude {
 		hex, kate_recovery, primitives, rpc, subxt, subxt_signer,
 		utils::H256Utils,
 		AccountId, Block, BlockTransaction, Client, ClientOptions, Filter, Keypair, MultiAddress, Options, Perbill,
-		PopulatedOptions, SecretUri, Transaction, TransactionDetails, TransactionState, H256, SDK, U256,
+		PopulatedOptions, SecretUri, SubmittableTransaction, TransactionDetails, TransactionState, H256, SDK, U256,
 	};
 
 	#[cfg(feature = "native")]

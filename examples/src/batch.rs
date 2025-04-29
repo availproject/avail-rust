@@ -41,7 +41,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// and the error of the failed call. If all were successful, then the `BatchCompleted`
 	// event is deposited.
 	let payload = avail::tx().utility().batch(calls.clone());
-	let tx = Transaction::new(sdk.client.clone(), payload);
+	let tx = SubmittableTransaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch(&account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
@@ -56,7 +56,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// Send a batch of dispatch calls and atomically execute them.
 	// The whole transaction will rollback and fail if any of the calls failed.
 	let payload = avail::tx().utility().batch_all(calls.clone());
-	let tx = Transaction::new(sdk.client.clone(), payload);
+	let tx = SubmittableTransaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch(&account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
@@ -72,7 +72,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// Unlike `batch`, it allows errors and won't interrupt.
 
 	let payload = avail::tx().utility().force_batch(calls.clone());
-	let tx = Transaction::new(sdk.client.clone(), payload);
+	let tx = SubmittableTransaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch(&account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
@@ -103,7 +103,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Batch Call
 	let payload = avail::tx().utility().batch(calls.clone());
-	let tx = Transaction::new(sdk.client.clone(), payload);
+	let tx = SubmittableTransaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch(&account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 
@@ -116,7 +116,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Batch All Call
 	let payload = avail::tx().utility().batch_all(calls.clone());
-	let tx = Transaction::new(sdk.client.clone(), payload);
+	let tx = SubmittableTransaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch(&account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(false), "Transactions needs fail.");
 
@@ -124,7 +124,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Force Batch Call
 	let payload = avail::tx().utility().force_batch(calls.clone());
-	let tx = Transaction::new(sdk.client.clone(), payload);
+	let tx = SubmittableTransaction::new(sdk.client.clone(), payload);
 	let res = tx.execute_and_watch(&account, Options::new()).await?;
 	assert_eq!(res.is_successful(), Some(true), "Transactions must be successful");
 

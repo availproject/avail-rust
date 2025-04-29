@@ -420,6 +420,26 @@ impl EventRecords {
 	pub fn iter(&self) -> EventRecordsIter {
 		EventRecordsIter { inner: self, index: 0 }
 	}
+
+	pub fn has_system_extrinsic_failed(&self) -> bool {
+		for ev in self.iter() {
+			if ev.pallet_index() == 0 && ev.variant_index() == 0 {
+				return true;
+			}
+		}
+
+		false
+	}
+
+	pub fn has_system_extrinsic_success(&self) -> bool {
+		for ev in self.iter() {
+			if ev.pallet_index() == 0 && ev.variant_index() == 1 {
+				return true;
+			}
+		}
+
+		false
+	}
 }
 
 impl IntoIterator for EventRecords {

@@ -1,6 +1,6 @@
 use crate::{
 	api_dev::api::runtime_types::{pallet_staking::ValidatorPrefs, sp_arithmetic::per_things::Perbill},
-	avail, AccountId, Client, Transaction,
+	avail, AccountId, Client, SubmittableTransaction,
 };
 use subxt_core::utils::MultiAddress;
 
@@ -33,24 +33,24 @@ impl Commission {
 impl Staking {
 	/// Take the origin account as a stash and lock up `value` of its balance. `controller` will
 	/// be the account that controls it.
-	pub fn bond(&self, value: u128, payee: RewardDestination) -> Transaction<BondCall> {
+	pub fn bond(&self, value: u128, payee: RewardDestination) -> SubmittableTransaction<BondCall> {
 		let payload = avail::tx().staking().bond(value, payee);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Add some extra amount that have appeared in the stash `free_balance` into the balance up
 	/// for staking.
-	pub fn bond_extra(&self, max_additional: u128) -> Transaction<BondExtraCall> {
+	pub fn bond_extra(&self, max_additional: u128) -> SubmittableTransaction<BondExtraCall> {
 		let payload = avail::tx().staking().bond_extra(max_additional);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Declare no desire to either validate or nominate.
 	///
 	/// Effects will be felt at the beginning of the next era.
-	pub fn chill(&self) -> Transaction<ChillCall> {
+	pub fn chill(&self) -> SubmittableTransaction<ChillCall> {
 		let payload = avail::tx().staking().chill();
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Declare a `controller` to stop participating as either a validator or nominator.
@@ -79,46 +79,46 @@ impl Staking {
 	///
 	/// This can be helpful if bond requirements are updated, and we need to remove old users
 	/// who do not satisfy these requirements.
-	pub fn chill_other(&self, stash: AccountId) -> Transaction<ChillOtherCall> {
+	pub fn chill_other(&self, stash: AccountId) -> SubmittableTransaction<ChillOtherCall> {
 		let payload = avail::tx().staking().chill_other(stash);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Declare the desire to nominate `targets` for the origin controller.
 	///
 	/// Effects will be felt at the beginning of the next era.
-	pub fn nominate(&self, targets: &[AccountId]) -> Transaction<NominateCall> {
+	pub fn nominate(&self, targets: &[AccountId]) -> SubmittableTransaction<NominateCall> {
 		let targets = targets.iter().map(|a| MultiAddress::Id(a.clone())).collect();
 
 		let payload = avail::tx().staking().nominate(targets);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Schedule a portion of the stash to be unlocked ready for transfer out after the bond
 	/// period ends. If this leaves an amount actively bonded less than
 	/// T::Currency::minimum_balance(), then it is increased to the full amount.
-	pub fn unbond(&self, value: u128) -> Transaction<UnbondCall> {
+	pub fn unbond(&self, value: u128) -> SubmittableTransaction<UnbondCall> {
 		let payload = avail::tx().staking().unbond(value);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Declare the desire to validate for the origin controller.
 	///
 	/// Effects will be felt at the beginning of the next era.
-	pub fn validate(&self, commission: Commission, blocked: bool) -> Transaction<ValidateCall> {
+	pub fn validate(&self, commission: Commission, blocked: bool) -> SubmittableTransaction<ValidateCall> {
 		let commission = Perbill(commission.0 as u32);
 		let perfs = ValidatorPrefs { commission, blocked };
 
 		let payload = avail::tx().staking().validate(perfs);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	/// Pay out next page of the stakers behind a validator for the given era.
 	///
 	/// - `validator_stash` is the stash account of the validator.
 	/// - `era` may be any era between `[current_era - history_depth; current_era]`.
-	pub fn payout_stakers(&self, validator_stash: AccountId, era: u32) -> Transaction<PayoutStakersCall> {
+	pub fn payout_stakers(&self, validator_stash: AccountId, era: u32) -> SubmittableTransaction<PayoutStakersCall> {
 		let payload = avail::tx().staking().payout_stakers(validator_stash, era);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 }

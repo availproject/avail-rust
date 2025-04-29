@@ -111,7 +111,15 @@ where
 	let account_id = signer.public_key().to_account_id();
 	let options = options.build(client, &account_id).await?;
 	let params = options.clone().build().await;
-	let tx_hash = sign_and_submit_raw_params(client, signer, payload, params).await?;
+	if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data") {
+		return Err(subxt::Error::Other(
+			"Transaction is not compatible with non-zero AppIds".into(),
+		));
+	}
+
+	let tx_client = client.online_client.tx();
+	let signed_call = tx_client.create_signed(payload, signer, params).await?;
+	let tx_hash = rpc::author::submit_extrinsic(client, signed_call.encoded()).await?;
 
 	info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_number, options.mortality.period, options.nonce, account_id);
 
@@ -121,27 +129,6 @@ where
 		account_id,
 		options,
 	})
-}
-
-/// TODO
-pub async fn sign_and_submit_raw_params<T>(
-	client: &Client,
-	signer: &Keypair,
-	payload: &DefaultPayload<T>,
-	params: Params,
-) -> Result<H256, subxt::Error>
-where
-	T: StaticExtrinsic + EncodeAsFields,
-{
-	if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data") {
-		return Err(subxt::Error::Other(
-			"Transaction is not compatible with non-zero AppIds".into(),
-		));
-	}
-
-	let tx_client = client.online_client.tx();
-	let signed_call = tx_client.create_signed(payload, signer, params).await?;
-	rpc::author::submit_extrinsic(client, signed_call.encoded()).await
 }
 
 /// TODO

@@ -1,4 +1,4 @@
-use crate::{avail, Client, Transaction};
+use crate::{avail, Client, SubmittableTransaction};
 use primitive_types::H256;
 
 pub type ExecuteCall = avail::vector::calls::types::Execute;
@@ -25,11 +25,11 @@ impl Vector {
 		addr_message: AddrMessage,
 		account_proof: AccountProof,
 		storage_proof: StorageProof,
-	) -> Transaction<ExecuteCall> {
+	) -> SubmittableTransaction<ExecuteCall> {
 		let payload = avail::tx()
 			.vector()
 			.execute(slot, addr_message, account_proof, storage_proof);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	pub fn fulfill_call(
@@ -39,7 +39,7 @@ impl Vector {
 		output: Vec<u8>,
 		proof: Vec<u8>,
 		slot: u64,
-	) -> Transaction<FulfillCallCall> {
+	) -> SubmittableTransaction<FulfillCallCall> {
 		let input = BoundedVec(input);
 		let output = BoundedVec(output);
 		let proof = BoundedVec(proof);
@@ -47,11 +47,11 @@ impl Vector {
 		let payload = avail::tx()
 			.vector()
 			.fulfill_call(function_id, input, output, proof, slot);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
-	pub fn send_message(&self, message: Message, to: H256, domain: u32) -> Transaction<SendMessageCall> {
+	pub fn send_message(&self, message: Message, to: H256, domain: u32) -> SubmittableTransaction<SendMessageCall> {
 		let payload = avail::tx().vector().send_message(message, to, domain);
-		Transaction::new(self.client.clone(), payload)
+		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 }

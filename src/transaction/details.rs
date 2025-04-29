@@ -1,6 +1,107 @@
-use crate::{block::EventRecords, block_transaction::Filter, error::ClientError, utils, Client, H256};
+use super::{
+	submitting::{SubmissionStateError, SubmittedTransaction},
+	Options,
+};
+use crate::{
+	block::EventRecords,
+	block_transaction::Filter,
+	error::ClientError,
+	from_substrate::{FeeDetails, RuntimeDispatchInfo},
+	runtime_api, Client, H256,
+};
 use std::sync::Arc;
-use subxt::blocks::StaticExtrinsic;
+use subxt::{
+	blocks::StaticExtrinsic,
+	ext::scale_encode::EncodeAsFields,
+	tx::{DefaultPayload, Payload},
+};
+use subxt_signer::sr25519::Keypair;
+
+#[derive(Debug, Clone)]
+pub struct SubmittableTransaction<T>
+where
+	T: StaticExtrinsic + EncodeAsFields,
+{
+	client: Client,
+	payload: DefaultPayload<T>,
+}
+
+impl<T> SubmittableTransaction<T>
+where
+	T: StaticExtrinsic + EncodeAsFields,
+{
+	pub fn new(client: Client, payload: DefaultPayload<T>) -> Self {
+		Self { client, payload }
+	}
+
+	pub async fn payment_query_info(
+		&self,
+		account: &Keypair,
+		options: Option<Options>,
+	) -> Result<RuntimeDispatchInfo, ClientError> {
+		let account_id = account.public_key().to_account_id();
+		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
+
+		let params = options.build().await;
+		let tx = self
+			.client
+			.online_client
+			.tx()
+			.create_signed(&self.payload, account, params)
+			.await?;
+
+		let tx = tx.encoded();
+
+		runtime_api::transaction_payment::query_info(&self.client, tx.to_vec(), None).await
+	}
+
+	pub async fn payment_query_fee_details(
+		&self,
+		account: &Keypair,
+		options: Option<Options>,
+	) -> Result<FeeDetails, ClientError> {
+		let account_id = account.public_key().to_account_id();
+		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
+
+		let params = options.build().await;
+		let tx = self
+			.client
+			.online_client
+			.tx()
+			.create_signed(&self.payload, account, params)
+			.await?;
+
+		let tx = tx.encoded();
+
+		runtime_api::transaction_payment::query_fee_details(&self.client, tx.to_vec(), None).await
+	}
+
+	pub async fn payment_query_call_info(&self) -> Result<RuntimeDispatchInfo, ClientError> {
+		let metadata = self.client.online_client.metadata();
+		let call = self.payload.encode_call_data(&metadata)?;
+
+		runtime_api::transaction_payment::query_call_info(&self.client, call, None).await
+	}
+
+	pub async fn payment_query_call_fee_details(&self) -> Result<FeeDetails, ClientError> {
+		let metadata = self.client.online_client.metadata();
+		let call = self.payload.encode_call_data(&metadata)?;
+
+		runtime_api::transaction_payment::query_call_fee_details(&self.client, call, None).await
+	}
+
+	pub async fn execute(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, subxt::Error> {
+		super::submitting::sign_and_submit(&self.client, signer, &self.payload, options).await
+	}
+
+	pub async fn execute_and_watch(
+		&self,
+		signer: &Keypair,
+		options: Options,
+	) -> Result<TransactionDetails, SubmissionStateError> {
+		super::submitting::sign_submit_and_watch(&self.client, signer, &self.payload, options).await
+	}
+}
 
 #[derive(Debug, Clone)]
 pub struct TransactionDetails {
@@ -38,7 +139,7 @@ impl TransactionDetails {
 	///    false means the transaction failed
 	pub fn is_successful(&self) -> Option<bool> {
 		match &self.events {
-			Some(events) => utils::check_if_transaction_was_successful(events),
+			Some(events) => Some(events.has_system_extrinsic_success()),
 			None => None,
 		}
 	}
