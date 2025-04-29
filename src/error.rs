@@ -1,4 +1,4 @@
-use crate::transaction::submitting::SubmissionStateError;
+use super::transaction::SubmissionStateError;
 use subxt::error::DispatchError;
 use subxt_signer::{sr25519, SecretUriError};
 

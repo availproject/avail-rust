@@ -2,15 +2,23 @@ use crate::{
 	block::EventRecords,
 	error::ClientError,
 	rpc::{self, rpc::RpcMethods},
-	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AvailHeader,
+	transaction::{find_transaction, SubmissionStateError, SubmittedTransaction},
+	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AvailHeader, Options,
 	TransactionDetails,
 };
+use log::info;
 use primitive_types::H256;
 use std::{fmt::Debug, sync::Arc, time::Duration};
-use subxt::backend::rpc::{
-	reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
-	RpcClient,
+use subxt::{
+	backend::rpc::{
+		reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
+		RpcClient,
+	},
+	blocks::StaticExtrinsic,
+	ext::scale_encode::EncodeAsFields,
+	tx::DefaultPayload,
 };
+use subxt_signer::sr25519::Keypair;
 
 #[cfg(feature = "native")]
 use crate::http;
@@ -139,7 +147,7 @@ impl Client {
 		at: H256,
 	) -> Result<Option<TransactionDetails>, subxt::Error> {
 		let block = self.online_client.blocks().at(at).await?;
-		super::transaction::submitting::find_transaction(self, &block, &tx_hash).await
+		super::transaction::find_transaction(self, &block, &tx_hash).await
 	}
 
 	pub async fn header_at(&self, at: H256) -> Result<AvailHeader, subxt::Error> {
@@ -177,6 +185,115 @@ impl Client {
 	pub async fn rpc_methods_list(&self) -> Result<RpcMethods, subxt::Error> {
 		let methods = rpc::rpc::methods(self).await?;
 		Ok(methods)
+	}
+
+	/// TODO
+	pub async fn sign_and_submit<T>(
+		&self,
+		signer: &Keypair,
+		payload: &DefaultPayload<T>,
+		options: Options,
+	) -> Result<SubmittedTransaction, subxt::Error>
+	where
+		T: StaticExtrinsic + EncodeAsFields,
+	{
+		let account_id = signer.public_key().to_account_id();
+		let options = options.build(self, &account_id).await?;
+		let params = options.clone().build().await;
+		if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data")
+		{
+			return Err(subxt::Error::Other(
+				"Transaction is not compatible with non-zero AppIds".into(),
+			));
+		}
+
+		let tx_client = self.online_client.tx();
+		let signed_call = tx_client.create_signed(payload, signer, params).await?;
+		let tx_hash = rpc::author::submit_extrinsic(self, signed_call.encoded()).await?;
+
+		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_number, options.mortality.period, options.nonce, account_id);
+
+		Ok(SubmittedTransaction::new(self.clone(), tx_hash, account_id, options))
+	}
+
+	/// TODO
+	pub async fn sign_submit_and_watch<T>(
+		&self,
+		signer: &Keypair,
+		payload: &DefaultPayload<T>,
+		options: Options,
+	) -> Result<TransactionDetails, SubmissionStateError>
+	where
+		T: StaticExtrinsic + EncodeAsFields,
+	{
+		let account_id = signer.public_key().to_account_id();
+		let info = match self.sign_and_submit(signer, payload, options).await {
+			Ok(x) => x,
+			Err(err) => return Err(SubmissionStateError::FailedToSubmit { reason: err }),
+		};
+
+		let sleep_duration = Duration::from_secs(3);
+		let block_id = info.find_block_id(sleep_duration).await;
+
+		let block_id = match block_id {
+			Ok(x) => x,
+			Err(err) => {
+				return Err(SubmissionStateError::SubmittedButErrorInSearch {
+					tx_hash: info.tx_hash,
+					reason: err,
+				})
+			},
+		};
+
+		let Some(block_id) = block_id else {
+			return Err(SubmissionStateError::Dropped { tx_hash: info.tx_hash });
+		};
+
+		let mut block = None;
+		if let Ok(cache) = self.cache.lock() {
+			if let Some(cached_block) = &cache.last_fetched_block {
+				if cached_block.0 == block_id.hash {
+					block = Some(cached_block.1.clone())
+				}
+			}
+		}
+
+		let block: Arc<ABlock> = if let Some(block) = block {
+			block
+		} else {
+			let block = match self.block_at(block_id.hash).await {
+				Ok(x) => x,
+				Err(err) => {
+					return Err(SubmissionStateError::SubmittedButErrorInSearch {
+						tx_hash: info.tx_hash,
+						reason: err,
+					})
+				},
+			};
+			let block = Arc::new(block);
+			if let Ok(mut cache) = self.cache.lock() {
+				cache.last_fetched_block = Some((block_id.hash, block.clone()))
+			}
+			block
+		};
+
+		let details = match find_transaction(self, &block, &info.tx_hash).await {
+			Ok(x) => x,
+			Err(err) => {
+				return Err(SubmissionStateError::SubmittedButErrorInSearch {
+					tx_hash: info.tx_hash,
+					reason: err,
+				})
+			},
+		};
+
+		match details {
+			Some(x) => {
+				info!(target: "tx_search", "Transaction Found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Height: {}, Nonce: {}, Account Address: {}", x.tx_hash, x.tx_index, x.block_hash, x.block_number, info.nonce(), account_id);
+				Ok(x)
+			},
+			None => Err(SubmissionStateError::Dropped { tx_hash: info.tx_hash }),
+		}
 	}
 
 	/* 	pub async fn transaction_state(

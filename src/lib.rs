@@ -42,8 +42,7 @@ pub use sdk::SDK;
 pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
-pub use transaction::details::SubmittableTransaction;
-pub use transaction::{Options, PopulatedOptions, TransactionDetails};
+pub use transaction::{Options, PopulatedOptions, SubmittableTransaction, TransactionDetails};
 
 pub mod prelude {
 	pub use super::{
