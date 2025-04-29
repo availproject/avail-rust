@@ -183,7 +183,7 @@ impl Indexer {
 	}
 
 	async fn task_sub(shared_block: SharedLock<Option<IndexedBlock>>, sdk: Arc<SDK>) {
-		let mut stream = sdk.client.blocks().subscribe_finalized().await.unwrap();
+		let mut stream = sdk.client.subxt_blocks().subscribe_finalized().await.unwrap();
 		loop {
 			let block = stream.next().await.unwrap();
 			let block = match block {

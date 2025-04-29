@@ -38,7 +38,7 @@ pub fn ferdie() -> Keypair {
 }
 
 pub async fn app_keys(client: &Client, account_id: AccountId, block_hash: H256) -> Result<Vec<(String, u32)>, String> {
-	let storage = client.storage().at(block_hash);
+	let storage = client.subxt_storage().at(block_hash);
 	let address = avail::storage().data_availability().app_keys_iter();
 
 	let mut app_keys = storage.iter(address).await.map_err(|e| e.to_string())?;

@@ -184,7 +184,7 @@ impl Block {
 }
 
 pub async fn fetch_transactions(client: &Client, block_hash: H256) -> Result<(ABlock, AExtrinsics), subxt::Error> {
-	let block = client.blocks().at(block_hash).await?;
+	let block = client.subxt_blocks().at(block_hash).await?;
 	let transactions = block.extrinsics().await?;
 	Ok((block, transactions))
 }

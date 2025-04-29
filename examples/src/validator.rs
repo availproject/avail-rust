@@ -9,7 +9,7 @@ pub async fn run() -> Result<(), ClientError> {
 	let account = account::charlie();
 
 	// Bond min_validator_bond or 1 AVAIL token
-	let storage = sdk.client.storage().at_latest().await?;
+	let storage = sdk.client.subxt_storage().at_latest().await?;
 	let min_validator_bond = storage
 		.fetch(&avail::storage().staking().min_validator_bond())
 		.await?

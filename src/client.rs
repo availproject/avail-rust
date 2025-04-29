@@ -4,8 +4,8 @@ use crate::{
 	client_rpc::ChainBlock,
 	error::ClientError,
 	transaction::{find_transaction, SubmissionStateError, SubmittedTransaction},
-	ABlock, ABlockDetailsRPC, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AccountId,
-	AccountIdExt, AvailHeader, Options, TransactionDetails, H256,
+	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt,
+	AvailHeader, Options, TransactionDetails, H256,
 };
 use log::info;
 use std::{fmt::Debug, sync::Arc, time::Duration};
@@ -99,24 +99,8 @@ impl Client {
 		ClientOptions::default()
 	}
 
-	pub fn blocks(&self) -> ABlocksClient {
-		self.online_client.blocks()
-	}
-
-	pub fn storage(&self) -> AStorageClient {
-		self.online_client.storage()
-	}
-
-	pub fn constants(&self) -> AConstantsClient {
-		self.online_client.constants()
-	}
-
-	pub fn events(&self) -> AEventsClient {
-		AEventsClient::new(self.online_client.clone())
-	}
-
 	pub async fn event_records(&self, at: H256) -> Result<Option<EventRecords>, subxt::Error> {
-		let events = self.events().at(at).await?;
+		let events = self.subxt_events().at(at).await?;
 		Ok(EventRecords::new(events))
 	}
 
@@ -225,23 +209,39 @@ impl Client {
 
 	// Account Info (nonce, balance, ...)
 	pub async fn account_info(&self, account_id: AccountId, at: H256) -> Result<Account, subxt::Error> {
-		let storage = self.storage().at(at);
+		let storage = self.subxt_storage().at(at);
 		let address = crate::avail::storage().system().account(account_id);
 		storage.fetch_or_default(&address).await
 	}
 
 	pub async fn best_block_account_info(&self, account_id: AccountId) -> Result<Account, subxt::Error> {
 		let at = self.best_block_hash().await?;
-		let storage = self.storage().at(at);
+		let storage = self.subxt_storage().at(at);
 		let address = crate::avail::storage().system().account(account_id);
 		storage.fetch_or_default(&address).await
 	}
 
 	pub async fn finalized_block_account_info(&self, account_id: AccountId) -> Result<Account, subxt::Error> {
 		let at = self.finalized_block_hash().await?;
-		let storage = self.storage().at(at);
+		let storage = self.subxt_storage().at(at);
 		let address = crate::avail::storage().system().account(account_id);
 		storage.fetch_or_default(&address).await
+	}
+
+	pub fn subxt_blocks(&self) -> ABlocksClient {
+		self.online_client.blocks()
+	}
+
+	pub fn subxt_storage(&self) -> AStorageClient {
+		self.online_client.storage()
+	}
+
+	pub fn subxt_constants(&self) -> AConstantsClient {
+		self.online_client.constants()
+	}
+
+	pub fn subxt_events(&self) -> AEventsClient {
+		AEventsClient::new(self.online_client.clone())
 	}
 
 	// Submission
