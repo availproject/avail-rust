@@ -1,13 +1,13 @@
 use crate::{
 	avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength},
 	from_substrate::{NodeRole, PeerInfo, SyncState},
-	utils::{self, H256Utils},
-	ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
+	utils::{self},
+	ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256Ext, H256,
 };
 use avail_core::data_proof::ProofResponse;
 use serde::{Deserialize, Serialize};
 use subxt::{
-	backend::legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
+	backend::legacy::rpc_methods::{BlockJustification, Bytes, RuntimeVersion, SystemHealth},
 	rpc_params,
 };
 
@@ -42,6 +42,20 @@ pub mod transaction {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RpcMethods {
 	pub methods: Vec<String>,
+}
+
+#[derive(Clone)]
+pub struct ChainBlock {
+	pub block: ChainBlockBlock,
+	pub justifications: Option<Vec<BlockJustification>>,
+}
+
+#[derive(Clone)]
+pub struct ChainBlockBlock {
+	/// The block header.
+	pub header: AvailHeader,
+	/// The accompanying extrinsics.
+	pub extrinsics: Vec<Vec<u8>>,
 }
 
 impl Client {
@@ -117,14 +131,21 @@ impl Client {
 		Ok(value)
 	}
 
-	pub async fn rpc_chain_get_block(&self, at: Option<H256>) -> Result<ABlockDetailsRPC, subxt::Error> {
+	pub async fn rpc_chain_get_block(&self, at: Option<H256>) -> Result<ChainBlock, subxt::Error> {
 		let params = rpc_params![at];
-		let value = self.rpc_client.request("chain_getBlock", params).await?;
+		let res: ABlockDetailsRPC = self.rpc_client.request("chain_getBlock", params).await?;
+		let value = ChainBlock {
+			block: ChainBlockBlock {
+				header: res.block.header,
+				extrinsics: res.block.extrinsics.into_iter().map(|x| x.0).collect(),
+			},
+			justifications: res.justifications,
+		};
 		Ok(value)
 	}
 
-	pub async fn rpc_chain_get_block_hash(&self, block_number: Option<BlockNumber>) -> Result<H256, subxt::Error> {
-		let params = rpc_params![block_number];
+	pub async fn rpc_chain_get_block_hash(&self, block_height: Option<BlockNumber>) -> Result<H256, subxt::Error> {
+		let params = rpc_params![block_height];
 		let value = self.rpc_client.request("chain_getBlockHash", params).await?;
 		Ok(value)
 	}

@@ -1,11 +1,10 @@
-use std::str::FromStr;
-
 use crate::{
-	avail::{self, system::storage::types::account::Account},
+	avail::{self},
 	error::ClientError,
 	AccountId, Client,
 };
 use primitive_types::H256;
+use std::str::FromStr;
 use subxt_signer::{sr25519::Keypair, SecretUri};
 
 pub fn from_secret_uri(uri: &str) -> Result<Keypair, ClientError> {
@@ -38,30 +37,7 @@ pub fn ferdie() -> Keypair {
 	subxt_signer::sr25519::dev::ferdie()
 }
 
-pub async fn nonce_state(client: &Client, address: &str, block_hash: Option<H256>) -> Result<u32, subxt::Error> {
-	let account = account_id_from_str(address)?;
-	let block_hash = match block_hash {
-		Some(x) => x,
-		None => client.rpc_chain_get_block_hash(None).await?,
-	};
-	let block = client.online_client.blocks().at(block_hash).await?;
-
-	Ok(block.account_nonce(&account).await? as u32)
-}
-
-pub async fn nonce_node(client: &Client, address: &str) -> Result<u32, subxt::Error> {
-	let account = account_id_from_str(address)?;
-	client.rpc_system_account_next_index(account.to_string()).await
-}
-
-pub async fn nonce(client: &Client, address: &str) -> Result<u32, subxt::Error> {
-	nonce_node(client, address).await
-}
-
-pub async fn app_keys(client: &Client, account_id: AccountId) -> Result<Vec<(String, u32)>, String> {
-	let block_hash = client.rpc_chain_get_block_hash(None).await;
-	let block_hash = block_hash.map_err(|e| e.to_string())?;
-
+pub async fn app_keys(client: &Client, account_id: AccountId, block_hash: H256) -> Result<Vec<(String, u32)>, String> {
 	let storage = client.storage().at(block_hash);
 	let address = avail::storage().data_availability().app_keys_iter();
 
@@ -82,35 +58,11 @@ pub async fn app_keys(client: &Client, account_id: AccountId) -> Result<Vec<(Str
 	Ok(result)
 }
 
-pub async fn app_ids(client: &Client, account_id: AccountId) -> Result<Vec<u32>, String> {
-	let keys = match app_keys(client, account_id).await {
+pub async fn app_ids(client: &Client, account_id: AccountId, block_hash: H256) -> Result<Vec<u32>, String> {
+	let keys = match app_keys(client, account_id, block_hash).await {
 		Ok(k) => k,
 		Err(e) => return Err(e),
 	};
 
 	Ok(keys.into_iter().map(|v| v.1).collect())
-}
-
-pub async fn account_info(client: &Client, account_id: AccountId) -> Result<Account, String> {
-	let block_hash = client.rpc_chain_get_block_hash(None).await;
-	let block_hash = block_hash.map_err(|e| e.to_string())?;
-
-	let storage = client.storage().at(block_hash);
-	let address = avail::storage().system().account(account_id);
-	let result = storage.fetch_or_default(&address).await.map_err(|e| e.to_string())?;
-
-	Ok(result)
-}
-
-pub fn account_id_from_str(value: &str) -> Result<AccountId, String> {
-	value.parse().map_err(|e| std::format!("{:?}", e))
-}
-
-pub fn account_id_from_slice(value: &[u8]) -> Result<AccountId, String> {
-	let account_id: [u8; 32] = match value.try_into() {
-		Ok(x) => x,
-		Err(err) => return Err(err.to_string()),
-	};
-
-	Ok(AccountId { 0: account_id })
 }

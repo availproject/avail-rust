@@ -70,35 +70,3 @@ pub fn deconstruct_session_keys_string(session_keys: String) -> Result<SessionKe
 
 	deconstruct_session_keys(session_keys_u8)
 }
-
-pub trait H256Utils {
-	fn from_hex(s: &str) -> Result<H256, String>;
-}
-
-impl H256Utils for H256 {
-	fn from_hex(s: &str) -> Result<H256, String> {
-		let mut s = s;
-		if s.starts_with("0x") {
-			s = &s[2..];
-		}
-
-		if s.len() != 64 {
-			let msg = std::format!(
-				"Failed to convert string to H256. Expected 64 bytes got {}. Input string: {}",
-				s.len(),
-				s
-			);
-			return Err(msg);
-		}
-
-		let block_hash = hex::decode(s).map_err(|e| e.to_string())?;
-		let block_hash = TryInto::<[u8; 32]>::try_into(block_hash);
-		match block_hash {
-			Ok(v) => Ok(H256(v)),
-			Err(e) => {
-				let msg = std::format!("Failed to covert decoded string to H256. Input {:?}", e);
-				Err(msg)
-			},
-		}
-	}
-}

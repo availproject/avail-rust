@@ -1,12 +1,13 @@
 use crate::{
+	avail::{runtime_types::pallet_balances::types::AccountData, system::storage::types::account::Account},
 	block::EventRecords,
+	client_rpc::ChainBlock,
 	error::ClientError,
 	transaction::{find_transaction, SubmissionStateError, SubmittedTransaction},
-	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AvailHeader, Options,
-	TransactionDetails,
+	ABlock, ABlockDetailsRPC, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AccountId,
+	AccountIdExt, AvailHeader, Options, TransactionDetails, H256,
 };
 use log::info;
-use primitive_types::H256;
 use std::{fmt::Debug, sync::Arc, time::Duration};
 use subxt::{
 	backend::rpc::{
@@ -91,23 +92,6 @@ impl Client {
 		}
 	}
 
-	pub async fn toggle_tx_state_rpc(&mut self) -> bool {
-		let mut value = false;
-
-		// Check if we have tx_state_rpc available to us.
-		let methods = self.rpc_rpc_methods().await.unwrap_or_default();
-		if !methods.methods.contains(&String::from("transaction_state")) {
-			return value;
-		}
-
-		if let Ok(mut lock) = self.options.lock() {
-			lock.tx_state_rpc_enabled = !lock.tx_state_rpc_enabled;
-			value = lock.tx_state_rpc_enabled;
-		}
-
-		value
-	}
-
 	pub fn get_options(&self) -> ClientOptions {
 		if let Ok(lock) = self.options.lock() {
 			return *lock;
@@ -149,10 +133,33 @@ impl Client {
 		super::transaction::find_transaction(self, &block, &tx_hash).await
 	}
 
-	pub async fn header_at(&self, at: H256) -> Result<AvailHeader, subxt::Error> {
+	// Header
+	pub async fn header(&self, at: H256) -> Result<AvailHeader, subxt::Error> {
 		self.rpc_chain_get_header(Some(at)).await
 	}
 
+	pub async fn best_block_header(&self) -> Result<AvailHeader, subxt::Error> {
+		self.header(self.best_block_hash().await?).await
+	}
+
+	pub async fn finalized_block_header(&self) -> Result<AvailHeader, subxt::Error> {
+		self.header(self.finalized_block_hash().await?).await
+	}
+
+	// (RPC) Block
+	pub async fn block(&self, at: H256) -> Result<ChainBlock, subxt::Error> {
+		self.rpc_chain_get_block(Some(at)).await
+	}
+
+	pub async fn best_block(&self) -> Result<ChainBlock, subxt::Error> {
+		self.block(self.best_block_hash().await?).await
+	}
+
+	pub async fn finalized_block(&self) -> Result<ChainBlock, subxt::Error> {
+		self.block(self.best_block_hash().await?).await
+	}
+
+	// Block Hash
 	pub async fn block_hash(&self, block_height: u32) -> Result<H256, subxt::Error> {
 		self.rpc_chain_get_block_hash(Some(block_height)).await
 	}
@@ -165,22 +172,79 @@ impl Client {
 		self.rpc_chain_get_finalized_head().await
 	}
 
-	pub async fn block_number(&self, block_hash: H256) -> Result<u32, subxt::Error> {
+	// Block Height
+	pub async fn block_height(&self, block_hash: H256) -> Result<u32, subxt::Error> {
 		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
 		Ok(header.number)
 	}
 
-	pub async fn best_block_number(&self) -> Result<u32, subxt::Error> {
+	pub async fn best_block_height(&self) -> Result<u32, subxt::Error> {
 		let header = self.rpc_chain_get_header(None).await?;
 		Ok(header.number)
 	}
 
-	pub async fn finalized_block_number(&self) -> Result<u32, subxt::Error> {
+	pub async fn finalized_block_height(&self) -> Result<u32, subxt::Error> {
 		let block_hash = self.finalized_block_hash().await?;
 		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
 		Ok(header.number)
 	}
 
+	// Nonce
+	pub async fn nonce(&self, address: &str) -> Result<u32, subxt::Error> {
+		let account = AccountId::from_str(address)?;
+		self.rpc_system_account_next_index(account.to_string()).await
+	}
+
+	pub async fn nonce_state(&self, address: &str, block_hash: H256) -> Result<u32, subxt::Error> {
+		let account = AccountId::from_str(address)?;
+		let block = self.online_client.blocks().at(block_hash).await?;
+
+		Ok(block.account_nonce(&account).await? as u32)
+	}
+
+	pub async fn best_block_nonce(&self, address: &str) -> Result<u32, subxt::Error> {
+		self.nonce_state(address, self.best_block_hash().await?).await
+	}
+
+	pub async fn finalized_block_nonce(&self, address: &str) -> Result<u32, subxt::Error> {
+		self.nonce_state(address, self.finalized_block_hash().await?).await
+	}
+
+	// Balance
+	pub async fn balance(&self, account_id: AccountId, at: H256) -> Result<AccountData<u128>, subxt::Error> {
+		Ok(self.account_info(account_id, at).await?.data)
+	}
+
+	pub async fn best_block_balance(&self, account_id: AccountId) -> Result<AccountData<u128>, subxt::Error> {
+		Ok(self.best_block_account_info(account_id).await?.data)
+	}
+
+	pub async fn finalized_block_balance(&self, account_id: AccountId) -> Result<AccountData<u128>, subxt::Error> {
+		Ok(self.finalized_block_account_info(account_id).await?.data)
+	}
+
+	// Account Info (nonce, balance, ...)
+	pub async fn account_info(&self, account_id: AccountId, at: H256) -> Result<Account, subxt::Error> {
+		let storage = self.storage().at(at);
+		let address = crate::avail::storage().system().account(account_id);
+		storage.fetch_or_default(&address).await
+	}
+
+	pub async fn best_block_account_info(&self, account_id: AccountId) -> Result<Account, subxt::Error> {
+		let at = self.best_block_hash().await?;
+		let storage = self.storage().at(at);
+		let address = crate::avail::storage().system().account(account_id);
+		storage.fetch_or_default(&address).await
+	}
+
+	pub async fn finalized_block_account_info(&self, account_id: AccountId) -> Result<Account, subxt::Error> {
+		let at = self.finalized_block_hash().await?;
+		let storage = self.storage().at(at);
+		let address = crate::avail::storage().system().account(account_id);
+		storage.fetch_or_default(&address).await
+	}
+
+	// Submission
 	/// TODO
 	pub async fn sign_and_submit<T>(
 		&self,
@@ -204,10 +268,9 @@ impl Client {
 		let tx_client = self.online_client.tx();
 		let signed_call = tx_client.create_signed(payload, signer, params).await?;
 		let tx_hash = self.rpc_author_submit_extrinsic(signed_call.encoded()).await?;
+		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
 
-		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_number, options.mortality.period, options.nonce, account_id);
-
-		Ok(SubmittedTransaction::new(self.clone(), tx_hash, account_id, options))
+		Ok(SubmittedTransaction::new(self.clone(), tx_hash, account_id, &options))
 	}
 
 	/// TODO
@@ -226,9 +289,7 @@ impl Client {
 			Err(err) => return Err(SubmissionStateError::FailedToSubmit { reason: err }),
 		};
 
-		let sleep_duration = Duration::from_secs(3);
-		let block_id = info.find_block_id(sleep_duration).await;
-
+		let block_id = info.block_id(Default::default()).await;
 		let block_id = match block_id {
 			Ok(x) => x,
 			Err(err) => {
@@ -283,18 +344,10 @@ impl Client {
 
 		match details {
 			Some(x) => {
-				info!(target: "tx_search", "Transaction Found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Height: {}, Nonce: {}, Account Address: {}", x.tx_hash, x.tx_index, x.block_hash, x.block_number, info.nonce(), account_id);
+				info!(target: "tx_search", "Transaction Found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Height: {}, Nonce: {}, Account Address: {}", x.tx_hash, x.tx_index, x.block_hash, x.block_number, info.nonce, account_id);
 				Ok(x)
 			},
 			None => Err(SubmissionStateError::Dropped { tx_hash: info.tx_hash }),
 		}
 	}
-
-	/* 	pub async fn transaction_state(
-		&self,
-		tx_hash: &H256,
-		finalized: bool,
-	) -> Result<Vec<TransactionState>, subxt::Error> {
-		rpc::transaction::state(self, tx_hash, finalized).await
-	} */
 }

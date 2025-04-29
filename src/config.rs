@@ -1,6 +1,6 @@
 use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 use subxt::{
-	backend::legacy::rpc_methods::{Block as BlockRPC, BlockDetails as BlockDetailsRPC},
+	backend::legacy::rpc_methods::BlockDetails as BlockDetailsRPC,
 	blocks::{
 		Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, ExtrinsicSignedExtensions, Extrinsics, FoundExtrinsic,
 	},
@@ -43,7 +43,6 @@ pub type ABlock = Block<AvailConfig, AOnlineClient>;
 
 /// Used only when chain_getBlock RPC is called. This is part of legacy baggage.
 pub type ABlockDetailsRPC = BlockDetailsRPC<AvailConfig>;
-pub type ABlockRPC = BlockRPC<AvailConfig>;
 
 /// A struct representing the signed extra and additional parameters required
 /// to construct a transaction for a avail node.

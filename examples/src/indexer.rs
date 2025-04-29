@@ -171,7 +171,7 @@ impl Indexer {
 			}
 
 			let new_block = Block::new(&sdk.client, new_hash).await.unwrap();
-			let new_height = sdk.client.block_number(new_hash.clone()).await.unwrap();
+			let new_height = sdk.client.block_height(new_hash.clone()).await.unwrap();
 
 			let mut cur_block = shared_block.lock().unwrap();
 			*cur_block = Some(IndexedBlock {

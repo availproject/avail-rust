@@ -216,61 +216,65 @@ impl SubmissionStateError {
 }
 
 #[derive(Clone)]
+pub enum FetchingBlockIdMethod {
+	Default {
+		use_best_block: bool,
+	},
+	Blocks {
+		sleep_duration: Duration,
+		use_best_block: bool,
+	},
+	RPCTransactionOverview {
+		sleep_duration: Duration,
+		use_best_block: bool,
+	},
+}
+
+impl Default for FetchingBlockIdMethod {
+	fn default() -> Self {
+		Self::Default { use_best_block: false }
+	}
+}
+
+#[derive(Clone)]
 pub struct SubmittedTransaction {
 	client: Client,
 	pub tx_hash: H256,
 	pub account_id: AccountId,
-	pub options: PopulatedOptions,
+	pub nonce: u32,
+	pub app_id: u32,
+	pub tip: u128,
+	pub mortality: Mortality,
 }
 
 impl SubmittedTransaction {
-	pub fn new(client: Client, tx_hash: H256, account_id: AccountId, options: PopulatedOptions) -> Self {
+	pub fn new(client: Client, tx_hash: H256, account_id: AccountId, options: &PopulatedOptions) -> Self {
 		Self {
 			client,
 			tx_hash,
 			account_id,
-			options,
+			nonce: options.nonce as u32,
+			app_id: options.app_id,
+			tip: options.tip,
+			mortality: options.mortality.clone(),
 		}
 	}
 
-	pub fn nonce(&self) -> u32 {
-		self.options.nonce as u32
+	pub async fn block_id(&self, method: FetchingBlockIdMethod) -> Result<Option<BlockId>, subxt::Error> {
+		unimplemented!()
 	}
 
-	pub fn fork_hash(&self) -> H256 {
-		self.options.mortality.block_hash
+	pub async fn subxt_block(&self, method: FetchingBlockIdMethod) -> Result<Option<ABlock>, subxt::Error> {
+		let block_id = match self.block_id(method).await? {
+			Some(b) => b,
+			None => return Ok(None),
+		};
+
+		Ok(Some(self.client.block_at(block_id.hash).await?))
 	}
 
-	pub fn fork_height(&self) -> u32 {
-		self.options.mortality.block_number
-	}
-
-	pub fn mortality_period(&self) -> u32 {
-		self.options.mortality.period as u32
-	}
-
-	pub async fn find_block_id(&self, sleep_duration: Duration) -> Result<Option<BlockId>, subxt::Error> {
-		find_block_id(
-			&self.client,
-			&self.account_id,
-			self.nonce(),
-			self.mortality_period(),
-			self.fork_height(),
-			sleep_duration,
-		)
-		.await
-	}
-
-	pub async fn find_block_id_best_block(&self, sleep_duration: Duration) -> Result<Option<BlockId>, subxt::Error> {
-		find_block_id_best_block(
-			&self.client,
-			&self.account_id,
-			self.nonce(),
-			self.mortality_period(),
-			self.fork_height(),
-			sleep_duration,
-		)
-		.await
+	pub async fn transaction_overview(&self) -> Result<Option<BlockId>, subxt::Error> {
+		unimplemented!()
 	}
 }
 
@@ -316,18 +320,18 @@ pub async fn find_block_id(
 	let address = std::format!("{}", account_id);
 
 	let mut next_block_height = fork_height + 1;
-	let mut block_height = client.finalized_block_number().await?;
+	let mut block_height = client.finalized_block_height().await?;
 
 	info!(target: "nonce_search", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, block_height, mortality_ends_height);
 	while mortality_ends_height >= next_block_height {
 		if next_block_height > block_height {
 			tokio::time::sleep(sleep_duration).await;
-			block_height = client.finalized_block_number().await?;
+			block_height = client.finalized_block_height().await?;
 			continue;
 		}
 
 		let next_block_hash = client.block_hash(next_block_height).await?;
-		let state_nonce = crate::account::nonce_state(client, &address, Some(next_block_hash)).await?;
+		let state_nonce = client.nonce_state(&address, next_block_hash).await?;
 		if state_nonce > nonce {
 			info!(target: "nonce_search", "At block height {} and hash {:?} found nonce: {} which is greater than {} for Account address {}. Search is done", next_block_height, next_block_hash, state_nonce, nonce, account_id);
 			return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
@@ -353,18 +357,18 @@ pub async fn find_block_id_best_block(
 	let address = std::format!("{}", account_id);
 
 	let mut next_block_height = fork_height + 1;
-	let mut block_height = client.best_block_number().await?;
+	let mut block_height = client.best_block_height().await?;
 
 	info!(target: "nonce_search", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, block_height, mortality_ends_height);
 	while mortality_ends_height >= next_block_height {
 		if next_block_height > block_height {
 			tokio::time::sleep(sleep_duration).await;
-			block_height = client.best_block_number().await?;
+			block_height = client.best_block_height().await?;
 			continue;
 		}
 
 		let next_block_hash = client.block_hash(next_block_height).await?;
-		let state_nonce = crate::account::nonce_state(client, &address, Some(next_block_hash)).await?;
+		let state_nonce = client.nonce_state(&address, next_block_hash).await?;
 		if state_nonce > nonce {
 			info!(target: "nonce_search", "At block height {} and hash {:?} found nonce: {} which is greater than {} for Account address {}. Search is done", next_block_height, next_block_hash, state_nonce, nonce, account_id);
 			return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
@@ -423,7 +427,7 @@ impl Options {
 			None => client.rpc_system_account_next_index(account_id.to_string()).await? as u64,
 		};
 		let period = self.mortality.unwrap_or(32);
-		let mortality = CheckedMortality::from_period(period, client).await?;
+		let mortality = Mortality::from_period(client, period).await?;
 
 		Ok(PopulatedOptions {
 			app_id,
@@ -443,7 +447,7 @@ impl Default for Options {
 #[derive(Debug, Clone)]
 pub struct PopulatedOptions {
 	pub app_id: u32,
-	pub mortality: CheckedMortality,
+	pub mortality: Mortality,
 	pub nonce: u64,
 	pub tip: u128,
 }
@@ -456,7 +460,7 @@ impl PopulatedOptions {
 		builder = builder.nonce(self.nonce);
 
 		builder = builder.mortal_unchecked(
-			self.mortality.block_number as u64,
+			self.mortality.block_height as u64,
 			self.mortality.block_hash,
 			self.mortality.period,
 		);
@@ -466,28 +470,28 @@ impl PopulatedOptions {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct CheckedMortality {
+pub struct Mortality {
 	pub period: u64,
 	pub block_hash: H256,
-	pub block_number: u32,
+	pub block_height: u32,
 }
-impl CheckedMortality {
-	pub fn new(period: u64, block_hash: H256, block_number: u32) -> Self {
+impl Mortality {
+	pub fn new(period: u64, block_hash: H256, block_height: u32) -> Self {
 		Self {
 			period,
 			block_hash,
-			block_number,
+			block_height,
 		}
 	}
 
-	pub async fn from_period(period: u64, client: &Client) -> Result<Self, subxt::Error> {
+	pub async fn from_period(client: &Client, period: u64) -> Result<Self, subxt::Error> {
 		let finalized_hash = client.finalized_block_hash().await?;
-		let header = client.header_at(finalized_hash).await?;
-		let (block_hash, block_number) = (header.hash(), header.number());
+		let header = client.header(finalized_hash).await?;
+		let (block_hash, block_height) = (header.hash(), header.number());
 		Ok(Self {
 			period,
 			block_hash,
-			block_number,
+			block_height,
 		})
 	}
 }

@@ -32,12 +32,13 @@ pub use client::{Client, ClientOptions};
 pub use config::*;
 pub use hex;
 pub use kate_recovery;
+pub use primitive_types;
 pub use primitive_types::H256;
 pub use primitives::{
 	block::{AppUncheckedExtrinsic, AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
 	kate::{Cell, GDataProof, GRow},
 };
-pub use sdk::SDK;
+pub use sdk::{AccountIdExt, H256Ext, SDK};
 pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
@@ -45,18 +46,15 @@ pub use transaction::{Options, PopulatedOptions, SubmittableTransaction, Transac
 
 pub mod prelude {
 	pub use super::{
-		account,
-		account::account_id_from_str,
-		avail,
+		account, avail,
 		avail::runtime_types::bounded_collections::bounded_vec::BoundedVec,
 		avail_core,
 		block::{to_ascii, DataSubmission},
 		config::*,
 		error::ClientError,
-		hex, kate_recovery, primitives, subxt, subxt_signer,
-		utils::H256Utils,
-		AccountId, Block, BlockTransaction, Client, ClientOptions, Filter, Keypair, MultiAddress, Options, Perbill,
-		PopulatedOptions, SecretUri, SubmittableTransaction, TransactionDetails, H256, SDK, U256,
+		hex, kate_recovery, primitives, subxt, subxt_signer, AccountId, AccountIdExt, Block, BlockTransaction, Client,
+		ClientOptions, Filter, H256Ext, Keypair, MultiAddress, Options, Perbill, PopulatedOptions, SecretUri,
+		SubmittableTransaction, TransactionDetails, H256, SDK, U256,
 	};
 
 	#[cfg(feature = "native")]
