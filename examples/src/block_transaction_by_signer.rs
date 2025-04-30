@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 type CreateAppKeyCall = avail::data_availability::calls::types::CreateApplicationKey;
 type AppKeyCreated = avail::data_availability::events::ApplicationKeyCreated;
@@ -78,3 +78,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

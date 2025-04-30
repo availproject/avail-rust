@@ -1,11 +1,9 @@
-use std::ops::Mul;
-
-use avail_rust::prelude::*;
-
-use avail::{
+/* use avail::{
 	runtime_types::{da_runtime::RuntimeCall, pallet_balances::pallet::Call::transfer_keep_alive as TransferKeepAlive},
 	utility::events as UtilityEvents,
 };
+use avail_rust::prelude::*;
+use std::ops::Mul;
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -14,8 +12,8 @@ pub async fn run() -> Result<(), ClientError> {
 
 	let value_1 = SDK::one_avail();
 	let value_2 = SDK::one_avail();
-	let dest_bob = account::account_id_from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
-	let dest_charlie = account::account_id_from_str("5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y")?;
+	let dest_bob = AccountId::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")?;
+	let dest_charlie = AccountId::from_str("5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y")?;
 
 	let call_1 = TransferKeepAlive {
 		dest: dest_bob.clone().into(),
@@ -139,3 +137,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

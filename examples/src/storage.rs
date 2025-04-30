@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
 	println!("da_app_keys");
@@ -130,7 +130,7 @@ pub async fn staking_active_era() -> Result<(), ClientError> {
 pub async fn staking_bonded() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
-	let account_id = account::account_id_from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice_Stash
+	let account_id = AccountId::from_str("5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY")?; // Alice_Stash
 
 	let block_hash = sdk.client.best_block_hash().await?;
 	let storage = sdk.client.subxt_storage().at(block_hash);
@@ -229,3 +229,4 @@ pub async fn system_account_iter() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

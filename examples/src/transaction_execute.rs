@@ -1,4 +1,4 @@
-use avail::data_availability::{calls::types::SubmitData, events::DataSubmitted};
+/* use avail::data_availability::{calls::types::SubmitData, events::DataSubmitted};
 use avail_rust::prelude::*;
 use std::time::Duration;
 
@@ -60,3 +60,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

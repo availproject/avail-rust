@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 use crate::{transaction_execute, transaction_options, transaction_payment};
 
@@ -10,3 +10,4 @@ pub async fn run() -> Result<(), ClientError> {
 	println!("Transaction finished correctly");
 	Ok(())
 }
+ */

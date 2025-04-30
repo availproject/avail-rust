@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 type TransferKeepAliveCall = avail::balances::calls::types::TransferKeepAlive;
 type NetAccountEvent = avail::system::events::NewAccount;
@@ -73,3 +73,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

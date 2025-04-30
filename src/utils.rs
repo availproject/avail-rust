@@ -1,5 +1,4 @@
 use crate::{avail::runtime_types::da_runtime::primitives::SessionKeys, AppUncheckedExtrinsic};
-use primitive_types::H256;
 use subxt::backend::legacy::rpc_methods::Bytes;
 
 pub fn decode_raw_block_rpc_extrinsics(extrinsics: Vec<Bytes>) -> Result<Vec<AppUncheckedExtrinsic>, String> {

@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -35,3 +35,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

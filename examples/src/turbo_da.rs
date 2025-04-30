@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 use std::time::Duration;
 
 pub async fn run() -> Result<(), ClientError> {
@@ -23,3 +23,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

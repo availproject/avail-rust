@@ -3,9 +3,9 @@ use crate::{
 	block::EventRecords,
 	client_rpc::ChainBlock,
 	error::ClientError,
-	transaction::{find_transaction, SubmissionStateError, SubmittedTransaction},
+	transaction::SubmittedTransaction,
 	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt,
-	AvailHeader, Options, TransactionDetails, H256,
+	AvailHeader, Options, H256,
 };
 use log::info;
 use std::{fmt::Debug, sync::Arc, time::Duration};
@@ -106,15 +106,6 @@ impl Client {
 
 	pub async fn block_at(&self, at: H256) -> Result<ABlock, subxt::Error> {
 		self.online_client.blocks().at(at).await
-	}
-
-	pub async fn block_transaction_at(
-		&self,
-		tx_hash: H256,
-		at: H256,
-	) -> Result<Option<TransactionDetails>, subxt::Error> {
-		let block = self.online_client.blocks().at(at).await?;
-		super::transaction::find_transaction(self, &block, &tx_hash).await
 	}
 
 	// Header
@@ -271,83 +262,5 @@ impl Client {
 		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
 
 		Ok(SubmittedTransaction::new(self.clone(), tx_hash, account_id, &options))
-	}
-
-	/// TODO
-	pub async fn sign_submit_and_watch<T>(
-		&self,
-		signer: &Keypair,
-		payload: &DefaultPayload<T>,
-		options: Options,
-	) -> Result<TransactionDetails, SubmissionStateError>
-	where
-		T: StaticExtrinsic + EncodeAsFields,
-	{
-		let account_id = signer.public_key().to_account_id();
-		let info = match self.sign_and_submit(signer, payload, options).await {
-			Ok(x) => x,
-			Err(err) => return Err(SubmissionStateError::FailedToSubmit { reason: err }),
-		};
-
-		let block_id = info.block_id(Default::default()).await;
-		let block_id = match block_id {
-			Ok(x) => x,
-			Err(err) => {
-				return Err(SubmissionStateError::SubmittedButErrorInSearch {
-					tx_hash: info.tx_hash,
-					reason: err,
-				})
-			},
-		};
-
-		let Some(block_id) = block_id else {
-			return Err(SubmissionStateError::Dropped { tx_hash: info.tx_hash });
-		};
-
-		let mut block = None;
-		if let Ok(cache) = self.cache.lock() {
-			if let Some(cached_block) = &cache.last_fetched_block {
-				if cached_block.0 == block_id.hash {
-					block = Some(cached_block.1.clone())
-				}
-			}
-		}
-
-		let block: Arc<ABlock> = if let Some(block) = block {
-			block
-		} else {
-			let block = match self.block_at(block_id.hash).await {
-				Ok(x) => x,
-				Err(err) => {
-					return Err(SubmissionStateError::SubmittedButErrorInSearch {
-						tx_hash: info.tx_hash,
-						reason: err,
-					})
-				},
-			};
-			let block = Arc::new(block);
-			if let Ok(mut cache) = self.cache.lock() {
-				cache.last_fetched_block = Some((block_id.hash, block.clone()))
-			}
-			block
-		};
-
-		let details = match find_transaction(self, &block, &info.tx_hash).await {
-			Ok(x) => x,
-			Err(err) => {
-				return Err(SubmissionStateError::SubmittedButErrorInSearch {
-					tx_hash: info.tx_hash,
-					reason: err,
-				})
-			},
-		};
-
-		match details {
-			Some(x) => {
-				info!(target: "tx_search", "Transaction Found. Tx Hash: {:?}, Tx Index: {}, Block Hash: {:?}, Block Height: {}, Nonce: {}, Account Address: {}", x.tx_hash, x.tx_index, x.block_hash, x.block_number, info.nonce, account_id);
-				Ok(x)
-			},
-			None => Err(SubmissionStateError::Dropped { tx_hash: info.tx_hash }),
-		}
 	}
 }

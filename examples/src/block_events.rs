@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 type TransferEvent = avail::balances::events::Transfer;
 type AppKeyCreatedEvent = avail::data_availability::events::ApplicationKeyCreated;
@@ -97,3 +97,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

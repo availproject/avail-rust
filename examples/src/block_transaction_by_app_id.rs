@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 type SubmitDataCall = avail::data_availability::calls::types::SubmitData;
 type DataSubmittedEvent = avail::data_availability::events::DataSubmitted;
@@ -76,3 +76,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

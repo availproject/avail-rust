@@ -1,4 +1,4 @@
-use avail_rust::error::ClientError;
+/* use avail_rust::error::ClientError;
 
 use crate::{account_balance, account_creation, account_nonce};
 
@@ -11,3 +11,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

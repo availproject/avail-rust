@@ -1,3 +1,5 @@
+use subxt_signer::SecretUri;
+
 use crate::{client::Client, error::ClientError, transactions::Transactions, AccountId, H256};
 use std::fmt::Debug;
 
@@ -119,5 +121,15 @@ impl AccountIdExt for AccountId {
 		};
 
 		Ok(AccountId { 0: account_id })
+	}
+}
+
+pub trait SecretUriExt {
+	fn from_str(value: &str) -> Result<SecretUri, String>;
+}
+
+impl SecretUriExt for SecretUri {
+	fn from_str(value: &str) -> Result<SecretUri, String> {
+		value.parse().map_err(|e| std::format!("{:?}", e))
 	}
 }

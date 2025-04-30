@@ -1,6 +1,4 @@
 use crate::{
-	block::EventRecords,
-	block_transaction::Filter,
 	error::ClientError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
 	ABlock, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
@@ -96,81 +94,6 @@ where
 	pub async fn execute(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, subxt::Error> {
 		self.client.sign_and_submit(signer, &self.payload, options).await
 	}
-
-	pub async fn execute_and_watch(
-		&self,
-		signer: &Keypair,
-		options: Options,
-	) -> Result<TransactionDetails, SubmissionStateError> {
-		self.client.sign_submit_and_watch(signer, &self.payload, options).await
-	}
-}
-
-#[derive(Debug, Clone)]
-pub struct TransactionDetails {
-	client: Client,
-	pub events: Option<Arc<EventRecords>>,
-	pub tx_hash: H256,
-	pub tx_index: u32,
-	pub block_hash: H256,
-	pub block_number: u32,
-}
-
-impl TransactionDetails {
-	pub fn new(
-		client: Client,
-		events: Option<EventRecords>,
-		tx_hash: H256,
-		tx_index: u32,
-		block_hash: H256,
-		block_number: u32,
-	) -> Self {
-		let events = events.map(|x| x.into());
-		Self {
-			client,
-			events,
-			tx_hash,
-			tx_index,
-			block_hash,
-			block_number,
-		}
-	}
-
-	/// Returns None if it was not possible to determine if the transaction was successful or not
-	/// If Some is returned then
-	///    true means the transaction was successful
-	///    false means the transaction failed
-	pub fn is_successful(&self) -> Option<bool> {
-		match &self.events {
-			Some(events) => Some(events.has_system_extrinsic_success()),
-			None => None,
-		}
-	}
-
-	/// Returns Err if it was not possible to determine if the transaction was decodable
-	/// If Ok is returned then
-	///    Some means the transaction was successfully decoded
-	///    None means the transaction cannot be decoded as T
-	pub async fn decode_as<T: StaticExtrinsic + Clone>(&self) -> Result<Option<T>, ClientError> {
-		let block = crate::block::Block::new(&self.client, self.block_hash).await?;
-		let filter = Filter::new().tx_index(self.tx_index);
-		let txs = block.transactions_static::<T>(filter);
-		if txs.is_empty() {
-			return Ok(None);
-		}
-		Ok(Some(txs[0].value.clone()))
-	}
-
-	/// Returns Err if it was not possible to determine if the transaction was decodable
-	/// If Ok is returned then
-	///    true means the transaction was successfully decoded
-	///    false means the transaction cannot be decoded as T
-	pub async fn is<T: StaticExtrinsic + Clone>(&self) -> Result<bool, ClientError> {
-		let block = crate::block::Block::new(&self.client, self.block_hash).await?;
-		let filter = Filter::new().tx_index(self.tx_index);
-		let txs = block.transactions_static::<T>(filter);
-		Ok(!txs.is_empty())
-	}
 }
 
 #[derive(Clone, Copy)]
@@ -215,8 +138,8 @@ impl SubmissionStateError {
 	}
 }
 
-#[derive(Clone)]
-pub enum FetchingBlockIdMethod {
+#[derive(Clone, Copy)]
+pub enum ReceiptMethod {
 	Default {
 		use_best_block: bool,
 	},
@@ -230,9 +153,24 @@ pub enum FetchingBlockIdMethod {
 	},
 }
 
-impl Default for FetchingBlockIdMethod {
+impl Default for ReceiptMethod {
 	fn default() -> Self {
 		Self::Default { use_best_block: false }
+	}
+}
+
+#[derive(Clone)]
+pub struct TransactionLocation {
+	pub hash: H256,
+	pub index: u32,
+}
+
+impl From<(H256, u32)> for TransactionLocation {
+	fn from(value: (H256, u32)) -> Self {
+		Self {
+			hash: value.0,
+			index: value.1,
+		}
 	}
 }
 
@@ -240,6 +178,36 @@ impl Default for FetchingBlockIdMethod {
 pub struct SubmittedTransaction {
 	client: Client,
 	pub tx_hash: H256,
+	pub tx_extra: TransactionExtra,
+}
+
+impl SubmittedTransaction {
+	pub fn new(client: Client, tx_hash: H256, account_id: AccountId, options: &PopulatedOptions) -> Self {
+		let tx_extra = TransactionExtra {
+			account_id,
+			nonce: options.nonce as u32,
+			app_id: options.app_id,
+			tip: options.tip,
+			mortality: options.mortality.clone(),
+		};
+		Self {
+			client,
+			tx_hash,
+			tx_extra,
+		}
+	}
+
+	pub async fn receipt(&self, method: ReceiptMethod) -> Result<Option<TransactionReceipt>, subxt::Error> {
+		transaction_receipt(self.client.clone(), self.tx_hash, self.tx_extra.clone(), &method).await
+	}
+
+	pub async fn transaction_overview(&self) -> Result<(), subxt::Error> {
+		unimplemented!()
+	}
+}
+
+#[derive(Clone)]
+pub struct TransactionExtra {
 	pub account_id: AccountId,
 	pub nonce: u32,
 	pub app_id: u32,
@@ -247,123 +215,129 @@ pub struct SubmittedTransaction {
 	pub mortality: Mortality,
 }
 
-impl SubmittedTransaction {
-	pub fn new(client: Client, tx_hash: H256, account_id: AccountId, options: &PopulatedOptions) -> Self {
+#[derive(Clone, Copy)]
+pub enum BlockState {
+	Included,
+	Finalized,
+	Discarded,
+	BlockDoesNotExist,
+}
+
+#[derive(Clone)]
+pub struct TransactionReceipt {
+	client: Client,
+	pub block_id: BlockId,
+	pub tx_location: TransactionLocation,
+	pub tx_extra: TransactionExtra,
+}
+
+impl TransactionReceipt {
+	pub fn new(
+		client: Client,
+		block_id: BlockId,
+		tx_location: TransactionLocation,
+		tx_extra: TransactionExtra,
+	) -> Self {
 		Self {
 			client,
-			tx_hash,
-			account_id,
-			nonce: options.nonce as u32,
-			app_id: options.app_id,
-			tip: options.tip,
-			mortality: options.mortality.clone(),
+			block_id,
+			tx_location,
+			tx_extra,
 		}
 	}
 
-	pub async fn block_id(&self, method: FetchingBlockIdMethod) -> Result<Option<BlockId>, subxt::Error> {
+	pub async fn block_state(&self) -> Result<BlockState, subxt::Error> {
 		unimplemented!()
 	}
 
-	pub async fn subxt_block(&self, method: FetchingBlockIdMethod) -> Result<Option<ABlock>, subxt::Error> {
-		let block_id = match self.block_id(method).await? {
-			Some(b) => b,
-			None => return Ok(None),
-		};
-
-		Ok(Some(self.client.block_at(block_id.hash).await?))
-	}
-
-	pub async fn transaction_overview(&self) -> Result<Option<BlockId>, subxt::Error> {
+	pub async fn tx_events(&self) -> Result<(), ()> {
 		unimplemented!()
 	}
 }
 
 /// TODO
-pub async fn find_transaction(
-	client: &Client,
-	block: &ABlock,
-	tx_hash: &H256,
-) -> Result<Option<TransactionDetails>, subxt::Error> {
+pub async fn find_transaction(block: &ABlock, tx_hash: H256) -> Result<Option<TransactionLocation>, subxt::Error> {
 	let transactions = block.extrinsics().await?;
-	let tx_found = transactions.iter().find(|e| e.hash() == *tx_hash);
+	let tx_found = transactions.iter().find(|e| e.hash() == tx_hash);
 	let Some(ext_details) = tx_found else {
 		return Ok(None);
 	};
 
-	let events = match ext_details.events().await.ok() {
-		Some(x) => EventRecords::new_ext(x),
-		None => None,
+	Ok(Some(TransactionLocation::from((tx_hash, ext_details.index()))))
+}
+
+pub async fn transaction_receipt(
+	client: Client,
+	tx_hash: H256,
+	tx_extra: TransactionExtra,
+	method: &ReceiptMethod,
+) -> Result<Option<TransactionReceipt>, subxt::Error> {
+	let Some(block_id) = transaction_maybe_block_id(&client, &tx_extra, method).await? else {
+		return Ok(None);
 	};
 
-	let value = TransactionDetails::new(
-		client.clone(),
-		events,
-		*tx_hash,
-		ext_details.index(),
-		block.hash(),
-		block.number(),
-	);
+	let Some(tx_location) = transaction_inside_block(&client, tx_hash, &block_id, method).await? else {
+		return Ok(None);
+	};
 
-	Ok(Some(value))
+	let receipt = TransactionReceipt {
+		client,
+		block_id,
+		tx_location,
+		tx_extra,
+	};
+
+	Ok(Some(receipt))
 }
 
 /// TODO
-pub async fn find_block_id(
+pub async fn transaction_inside_block(
 	client: &Client,
-	account_id: &AccountId,
-	nonce: u32,
-	mortality_period: u32,
-	fork_height: u32,
-	sleep_duration: Duration,
-) -> Result<Option<BlockId>, subxt::Error> {
-	let mortality_ends_height = fork_height + mortality_period;
-	let address = std::format!("{}", account_id);
+	tx_hash: H256,
+	block_id: &BlockId,
+	method: &ReceiptMethod,
+) -> Result<Option<TransactionLocation>, subxt::Error> {
+	let mut block = None;
+	if let Ok(cache) = client.cache.lock() {
+		if let Some(cached_block) = &cache.last_fetched_block {
+			if cached_block.0 == block_id.hash {
+				block = Some(cached_block.1.clone())
+			}
+		}
+	}
 
-	let mut next_block_height = fork_height + 1;
+	let block: Arc<ABlock> = if let Some(block) = block {
+		block
+	} else {
+		let block = client.block_at(block_id.hash).await?;
+		let block = Arc::new(block);
+		if let Ok(mut cache) = client.cache.lock() {
+			cache.last_fetched_block = Some((block_id.hash, block.clone()))
+		}
+		block
+	};
+
+	Ok(find_transaction(&block, tx_hash).await?)
+}
+
+/// TODO
+pub async fn transaction_maybe_block_id(
+	client: &Client,
+	tx_extra: &TransactionExtra,
+	method: &ReceiptMethod,
+) -> Result<Option<BlockId>, subxt::Error> {
+	let (nonce, account_id, mortality) = (tx_extra.nonce, &tx_extra.account_id, &tx_extra.mortality);
+	let mortality_ends_height = mortality.block_height + mortality.period as u32;
+	let address = std::format!("{}", tx_extra.account_id);
+
+	let mut next_block_height = mortality.block_height + 1;
 	let mut block_height = client.finalized_block_height().await?;
 
 	info!(target: "nonce_search", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, block_height, mortality_ends_height);
 	while mortality_ends_height >= next_block_height {
 		if next_block_height > block_height {
-			tokio::time::sleep(sleep_duration).await;
+			tokio::time::sleep(Duration::from_secs(3)).await;
 			block_height = client.finalized_block_height().await?;
-			continue;
-		}
-
-		let next_block_hash = client.block_hash(next_block_height).await?;
-		let state_nonce = client.nonce_state(&address, next_block_hash).await?;
-		if state_nonce > nonce {
-			info!(target: "nonce_search", "At block height {} and hash {:?} found nonce: {} which is greater than {} for Account address {}. Search is done", next_block_height, next_block_hash, state_nonce, nonce, account_id);
-			return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
-		}
-
-		info!(target: "nonce_search", "Looking for nonce > than: {} for Account address {}. At block height {} and hash {:?} found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
-		next_block_height += 1;
-	}
-
-	Ok(None)
-}
-
-/// TODO
-pub async fn find_block_id_best_block(
-	client: &Client,
-	account_id: &AccountId,
-	nonce: u32,
-	mortality_period: u32,
-	fork_height: u32,
-	sleep_duration: Duration,
-) -> Result<Option<BlockId>, subxt::Error> {
-	let mortality_ends_height = fork_height + mortality_period;
-	let address = std::format!("{}", account_id);
-
-	let mut next_block_height = fork_height + 1;
-	let mut block_height = client.best_block_height().await?;
-
-	info!(target: "nonce_search", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, block_height, mortality_ends_height);
-	while mortality_ends_height >= next_block_height {
-		if next_block_height > block_height {
-			tokio::time::sleep(sleep_duration).await;
-			block_height = client.best_block_height().await?;
 			continue;
 		}
 

@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 use std::time::SystemTime;
 
 type ApplicationKeyCreatedEvent = avail::data_availability::events::ApplicationKeyCreated;
@@ -65,3 +65,4 @@ pub async fn run_block() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

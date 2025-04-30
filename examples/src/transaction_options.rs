@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
 	run_app_id().await?;
@@ -102,3 +102,4 @@ async fn run_mortality() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */

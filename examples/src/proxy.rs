@@ -1,4 +1,4 @@
-use avail::{
+/* use avail::{
 	proxy::events::{ProxyAdded, ProxyExecuted, ProxyRemoved, PureCreated},
 	runtime_types::{
 		da_control::pallet::Call::create_application_key, pallet_balances::pallet::Call::transfer_keep_alive,
@@ -162,3 +162,4 @@ pub async fn run_proxy_failure() -> Result<(), ClientError> {
 	assert_eq!(res.is_successful(), Some(true));
 	Ok(())
 }
+ */

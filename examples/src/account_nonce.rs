@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::turing_endpoint()).await?;
@@ -6,13 +6,14 @@ pub async fn run() -> Result<(), ClientError> {
 	let alice_address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
 
 	// Fetch nonce via RPC
-	let nonce = account::nonce(&sdk.client, alice_address).await?;
+	let nonce = sdk.client.nonce(alice_address).await?;
 	println!("RPC Nonce: {}", nonce);
 
 	// Fetch none via Storage
-	let alice_account = account::account_id_from_str(alice_address)?;
-	let info = account::account_info(&sdk.client, alice_account).await?;
+	let alice_account = AccountId::from_str(alice_address)?;
+	let info = sdk.client.finalized_block_account_info(alice_account).await?;
 	println!("Nonce: {}", info.nonce);
 
 	Ok(())
 }
+ */

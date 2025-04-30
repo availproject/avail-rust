@@ -1,4 +1,4 @@
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 use crate::{
 	block_data_submission_all, block_data_submission_by_app_id, block_data_submission_by_hash,
@@ -29,3 +29,4 @@ pub async fn run() -> Result<(), ClientError> {
 	println!("Block finished correctly");
 	Ok(())
 }
+ */

@@ -1,6 +1,4 @@
-use std::str::FromStr;
-
-use avail_rust::prelude::*;
+/* use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
 	// Use SecretUri and Keypair to create your own account...
@@ -31,7 +29,7 @@ pub async fn run() -> Result<(), ClientError> {
 	println!("Ferdie Address: {}", account_id);
 
 	// ...or from SS58 address
-	let account_id = account::account_id_from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
+	let account_id = AccountId::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")?;
 	println!("Alice Address: {}", account_id);
 
 	// SS58 address can be created from Account ID
@@ -45,3 +43,4 @@ pub async fn run() -> Result<(), ClientError> {
 
 	Ok(())
 }
+ */
