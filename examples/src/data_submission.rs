@@ -24,7 +24,10 @@ pub async fn run() -> Result<(), ClientError> {
 		// TransactionReceipt -> Block height, Block hash, Transaction hash, Transaction index, and Transaction extra.
 		// If None it means that the transaction was dropped. This is guaranteed***(pruning could mess this up).
 		// This call is extremely cheap and can be done as many times as needed.
-		let receipt: TransactionReceipt = st.receipt(Default::default()).await?.unwrap();
+		let receipt: TransactionReceipt = st
+			.receipt(ReceiptMethod::Default { use_best_block: true })
+			.await?
+			.unwrap();
 
 		// At this point it is guaranteed that the transaction was observed in a block.
 		// If the setting was to wait for finalization then we are done. If the setting was wait for
@@ -38,30 +41,26 @@ pub async fn run() -> Result<(), ClientError> {
 		loop {
 			let block_state: BlockState = receipt.block_state().await?;
 			match block_state {
-				BlockState::Included => (),
-				BlockState::Finalized => return Ok(()),
+				BlockState::Included => {
+					println!("Included.");
+					()
+				},
+				BlockState::Finalized => {
+					println!("Finalized.");
+					return Ok(());
+				},
 				// Discarded means that the block that we got from `st.receipt` got discarded.
 				// Running `st.receipt` again will give us the correct block height and block hash.
-				BlockState::Discarded => break 'outer,
+				BlockState::Discarded => {
+					println!("Discarded.");
+					break 'outer;
+				},
 				// Due to pruning settings that block does not exist anymore. What exactly needs to be done at this point is
 				// still unclear to me.
 				BlockState::BlockDoesNotExist => unimplemented!(),
 			};
 			sleep(Duration::from_secs(5)).await;
 		}
-	}
-
-	let st: SubmittedTransaction = tx.execute(&account, options).await?;
-	loop {
-		let receipt: TransactionReceipt = st.receipt(Default::default()).await?.unwrap();
-		let block_state: BlockState = receipt.block_state().await?;
-
-		match block_state {
-			BlockState::Included => (),
-			BlockState::Finalized => return Ok(()),
-			BlockState::BlockDoesNotExist | BlockState::Discarded => unimplemented!(),
-		};
-		sleep(Duration::from_secs(10)).await;
 	}
 
 	Ok(())

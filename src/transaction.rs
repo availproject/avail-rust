@@ -247,7 +247,17 @@ impl TransactionReceipt {
 	}
 
 	pub async fn block_state(&self) -> Result<BlockState, subxt::Error> {
-		unimplemented!()
+		let finalized_block_height = self.client.finalized_block_height().await?;
+		if self.block_id.height > finalized_block_height {
+			return Ok(BlockState::Included);
+		}
+
+		let real_block_hash = self.client.block_hash(self.block_id.height).await?;
+		if self.block_id.hash != real_block_hash {
+			return Ok(BlockState::Discarded);
+		}
+
+		Ok(BlockState::Finalized)
 	}
 
 	pub async fn tx_events(&self) -> Result<(), ()> {
@@ -326,6 +336,27 @@ pub async fn transaction_maybe_block_id(
 	tx_extra: &TransactionExtra,
 	method: &ReceiptMethod,
 ) -> Result<Option<BlockId>, subxt::Error> {
+	match method {
+		ReceiptMethod::Default { use_best_block } => match use_best_block {
+			true => transaction_maybe_block_id_best_block(client, tx_extra).await,
+			false => transaction_maybe_block_id_finalized_block(client, tx_extra).await,
+		},
+		ReceiptMethod::Blocks {
+			sleep_duration,
+			use_best_block,
+		} => todo!(),
+		ReceiptMethod::RPCTransactionOverview {
+			sleep_duration,
+			use_best_block,
+		} => todo!(),
+	}
+}
+
+/// TODO
+pub async fn transaction_maybe_block_id_finalized_block(
+	client: &Client,
+	tx_extra: &TransactionExtra,
+) -> Result<Option<BlockId>, subxt::Error> {
 	let (nonce, account_id, mortality) = (tx_extra.nonce, &tx_extra.account_id, &tx_extra.mortality);
 	let mortality_ends_height = mortality.block_height + mortality.period as u32;
 	let address = std::format!("{}", tx_extra.account_id);
@@ -350,6 +381,50 @@ pub async fn transaction_maybe_block_id(
 
 		info!(target: "nonce_search", "Looking for nonce > than: {} for Account address {}. At block height {} and hash {:?} found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 		next_block_height += 1;
+	}
+
+	Ok(None)
+}
+
+/// TODO
+pub async fn transaction_maybe_block_id_best_block(
+	client: &Client,
+	tx_extra: &TransactionExtra,
+) -> Result<Option<BlockId>, subxt::Error> {
+	let (nonce, account_id, mortality) = (tx_extra.nonce, &tx_extra.account_id, &tx_extra.mortality);
+	let mortality_ends_height = mortality.block_height + mortality.period as u32;
+	let address = std::format!("{}", tx_extra.account_id);
+
+	let mut next_block_height = mortality.block_height + 1;
+	let mut next_block_hash = H256::zero();
+	let mut block_id = client.best_block_id().await?;
+
+	info!(target: "nonce_search", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, block_id.height, mortality_ends_height);
+	while mortality_ends_height >= next_block_height {
+		if next_block_hash == block_id.hash || next_block_height > block_id.height {
+			tokio::time::sleep(Duration::from_secs(3)).await;
+			block_id = client.best_block_id().await?;
+			continue;
+		}
+
+		if next_block_height == (block_id.height + 1) {
+			next_block_hash = block_id.hash;
+			let state_nonce = client.nonce_state(&address, next_block_hash).await?;
+			if state_nonce > nonce {
+				info!(target: "nonce_search", "Looking for nonce > than: {} for Account address {}. At block height {} and hash {:?} found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+				return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
+			}
+			info!(target: "nonce_search", "Looking for nonce > than: {} for Account address {}. At block height {} and hash {:?} found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+		} else {
+			next_block_hash = client.block_hash(next_block_height).await?;
+			let state_nonce = client.nonce_state(&address, next_block_hash).await?;
+			if state_nonce > nonce {
+				info!(target: "nonce_search", "Looking for nonce > than: {} for Account address {}. At block height {} and hash {:?} found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+				return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
+			}
+			info!(target: "nonce_search", "Looking for nonce > than: {} for Account address {}. At block height {} and hash {:?} found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+			next_block_height += 1;
+		}
 	}
 
 	Ok(None)

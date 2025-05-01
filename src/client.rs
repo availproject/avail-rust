@@ -3,7 +3,7 @@ use crate::{
 	block::EventRecords,
 	client_rpc::ChainBlock,
 	error::ClientError,
-	transaction::SubmittedTransaction,
+	transaction::{BlockId, SubmittedTransaction},
 	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt,
 	AvailHeader, Options, H256,
 };
@@ -162,6 +162,19 @@ impl Client {
 		let block_hash = self.finalized_block_hash().await?;
 		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
 		Ok(header.number)
+	}
+
+	// Block Id
+	pub async fn best_block_id(&self) -> Result<BlockId, subxt::Error> {
+		let hash = self.best_block_hash().await?;
+		let height = self.block_height(hash).await?;
+		Ok(BlockId::from((hash, height)))
+	}
+
+	pub async fn finalized_block_id(&self) -> Result<BlockId, subxt::Error> {
+		let hash = self.finalized_block_hash().await?;
+		let height = self.block_height(hash).await?;
+		Ok(BlockId::from((hash, height)))
 	}
 
 	// Nonce
