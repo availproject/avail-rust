@@ -144,7 +144,10 @@ impl Client {
 		Ok(value)
 	}
 
-	pub async fn rpc_chain_get_block_hash(&self, block_height: Option<BlockNumber>) -> Result<H256, subxt::Error> {
+	pub async fn rpc_chain_get_block_hash(
+		&self,
+		block_height: Option<BlockNumber>,
+	) -> Result<Option<H256>, subxt::Error> {
 		let params = rpc_params![block_height];
 		let value = self.rpc_client.request("chain_getBlockHash", params).await?;
 		Ok(value)
@@ -156,7 +159,7 @@ impl Client {
 		Ok(value)
 	}
 
-	pub async fn rpc_chain_get_header(&self, at: Option<H256>) -> Result<AvailHeader, subxt::Error> {
+	pub async fn rpc_chain_get_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, subxt::Error> {
 		let params = rpc_params![at];
 		let value = self.rpc_client.request("chain_getHeader", params).await?;
 		Ok(value)
@@ -173,7 +176,7 @@ impl Client {
 		let ext = std::format!("0x{}", hex::encode(extrinsic));
 		let params = rpc_params![ext];
 		let value: String = self.rpc_client.request("author_submitExtrinsic", params).await?;
-		let value = H256::from_hex(&value)?;
+		let value = H256::from_str(&value)?;
 		Ok(value)
 	}
 

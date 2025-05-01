@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use avail_rust::prelude::*;
+use avail_rust::{prelude::*, transaction::block_state};
 use tokio::time::sleep;
 
 pub async fn run() -> Result<(), ClientError> {
-	let sdk = SDK::new(SDK::turing_endpoint()).await?;
+	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
 	let account = account::alice();
 
@@ -57,7 +57,10 @@ pub async fn run() -> Result<(), ClientError> {
 				},
 				// Due to pruning settings that block does not exist anymore. What exactly needs to be done at this point is
 				// still unclear to me.
-				BlockState::BlockDoesNotExist => unimplemented!(),
+				BlockState::DoesNotExist => {
+					println!("DoesNotExist.");
+					unimplemented!();
+				},
 			};
 			sleep(Duration::from_secs(5)).await;
 		}

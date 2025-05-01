@@ -73,11 +73,11 @@ impl Debug for SDK {
 }
 
 pub trait H256Ext {
-	fn from_hex(s: &str) -> Result<H256, String>;
+	fn from_str(s: &str) -> Result<H256, String>;
 }
 
 impl H256Ext for H256 {
-	fn from_hex(s: &str) -> Result<H256, String> {
+	fn from_str(s: &str) -> Result<H256, String> {
 		let mut s = s;
 		if s.starts_with("0x") {
 			s = &s[2..];

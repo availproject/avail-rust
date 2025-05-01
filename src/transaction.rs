@@ -215,12 +215,12 @@ pub struct TransactionExtra {
 	pub mortality: Mortality,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum BlockState {
 	Included,
 	Finalized,
 	Discarded,
-	BlockDoesNotExist,
+	DoesNotExist,
 }
 
 #[derive(Clone)]
@@ -247,22 +247,30 @@ impl TransactionReceipt {
 	}
 
 	pub async fn block_state(&self) -> Result<BlockState, subxt::Error> {
-		let finalized_block_height = self.client.finalized_block_height().await?;
-		if self.block_id.height > finalized_block_height {
-			return Ok(BlockState::Included);
-		}
-
-		let real_block_hash = self.client.block_hash(self.block_id.height).await?;
-		if self.block_id.hash != real_block_hash {
-			return Ok(BlockState::Discarded);
-		}
-
-		Ok(BlockState::Finalized)
+		block_state(&self.client, self.block_id).await
 	}
 
 	pub async fn tx_events(&self) -> Result<(), ()> {
 		unimplemented!()
 	}
+}
+
+pub async fn block_state(client: &Client, block_id: BlockId) -> Result<BlockState, subxt::Error> {
+	let real_block_hash = client.block_hash(block_id.height).await?;
+	let Some(real_block_hash) = real_block_hash else {
+		return Ok(BlockState::DoesNotExist);
+	};
+
+	let finalized_block_height = client.finalized_block_height().await?;
+	if block_id.height > finalized_block_height {
+		return Ok(BlockState::Included);
+	}
+
+	if block_id.hash != real_block_hash {
+		return Ok(BlockState::Discarded);
+	}
+
+	Ok(BlockState::Finalized)
 }
 
 /// TODO
@@ -372,14 +380,19 @@ pub async fn transaction_maybe_block_id_finalized_block(
 			continue;
 		}
 
-		let next_block_hash = client.block_hash(next_block_height).await?;
+		let Some(next_block_hash) = client.block_hash(next_block_height).await? else {
+			let err = std::format!("{}", next_block_height);
+			let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
+			return Err(err);
+		};
+
 		let state_nonce = client.nonce_state(&address, next_block_hash).await?;
 		if state_nonce > nonce {
-			info!(target: "nonce_search", "At block height {} and hash {:?} found nonce: {} which is greater than {} for Account address {}. Search is done", next_block_height, next_block_hash, state_nonce, nonce, account_id);
+			info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 			return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
 		}
 
-		info!(target: "nonce_search", "Looking for nonce > than {} for Account address {}. At block height {} and hash {:?} found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+		info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 		next_block_height += 1;
 	}
 
@@ -411,18 +424,24 @@ pub async fn transaction_maybe_block_id_best_block(
 			next_block_hash = block_id.hash;
 			let state_nonce = client.nonce_state(&address, next_block_hash).await?;
 			if state_nonce > nonce {
-				info!(target: "nonce_search", "Looking for nonce > than {} for Account address {}. At block height {} and hash {:?} found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+				info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 				return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
 			}
-			info!(target: "nonce_search", "Looking for nonce > than {} for Account address {}. At block height {} and hash {:?} found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+			info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?})found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 		} else {
-			next_block_hash = client.block_hash(next_block_height).await?;
+			let Some(hash) = client.block_hash(next_block_height).await? else {
+				let err = std::format!("{}", next_block_height);
+				let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
+				return Err(err);
+			};
+
+			next_block_hash = hash;
 			let state_nonce = client.nonce_state(&address, next_block_hash).await?;
 			if state_nonce > nonce {
-				info!(target: "nonce_search", "Looking for nonce > than {} for Account address {}. At block height {} and hash {:?} found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+				info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 				return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
 			}
-			info!(target: "nonce_search", "Looking for nonce > than {} for Account address {}. At block height {} and hash {:?} found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+			info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 			next_block_height += 1;
 		}
 	}
@@ -534,8 +553,7 @@ impl Mortality {
 	}
 
 	pub async fn from_period(client: &Client, period: u64) -> Result<Self, subxt::Error> {
-		let finalized_hash = client.finalized_block_hash().await?;
-		let header = client.header(finalized_hash).await?;
+		let header = client.finalized_block_header().await?;
 		let (block_hash, block_height) = (header.hash(), header.number());
 		Ok(Self {
 			period,

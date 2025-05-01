@@ -109,16 +109,26 @@ impl Client {
 	}
 
 	// Header
-	pub async fn header(&self, at: H256) -> Result<AvailHeader, subxt::Error> {
+	pub async fn header(&self, at: H256) -> Result<Option<AvailHeader>, subxt::Error> {
 		self.rpc_chain_get_header(Some(at)).await
 	}
 
 	pub async fn best_block_header(&self) -> Result<AvailHeader, subxt::Error> {
-		self.header(self.best_block_hash().await?).await
+		let header = self.header(self.best_block_hash().await?).await?;
+		let Some(header) = header else {
+			let err = std::format!("Best block header not found.");
+			return Err(subxt::Error::Other(err));
+		};
+		Ok(header)
 	}
 
 	pub async fn finalized_block_header(&self) -> Result<AvailHeader, subxt::Error> {
-		self.header(self.finalized_block_hash().await?).await
+		let header = self.header(self.finalized_block_hash().await?).await?;
+		let Some(header) = header else {
+			let err = std::format!("Finalized block header not found.");
+			return Err(subxt::Error::Other(err));
+		};
+		Ok(header)
 	}
 
 	// (RPC) Block
@@ -135,12 +145,18 @@ impl Client {
 	}
 
 	// Block Hash
-	pub async fn block_hash(&self, block_height: u32) -> Result<H256, subxt::Error> {
+	pub async fn block_hash(&self, block_height: u32) -> Result<Option<H256>, subxt::Error> {
 		self.rpc_chain_get_block_hash(Some(block_height)).await
 	}
 
 	pub async fn best_block_hash(&self) -> Result<H256, subxt::Error> {
-		self.rpc_chain_get_block_hash(None).await
+		let hash = self.rpc_chain_get_block_hash(None).await?;
+		let Some(hash) = hash else {
+			let err = std::format!("Best block hash not found.");
+			let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
+			return Err(err);
+		};
+		Ok(hash)
 	}
 
 	pub async fn finalized_block_hash(&self) -> Result<H256, subxt::Error> {
@@ -148,19 +164,18 @@ impl Client {
 	}
 
 	// Block Height
-	pub async fn block_height(&self, block_hash: H256) -> Result<u32, subxt::Error> {
+	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, subxt::Error> {
 		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
-		Ok(header.number)
+		Ok(header.and_then(|x| Some(x.number)))
 	}
 
 	pub async fn best_block_height(&self) -> Result<u32, subxt::Error> {
-		let header = self.rpc_chain_get_header(None).await?;
+		let header = self.best_block_header().await?;
 		Ok(header.number)
 	}
 
 	pub async fn finalized_block_height(&self) -> Result<u32, subxt::Error> {
-		let block_hash = self.finalized_block_hash().await?;
-		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
+		let header = self.finalized_block_header().await?;
 		Ok(header.number)
 	}
 
@@ -168,12 +183,20 @@ impl Client {
 	pub async fn best_block_id(&self) -> Result<BlockId, subxt::Error> {
 		let hash = self.best_block_hash().await?;
 		let height = self.block_height(hash).await?;
+		let Some(height) = height else {
+			let err = std::format!("Best block header not found.");
+			return Err(subxt::Error::Other(err));
+		};
 		Ok(BlockId::from((hash, height)))
 	}
 
 	pub async fn finalized_block_id(&self) -> Result<BlockId, subxt::Error> {
 		let hash = self.finalized_block_hash().await?;
 		let height = self.block_height(hash).await?;
+		let Some(height) = height else {
+			let err = std::format!("Finalized block header not found.");
+			return Err(subxt::Error::Other(err));
+		};
 		Ok(BlockId::from((hash, height)))
 	}
 

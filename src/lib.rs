@@ -43,7 +43,7 @@ pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
 pub use transaction::{
-	BlockState, Options, PopulatedOptions, ReceiptMethod, SubmittableTransaction, SubmittedTransaction,
+	BlockId, BlockState, Options, PopulatedOptions, ReceiptMethod, SubmittableTransaction, SubmittedTransaction,
 	TransactionExtra, TransactionLocation, TransactionReceipt,
 };
 
@@ -55,7 +55,7 @@ pub mod prelude {
 		block::{to_ascii, DataSubmission},
 		config::*,
 		error::ClientError,
-		hex, kate_recovery, primitives, subxt, subxt_signer, AccountId, AccountIdExt, Block, BlockState,
+		hex, kate_recovery, primitives, subxt, subxt_signer, AccountId, AccountIdExt, Block, BlockId, BlockState,
 		BlockTransaction, Client, ClientOptions, Filter, H256Ext, Keypair, MultiAddress, Options, Perbill,
 		PopulatedOptions, ReceiptMethod, SecretUri, SecretUriExt, SubmittableTransaction, SubmittedTransaction,
 		TransactionExtra, TransactionLocation, TransactionReceipt, H256, SDK, U256,

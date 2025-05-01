@@ -50,11 +50,11 @@ impl Block {
 		})
 	}
 
-	pub async fn from_block_number(client: &Client, block_number: u32) -> Result<Self, ClientError> {
-		let block_hash = client.rpc_chain_get_block_hash(Some(block_number)).await?;
-		Self::new(client, block_hash).await
-	}
-
+	/* 	pub async fn from_block_number(client: &Client, block_number: u32) -> Result<Self, ClientError> {
+		   let block_hash = client.rpc_chain_get_block_hash(Some(block_number)).await?;
+		   Self::new(client, block_hash).await
+	   }
+	*/
 	pub async fn events(&self) -> Option<EventRecords> {
 		let events = self.block.events().await.ok()?;
 		EventRecords::new(events)
