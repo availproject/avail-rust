@@ -28,8 +28,7 @@ pub use client::{Client, ClientOptions};
 pub use config::*;
 pub use hex;
 pub use kate_recovery;
-pub use primitive_types;
-pub use primitive_types::H256;
+pub use primitive_types::{self, H256};
 pub use primitives::{
 	block::{AppUncheckedExtrinsic, AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
 	kate::{Cell, GDataProof, GRow},

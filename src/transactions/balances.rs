@@ -27,7 +27,11 @@ impl Balances {
 	/// of the transfer, the account will be reaped.
 	///
 	/// The dispatch origin for this call must be `Signed` by the transactor.
-	pub fn transfer_allow_death(&self, dest: AccountId, amount: u128) -> SubmittableTransaction<TransferAllowDeathCall> {
+	pub fn transfer_allow_death(
+		&self,
+		dest: AccountId,
+		amount: u128,
+	) -> SubmittableTransaction<TransferAllowDeathCall> {
 		let payload = avail::tx().balances().transfer_allow_death(dest.into(), amount);
 		SubmittableTransaction::new(self.client.clone(), payload)
 	}

@@ -5,11 +5,13 @@ use crate::{
 	AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
 };
 use log::info;
-use std::sync::Arc;
-use std::time::Duration;
-use subxt::config::Header;
-use subxt::tx::Payload;
-use subxt::{blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
+use std::{sync::Arc, time::Duration};
+use subxt::{
+	blocks::StaticExtrinsic,
+	config::Header,
+	ext::scale_encode::EncodeAsFields,
+	tx::{DefaultPayload, Payload},
+};
 use subxt_signer::sr25519::Keypair;
 
 pub type Params =

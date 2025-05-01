@@ -1,6 +1,5 @@
 use super::transaction::SubmissionStateError;
-use subxt::error::DispatchError;
-use subxt::error::RpcError;
+use subxt::error::{DispatchError, RpcError};
 use subxt_signer::{sr25519, SecretUriError};
 
 #[derive(Debug)]
