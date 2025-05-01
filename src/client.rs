@@ -8,40 +8,12 @@ use crate::{
 	AvailHeader, Options, H256,
 };
 use log::info;
-use std::{fmt::Debug, sync::Arc, time::Duration};
-use subxt::{
-	backend::rpc::{
-		reconnecting_rpc_client::{ExponentialBackoff, RpcClient as ReconnectingRpcClient},
-		RpcClient,
-	},
-	blocks::StaticExtrinsic,
-	ext::scale_encode::EncodeAsFields,
-	tx::DefaultPayload,
-};
+use std::{fmt::Debug, sync::Arc};
+use subxt::{backend::rpc::RpcClient, blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
 use subxt_signer::sr25519::Keypair;
 
 #[cfg(feature = "native")]
 use crate::http;
-
-pub async fn reconnecting_api(endpoint: &str) -> Result<Client, ClientError> {
-	let rpc_client = ReconnectingRpcClient::builder()
-		.max_request_size(512 * 1024 * 1024)
-		.max_response_size(512 * 1024 * 1024)
-		.retry_policy(
-			ExponentialBackoff::from_millis(1000)
-				.max_delay(Duration::from_secs(3))
-				.take(3),
-		)
-		.build(endpoint)
-		.await
-		.map_err(|e| e.to_string())?;
-	let rpc_client = RpcClient::new(rpc_client);
-
-	// Cloning RpcClient is cheaper and doesn't create a new WS connection
-	let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
-
-	Ok(Client::new(api, rpc_client))
-}
 
 #[cfg(feature = "native")]
 pub async fn http_api(endpoint: &str) -> Result<Client, ClientError> {

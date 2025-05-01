@@ -39,7 +39,6 @@ pub use primitives::{
 	kate::{Cell, GDataProof, GRow},
 };
 pub use sdk::{AccountIdExt, H256Ext, SecretUriExt, SDK};
-pub use sp_core;
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
 pub use transaction::{

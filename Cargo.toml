@@ -23,11 +23,11 @@ codec = { package = "parity-scale-codec", version = "3", default-features = fals
 	"full",
 	"bit-vec",
 ] }
+impl-serde = { version = "0.4.0", default-features = false }
 scale-info = { version = "2.5.0", features = ["bit-vec"] }
 avail-core = {  git = "https://github.com/availproject/avail-core", tag = "core-node-7", default-features = false, features = ["serde", "runtime"] }
 hex = { version = "0.4" }
 base58 = { version = "0.2.0" }
-sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12", default-features = false }
 bounded-collections = { version = "0.2.0", features = ["serde"] }
 primitive-types = { version = "0.13.1", default-features = false }
 log = { version = "0.4.22", default-features = false }

@@ -1,8 +1,8 @@
 use crate::U256;
+use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
-use sp_core::ConstU32;
 
 /// Compatible with `kate::com::Cell`
 #[derive(Clone, Constructor, Debug, Serialize, Deserialize, Encode, Decode)]
