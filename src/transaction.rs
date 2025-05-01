@@ -1,7 +1,8 @@
 use crate::{
+	client_rpc::ChainBlock,
 	error::ClientError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
-	ABlock, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
+	AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
 };
 use log::info;
 use std::sync::Arc;
@@ -273,17 +274,6 @@ pub async fn block_state(client: &Client, block_id: BlockId) -> Result<BlockStat
 	Ok(BlockState::Finalized)
 }
 
-/// TODO
-pub async fn find_transaction(block: &ABlock, tx_hash: H256) -> Result<Option<TransactionLocation>, subxt::Error> {
-	let transactions = block.extrinsics().await?;
-	let tx_found = transactions.iter().find(|e| e.hash() == tx_hash);
-	let Some(ext_details) = tx_found else {
-		return Ok(None);
-	};
-
-	Ok(Some(TransactionLocation::from((tx_hash, ext_details.index()))))
-}
-
 pub async fn transaction_receipt(
 	client: Client,
 	tx_hash: H256,
@@ -324,18 +314,24 @@ pub async fn transaction_inside_block(
 		}
 	}
 
-	let block: Arc<ABlock> = if let Some(block) = block {
+	let block: Arc<ChainBlock> = if let Some(block) = block {
 		block
 	} else {
-		let block = client.block_at(block_id.hash).await?;
+		let block = client.block(block_id.hash).await?;
+		let Some(block) = block else {
+			let err = std::format!("{}", block_id.hash);
+			let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
+			return Err(err);
+		};
 		let block = Arc::new(block);
 		if let Ok(mut cache) = client.cache.lock() {
 			cache.last_fetched_block = Some((block_id.hash, block.clone()))
 		}
+
 		block
 	};
 
-	Ok(find_transaction(&block, tx_hash).await?)
+	Ok(block.has_transaction(tx_hash))
 }
 
 /// TODO

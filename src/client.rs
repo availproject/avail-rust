@@ -1,10 +1,9 @@
 use crate::{
 	avail::{runtime_types::pallet_balances::types::AccountData, system::storage::types::account::Account},
-	block::EventRecords,
 	client_rpc::ChainBlock,
 	error::ClientError,
 	transaction::{BlockId, SubmittedTransaction},
-	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt,
+	ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt,
 	AvailHeader, Options, H256,
 };
 use log::info;
@@ -37,7 +36,7 @@ type SharedCache = Arc<std::sync::Mutex<Cache>>;
 
 #[derive(Default)]
 pub struct Cache {
-	pub last_fetched_block: Option<(H256, Arc<ABlock>)>,
+	pub last_fetched_block: Option<(H256, Arc<ChainBlock>)>,
 }
 
 impl Debug for Cache {
@@ -71,15 +70,6 @@ impl Client {
 		ClientOptions::default()
 	}
 
-	pub async fn event_records(&self, at: H256) -> Result<Option<EventRecords>, subxt::Error> {
-		let events = self.subxt_events().at(at).await?;
-		Ok(EventRecords::new(events))
-	}
-
-	pub async fn block_at(&self, at: H256) -> Result<ABlock, subxt::Error> {
-		self.online_client.blocks().at(at).await
-	}
-
 	// Header
 	pub async fn header(&self, at: H256) -> Result<Option<AvailHeader>, subxt::Error> {
 		self.rpc_chain_get_header(Some(at)).await
@@ -104,16 +94,26 @@ impl Client {
 	}
 
 	// (RPC) Block
-	pub async fn block(&self, at: H256) -> Result<ChainBlock, subxt::Error> {
+	pub async fn block(&self, at: H256) -> Result<Option<ChainBlock>, subxt::Error> {
 		self.rpc_chain_get_block(Some(at)).await
 	}
 
 	pub async fn best_block(&self) -> Result<ChainBlock, subxt::Error> {
-		self.block(self.best_block_hash().await?).await
+		let block = self.block(self.best_block_hash().await?).await?;
+		let Some(block) = block else {
+			let err = std::format!("Best block not found.");
+			return Err(subxt::Error::Other(err));
+		};
+		Ok(block)
 	}
 
 	pub async fn finalized_block(&self) -> Result<ChainBlock, subxt::Error> {
-		self.block(self.best_block_hash().await?).await
+		let block = self.block(self.finalized_block_hash().await?).await?;
+		let Some(block) = block else {
+			let err = std::format!("Finalized block not found.");
+			return Err(subxt::Error::Other(err));
+		};
+		Ok(block)
 	}
 
 	// Block Hash

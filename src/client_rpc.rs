@@ -2,12 +2,13 @@ use crate::{
 	avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength},
 	from_substrate::{NodeRole, PeerInfo, SyncState},
 	utils::{self},
-	ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256Ext, H256,
+	ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256Ext, TransactionLocation, H256,
 };
 use avail_core::data_proof::ProofResponse;
 use serde::{Deserialize, Serialize};
 use subxt::{
 	backend::legacy::rpc_methods::{BlockJustification, Bytes, RuntimeVersion, SystemHealth},
+	config::{substrate::BlakeTwo256, Hasher},
 	rpc_params,
 };
 
@@ -48,6 +49,18 @@ pub struct RpcMethods {
 pub struct ChainBlock {
 	pub block: ChainBlockBlock,
 	pub justifications: Option<Vec<BlockJustification>>,
+}
+
+impl ChainBlock {
+	pub fn has_transaction(&self, tx_hash: H256) -> Option<TransactionLocation> {
+		for (i, tx) in self.block.extrinsics.iter().enumerate() {
+			if BlakeTwo256::hash(tx) == tx_hash {
+				return Some(TransactionLocation::from((tx_hash, i as u32)));
+			}
+		}
+
+		None
+	}
 }
 
 #[derive(Clone)]
@@ -131,9 +144,11 @@ impl Client {
 		Ok(value)
 	}
 
-	pub async fn rpc_chain_get_block(&self, at: Option<H256>) -> Result<ChainBlock, subxt::Error> {
+	pub async fn rpc_chain_get_block(&self, at: Option<H256>) -> Result<Option<ChainBlock>, subxt::Error> {
 		let params = rpc_params![at];
-		let res: ABlockDetailsRPC = self.rpc_client.request("chain_getBlock", params).await?;
+		let res: Option<ABlockDetailsRPC> = self.rpc_client.request("chain_getBlock", params).await?;
+		let Some(res) = res else { return Ok(None) };
+
 		let value = ChainBlock {
 			block: ChainBlockBlock {
 				header: res.block.header,
@@ -141,7 +156,7 @@ impl Client {
 			},
 			justifications: res.justifications,
 		};
-		Ok(value)
+		Ok(Some(value))
 	}
 
 	pub async fn rpc_chain_get_block_hash(

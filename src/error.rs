@@ -1,8 +1,7 @@
 use super::transaction::SubmissionStateError;
 use subxt::error::DispatchError;
+use subxt::error::RpcError;
 use subxt_signer::{sr25519, SecretUriError};
-
-type RpcError = subxt::backend::rpc::reconnecting_rpc_client::Error;
 
 #[derive(Debug)]
 pub enum ClientError {
