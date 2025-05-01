@@ -4,7 +4,7 @@ use avail_rust::prelude::*;
 use tokio::time::sleep;
 
 pub async fn run() -> Result<(), ClientError> {
-	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let sdk = SDK::new(SDK::turing_endpoint()).await?;
 
 	let account = account::alice();
 

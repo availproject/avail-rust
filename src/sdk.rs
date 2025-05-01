@@ -11,7 +11,7 @@ pub struct SDK {
 
 impl SDK {
 	pub async fn new(endpoint: &str) -> Result<Self, ClientError> {
-		let client = super::client::reconnecting_api(endpoint).await?;
+		let client = super::client::http_api(endpoint).await?;
 
 		Self::new_custom(client).await
 	}
@@ -30,27 +30,27 @@ impl SDK {
 	}
 
 	pub fn local_endpoint() -> &'static str {
-		"ws://127.0.0.1:9944"
-	}
-
-	pub fn local_http_endpoint() -> &'static str {
 		"http://127.0.0.1:9944"
 	}
 
-	pub fn turing_endpoint() -> &'static str {
-		"wss://turing-rpc.avail.so/ws"
+	pub fn local_ws_endpoint() -> &'static str {
+		"ws://127.0.0.1:9944"
 	}
 
-	pub fn turing_http_endpoint() -> &'static str {
+	pub fn turing_endpoint() -> &'static str {
 		"https://turing-rpc.avail.so/rpc"
 	}
 
-	pub fn mainnet_endpoint() -> &'static str {
-		"wss://mainnet-rpc.avail.so/ws"
+	pub fn turing_ws_endpoint() -> &'static str {
+		"wss://turing-rpc.avail.so/ws"
 	}
 
-	pub fn mainnet_http_endpoint() -> &'static str {
+	pub fn mainnet_endpoint() -> &'static str {
 		"https://mainnet-rpc.avail.so/rpc"
+	}
+
+	pub fn mainnet_ws_endpoint() -> &'static str {
+		"wss://mainnet-rpc.avail.so/ws"
 	}
 }
 
