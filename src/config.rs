@@ -1,9 +1,7 @@
 use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 use subxt::{
 	backend::legacy::rpc_methods::BlockDetails as BlockDetailsRPC,
-	blocks::{
-		Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, ExtrinsicSignedExtensions, Extrinsics, FoundExtrinsic,
-	},
+	blocks::{Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, Extrinsics, FoundExtrinsic},
 	config::substrate::BlakeTwo256,
 	constants::ConstantsClient,
 	events::{EventDetails, Events, EventsClient},
@@ -28,7 +26,6 @@ pub type AStorageClient = StorageClient<AvailConfig, AOnlineClient>;
 pub type AConstantsClient = ConstantsClient<AvailConfig, AOnlineClient>;
 pub type AEventsClient = EventsClient<AvailConfig, AOnlineClient>;
 pub type ATxClient = TxClient<AvailConfig, AOnlineClient>;
-pub type AExtrinsicSignedExtensions<'a> = ExtrinsicSignedExtensions<'a, AvailConfig>;
 
 /// TX status
 pub type ATxProgress = TxProgress<AvailConfig, AOnlineClient>;

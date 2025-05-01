@@ -3,8 +3,7 @@ use crate::{
 	client_rpc::ChainBlock,
 	error::ClientError,
 	transaction::{BlockId, SubmittedTransaction},
-	ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt,
-	AvailHeader, Options, H256,
+	AConstantsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt, AvailHeader, Options, H256,
 };
 use log::info;
 use std::{fmt::Debug, sync::Arc};
@@ -227,20 +226,12 @@ impl Client {
 		storage.fetch_or_default(&address).await
 	}
 
-	pub fn subxt_blocks(&self) -> ABlocksClient {
-		self.online_client.blocks()
-	}
-
 	pub fn subxt_storage(&self) -> AStorageClient {
 		self.online_client.storage()
 	}
 
 	pub fn subxt_constants(&self) -> AConstantsClient {
 		self.online_client.constants()
-	}
-
-	pub fn subxt_events(&self) -> AEventsClient {
-		AEventsClient::new(self.online_client.clone())
 	}
 
 	// Submission
@@ -264,7 +255,7 @@ impl Client {
 			));
 		}
 
-		let tx_client = self.online_client.tx();
+		let mut tx_client = self.online_client.tx();
 		let signed_call = tx_client.create_signed(payload, signer, params).await?;
 		let tx_hash = self.rpc_author_submit_extrinsic(signed_call.encoded()).await?;
 		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);

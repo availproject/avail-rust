@@ -6,11 +6,9 @@ use crate::{
 };
 use avail_core::data_proof::ProofResponse;
 use serde::{Deserialize, Serialize};
-use subxt::{
-	backend::legacy::rpc_methods::{BlockJustification, Bytes, RuntimeVersion, SystemHealth},
-	config::{substrate::BlakeTwo256, Hasher},
-	rpc_params,
-};
+use subxt::backend::legacy::rpc_methods::{BlockJustification, Bytes, RuntimeVersion, SystemHealth};
+use subxt::ext::subxt_rpcs::rpc_params;
+use subxt_core::config::{substrate::BlakeTwo256, Hasher};
 
 /// Arbitrary properties defined in chain spec as a JSON object
 pub type SystemProperties = serde_json::map::Map<String, serde_json::Value>;
