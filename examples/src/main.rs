@@ -55,8 +55,8 @@ async fn main() -> Result<(), ClientError> {
 	custom_rpc_connection::run().await?;
 	transaction_payment::run().await?;
 	transaction::run().await?;
-	// transaction_state::run().await?;
 	indexer::run().await?;
+	// transaction_state::run().await?;
 	// turbo_da::run().await?;
 
 	Ok(())

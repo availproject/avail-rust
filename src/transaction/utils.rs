@@ -1,5 +1,5 @@
 use super::{Options, TransactionDetails};
-use crate::{account, block::EventRecords, rpc, AccountId, Client, WaitFor, H256};
+use crate::{account, block::EventRecords, rpc, ABlock, AccountId, Client, WaitFor, H256};
 use log::info;
 use std::time::Duration;
 use subxt::{blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
@@ -111,24 +111,7 @@ where
 		break (block, block_id);
 	};
 
-	let exts = block.extrinsics().await?;
-	for (tx_index, tx) in exts.iter().enumerate() {
-		if tx.hash() == st.tx_hash {
-			let events = tx.events().await.ok();
-			let events = events.and_then(EventRecords::new_ext);
-			let value = TransactionDetails::new(
-				client.clone(),
-				events,
-				st.tx_hash,
-				tx_index as u32,
-				block_id.hash,
-				block_id.height,
-			);
-			return Ok(Some(value));
-		}
-	}
-
-	Ok(None)
+	find_transaction(client, st.tx_hash, block_id, &block).await
 }
 
 #[derive(Clone, Copy)]
@@ -194,6 +177,32 @@ pub struct TransactionExtra {
 	pub app_id: u32,
 	pub tip: u128,
 	pub mortality: CheckedMortality,
+}
+
+pub async fn find_transaction(
+	client: &Client,
+	tx_hash: H256,
+	block_id: BlockId,
+	block: &ABlock,
+) -> Result<Option<TransactionDetails>, subxt::Error> {
+	let exts = block.extrinsics().await?;
+	for (tx_index, tx) in exts.iter().enumerate() {
+		if tx.hash() == tx_hash {
+			let events = tx.events().await.ok();
+			let events = events.and_then(EventRecords::new_ext);
+			let value = TransactionDetails::new(
+				client.clone(),
+				events,
+				tx_hash,
+				tx_index as u32,
+				block_id.hash,
+				block_id.height,
+			);
+			return Ok(Some(value));
+		}
+	}
+
+	return Ok(None);
 }
 
 pub async fn transaction_maybe_block_id(

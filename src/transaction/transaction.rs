@@ -1,4 +1,7 @@
-use super::{utils, Options, TransactionDetails};
+use super::{
+	utils::{self, SubmittedTransaction},
+	Options, TransactionDetails,
+};
 use crate::{
 	error::ClientError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
@@ -84,8 +87,12 @@ where
 		runtime_api::transaction_payment::query_call_fee_details(&self.client, call, None).await
 	}
 
-	pub async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, subxt::Error> {
-		utils::sign_and_send(&self.client, account, &self.payload, options).await
+	pub async fn execute(&self, signer: &Keypair, options: Options) -> Result<H256, subxt::Error> {
+		utils::sign_and_send(&self.client, signer, &self.payload, options).await
+	}
+
+	pub async fn execute_v2(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, subxt::Error> {
+		utils::sign_and_send_v2(&self.client, signer, &self.payload, options).await
 	}
 
 	pub async fn execute_and_watch_inclusion(

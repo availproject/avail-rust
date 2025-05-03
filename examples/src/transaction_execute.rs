@@ -1,5 +1,5 @@
 use avail::data_availability::{calls::types::SubmitData, events::DataSubmitted};
-use avail_rust::prelude::*;
+use avail_rust::{prelude::*, transaction::utils::*};
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
@@ -10,18 +10,18 @@ pub async fn run() -> Result<(), ClientError> {
 	// dropped or discarded for various reasons. The caller is responsible for querying future
 	// blocks in order to determine the execution status of that transaction.
 	let tx = sdk.tx.data_availability.submit_data(vec![0, 1, 2]);
-	let tx_hash = tx.execute(&account::alice(), Options::new().app_id(1)).await?;
-	println!("Tx Hash: {:?}", tx_hash);
+	let st = tx.execute_v2(&account::alice(), Options::new().app_id(1)).await?;
+	println!("Tx Hash: {:?}", st.tx_hash);
 
-	// Checking if the transaction was included
-	//
-	// It's not necessary to use the builtin watcher. A custom watcher
-	// might yield better results in some cases.
-	let mut watcher = Watcher::new(sdk.client.clone(), tx_hash);
-	watcher.set_options(|opt: &mut WatcherOptions| opt.wait_for = WaitFor::BlockInclusion);
+	let block_id = transaction_maybe_block_id(&sdk.client, &st.tx_extra, &ReceiptMethod::default())
+		.await?
+		.unwrap();
 
-	let res = watcher.run().await?;
-	let res = res.unwrap();
+	let block = sdk.client.block_at(block_id.hash).await?;
+	let res = find_transaction(&sdk.client, st.tx_hash, block_id, &block)
+		.await?
+		.unwrap();
+
 	assert_eq!(res.is_successful(), Some(true));
 
 	// Printout Transaction Details

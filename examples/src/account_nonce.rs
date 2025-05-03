@@ -11,7 +11,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Fetch none via Storage
 	let alice_account = account::account_id_from_str(alice_address)?;
-	let info = account::account_info(&sdk.client, alice_account).await?;
+	let info = account::account_info(&sdk.client, alice_account, None).await?;
 	println!("Nonce: {}", info.nonce);
 
 	Ok(())
