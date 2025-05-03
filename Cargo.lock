@@ -938,6 +938,7 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "primitive-types 0.13.1",
+ "scale-encode",
  "scale-info",
  "serde",
  "serde_json",

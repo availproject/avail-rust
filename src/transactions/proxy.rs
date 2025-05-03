@@ -1,5 +1,5 @@
 use primitive_types::H256;
-use subxt::utils::MultiAddress;
+use subxt_core::utils::MultiAddress;
 
 use crate::{
 	avail::{

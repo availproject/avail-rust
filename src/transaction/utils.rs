@@ -1,8 +1,9 @@
 use super::{Options, TransactionDetails};
 use crate::{account, block::EventRecords, rpc, ABlock, AccountId, Client, WaitFor, H256};
 use log::info;
+use scale_encode::EncodeAsFields;
 use std::time::Duration;
-use subxt::{blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
+use subxt_core::{blocks::StaticExtrinsic, tx::payload::DefaultPayload};
 use subxt_signer::sr25519::Keypair;
 
 use super::{options::CheckedMortality, PopulatedOptions};
