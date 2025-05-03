@@ -1,8 +1,9 @@
+use subxt::config::Header;
+
 use crate::{
 	error::ClientError, rpc::system::account_next_index, AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client,
 	H256,
 };
-use subxt::config::Header;
 
 pub type Params =
 	<<AvailConfig as subxt::Config>::ExtrinsicParams as subxt::config::ExtrinsicParams<AvailConfig>>::Params;
@@ -113,8 +114,7 @@ impl CheckedMortality {
 	}
 
 	pub async fn from_period(period: u64, client: &Client) -> Result<Self, ClientError> {
-		let finalized_hash = client.finalized_block_hash().await?;
-		let header = client.header_at(finalized_hash).await?;
+		let header = client.finalized_block_header().await?;
 		let (block_hash, block_number) = (header.hash(), header.number());
 		Ok(Self {
 			period,
