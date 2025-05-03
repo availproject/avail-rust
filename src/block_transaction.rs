@@ -53,11 +53,11 @@ impl BlockTransactions {
 		self.inner.len()
 	}
 
-	pub fn index(&self, index: usize) -> &BlockTransaction {
+	pub fn get(&self, index: usize) -> &BlockTransaction {
 		&self.inner[index]
 	}
 
-	pub fn index_mut(&mut self, index: usize) -> &mut BlockTransaction {
+	pub fn get_mut(&mut self, index: usize) -> &mut BlockTransaction {
 		&mut self.inner[index]
 	}
 }

@@ -36,7 +36,7 @@ where
 		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
-		let params = options.build().await?;
+		let params = options.build().await;
 		let tx = self
 			.client
 			.online_client
@@ -57,7 +57,7 @@ where
 		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
-		let params = options.build().await?;
+		let params = options.build().await;
 		let tx = self
 			.client
 			.online_client
@@ -84,7 +84,7 @@ where
 		runtime_api::transaction_payment::query_call_fee_details(&self.client, call, None).await
 	}
 
-	pub async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, ClientError> {
+	pub async fn execute(&self, account: &Keypair, options: Options) -> Result<H256, subxt::Error> {
 		utils::sign_and_send(&self.client, account, &self.payload, options).await
 	}
 
@@ -92,22 +92,35 @@ where
 		&self,
 		account: &Keypair,
 		options: Options,
-	) -> Result<TransactionDetails, ClientError> {
-		utils::sign_send_and_watch(&self.client, account, &self.payload, WaitFor::BlockInclusion, options).await
+	) -> Result<TransactionDetails, subxt::Error> {
+		let details =
+			utils::sign_send_and_watch(&self.client, account, &self.payload, WaitFor::BlockInclusion, options).await?;
+
+		let Some(details) = details else {
+			return Err(subxt::Error::Other("No Transaction Details found".into()));
+		};
+
+		Ok(details)
 	}
 
 	pub async fn execute_and_watch_finalization(
 		&self,
 		account: &Keypair,
 		options: Options,
-	) -> Result<TransactionDetails, ClientError> {
-		utils::sign_send_and_watch(
+	) -> Result<TransactionDetails, subxt::Error> {
+		let details = utils::sign_send_and_watch(
 			&self.client,
 			account,
 			&self.payload,
 			WaitFor::BlockFinalization,
 			options,
 		)
-		.await
+		.await?;
+
+		let Some(details) = details else {
+			return Err(subxt::Error::Other("No Transaction Details found".into()));
+		};
+
+		Ok(details)
 	}
 }

@@ -2,6 +2,7 @@ use crate::{
 	block::EventRecords,
 	error::ClientError,
 	rpc::{self, rpc::RpcMethods},
+	transaction::BlockId,
 	ABlock, ABlocksClient, AConstantsClient, AEventsClient, AOnlineClient, AStorageClient, AvailHeader,
 	TransactionState,
 };
@@ -107,11 +108,11 @@ impl Client {
 			value = lock.tx_state_rpc_enabled;
 		}
 
-		return value;
+		value
 	}
 
 	pub fn get_options(&self) -> ClientOptions {
-		self.options.lock().map(|x| x.clone()).unwrap_or_default()
+		self.options.lock().map(|x| *x).unwrap_or_default()
 	}
 
 	pub fn blocks(&self) -> ABlocksClient {
@@ -146,8 +147,7 @@ impl Client {
 	pub async fn best_block_header(&self) -> Result<AvailHeader, subxt::Error> {
 		let header = rpc::chain::get_header(self, None).await?;
 		let Some(header) = header else {
-			let err = std::format!("Best block header not found.");
-			return Err(subxt::Error::Other(err));
+			return Err(subxt::Error::Other("Best block header not found.".into()));
 		};
 		Ok(header)
 	}
@@ -155,8 +155,7 @@ impl Client {
 	pub async fn finalized_block_header(&self) -> Result<AvailHeader, subxt::Error> {
 		let header = self.header_at(self.finalized_block_hash().await?).await?;
 		let Some(header) = header else {
-			let err = std::format!("Finalized block header not found.");
-			return Err(subxt::Error::Other(err));
+			return Err(subxt::Error::Other("Finalized block header not found.".into()));
 		};
 
 		Ok(header)
@@ -169,9 +168,7 @@ impl Client {
 	pub async fn best_block_hash(&self) -> Result<H256, subxt::Error> {
 		let hash = rpc::chain::get_block_hash(self, None).await?;
 		let Some(hash) = hash else {
-			let err = std::format!("Best block hash not found.");
-			let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
-			return Err(err);
+			return Err(subxt::Error::Other("Best block hash not found.".into()));
 		};
 
 		Ok(hash)
@@ -183,7 +180,7 @@ impl Client {
 
 	pub async fn block_number(&self, block_hash: H256) -> Result<Option<u32>, subxt::Error> {
 		let header = rpc::chain::get_header(self, Some(block_hash)).await?;
-		Ok(header.and_then(|x| Some(x.number)))
+		Ok(header.map(|x| x.number))
 	}
 
 	pub async fn best_block_number(&self) -> Result<u32, subxt::Error> {
@@ -199,6 +196,25 @@ impl Client {
 	pub async fn rpc_methods_list(&self) -> Result<RpcMethods, subxt::Error> {
 		let methods = rpc::rpc::methods(self).await?;
 		Ok(methods)
+	}
+
+	// Block Id
+	pub async fn best_block_id(&self) -> Result<BlockId, subxt::Error> {
+		let hash = self.best_block_hash().await?;
+		let height = self.block_number(hash).await?;
+		let Some(height) = height else {
+			return Err(subxt::Error::Other("Best block header not found.".into()));
+		};
+		Ok(BlockId::from((hash, height)))
+	}
+
+	pub async fn finalized_block_id(&self) -> Result<BlockId, subxt::Error> {
+		let hash = self.finalized_block_hash().await?;
+		let height = self.block_number(hash).await?;
+		let Some(height) = height else {
+			return Err(subxt::Error::Other("Finalized block header not found.".into()));
+		};
+		Ok(BlockId::from((hash, height)))
 	}
 
 	pub async fn transaction_state(

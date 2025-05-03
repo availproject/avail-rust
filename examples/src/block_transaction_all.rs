@@ -36,14 +36,14 @@ pub async fn run() -> Result<(), ClientError> {
 	}
 
 	// Convert from Block Transaction to Specific Transaction
-	let da_tx = block_transactions.index(2).decode::<SubmitDataCall>();
+	let da_tx = block_transactions.get(2).decode::<SubmitDataCall>();
 	assert!(da_tx.is_some(), "SubmitDataCall should exist");
 	let da_tx = da_tx.unwrap();
 	let data = to_ascii(da_tx.data.0).unwrap();
 	println!("Data: {}", data);
 
 	// Printout all Transaction Events
-	let tx_events = block_transactions.index(2).events().await;
+	let tx_events = block_transactions.get(2).events().await;
 	assert!(tx_events.is_some(), "Events should exist");
 	let tx_events = tx_events.unwrap();
 	assert_eq!(tx_events.len(), 7, "Event count must be 7");

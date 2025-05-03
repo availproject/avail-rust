@@ -25,7 +25,7 @@ async fn run_app_id() -> Result<(), ClientError> {
 	let block = Block::new(&sdk.client, res.block_hash).await?;
 	let block_txs = block.transactions(Filter::new().tx_hash(res.tx_hash));
 	assert_eq!(block_txs.len(), 1);
-	assert_eq!(block_txs.index(0).app_id(), Some(app_id));
+	assert_eq!(block_txs.get(0).app_id(), Some(app_id));
 
 	println!("Transaction Options App Id finished correctly");
 
@@ -47,7 +47,7 @@ async fn run_nonce() -> Result<(), ClientError> {
 	let block = Block::new(&sdk.client, res.block_hash).await?;
 	let block_txs = block.transactions(Filter::new().tx_hash(res.tx_hash));
 	assert_eq!(block_txs.len(), 1);
-	assert_eq!(block_txs.index(0).nonce(), Some(nonce));
+	assert_eq!(block_txs.get(0).nonce(), Some(nonce));
 
 	println!("Transaction Options Nonce finished correctly");
 
@@ -68,7 +68,7 @@ async fn run_tip() -> Result<(), ClientError> {
 	let block = Block::new(&sdk.client, res.block_hash).await?;
 	let block_txs = block.transactions(Filter::new().tx_hash(res.tx_hash));
 	assert_eq!(block_txs.len(), 1);
-	assert_eq!(block_txs.index(0).tip(), Some(tip));
+	assert_eq!(block_txs.get(0).tip(), Some(tip));
 
 	println!("Transaction Options Tip finished correctly");
 
@@ -90,7 +90,7 @@ async fn run_mortality() -> Result<(), ClientError> {
 	let block_txs = block.transactions(Filter::new().tx_hash(res.tx_hash));
 	assert_eq!(block_txs.len(), 1);
 
-	let actual_mortality = block_txs.index(0).mortality().unwrap();
+	let actual_mortality = block_txs.get(0).mortality().unwrap();
 	let actual_mortality = match actual_mortality {
 		subxt::utils::Era::Mortal { period, phase: _ } => period,
 		_ => panic!("Should not be here"),

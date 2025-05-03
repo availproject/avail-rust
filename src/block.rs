@@ -53,8 +53,7 @@ impl Block {
 	pub async fn from_block_number(client: &Client, block_number: u32) -> Result<Self, ClientError> {
 		let block_hash = rpc::chain::get_block_hash(client, Some(block_number)).await?;
 		let Some(block_hash) = block_hash else {
-			let err = std::format!("block hash not found.");
-			return Err(subxt::Error::Other(err).into());
+			return Err(subxt::Error::Other("block hash not found".into()).into());
 		};
 
 		Self::new(client, block_hash).await
