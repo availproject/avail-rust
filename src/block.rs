@@ -207,7 +207,11 @@ pub async fn fetch_tx_events(transactions: &AExtrinsics, tx_index: u32) -> Resul
 }
 
 pub fn read_app_id(transaction: &AExtrinsicDetails) -> Option<u32> {
-	transaction.signed_extensions()?.find::<CheckAppId>().ok()?.map(|e| e.0)
+	transaction
+		.transaction_extensions()?
+		.find::<CheckAppId>()
+		.ok()?
+		.map(|e| e.0)
 }
 
 pub fn read_multi_address(transaction: &AExtrinsicDetails) -> Option<MultiAddress<AccountId, u32>> {

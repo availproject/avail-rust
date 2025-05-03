@@ -6,9 +6,7 @@ use codec::{Compact, Encode};
 use scale_info::PortableRegistry;
 use subxt_core::{
 	client::ClientState,
-	config::{
-		signed_extensions, Config, ExtrinsicParams, ExtrinsicParamsEncoder, Header, RefineParams, SignedExtension,
-	},
+	config::{transaction_extensions, Config, ExtrinsicParams, ExtrinsicParamsEncoder, Header},
 	error::ExtrinsicParamsError,
 	utils::Era,
 };
@@ -17,8 +15,8 @@ use subxt_core::{
 pub struct CheckAppId(pub crate::AppId);
 
 /// Ideally, we would use avail_core::AppId but we cannot define `RefineParams` for it so we need a wrapper. Crazy
-impl<T: Config> RefineParams<T> for crate::AppId {}
-impl<T: Config> RefineParams<T> for CheckAppId {}
+impl<T: Config> transaction_extensions::Params<T> for crate::AppId {}
+impl<T: Config> transaction_extensions::Params<T> for CheckAppId {}
 
 /// Type used only for decoding extrinsic from blocks.
 pub type OnlyCodecExtra = (
@@ -35,15 +33,15 @@ pub type OnlyCodecExtra = (
 
 /// The default [`super::ExtrinsicParams`] implementation understands common signed extensions
 /// and how to apply them to a given chain.
-pub type DefaultExtrinsicParams<T> = signed_extensions::AnyOf<
+pub type DefaultExtrinsicParams<T> = transaction_extensions::AnyOf<
 	T,
 	(
-		signed_extensions::CheckSpecVersion,
-		signed_extensions::CheckTxVersion,
-		signed_extensions::CheckGenesis<T>,
-		signed_extensions::CheckMortality<T>,
-		signed_extensions::CheckNonce,
-		signed_extensions::ChargeTransactionPayment,
+		transaction_extensions::CheckSpecVersion,
+		transaction_extensions::CheckTxVersion,
+		transaction_extensions::CheckGenesis<T>,
+		transaction_extensions::CheckMortality<T>,
+		transaction_extensions::CheckNonce,
+		transaction_extensions::ChargeTransactionPayment,
 		CheckAppId,
 	),
 >;
@@ -137,19 +135,21 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 	/// Build the extrinsic parameters.
 	pub fn build(self) -> <DefaultExtrinsicParams<T> as ExtrinsicParams<T>>::Params {
 		let check_mortality_params = if let Some(mortality) = self.mortality {
-			signed_extensions::CheckMortalityParams::mortal(
+			transaction_extensions::CheckMortalityParams::mortal_from_unchecked(
 				mortality.period,
 				mortality.checkpoint_number,
 				mortality.checkpoint_hash,
 			)
 		} else {
-			signed_extensions::CheckMortalityParams::immortal()
+			transaction_extensions::CheckMortalityParams::immortal()
 		};
 
-		let charge_transaction_params = signed_extensions::ChargeTransactionPaymentParams::tip(self.tip);
+		let charge_transaction_params = transaction_extensions::ChargeTransactionPaymentParams::tip(self.tip);
 
-		let check_nonce_params = signed_extensions::CheckNonceParams(self.nonce);
-
+		let check_nonce_params = match self.nonce {
+			Some(x) => transaction_extensions::CheckNonceParams::with_nonce(x),
+			None => transaction_extensions::CheckNonceParams::from_chain(),
+		};
 		(
 			(),
 			(),
@@ -163,14 +163,14 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 }
 
 impl ExtrinsicParamsEncoder for CheckAppId {
-	fn encode_extra_to(&self, v: &mut Vec<u8>) {
+	fn encode_value_to(&self, v: &mut Vec<u8>) {
 		Compact::<u32>(self.0 .0 .0).encode_to(v);
 	}
 
-	fn encode_additional_to(&self, _: &mut Vec<u8>) {}
+	fn encode_implicit_to(&self, _: &mut Vec<u8>) {}
 }
 
-impl<T: Config> SignedExtension<T> for CheckAppId {
+impl<T: Config> transaction_extensions::TransactionExtension<T> for CheckAppId {
 	type Decoded = Compact<u32>;
 
 	fn matches(identifier: &str, _type_id: u32, _types: &PortableRegistry) -> bool {

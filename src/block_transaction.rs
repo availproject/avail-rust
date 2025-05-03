@@ -1,11 +1,11 @@
 use crate::{
 	block::{read_account_id, read_multi_address, EventRecords},
 	primitives::block::extrinsics_params::CheckAppId,
-	AExtrinsicDetails, AExtrinsicSignedExtensions, AccountId,
+	AExtrinsicDetails, AExtrinsicTransactionExtensions, AccountId,
 };
 use codec::Decode;
 use primitive_types::H256;
-use subxt::{blocks::StaticExtrinsic, config::signed_extensions, utils::MultiAddress};
+use subxt::{blocks::StaticExtrinsic, config::transaction_extensions, utils::MultiAddress};
 
 #[derive(Debug, Clone, Default)]
 pub struct Filter {
@@ -135,8 +135,8 @@ impl BlockTransaction {
 		self.inner.index()
 	}
 
-	pub fn signed(&self) -> Option<AExtrinsicSignedExtensions> {
-		self.inner.signed_extensions()
+	pub fn signed(&self) -> Option<AExtrinsicTransactionExtensions> {
+		self.inner.transaction_extensions()
 	}
 
 	pub async fn events(&self) -> Option<EventRecords> {
@@ -165,7 +165,7 @@ impl BlockTransaction {
 	pub fn tip(&self) -> Option<u128> {
 		let signed = self.signed()?;
 		signed
-			.find::<signed_extensions::ChargeTransactionPayment>()
+			.find::<transaction_extensions::ChargeTransactionPayment>()
 			.ok()?
 			.map(|e| e.tip())
 	}
@@ -185,7 +185,10 @@ impl BlockTransaction {
 
 	pub fn nonce(&self) -> Option<u32> {
 		let signed = self.signed()?;
-		signed.find::<signed_extensions::CheckNonce>().ok()?.map(|e| e as u32)
+		signed
+			.find::<transaction_extensions::CheckNonce>()
+			.ok()?
+			.map(|e| e as u32)
 	}
 
 	pub fn decode<E: StaticExtrinsic>(&self) -> Option<E> {
@@ -222,8 +225,8 @@ impl<E: StaticExtrinsic> StaticBlockTransaction<E> {
 		self.inner.index()
 	}
 
-	pub fn signed(&self) -> Option<AExtrinsicSignedExtensions> {
-		self.inner.signed_extensions()
+	pub fn signed(&self) -> Option<AExtrinsicTransactionExtensions> {
+		self.inner.transaction_extensions()
 	}
 
 	pub async fn events(&self) -> Option<EventRecords> {
@@ -252,7 +255,7 @@ impl<E: StaticExtrinsic> StaticBlockTransaction<E> {
 	pub fn tip(&self) -> Option<u128> {
 		let signed = self.signed()?;
 		signed
-			.find::<signed_extensions::ChargeTransactionPayment>()
+			.find::<transaction_extensions::ChargeTransactionPayment>()
 			.ok()?
 			.map(|e| e.tip())
 	}
@@ -272,6 +275,9 @@ impl<E: StaticExtrinsic> StaticBlockTransaction<E> {
 
 	pub fn nonce(&self) -> Option<u32> {
 		let signed = self.signed()?;
-		signed.find::<signed_extensions::CheckNonce>().ok()?.map(|e| e as u32)
+		signed
+			.find::<transaction_extensions::CheckNonce>()
+			.ok()?
+			.map(|e| e as u32)
 	}
 }

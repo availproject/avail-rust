@@ -6,7 +6,7 @@ use jsonrpsee::{
 	http_client::HttpClient as JsonHttpClient,
 };
 use serde_json::value::RawValue;
-use subxt::{backend::rpc::RpcClientT, error::RpcError};
+use subxt::backend::rpc::RpcClientT;
 
 pub struct Params(Option<Box<RawValue>>);
 
@@ -35,11 +35,7 @@ impl RpcClientT for HttpClient {
 		params: Option<Box<RawValue>>,
 	) -> subxt::backend::rpc::RawRpcFuture<'a, Box<RawValue>> {
 		Box::pin(async move {
-			let res = self
-				.0
-				.request(method, Params(params))
-				.await
-				.map_err(|e| RpcError::ClientError(Box::new(e)))?;
+			let res = self.0.request(method, Params(params)).await?;
 			Ok(res)
 		})
 	}
@@ -51,8 +47,9 @@ impl RpcClientT for HttpClient {
 		_unsub: &'a str,
 	) -> subxt::backend::rpc::RawRpcFuture<'a, subxt::backend::rpc::RawRpcSubscription> {
 		Box::pin(async move {
-			let error = Box::new(JsonClientError::HttpNotImplemented);
-			Err(RpcError::ClientError(error))
+			Err(subxt::ext::subxt_rpcs::Error::Client(Box::new(
+				JsonClientError::HttpNotImplemented,
+			)))
 		})
 	}
 }

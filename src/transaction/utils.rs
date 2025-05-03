@@ -25,23 +25,8 @@ pub async fn sign_and_send<T>(
 where
 	T: StaticExtrinsic + EncodeAsFields,
 {
-	let account_id = signer.public_key().to_account_id();
-	let options = options.build(client, &account_id).await?;
-	let params = options.build().await;
-
-	if params.6 .0 .0 != 0 && (call.pallet_name() != "DataAvailability" || call.call_name() != "submit_data") {
-		return Err(subxt::Error::Other(
-			"Transaction is not compatible with non-zero AppIds".into(),
-		));
-	}
-
-	let tx_client = client.online_client.tx();
-	let signed_call = tx_client.create_signed(call, signer, params).await?;
-	let extrinsic = signed_call.encoded();
-	let tx_hash = rpc::author::submit_extrinsic(client, extrinsic).await?;
-	info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_number, options.mortality.period, options.nonce, account_id);
-
-	Ok(tx_hash)
+	let st = sign_and_send_v2(client, signer, call, options).await?;
+	Ok(st.tx_hash)
 }
 
 pub async fn sign_and_send_v2<T>(
@@ -63,7 +48,7 @@ where
 		));
 	}
 
-	let tx_client = client.online_client.tx();
+	let mut tx_client = client.online_client.tx();
 	let signed_call = tx_client.create_signed(call, signer, params).await?;
 	let extrinsic = signed_call.encoded();
 	let tx_hash = rpc::author::submit_extrinsic(client, extrinsic).await?;
@@ -203,7 +188,7 @@ pub async fn find_transaction(
 		}
 	}
 
-	return Ok(None);
+	Ok(None)
 }
 
 pub async fn transaction_maybe_block_id(
