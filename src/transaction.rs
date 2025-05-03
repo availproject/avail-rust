@@ -250,30 +250,12 @@ impl TransactionReceipt {
 	}
 
 	pub async fn block_state(&self) -> Result<BlockState, subxt::Error> {
-		block_state(&self.client, self.block_id).await
+		self.client.block_state(self.block_id).await
 	}
 
 	pub async fn tx_events(&self) -> Result<(), ()> {
 		unimplemented!()
 	}
-}
-
-pub async fn block_state(client: &Client, block_id: BlockId) -> Result<BlockState, subxt::Error> {
-	let real_block_hash = client.block_hash(block_id.height).await?;
-	let Some(real_block_hash) = real_block_hash else {
-		return Ok(BlockState::DoesNotExist);
-	};
-
-	let finalized_block_height = client.finalized_block_height().await?;
-	if block_id.height > finalized_block_height {
-		return Ok(BlockState::Included);
-	}
-
-	if block_id.hash != real_block_hash {
-		return Ok(BlockState::Discarded);
-	}
-
-	Ok(BlockState::Finalized)
 }
 
 pub async fn transaction_receipt(
@@ -286,7 +268,8 @@ pub async fn transaction_receipt(
 		return Ok(None);
 	};
 
-	let Some(tx_location) = transaction_inside_block(&client, tx_hash, &block_id, method).await? else {
+	let block = get_new_or_cached_block(&client, &block_id).await?;
+	let Some(tx_location) = block.has_transaction(tx_hash) else {
 		return Ok(None);
 	};
 
@@ -301,39 +284,28 @@ pub async fn transaction_receipt(
 }
 
 /// TODO
-pub async fn transaction_inside_block(
-	client: &Client,
-	tx_hash: H256,
-	block_id: &BlockId,
-	method: &ReceiptMethod,
-) -> Result<Option<TransactionLocation>, subxt::Error> {
-	let mut block = None;
+pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Result<Arc<ChainBlock>, subxt::Error> {
 	if let Ok(cache) = client.cache.lock() {
-		if let Some(cached_block) = &cache.last_fetched_block {
-			if cached_block.0 == block_id.hash {
-				block = Some(cached_block.1.clone())
-			}
+		if let Some(block) = cache.chain_blocks_cache.find(block_id.hash) {
+			return Ok(block);
 		}
 	}
 
-	let block: Arc<ChainBlock> = if let Some(block) = block {
-		block
-	} else {
-		let block = client.block(block_id.hash).await?;
-		let Some(block) = block else {
-			let err = std::format!("{}", block_id.hash);
-			let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
-			return Err(err);
-		};
-		let block = Arc::new(block);
-		if let Ok(mut cache) = client.cache.lock() {
-			cache.last_fetched_block = Some((block_id.hash, block.clone()))
-		}
-
-		block
+	let block = client.block(block_id.hash).await?;
+	let Some(block) = block else {
+		let err = std::format!("{}", block_id.hash);
+		let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
+		return Err(err);
 	};
+	let block = Arc::new(block);
+	if let Ok(mut cache) = client.cache.lock() {
+		if let Some(block) = cache.chain_blocks_cache.find(block_id.hash) {
+			return Ok(block);
+		}
+		cache.chain_blocks_cache.push((block_id.hash, block.clone()));
+	}
 
-	Ok(block.has_transaction(tx_hash))
+	Ok(block)
 }
 
 /// TODO
@@ -347,14 +319,7 @@ pub async fn transaction_maybe_block_id(
 			true => transaction_maybe_block_id_best_block(client, tx_extra).await,
 			false => transaction_maybe_block_id_finalized_block(client, tx_extra).await,
 		},
-		ReceiptMethod::Blocks {
-			sleep_duration,
-			use_best_block,
-		} => todo!(),
-		ReceiptMethod::RPCTransactionOverview {
-			sleep_duration,
-			use_best_block,
-		} => todo!(),
+		_ => unimplemented!(),
 	}
 }
 
@@ -450,7 +415,7 @@ pub async fn transaction_maybe_block_id_best_block(
 #[derive(Debug, Clone, Copy)]
 pub struct Options {
 	pub app_id: Option<u32>,
-	pub mortality: Option<u64>,
+	pub mortality: Option<MortalityOption>,
 	pub nonce: Option<u32>,
 	pub tip: Option<u128>,
 }
@@ -470,7 +435,7 @@ impl Options {
 		self
 	}
 
-	pub fn mortality(mut self, value: u64) -> Self {
+	pub fn mortality(mut self, value: MortalityOption) -> Self {
 		self.mortality = Some(value);
 		self
 	}
@@ -492,8 +457,11 @@ impl Options {
 			Some(x) => x as u64,
 			None => client.rpc_system_account_next_index(account_id.to_string()).await? as u64,
 		};
-		let period = self.mortality.unwrap_or(32);
-		let mortality = Mortality::from_period(client, period).await?;
+		let mortality = match &self.mortality {
+			Some(MortalityOption::Period(period)) => Mortality::from_period(client, *period).await?,
+			Some(MortalityOption::Full(mortality)) => mortality.clone(),
+			None => Mortality::from_period(client, 32).await?,
+		};
 
 		Ok(PopulatedOptions {
 			app_id,
@@ -533,6 +501,12 @@ impl PopulatedOptions {
 
 		builder.build()
 	}
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum MortalityOption {
+	Period(u64),
+	Full(Mortality),
 }
 
 #[derive(Debug, Clone, Copy)]

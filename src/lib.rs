@@ -37,17 +37,17 @@ pub use sdk::{AccountIdExt, H256Ext, SecretUriExt, SDK};
 pub use subxt::{self, config::polkadot::U256};
 pub use subxt_signer::{self, sr25519::Keypair, SecretUri};
 pub use transaction::{
-	BlockId, BlockState, Options, PopulatedOptions, ReceiptMethod, SubmittableTransaction, SubmittedTransaction,
-	TransactionExtra, TransactionLocation, TransactionReceipt,
+	BlockId, BlockState, MortalityOption, Options, PopulatedOptions, ReceiptMethod, SubmittableTransaction,
+	SubmittedTransaction, TransactionExtra, TransactionLocation, TransactionReceipt,
 };
 
 pub mod prelude {
 	pub use super::{
 		account, avail, avail::runtime_types::bounded_collections::bounded_vec::BoundedVec, avail_core, config::*,
 		error::ClientError, hex, kate_recovery, primitives, subxt, subxt_signer, AccountId, AccountIdExt, BlockId,
-		BlockState, Client, ClientOptions, H256Ext, Keypair, MultiAddress, Options, Perbill, PopulatedOptions,
-		ReceiptMethod, SecretUri, SecretUriExt, SubmittableTransaction, SubmittedTransaction, TransactionExtra,
-		TransactionLocation, TransactionReceipt, H256, SDK, U256,
+		BlockState, Client, ClientOptions, H256Ext, Keypair, MortalityOption, MultiAddress, Options, Perbill,
+		PopulatedOptions, ReceiptMethod, SecretUri, SecretUriExt, SubmittableTransaction, SubmittedTransaction,
+		TransactionExtra, TransactionLocation, TransactionReceipt, H256, SDK, U256,
 	};
 
 	#[cfg(feature = "native")]

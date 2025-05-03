@@ -1,13 +1,29 @@
 use std::time::Duration;
 
-use avail_rust::{prelude::*, transaction::block_state};
+use avail_rust::prelude::*;
 use tokio::time::sleep;
 
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
-	let account = account::alice();
+	let s = sdk.clone();
+	let t1 = tokio::spawn(async move { task(s, account::alice(), false).await });
+	let s = sdk.clone();
+	let t2 = tokio::spawn(async move { task(s, account::bob(), true).await });
+	let s = sdk.clone();
+	let t3 = tokio::spawn(async move { task(s, account::charlie(), true).await });
+	let s = sdk.clone();
+	let t4 = tokio::spawn(async move { task(s, account::dave(), true).await });
 
+	t1.await.unwrap()?;
+	t2.await.unwrap()?;
+	t3.await.unwrap()?;
+	t4.await.unwrap()?;
+
+	Ok(())
+}
+
+async fn task(sdk: SDK, account: Keypair, _d: bool) -> Result<(), ClientError> {
 	// Data Submission
 	let data = String::from("My Data").into_bytes();
 	let options = Options::new().app_id(2);
@@ -20,6 +36,7 @@ pub async fn run() -> Result<(), ClientError> {
 	// a) congestion could force the transaction to be dropped
 	// b) the transaction could be dropped because we replaced it
 	// c) it was so far behind in the queue that it never got the chance to be executed so it got dropped (mortality)
+
 	'outer: loop {
 		// TransactionReceipt -> Block height, Block hash, Transaction hash, Transaction index, and Transaction extra.
 		// If None it means that the transaction was dropped. This is guaranteed***(pruning could mess this up).

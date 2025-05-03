@@ -37,7 +37,7 @@ mod validator;
 
 use avail_rust::{error::ClientError, SDK};
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), ClientError> {
 	SDK::enable_logging();
 

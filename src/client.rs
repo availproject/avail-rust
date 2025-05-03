@@ -3,7 +3,7 @@ use crate::{
 	client_rpc::ChainBlock,
 	error::ClientError,
 	transaction::{BlockId, SubmittedTransaction},
-	AConstantsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt, AvailHeader, Options, H256,
+	AConstantsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt, AvailHeader, BlockState, Options, H256,
 };
 use log::info;
 use std::{fmt::Debug, sync::Arc};
@@ -33,9 +33,51 @@ pub struct ClientOptions {
 type SharedClientOptions = Arc<std::sync::Mutex<ClientOptions>>;
 type SharedCache = Arc<std::sync::Mutex<Cache>>;
 
+const MAX_CHAIN_BLOCKS: usize = 3;
+#[derive(Clone)]
+pub struct CachedChainBlocks {
+	blocks: [Option<(H256, Arc<ChainBlock>)>; MAX_CHAIN_BLOCKS],
+	ptr: usize,
+}
+
+impl CachedChainBlocks {
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub fn find(&self, block_hash: H256) -> Option<Arc<ChainBlock>> {
+		for value in self.blocks.iter() {
+			if let Some((hash, block)) = value {
+				if *hash == block_hash {
+					return Some(block.clone());
+				}
+			}
+		}
+
+		None
+	}
+
+	pub fn push(&mut self, value: (H256, Arc<ChainBlock>)) {
+		self.blocks[self.ptr] = Some(value);
+		self.ptr += 1;
+		if self.ptr >= MAX_CHAIN_BLOCKS {
+			self.ptr = 0;
+		}
+	}
+}
+
+impl Default for CachedChainBlocks {
+	fn default() -> Self {
+		Self {
+			blocks: [None, None, None],
+			ptr: 0,
+		}
+	}
+}
+
 #[derive(Default)]
 pub struct Cache {
-	pub last_fetched_block: Option<(H256, Arc<ChainBlock>)>,
+	pub chain_blocks_cache: CachedChainBlocks,
 }
 
 impl Debug for Cache {
@@ -226,6 +268,26 @@ impl Client {
 		storage.fetch_or_default(&address).await
 	}
 
+	// Block State
+	pub async fn block_state(&self, block_id: BlockId) -> Result<BlockState, subxt::Error> {
+		let real_block_hash = self.block_hash(block_id.height).await?;
+		let Some(real_block_hash) = real_block_hash else {
+			return Ok(BlockState::DoesNotExist);
+		};
+
+		let finalized_block_height = self.finalized_block_height().await?;
+		if block_id.height > finalized_block_height {
+			return Ok(BlockState::Included);
+		}
+
+		if block_id.hash != real_block_hash {
+			return Ok(BlockState::Discarded);
+		}
+
+		Ok(BlockState::Finalized)
+	}
+
+	// Subxt
 	pub fn subxt_storage(&self) -> AStorageClient {
 		self.online_client.storage()
 	}
