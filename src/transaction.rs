@@ -1,6 +1,6 @@
 use crate::{
 	client_rpc::ChainBlock,
-	error::ClientError,
+	error::{ClientError, RpcError},
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
 	AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
 };
@@ -94,11 +94,7 @@ where
 			.await
 	}
 
-	pub async fn sign_and_submit(
-		&self,
-		signer: &Keypair,
-		options: Options,
-	) -> Result<SubmittedTransaction, subxt::Error> {
+	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, RpcError> {
 		self.client.sign_and_submit(signer, &self.payload, options).await
 	}
 }
@@ -177,11 +173,11 @@ impl SubmittedTransaction {
 		}
 	}
 
-	pub async fn receipt(&self, method: ReceiptMethod) -> Result<Option<TransactionReceipt>, subxt::Error> {
+	pub async fn receipt(&self, method: ReceiptMethod) -> Result<Option<TransactionReceipt>, RpcError> {
 		transaction_receipt(self.client.clone(), self.tx_hash, self.tx_extra.clone(), &method).await
 	}
 
-	pub async fn transaction_overview(&self) -> Result<(), subxt::Error> {
+	pub async fn transaction_overview(&self) -> Result<(), RpcError> {
 		unimplemented!()
 	}
 }
@@ -226,7 +222,7 @@ impl TransactionReceipt {
 		}
 	}
 
-	pub async fn block_state(&self) -> Result<BlockState, subxt::Error> {
+	pub async fn block_state(&self) -> Result<BlockState, RpcError> {
 		self.client.block_state(self.block_id).await
 	}
 
@@ -240,7 +236,7 @@ pub async fn transaction_receipt(
 	tx_hash: H256,
 	tx_extra: TransactionExtra,
 	method: &ReceiptMethod,
-) -> Result<Option<TransactionReceipt>, subxt::Error> {
+) -> Result<Option<TransactionReceipt>, RpcError> {
 	let Some(block_id) = transaction_maybe_block_id(&client, &tx_extra, method).await? else {
 		return Ok(None);
 	};
@@ -290,7 +286,7 @@ pub async fn transaction_maybe_block_id(
 	client: &Client,
 	tx_extra: &TransactionExtra,
 	method: &ReceiptMethod,
-) -> Result<Option<BlockId>, subxt::Error> {
+) -> Result<Option<BlockId>, RpcError> {
 	match method {
 		ReceiptMethod::Default { use_best_block } => match use_best_block {
 			true => transaction_maybe_block_id_best_block(client, tx_extra).await,
@@ -304,10 +300,9 @@ pub async fn transaction_maybe_block_id(
 pub async fn transaction_maybe_block_id_finalized_block(
 	client: &Client,
 	tx_extra: &TransactionExtra,
-) -> Result<Option<BlockId>, subxt::Error> {
+) -> Result<Option<BlockId>, RpcError> {
 	let (nonce, account_id, mortality) = (tx_extra.nonce, &tx_extra.account_id, &tx_extra.mortality);
 	let mortality_ends_height = mortality.block_height + mortality.period as u32;
-	let address = std::format!("{}", tx_extra.account_id);
 
 	let mut next_block_height = mortality.block_height + 1;
 	let mut block_height = client.finalized_block_height().await?;
@@ -321,12 +316,10 @@ pub async fn transaction_maybe_block_id_finalized_block(
 		}
 
 		let Some(next_block_hash) = client.block_hash(next_block_height).await? else {
-			let err = std::format!("{}", next_block_height);
-			let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
-			return Err(err);
+			return Err(std::format!("Block hash not found. Height: {}", next_block_height).into());
 		};
 
-		let state_nonce = client.nonce_state(&address, next_block_hash).await?;
+		let state_nonce = client.nonce_state(&account_id, next_block_hash).await?;
 		if state_nonce > nonce {
 			info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 			return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
@@ -343,10 +336,9 @@ pub async fn transaction_maybe_block_id_finalized_block(
 pub async fn transaction_maybe_block_id_best_block(
 	client: &Client,
 	tx_extra: &TransactionExtra,
-) -> Result<Option<BlockId>, subxt::Error> {
+) -> Result<Option<BlockId>, RpcError> {
 	let (nonce, account_id, mortality) = (tx_extra.nonce, &tx_extra.account_id, &tx_extra.mortality);
 	let mortality_ends_height = mortality.block_height + mortality.period as u32;
-	let address = std::format!("{}", tx_extra.account_id);
 
 	let mut next_block_height = mortality.block_height + 1;
 	let mut next_block_hash = H256::zero();
@@ -362,7 +354,7 @@ pub async fn transaction_maybe_block_id_best_block(
 
 		if next_block_height == (block_id.height + 1) {
 			next_block_hash = block_id.hash;
-			let state_nonce = client.nonce_state(&address, next_block_hash).await?;
+			let state_nonce = client.nonce_state(&account_id, next_block_hash).await?;
 			if state_nonce > nonce {
 				info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 				return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
@@ -370,13 +362,11 @@ pub async fn transaction_maybe_block_id_best_block(
 			info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?})found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 		} else {
 			let Some(hash) = client.block_hash(next_block_height).await? else {
-				let err = std::format!("{}", next_block_height);
-				let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
-				return Err(err);
+				return Err(std::format!("Block hash not found. Height: {}", next_block_height).into());
 			};
 
 			next_block_hash = hash;
-			let state_nonce = client.nonce_state(&address, next_block_hash).await?;
+			let state_nonce = client.nonce_state(&account_id, next_block_hash).await?;
 			if state_nonce > nonce {
 				info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 				return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
@@ -427,12 +417,12 @@ impl Options {
 		self
 	}
 
-	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<PopulatedOptions, subxt::Error> {
+	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<PopulatedOptions, RpcError> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {
 			Some(x) => x as u64,
-			None => client.rpc_system_account_next_index(account_id.to_string()).await? as u64,
+			None => client.rpc_system_account_next_index(&account_id.to_string()).await? as u64,
 		};
 		let mortality = match &self.mortality {
 			Some(MortalityOption::Period(period)) => Mortality::from_period(client, *period).await?,
@@ -501,7 +491,7 @@ impl Mortality {
 		}
 	}
 
-	pub async fn from_period(client: &Client, period: u64) -> Result<Self, subxt::Error> {
+	pub async fn from_period(client: &Client, period: u64) -> Result<Self, RpcError> {
 		let header = client.finalized_block_header().await?;
 		let (block_hash, block_height) = (header.hash(), header.number());
 		Ok(Self {

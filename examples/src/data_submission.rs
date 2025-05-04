@@ -6,6 +6,11 @@ use tokio::time::sleep;
 pub async fn run() -> Result<(), ClientError> {
 	let sdk = SDK::new(SDK::local_endpoint()).await?;
 
+	let account_id = account::alice().public_key().to_account_id();
+	let a = sdk.client.nonce(&std::format!("{}", account_id)).await?;
+	dbg!(a);
+	unimplemented!();
+
 	let s = sdk.clone();
 	let t1 = tokio::spawn(async move { task(s, account::alice(), false).await });
 	let s = sdk.clone();

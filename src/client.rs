@@ -1,9 +1,9 @@
 use crate::{
 	avail::{runtime_types::pallet_balances::types::AccountData, system::storage::types::account::Account},
 	client_rpc::ChainBlock,
-	error::ClientError,
+	error::{ClientError, RpcError},
 	transaction::{BlockId, SubmittedTransaction},
-	AConstantsClient, AOnlineClient, AStorageClient, AccountId, AccountIdExt, AvailHeader, BlockState, Options, H256,
+	AConstantsClient, AOnlineClient, AStorageClient, AccountId, AvailHeader, BlockState, Options, H256,
 };
 use log::info;
 use std::{fmt::Debug, sync::Arc};
@@ -97,164 +97,150 @@ impl Client {
 	}
 
 	// Header
-	pub async fn header(&self, at: H256) -> Result<Option<AvailHeader>, subxt::Error> {
+	pub async fn header(&self, at: H256) -> Result<Option<AvailHeader>, subxt_rpcs::Error> {
 		self.rpc_chain_get_header(Some(at)).await
 	}
 
-	pub async fn best_block_header(&self) -> Result<AvailHeader, subxt::Error> {
+	pub async fn best_block_header(&self) -> Result<AvailHeader, RpcError> {
 		let header = self.header(self.best_block_hash().await?).await?;
 		let Some(header) = header else {
-			let err = std::format!("Best block header not found.");
-			return Err(subxt::Error::Other(err));
+			return Err("Best block header not found.".into());
 		};
 		Ok(header)
 	}
 
-	pub async fn finalized_block_header(&self) -> Result<AvailHeader, subxt::Error> {
+	pub async fn finalized_block_header(&self) -> Result<AvailHeader, RpcError> {
 		let header = self.header(self.finalized_block_hash().await?).await?;
 		let Some(header) = header else {
-			let err = std::format!("Finalized block header not found.");
-			return Err(subxt::Error::Other(err));
+			return Err("Finalized block header not found.".into());
 		};
 		Ok(header)
 	}
 
 	// (RPC) Block
-	pub async fn block(&self, at: H256) -> Result<Option<ChainBlock>, subxt::Error> {
+	pub async fn block(&self, at: H256) -> Result<Option<ChainBlock>, subxt_rpcs::Error> {
 		self.rpc_chain_get_block(Some(at)).await
 	}
 
-	pub async fn best_block(&self) -> Result<ChainBlock, subxt::Error> {
+	pub async fn best_block(&self) -> Result<ChainBlock, RpcError> {
 		let block = self.block(self.best_block_hash().await?).await?;
 		let Some(block) = block else {
-			let err = std::format!("Best block not found.");
-			return Err(subxt::Error::Other(err));
+			return Err("Best block not found.".into());
 		};
 		Ok(block)
 	}
 
-	pub async fn finalized_block(&self) -> Result<ChainBlock, subxt::Error> {
+	pub async fn finalized_block(&self) -> Result<ChainBlock, RpcError> {
 		let block = self.block(self.finalized_block_hash().await?).await?;
 		let Some(block) = block else {
-			let err = std::format!("Finalized block not found.");
-			return Err(subxt::Error::Other(err));
+			return Err("Finalized block not found.".into());
 		};
 		Ok(block)
 	}
 
 	// Block Hash
-	pub async fn block_hash(&self, block_height: u32) -> Result<Option<H256>, subxt::Error> {
+	pub async fn block_hash(&self, block_height: u32) -> Result<Option<H256>, subxt_rpcs::Error> {
 		self.rpc_chain_get_block_hash(Some(block_height)).await
 	}
 
-	pub async fn best_block_hash(&self) -> Result<H256, subxt::Error> {
+	pub async fn best_block_hash(&self) -> Result<H256, RpcError> {
 		let hash = self.rpc_chain_get_block_hash(None).await?;
 		let Some(hash) = hash else {
-			let err = std::format!("Best block hash not found.");
-			let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
-			return Err(err);
+			return Err("Best block hash not found.".into());
 		};
 		Ok(hash)
 	}
 
-	pub async fn finalized_block_hash(&self) -> Result<H256, subxt::Error> {
+	pub async fn finalized_block_hash(&self) -> Result<H256, subxt_rpcs::Error> {
 		self.rpc_chain_get_finalized_head().await
 	}
 
 	// Block Height
-	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, subxt::Error> {
+	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, subxt_rpcs::Error> {
 		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
-		Ok(header.and_then(|x| Some(x.number)))
+		Ok(header.map(|x| x.number))
 	}
 
-	pub async fn best_block_height(&self) -> Result<u32, subxt::Error> {
-		let header = self.best_block_header().await?;
-		Ok(header.number)
+	pub async fn best_block_height(&self) -> Result<u32, RpcError> {
+		self.best_block_header().await.map(|x| x.number)
 	}
 
-	pub async fn finalized_block_height(&self) -> Result<u32, subxt::Error> {
-		let header = self.finalized_block_header().await?;
-		Ok(header.number)
+	pub async fn finalized_block_height(&self) -> Result<u32, RpcError> {
+		self.finalized_block_header().await.map(|x| x.number)
 	}
 
 	// Block Id
-	pub async fn best_block_id(&self) -> Result<BlockId, subxt::Error> {
+	pub async fn best_block_id(&self) -> Result<BlockId, RpcError> {
 		let hash = self.best_block_hash().await?;
 		let height = self.block_height(hash).await?;
 		let Some(height) = height else {
-			let err = std::format!("Best block header not found.");
-			return Err(subxt::Error::Other(err));
+			return Err("Best block header not found.".into());
 		};
 		Ok(BlockId::from((hash, height)))
 	}
 
-	pub async fn finalized_block_id(&self) -> Result<BlockId, subxt::Error> {
+	pub async fn finalized_block_id(&self) -> Result<BlockId, RpcError> {
 		let hash = self.finalized_block_hash().await?;
 		let height = self.block_height(hash).await?;
 		let Some(height) = height else {
-			let err = std::format!("Finalized block header not found.");
-			return Err(subxt::Error::Other(err));
+			return Err("Finalized block header not found.".into());
 		};
 		Ok(BlockId::from((hash, height)))
 	}
 
 	// Nonce
-	pub async fn nonce(&self, address: &str) -> Result<u32, subxt::Error> {
-		let account = AccountId::from_str(address)?;
-		self.rpc_system_account_next_index(account.to_string()).await
+	pub async fn nonce(&self, address: &str) -> Result<u32, subxt_rpcs::Error> {
+		self.rpc_system_account_next_index(address).await
 	}
 
-	pub async fn nonce_state(&self, address: &str, block_hash: H256) -> Result<u32, subxt::Error> {
-		let account = AccountId::from_str(address)?;
-		let block = self.online_client.blocks().at(block_hash).await?;
-
-		Ok(block.account_nonce(&account).await? as u32)
+	pub async fn nonce_state(&self, account_id: &AccountId, block_hash: H256) -> Result<u32, RpcError> {
+		self.account_info(account_id, block_hash).await.map(|x| x.nonce)
 	}
 
-	pub async fn best_block_nonce(&self, address: &str) -> Result<u32, subxt::Error> {
-		self.nonce_state(address, self.best_block_hash().await?).await
+	pub async fn best_block_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
+		self.best_block_account_info(account_id).await.map(|v| v.nonce)
 	}
 
-	pub async fn finalized_block_nonce(&self, address: &str) -> Result<u32, subxt::Error> {
-		self.nonce_state(address, self.finalized_block_hash().await?).await
+	pub async fn finalized_block_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
+		self.finalized_block_account_info(account_id).await.map(|v| v.nonce)
 	}
 
 	// Balance
-	pub async fn balance(&self, account_id: AccountId, at: H256) -> Result<AccountData<u128>, subxt::Error> {
-		Ok(self.account_info(account_id, at).await?.data)
+	pub async fn balance(&self, account_id: &AccountId, at: H256) -> Result<AccountData<u128>, RpcError> {
+		self.account_info(account_id, at).await.map(|x| x.data)
 	}
 
-	pub async fn best_block_balance(&self, account_id: AccountId) -> Result<AccountData<u128>, subxt::Error> {
-		Ok(self.best_block_account_info(account_id).await?.data)
+	pub async fn best_block_balance(&self, account_id: &AccountId) -> Result<AccountData<u128>, RpcError> {
+		self.best_block_account_info(account_id).await.map(|x| x.data)
 	}
 
-	pub async fn finalized_block_balance(&self, account_id: AccountId) -> Result<AccountData<u128>, subxt::Error> {
-		Ok(self.finalized_block_account_info(account_id).await?.data)
+	pub async fn finalized_block_balance(&self, account_id: &AccountId) -> Result<AccountData<u128>, RpcError> {
+		self.finalized_block_account_info(account_id).await.map(|x| x.data)
 	}
 
 	// Account Info (nonce, balance, ...)
-	pub async fn account_info(&self, account_id: AccountId, at: H256) -> Result<Account, subxt::Error> {
+	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<Account, RpcError> {
 		let storage = self.subxt_storage().at(at);
 		let address = crate::avail::storage().system().account(account_id);
-		storage.fetch_or_default(&address).await
+		Ok(storage.fetch_or_default(&address).await?)
 	}
 
-	pub async fn best_block_account_info(&self, account_id: AccountId) -> Result<Account, subxt::Error> {
+	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<Account, RpcError> {
 		let at = self.best_block_hash().await?;
 		let storage = self.subxt_storage().at(at);
 		let address = crate::avail::storage().system().account(account_id);
-		storage.fetch_or_default(&address).await
+		Ok(storage.fetch_or_default(&address).await?)
 	}
 
-	pub async fn finalized_block_account_info(&self, account_id: AccountId) -> Result<Account, subxt::Error> {
+	pub async fn finalized_block_account_info(&self, account_id: &AccountId) -> Result<Account, RpcError> {
 		let at = self.finalized_block_hash().await?;
 		let storage = self.subxt_storage().at(at);
 		let address = crate::avail::storage().system().account(account_id);
-		storage.fetch_or_default(&address).await
+		Ok(storage.fetch_or_default(&address).await?)
 	}
 
 	// Block State
-	pub async fn block_state(&self, block_id: BlockId) -> Result<BlockState, subxt::Error> {
+	pub async fn block_state(&self, block_id: BlockId) -> Result<BlockState, RpcError> {
 		let real_block_hash = self.block_hash(block_id.height).await?;
 		let Some(real_block_hash) = real_block_hash else {
 			return Ok(BlockState::DoesNotExist);
@@ -288,7 +274,7 @@ impl Client {
 		signer: &Keypair,
 		payload: &DefaultPayload<T>,
 		options: Options,
-	) -> Result<SubmittedTransaction, subxt::Error>
+	) -> Result<SubmittedTransaction, RpcError>
 	where
 		T: StaticExtrinsic + EncodeAsFields,
 	{
@@ -297,9 +283,7 @@ impl Client {
 		let params = options.clone().build().await;
 		if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data")
 		{
-			return Err(subxt::Error::Other(
-				"Transaction is not compatible with non-zero AppIds".into(),
-			));
+			return Err("Transaction is not compatible with non-zero AppIds".into());
 		}
 
 		let mut tx_client = self.online_client.tx();

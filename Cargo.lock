@@ -297,6 +297,7 @@ dependencies = [
  "serde_json",
  "subxt",
  "subxt-core",
+ "subxt-rpcs",
  "subxt-signer",
  "tokio",
 ]

@@ -15,6 +15,7 @@ tokio = { version = "1.42.0", default-features = false }
 subxt = { version = "0.41.0", default-features = false, features = ["jsonrpsee"] }
 subxt-core = { version = "0.41.0", default-features = false  }
 subxt-signer = { version = "0.41.0", default-features = false }
+subxt-rpcs = { version = "0.41.0", default-features = false }
 serde = { version = "1.0.195", features = ["derive", ] }
 serde_json = { version = "1.0.124", features = ["raw_value"] }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = [
