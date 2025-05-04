@@ -3,8 +3,6 @@ mod config;
 mod from_substrate;
 
 #[cfg(feature = "native")]
-pub mod http;
-#[cfg(feature = "native")]
 pub mod turobda;
 #[cfg(feature = "native")]
 pub use turobda::TurboDA;
@@ -12,6 +10,7 @@ pub use turobda::TurboDA;
 // Export types for internal and external consumption
 pub mod account;
 pub mod client;
+pub mod client_reqwest;
 pub mod client_rpc;
 pub mod client_runtime_api;
 pub mod error;

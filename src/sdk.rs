@@ -1,6 +1,7 @@
+use subxt_rpcs::RpcClient;
 use subxt_signer::SecretUri;
 
-use crate::{client::Client, error::ClientError, transactions::Transactions, AccountId, H256};
+use crate::{client::Client, error::ClientError, transactions::Transactions, AOnlineClient, AccountId, H256};
 use std::fmt::Debug;
 
 #[derive(Clone)]
@@ -11,7 +12,12 @@ pub struct SDK {
 
 impl SDK {
 	pub async fn new(endpoint: &str) -> Result<Self, ClientError> {
-		let client = super::client::http_api(endpoint).await?;
+		let rpc_client = super::client_reqwest::ReqwestClient::new(endpoint);
+		let rpc_client = RpcClient::new(rpc_client);
+
+		// Cloning RpcClient is cheaper and doesn't create a new WS connection
+		let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
+		let client = Client::new(api, rpc_client);
 
 		Self::new_custom(client).await
 	}
@@ -51,15 +57,6 @@ impl SDK {
 
 	pub fn mainnet_ws_endpoint() -> &'static str {
 		"wss://mainnet-rpc.avail.so/ws"
-	}
-}
-
-#[cfg(feature = "native")]
-impl SDK {
-	pub async fn new_http(endpoint: &str) -> Result<Self, ClientError> {
-		let client = super::client::http_api(endpoint).await?;
-
-		Self::new_custom(client).await
 	}
 }
 

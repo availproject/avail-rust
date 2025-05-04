@@ -1,7 +1,7 @@
 use crate::{
 	avail::{runtime_types::pallet_balances::types::AccountData, system::storage::types::account::Account},
 	client_rpc::ChainBlock,
-	error::{ClientError, RpcError},
+	error::RpcError,
 	transaction::{BlockId, SubmittedTransaction},
 	AConstantsClient, AOnlineClient, AStorageClient, AccountId, AvailHeader, BlockState, Options, H256,
 };
@@ -10,11 +10,7 @@ use std::{fmt::Debug, sync::Arc};
 use subxt::{backend::rpc::RpcClient, blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
 use subxt_signer::sr25519::Keypair;
 
-#[cfg(feature = "native")]
-use crate::http;
-
-#[cfg(feature = "native")]
-pub async fn http_api(endpoint: &str) -> Result<Client, ClientError> {
+/* pub async fn http_api(endpoint: &str) -> Result<Client, ClientError> {
 	let rpc_client = http::HttpClient::new(endpoint).map_err(|e| e.to_string())?;
 	let rpc_client = RpcClient::new(rpc_client);
 
@@ -23,7 +19,7 @@ pub async fn http_api(endpoint: &str) -> Result<Client, ClientError> {
 	let client = Client::new(api, rpc_client);
 
 	Ok(client)
-}
+} */
 
 type SharedCache = Arc<std::sync::Mutex<Cache>>;
 

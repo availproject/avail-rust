@@ -9,7 +9,6 @@ pub async fn run() -> Result<(), ClientError> {
 	let account_id = account::alice().public_key().to_account_id();
 	let a = sdk.client.nonce(&std::format!("{}", account_id)).await?;
 	dbg!(a);
-	unimplemented!();
 
 	let s = sdk.clone();
 	let t1 = tokio::spawn(async move { task(s, account::alice(), false).await });
