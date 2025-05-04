@@ -1,5 +1,5 @@
 use crate::{
-	error::ClientError,
+	error::RpcError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
 	Client, H256,
 };
@@ -10,7 +10,7 @@ impl Client {
 		&self,
 		mut extrinsic: Vec<u8>,
 		at: Option<H256>,
-	) -> Result<RuntimeDispatchInfo, ClientError> {
+	) -> Result<RuntimeDispatchInfo, RpcError> {
 		let len = extrinsic.len() as u32;
 		let bytes = len.to_ne_bytes();
 		extrinsic.extend_from_slice(&bytes);
@@ -28,7 +28,7 @@ impl Client {
 		&self,
 		mut extrinsic: Vec<u8>,
 		at: Option<H256>,
-	) -> Result<FeeDetails, ClientError> {
+	) -> Result<FeeDetails, RpcError> {
 		let len = extrinsic.len() as u32;
 		let bytes = len.to_ne_bytes();
 		extrinsic.extend_from_slice(&bytes);
@@ -46,7 +46,7 @@ impl Client {
 		&self,
 		mut call: Vec<u8>,
 		at: Option<H256>,
-	) -> Result<RuntimeDispatchInfo, ClientError> {
+	) -> Result<RuntimeDispatchInfo, RpcError> {
 		let len = call.len() as u32;
 		let bytes = len.to_ne_bytes();
 		call.extend_from_slice(&bytes);
@@ -64,7 +64,7 @@ impl Client {
 		&self,
 		mut call: Vec<u8>,
 		at: Option<H256>,
-	) -> Result<FeeDetails, ClientError> {
+	) -> Result<FeeDetails, RpcError> {
 		let len = call.len() as u32;
 		let bytes = len.to_ne_bytes();
 		call.extend_from_slice(&bytes);

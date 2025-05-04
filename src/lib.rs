@@ -42,10 +42,10 @@ pub use transaction::{
 pub mod prelude {
 	pub use super::{
 		account, avail, avail::runtime_types::bounded_collections::bounded_vec::BoundedVec, config::*,
-		error::ClientError, hex, primitives, subxt, subxt_signer, AccountId, AccountIdExt, BlockId, BlockState, Client,
-		H256Ext, Keypair, MortalityOption, MultiAddress, Options, Perbill, PopulatedOptions, ReceiptMethod, SecretUri,
-		SecretUriExt, SubmittableTransaction, SubmittedTransaction, TransactionExtra, TransactionLocation,
-		TransactionReceipt, H256, SDK, U256,
+		error::ClientError, error::RpcError, hex, primitives, subxt, subxt_signer, AccountId, AccountIdExt, BlockId,
+		BlockState, Client, H256Ext, Keypair, MortalityOption, MultiAddress, Options, Perbill, PopulatedOptions,
+		ReceiptMethod, SecretUri, SecretUriExt, SubmittableTransaction, SubmittedTransaction, TransactionExtra,
+		TransactionLocation, TransactionReceipt, H256, SDK, U256,
 	};
 
 	#[cfg(feature = "native")]

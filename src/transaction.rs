@@ -1,6 +1,6 @@
 use crate::{
 	client_rpc::ChainBlock,
-	error::{ClientError, RpcError},
+	error::RpcError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
 	AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,
 };
@@ -38,7 +38,7 @@ where
 		&self,
 		account: &Keypair,
 		options: Option<Options>,
-	) -> Result<RuntimeDispatchInfo, ClientError> {
+	) -> Result<RuntimeDispatchInfo, RpcError> {
 		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
@@ -59,7 +59,7 @@ where
 		&self,
 		account: &Keypair,
 		options: Option<Options>,
-	) -> Result<FeeDetails, ClientError> {
+	) -> Result<FeeDetails, RpcError> {
 		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
@@ -78,14 +78,14 @@ where
 			.await
 	}
 
-	pub async fn payment_query_call_info(&self) -> Result<RuntimeDispatchInfo, ClientError> {
+	pub async fn payment_query_call_info(&self) -> Result<RuntimeDispatchInfo, RpcError> {
 		let metadata = self.client.online_client.metadata();
 		let call = self.payload.encode_call_data(&metadata)?;
 
 		self.client.api_transaction_payment_query_call_info(call, None).await
 	}
 
-	pub async fn payment_query_call_fee_details(&self) -> Result<FeeDetails, ClientError> {
+	pub async fn payment_query_call_fee_details(&self) -> Result<FeeDetails, RpcError> {
 		let metadata = self.client.online_client.metadata();
 		let call = self.payload.encode_call_data(&metadata)?;
 

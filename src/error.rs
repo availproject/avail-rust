@@ -4,17 +4,27 @@ use subxt_signer::{sr25519, SecretUriError};
 #[derive(Debug)]
 pub enum RpcError {
 	Subxt(subxt::Error),
+	SubxtCore(subxt_core::Error),
 	SubxtRpcs(subxt_rpcs::Error),
 	Custom(String),
+	TransactionNotAllowed(String),
 }
 
 impl RpcError {
 	pub fn to_string(&self) -> String {
 		match self {
 			Self::Subxt(e) => e.to_string(),
+			Self::SubxtCore(e) => e.to_string(),
 			Self::SubxtRpcs(e) => e.to_string(),
 			Self::Custom(e) => e.to_string(),
+			Self::TransactionNotAllowed(e) => e.to_string(),
 		}
+	}
+}
+
+impl From<subxt_core::Error> for RpcError {
+	fn from(value: subxt_core::Error) -> Self {
+		Self::SubxtCore(value)
 	}
 }
 

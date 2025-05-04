@@ -283,7 +283,8 @@ impl Client {
 		let params = options.clone().build().await;
 		if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data")
 		{
-			return Err("Transaction is not compatible with non-zero AppIds".into());
+			let err = RpcError::TransactionNotAllowed("Transaction is not compatible with non-zero AppIds".into());
+			return Err(err);
 		}
 
 		let mut tx_client = self.online_client.tx();
