@@ -1,4 +1,3 @@
-use super::transaction::SubmissionStateError;
 use subxt::error::{DispatchError, RpcError};
 use subxt_signer::{sr25519, SecretUriError};
 
@@ -11,7 +10,6 @@ pub enum ClientError {
 	SubxtCore(subxt_core::Error),
 	SubxtSigner(SecretUriError),
 	Sr25519(sr25519::Error),
-	Submission(SubmissionStateError),
 }
 
 impl ClientError {
@@ -24,7 +22,6 @@ impl ClientError {
 			ClientError::SubxtCore(e) => e.to_string(),
 			ClientError::SubxtSigner(e) => e.to_string(),
 			ClientError::Sr25519(e) => e.to_string(),
-			ClientError::Submission(e) => e.to_string(),
 		}
 	}
 }
@@ -80,11 +77,5 @@ impl From<RpcError> for ClientError {
 impl From<serde_json::Error> for ClientError {
 	fn from(value: serde_json::Error) -> Self {
 		Self::SerdeJson(value)
-	}
-}
-
-impl From<SubmissionStateError> for ClientError {
-	fn from(value: SubmissionStateError) -> Self {
-		Self::Submission(value)
 	}
 }

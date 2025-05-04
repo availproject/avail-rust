@@ -30,7 +30,7 @@ async fn task(sdk: SDK, account: Keypair, _d: bool) -> Result<(), ClientError> {
 	let tx = sdk.tx.data_availability.submit_data(data);
 
 	// SubmittedTransaction -> Transaction Hash, and Transaction extra
-	let st: SubmittedTransaction = tx.execute(&account, options).await?;
+	let st: SubmittedTransaction = tx.sign_and_submit(&account, options).await?;
 	// At this point it is guaranteed that the transaction was successfully submitted.
 	// This does not mean that the transaction will be included in any block because:
 	// a) congestion could force the transaction to be dropped

@@ -15,7 +15,7 @@ pub type SignaturePayload = (MultiAddress, Signature, OnlyCodecExtra);
 /// the decoding fails.
 const EXTRINSIC_FORMAT_VERSION: u8 = 4;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct AppUncheckedExtrinsic {
 	/// The signature, address, number of extrinsics have come before from
 	/// the same signer and an era describing the longevity of this transaction,

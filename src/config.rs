@@ -7,7 +7,7 @@ use subxt::{
 	constants::ConstantsClient,
 	events::{EventDetails, Events, EventsClient},
 	storage::StorageClient,
-	tx::{TxClient, TxInBlock, TxProgress},
+	tx::TxClient,
 	utils::{AccountId32, MultiSignature, H256},
 	Config, OnlineClient,
 };
@@ -29,8 +29,6 @@ pub type AEventsClient = EventsClient<AvailConfig, AOnlineClient>;
 pub type ATxClient = TxClient<AvailConfig, AOnlineClient>;
 
 /// TX status
-pub type ATxProgress = TxProgress<AvailConfig, AOnlineClient>;
-pub type ATxInBlock = TxInBlock<AvailConfig, AOnlineClient>;
 pub type AExtrinsicEvents = ExtrinsicEvents<AvailConfig>;
 pub type AEvents = Events<AvailConfig>;
 pub type AEventDetails = EventDetails<AvailConfig>;

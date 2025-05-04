@@ -94,7 +94,11 @@ where
 			.await
 	}
 
-	pub async fn execute(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, subxt::Error> {
+	pub async fn sign_and_submit(
+		&self,
+		signer: &Keypair,
+		options: Options,
+	) -> Result<SubmittedTransaction, subxt::Error> {
 		self.client.sign_and_submit(signer, &self.payload, options).await
 	}
 }
@@ -110,33 +114,6 @@ impl From<(H256, u32)> for BlockId {
 		Self {
 			hash: value.0,
 			height: value.1,
-		}
-	}
-}
-
-#[derive(Debug)]
-pub enum SubmissionStateError {
-	FailedToSubmit { reason: subxt::Error },
-	SubmittedButErrorInSearch { tx_hash: H256, reason: subxt::Error },
-	Dropped { tx_hash: H256 },
-}
-
-impl SubmissionStateError {
-	pub fn to_string(&self) -> String {
-		match self {
-			Self::FailedToSubmit { reason } => {
-				std::format!("Failed to Submit Transaction. Reason: {}", reason)
-			},
-			Self::SubmittedButErrorInSearch { reason, tx_hash } => {
-				std::format!(
-					"Submitted transaction but error occurred while searching for it. Tx Hash: {:?},  Reason: {}",
-					tx_hash,
-					reason
-				)
-			},
-			Self::Dropped { tx_hash } => {
-				std::format!("Submitted transaction has been dropped. Tx Hash: {:?}", tx_hash)
-			},
 		}
 	}
 }

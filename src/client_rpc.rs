@@ -15,7 +15,7 @@ use subxt_core::config::{substrate::BlakeTwo256, Hasher};
 /// Arbitrary properties defined in chain spec as a JSON object
 pub type SystemProperties = serde_json::map::Map<String, serde_json::Value>;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TransactionState {
 	pub block_hash: H256,
 	pub block_height: u32,
@@ -40,7 +40,7 @@ pub mod transaction {
 	}
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct RpcMethods {
 	pub methods: Vec<String>,
 }

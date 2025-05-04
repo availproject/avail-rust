@@ -25,12 +25,6 @@ pub async fn http_api(endpoint: &str) -> Result<Client, ClientError> {
 	Ok(client)
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct ClientOptions {
-	pub tx_state_rpc_enabled: bool,
-}
-
-type SharedClientOptions = Arc<std::sync::Mutex<ClientOptions>>;
 type SharedCache = Arc<std::sync::Mutex<Cache>>;
 
 const MAX_CHAIN_BLOCKS: usize = 3;
@@ -90,7 +84,6 @@ impl Debug for Cache {
 pub struct Client {
 	pub online_client: AOnlineClient,
 	pub rpc_client: RpcClient,
-	pub options: SharedClientOptions,
 	pub cache: SharedCache,
 }
 
@@ -99,16 +92,8 @@ impl Client {
 		Self {
 			online_client,
 			rpc_client,
-			options: SharedClientOptions::default(),
 			cache: SharedCache::default(),
 		}
-	}
-
-	pub fn get_options(&self) -> ClientOptions {
-		if let Ok(lock) = self.options.lock() {
-			return *lock;
-		}
-		ClientOptions::default()
 	}
 
 	// Header
