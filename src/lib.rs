@@ -14,6 +14,7 @@ pub mod client_reqwest;
 pub mod client_rpc;
 pub mod client_runtime_api;
 pub mod error;
+pub mod platform;
 pub mod primitives;
 pub mod sdk;
 pub mod transaction;

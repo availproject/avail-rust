@@ -1,14 +1,9 @@
+use super::platform::spawn;
 use serde::Serialize;
-use serde_json::value::RawValue;
+use serde_json::value::{to_raw_value, RawValue};
 use std::{borrow::Cow, sync::Arc};
 use subxt::backend::rpc::RpcClientT;
 use tokio::sync::mpsc::{Receiver, Sender};
-
-#[cfg(feature = "native")]
-pub use tokio::spawn;
-
-#[cfg(feature = "wasm")]
-pub use wasm_bindgen_futures::spawn_local as spawn;
 
 /// Serializable [JSON-RPC object](https://www.jsonrpc.org/specification#request-object).
 #[derive(Serialize, Debug, Clone)]
@@ -85,9 +80,9 @@ impl RpcClientT for ReqwestClient {
 			self.tx.send(message).await.unwrap();
 
 			let response = rx.recv().await.unwrap();
-			dbg!(response);
+			let a = &response["result"];
 
-			todo!();
+			Ok(to_raw_value(a).unwrap())
 		})
 	}
 

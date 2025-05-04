@@ -1,3 +1,4 @@
+use super::platform::sleep;
 use crate::{
 	client_rpc::ChainBlock,
 	error::RpcError,
@@ -310,7 +311,7 @@ pub async fn transaction_maybe_block_id_finalized_block(
 	info!(target: "nonce_search", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, block_height, mortality_ends_height);
 	while mortality_ends_height >= next_block_height {
 		if next_block_height > block_height {
-			tokio::time::sleep(Duration::from_secs(3)).await;
+			sleep(Duration::from_secs(3)).await;
 			block_height = client.finalized_block_height().await?;
 			continue;
 		}
@@ -347,7 +348,7 @@ pub async fn transaction_maybe_block_id_best_block(
 	info!(target: "nonce_search", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, block_id.height, mortality_ends_height);
 	while mortality_ends_height >= next_block_height {
 		if next_block_hash == block_id.hash || next_block_height > block_id.height {
-			tokio::time::sleep(Duration::from_secs(3)).await;
+			sleep(Duration::from_secs(3)).await;
 			block_id = client.best_block_id().await?;
 			continue;
 		}
