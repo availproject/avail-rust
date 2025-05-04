@@ -39,11 +39,8 @@ impl AppUncheckedExtrinsic {
 	}
 
 	pub fn app_id(&self) -> crate::AppId {
-		self.signature
-			.as_ref()
-			.map(|(_, _, extra)| extra.8)
-			.unwrap_or_default()
-			.into()
+		let app_id = self.signature.as_ref().map(|(_, _, extra)| extra.8).unwrap_or_default();
+		app_id
 	}
 }
 

@@ -20,15 +20,15 @@ impl<T: Config> transaction_extensions::Params<T> for CheckAppId {}
 
 /// Type used only for decoding extrinsic from blocks.
 pub type OnlyCodecExtra = (
-	(),                // CheckNonZeroSender,
-	(),                // CheckSpecVersion<Runtime>,
-	(),                // CheckTxVersion<Runtime>,
-	(),                // CheckGenesis<Runtime>,
-	Era,               // CheckEra<Runtime>,
-	Compact<u32>,      // CheckNonce<Runtime>,
-	(),                // CheckWeight<Runtime>,
-	Compact<u128>,     // ChargeTransactionPayment<Runtime>,
-	avail_core::AppId, // CheckAppId<Runtime>,
+	(),            // CheckNonZeroSender,
+	(),            // CheckSpecVersion<Runtime>,
+	(),            // CheckTxVersion<Runtime>,
+	(),            // CheckGenesis<Runtime>,
+	Era,           // CheckEra<Runtime>,
+	Compact<u32>,  // CheckNonce<Runtime>,
+	(),            // CheckWeight<Runtime>,
+	Compact<u128>, // ChargeTransactionPayment<Runtime>,
+	crate::AppId,  // CheckAppId<Runtime>,
 );
 
 /// The default [`super::ExtrinsicParams`] implementation understands common signed extensions
@@ -75,7 +75,7 @@ impl<T: Config> Default for DefaultExtrinsicParamsBuilder<T> {
 			mortality: None,
 			tip: 0,
 			nonce: None,
-			app_id: crate::AppId(avail_core::AppId(0)),
+			app_id: crate::AppId::default(),
 		}
 	}
 }
@@ -107,7 +107,7 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 
 	/// App Id
 	pub fn app_id(mut self, app_id: u32) -> Self {
-		self.app_id = crate::AppId(avail_core::AppId(app_id));
+		self.app_id = crate::AppId::from(app_id);
 		self
 	}
 

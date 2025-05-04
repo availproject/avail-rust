@@ -1,4 +1,5 @@
 use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
+use codec::{Compact, Decode, Encode};
 use subxt::{
 	backend::legacy::rpc_methods::BlockDetails as BlockDetailsRPC,
 	blocks::{Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, Extrinsics, FoundExtrinsic},
@@ -49,12 +50,18 @@ pub type AvailExtrinsicParams<T> = DefaultExtrinsicParams<T>;
 /// This is what you provide to methods like `sign_and_submit()`.
 pub type AvailExtrinsicParamsBuilder = DefaultExtrinsicParamsBuilder<AvailConfig>;
 
-#[derive(Clone, Copy, Default, Debug)]
-pub struct AppId(pub avail_core::AppId);
+#[derive(Clone, Copy, Debug, Encode, Decode, Eq, PartialEq)]
+pub struct AppId(pub Compact<u32>);
 
-impl From<avail_core::AppId> for AppId {
-	fn from(value: avail_core::AppId) -> Self {
-		Self(value)
+impl Default for AppId {
+	fn default() -> Self {
+		Self(Compact(0))
+	}
+}
+
+impl From<u32> for AppId {
+	fn from(value: u32) -> Self {
+		Self(Compact(value))
 	}
 }
 

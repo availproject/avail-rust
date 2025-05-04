@@ -4,7 +4,7 @@ use crate::{
 	utils::{self},
 	ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256Ext, TransactionLocation, H256,
 };
-use avail_core::data_proof::ProofResponse;
+// use avail_core::data_proof::ProofResponse;
 use serde::{Deserialize, Serialize};
 use subxt::{
 	backend::legacy::rpc_methods::{BlockJustification, Bytes, RuntimeVersion, SystemHealth},
@@ -214,7 +214,7 @@ impl Client {
 		Ok(value)
 	}
 
-	pub async fn rpc_kate_query_data_proof(
+	/* 	pub async fn rpc_kate_query_data_proof(
 		&self,
 		transaction_index: u32,
 		at: Option<H256>,
@@ -222,7 +222,7 @@ impl Client {
 		let params = rpc_params![transaction_index, at];
 		let value = self.rpc_client.request("kate_queryDataProof", params).await?;
 		Ok(value)
-	}
+	} */
 
 	pub async fn rpc_kate_query_proof(
 		&self,
