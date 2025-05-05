@@ -1,4 +1,5 @@
-use crate::{AccountId, H256};
+use crate::config::AccountId;
+use primitive_types::H256;
 use subxt_signer::{sr25519::Keypair, SecretUri};
 
 pub trait H256Ext {

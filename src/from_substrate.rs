@@ -1,4 +1,4 @@
-use crate::{BlockHash, BlockNumber};
+use crate::config::*;
 use codec::Decode;
 use serde::Deserialize;
 

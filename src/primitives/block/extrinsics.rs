@@ -1,5 +1,8 @@
 use super::extrinsics_params::OnlyCodecExtra;
-use crate::{avail::runtime_types::da_runtime::RuntimeCall, MultiAddress, Signature};
+use crate::{
+	avail::runtime_types::da_runtime::RuntimeCall,
+	config::{AppId, MultiAddress, Signature},
+};
 
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
 use serde::{Deserialize, Serialize};
@@ -38,7 +41,7 @@ impl AppUncheckedExtrinsic {
 		output
 	}
 
-	pub fn app_id(&self) -> crate::AppId {
+	pub fn app_id(&self) -> AppId {
 		let app_id = self.signature.as_ref().map(|(_, _, extra)| extra.8).unwrap_or_default();
 		app_id
 	}

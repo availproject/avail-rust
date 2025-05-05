@@ -6,7 +6,9 @@ use crate::{
 		self,
 		runtime_types::da_runtime::{impls::ProxyType, RuntimeCall},
 	},
-	AccountId, Client, SubmittableTransaction,
+	client::Client,
+	config::AccountId,
+	SubmittableTransaction,
 };
 
 pub type ProxyCall = avail::proxy::calls::types::Proxy;

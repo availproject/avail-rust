@@ -1,4 +1,4 @@
-use crate::{avail, avail::runtime_types::da_runtime::primitives::SessionKeys, Client, SubmittableTransaction};
+use crate::{avail, avail::runtime_types::da_runtime::primitives::SessionKeys, client::Client, SubmittableTransaction};
 
 pub type SetKeysCall = avail::session::calls::types::SetKeys;
 

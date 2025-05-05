@@ -1,4 +1,4 @@
-use crate::{avail, Client, SubmittableTransaction};
+use crate::{avail, client::Client, SubmittableTransaction};
 use primitive_types::H256;
 
 pub type ExecuteCall = avail::vector::calls::types::Execute;

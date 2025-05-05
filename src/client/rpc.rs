@@ -1,10 +1,13 @@
 use crate::{
 	avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength},
+	client::Client,
+	config::*,
 	error::RpcError,
 	from_substrate::{NodeRole, PeerInfo, SyncState},
 	utils::{self},
-	ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, TransactionLocation, H256,
+	AvailHeader, Cell, GDataProof, GRow,
 };
+use primitive_types::H256;
 // use avail_core::data_proof::ProofResponse;
 use serde::{Deserialize, Serialize};
 use subxt::{

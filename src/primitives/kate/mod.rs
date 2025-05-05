@@ -1,7 +1,7 @@
-use crate::U256;
 use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
 use derive_more::Constructor;
+use primitive_types::U256;
 use serde::{Deserialize, Serialize};
 
 /// Compatible with `kate::com::Cell`

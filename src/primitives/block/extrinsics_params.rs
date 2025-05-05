@@ -2,6 +2,7 @@
 // This file is dual-licensed as Apache-2.0 or GPL-3.0.
 // see LICENSE for license details.
 
+use crate::config::AppId;
 use codec::{Compact, Encode};
 use scale_info::PortableRegistry;
 use subxt_core::{
@@ -12,10 +13,10 @@ use subxt_core::{
 };
 
 #[derive(Debug, Clone, Copy, Default)]
-pub struct CheckAppId(pub crate::AppId);
+pub struct CheckAppId(pub AppId);
 
 /// Ideally, we would use avail_core::AppId but we cannot define `RefineParams` for it so we need a wrapper. Crazy
-impl<T: Config> transaction_extensions::Params<T> for crate::AppId {}
+impl<T: Config> transaction_extensions::Params<T> for AppId {}
 impl<T: Config> transaction_extensions::Params<T> for CheckAppId {}
 
 /// Type used only for decoding extrinsic from blocks.
@@ -28,7 +29,7 @@ pub type OnlyCodecExtra = (
 	Compact<u32>,  // CheckNonce<Runtime>,
 	(),            // CheckWeight<Runtime>,
 	Compact<u128>, // ChargeTransactionPayment<Runtime>,
-	crate::AppId,  // CheckAppId<Runtime>,
+	AppId,         // CheckAppId<Runtime>,
 );
 
 /// The default [`super::ExtrinsicParams`] implementation understands common signed extensions
@@ -55,7 +56,7 @@ pub struct DefaultExtrinsicParamsBuilder<T: Config> {
 	/// `None` means the nonce will be automatically set.
 	nonce: Option<u64>,
 	tip: u128,
-	app_id: crate::AppId,
+	app_id: AppId,
 }
 
 #[derive(Clone)]
@@ -75,7 +76,7 @@ impl<T: Config> Default for DefaultExtrinsicParamsBuilder<T> {
 			mortality: None,
 			tip: 0,
 			nonce: None,
-			app_id: crate::AppId::default(),
+			app_id: AppId::default(),
 		}
 	}
 }
@@ -107,7 +108,7 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 
 	/// App Id
 	pub fn app_id(mut self, app_id: u32) -> Self {
-		self.app_id = crate::AppId::from(app_id);
+		self.app_id = AppId::from(app_id);
 		self
 	}
 
@@ -179,7 +180,7 @@ impl<T: Config> transaction_extensions::TransactionExtension<T> for CheckAppId {
 }
 
 impl<T: Config> subxt::config::ExtrinsicParams<T> for CheckAppId {
-	type Params = crate::AppId;
+	type Params = AppId;
 
 	fn new(_client: &ClientState<T>, id: Self::Params) -> Result<Self, ExtrinsicParamsError> {
 		Ok(CheckAppId(id))

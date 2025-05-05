@@ -63,6 +63,36 @@ impl From<u32> for AppId {
 	}
 }
 
+#[derive(Clone, Copy)]
+pub struct BlockId {
+	pub hash: H256,
+	pub height: u32,
+}
+
+impl From<(H256, u32)> for BlockId {
+	fn from(value: (H256, u32)) -> Self {
+		Self {
+			hash: value.0,
+			height: value.1,
+		}
+	}
+}
+
+#[derive(Clone, Copy)]
+pub struct TransactionLocation {
+	pub hash: H256,
+	pub index: u32,
+}
+
+impl From<(H256, u32)> for TransactionLocation {
+	fn from(value: (H256, u32)) -> Self {
+		Self {
+			hash: value.0,
+			index: value.1,
+		}
+	}
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct AvailConfig;
 

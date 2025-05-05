@@ -1,9 +1,10 @@
 use crate::{
+	client::Client,
 	error::RpcError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
-	Client, H256,
 };
 use codec::Decode;
+use primitive_types::H256;
 
 impl Client {
 	pub async fn api_transaction_payment_query_info(

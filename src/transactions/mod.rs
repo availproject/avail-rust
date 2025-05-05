@@ -17,7 +17,7 @@ pub use crate::avail::{
 	nomination_pools::calls::types as NominationPoolsCalls, session::calls::types as SessionCalls,
 	staking::calls::types as StakingCalls, system::calls::types as SystemCalls,
 };
-use crate::Client;
+use crate::client::Client;
 
 #[derive(Clone)]
 pub struct Transactions {

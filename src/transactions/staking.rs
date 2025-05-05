@@ -1,6 +1,9 @@
 use crate::{
 	api_dev::api::runtime_types::{pallet_staking::ValidatorPrefs, sp_arithmetic::per_things::Perbill},
-	avail, AccountId, Client, SubmittableTransaction,
+	avail,
+	client::Client,
+	config::AccountId,
+	SubmittableTransaction,
 };
 use subxt_core::utils::MultiAddress;
 

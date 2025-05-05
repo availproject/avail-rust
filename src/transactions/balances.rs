@@ -1,4 +1,4 @@
-use crate::{avail, AccountId, Client, SubmittableTransaction};
+use crate::{avail, client::Client, config::AccountId, SubmittableTransaction};
 
 pub type TransferAllCall = avail::balances::calls::types::TransferAll;
 pub type TransferAllowDeathCall = avail::balances::calls::types::TransferAllowDeath;

@@ -1,6 +1,8 @@
 use crate::{
 	api_dev::api::data_availability::calls::types::{create_application_key::Key, submit_data::Data},
-	avail, Client, SubmittableTransaction,
+	avail,
+	client::Client,
+	SubmittableTransaction,
 };
 
 pub type SubmitDataCall = avail::data_availability::calls::types::SubmitData;

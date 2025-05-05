@@ -7,7 +7,9 @@ use crate::{
 		self, nomination_pools::calls::types::set_commission::NewCommission as NewCommissionOriginal,
 		runtime_types::sp_arithmetic::per_things::Perbill,
 	},
-	AccountId, Client, SubmittableTransaction,
+	client::Client,
+	config::AccountId,
+	SubmittableTransaction,
 };
 
 pub type NominateCall = avail::nomination_pools::calls::types::Nominate;
