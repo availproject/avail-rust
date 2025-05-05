@@ -1,13 +1,4 @@
-use crate::{avail::runtime_types::da_runtime::primitives::SessionKeys, AppUncheckedExtrinsic};
-use subxt::backend::legacy::rpc_methods::Bytes;
-
-pub fn decode_raw_block_rpc_extrinsics(extrinsics: Vec<Bytes>) -> Result<Vec<AppUncheckedExtrinsic>, String> {
-	let extrinsics: Result<Vec<AppUncheckedExtrinsic>, String> =
-		extrinsics.into_iter().map(AppUncheckedExtrinsic::try_from).collect();
-
-	extrinsics
-}
-
+use crate::avail::runtime_types::da_runtime::primitives::SessionKeys;
 pub fn deconstruct_session_keys(session_keys: Vec<u8>) -> Result<SessionKeys, String> {
 	use crate::avail::runtime_types::{
 		pallet_im_online, sp_authority_discovery, sp_consensus_babe, sp_consensus_grandpa,

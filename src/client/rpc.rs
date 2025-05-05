@@ -71,7 +71,138 @@ pub struct ChainBlockBlock {
 	pub extrinsics: Vec<Vec<u8>>,
 }
 
+pub mod rpc_block_data {
+	pub use super::*;
+
+	#[derive(Debug, Clone, Serialize, Deserialize)]
+	pub struct Response {
+		pub value: Block,
+		pub debug_execution_time: u64,
+	}
+
+	#[derive(Debug, Clone, Serialize, Deserialize)]
+
+	pub struct Block {
+		pub block_id: BlockId,
+		pub block_state: BlockState,
+		pub calls: Option<Vec<CallData>>,
+		pub events: Option<Vec<EventData>>,
+	}
+
+	#[derive(Debug, Clone, Serialize, Deserialize)]
+	pub struct CallData {
+		pub tx_location: TransactionLocation,
+		pub dispatch_index: DispatchIndex,
+		pub call: String,
+	}
+
+	#[derive(Debug, Clone, Serialize, Deserialize)]
+	pub struct EventData {
+		// (pallet id, event id)
+		pub emitted_index: EmittedIndex,
+		pub phase: RuntimePhase,
+		pub event: String,
+	}
+
+	#[derive(Clone, Serialize, Deserialize)]
+	pub struct Params {
+		pub block_index: HashIndex,
+		pub fetch_calls: bool,
+		pub fetch_events: bool,
+		pub call_filter: CallFilter,
+		pub event_filter: EventFilter,
+	}
+
+	impl Params {
+		pub fn new(block_index: HashIndex) -> Self {
+			Self {
+				block_index,
+				fetch_calls: false,
+				fetch_events: false,
+				call_filter: CallFilter::default(),
+				event_filter: EventFilter::default(),
+			}
+		}
+	}
+
+	#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+	pub enum BlockState {
+		Included,
+		Finalized,
+		Discarded,
+	}
+
+	#[derive(Default, Clone, Serialize, Deserialize)]
+	pub struct CallFilter {
+		pub transaction: TransactionFilterOptions,
+		pub signature: SignatureFilterOptions,
+	}
+
+	#[derive(Clone, Serialize, Deserialize)]
+	pub enum TransactionFilterOptions {
+		All,
+		TxHash(Vec<H256>),
+		TxIndex(Vec<u32>),
+		Pallet(Vec<u8>),
+		PalletCall(Vec<DispatchIndex>),
+	}
+
+	impl Default for TransactionFilterOptions {
+		fn default() -> Self {
+			Self::All
+		}
+	}
+
+	#[derive(Default, Clone, Serialize, Deserialize)]
+	pub struct SignatureFilterOptions {
+		pub ss58_address: Option<String>,
+		pub app_id: Option<u32>,
+		pub nonce: Option<u32>,
+	}
+
+	#[derive(Default, Clone, Serialize, Deserialize)]
+	pub struct EventFilter {
+		pub phase: PhaseFilterOptions,
+		pub pallet: PalletFilterOptions,
+	}
+
+	#[derive(Debug, Clone, Serialize, Deserialize)]
+	pub enum PhaseFilterOptions {
+		All,
+		TxIndex(Vec<u32>),
+		OnlyConsensus,
+	}
+
+	impl Default for PhaseFilterOptions {
+		fn default() -> Self {
+			Self::All
+		}
+	}
+
+	#[derive(Debug, Clone, Serialize, Deserialize)]
+	pub enum PalletFilterOptions {
+		All,
+		Pallet(u8),
+		Combination(Vec<DispatchIndex>),
+	}
+
+	impl Default for PalletFilterOptions {
+		fn default() -> Self {
+			Self::All
+		}
+	}
+}
+
 impl Client {
+	pub async fn rpc_block_data(
+		&self,
+		params: rpc_block_data::Params,
+	) -> Result<rpc_block_data::Response, subxt_rpcs::Error> {
+		let params = rpc_params![params];
+		let value = self.rpc_client.request("block_data", params).await?;
+		Ok(value)
+	}
+
 	// TODO remove this is just for testing
 	pub async fn rpc_error(&self) -> Result<u32, subxt_rpcs::Error> {
 		let params = rpc_params![];

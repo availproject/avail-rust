@@ -8,4 +8,5 @@ default-run = "sdk-examples"
 
 [dependencies]
 avail-rust = { path = "../." }
-tokio = { version = "1.38.0", features = ["rt-multi-thread"] }
+tokio = { version = "1.44.2", features = ["rt-multi-thread", "macros"] }
+anyhow = { version = "1.0.98" }

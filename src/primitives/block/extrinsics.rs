@@ -1,7 +1,7 @@
 use super::extrinsics_params::OnlyCodecExtra;
 use crate::{
-	avail::runtime_types::da_runtime::RuntimeCall,
-	config::{AppId, MultiAddress, Signature},
+	avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent},
+	config::{AppId, MultiAddress, RuntimePhase, Signature},
 };
 
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
@@ -18,7 +18,7 @@ pub type SignaturePayload = (MultiAddress, Signature, OnlyCodecExtra);
 /// the decoding fails.
 const EXTRINSIC_FORMAT_VERSION: u8 = 4;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AppUncheckedExtrinsic {
 	/// The signature, address, number of extrinsics have come before from
 	/// the same signer and an era describing the longevity of this transaction,
@@ -130,4 +130,10 @@ impl TryFrom<Bytes> for AppUncheckedExtrinsic {
 
 		AppUncheckedExtrinsic::decode(&mut value_as_slice).map_err(|s| s.to_string())
 	}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
+pub struct UncheckedEvent {
+	pub phase: RuntimePhase,
+	pub event: RuntimeEvent,
 }

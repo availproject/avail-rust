@@ -1,6 +1,7 @@
 mod api_dev;
 mod from_substrate;
 
+pub mod block;
 pub mod client;
 pub mod config;
 pub mod constants;

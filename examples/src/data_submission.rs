@@ -1,11 +1,41 @@
+use crate::ReturnResult;
+use avail_rust::block::rpc_block_data::BlockBuilder;
+use avail_rust::client::rpc::rpc_block_data::{CallFilter, EventFilter, PhaseFilterOptions, TransactionFilterOptions};
+use avail_rust::prelude::{dev_accounts::*, *};
+use avail_rust::primitives::block::extrinsics::UncheckedEvent;
+use avail_rust::AppUncheckedExtrinsic;
+use codec::Decode;
 use std::time::Duration;
-
-use avail_rust::constants::*;
-use avail_rust::prelude::*;
 use tokio::time::sleep;
 
-pub async fn run() -> Result<(), ClientError> {
+pub async fn run() -> ReturnResult {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
+
+	let mut call_filter = CallFilter::default();
+	call_filter.transaction = TransactionFilterOptions::TxIndex(vec![1]);
+	let mut event_filter = EventFilter::default();
+	event_filter.phase = PhaseFilterOptions::TxIndex(vec![1]);
+	let builder = BlockBuilder::new(HashIndex::Index(3));
+	let builder = builder
+		.fetch_events(true)
+		.fetch_calls(true)
+		.call_filter(call_filter)
+		.event_filter(event_filter);
+	let res = builder.build(&client).await?;
+
+	for event_data in res.events.iter().flatten() {
+		let hex_decoded = hex::decode(event_data.event.trim_start_matches("0x").clone())?;
+		let ev = UncheckedEvent::decode(&mut hex_decoded.as_slice())?;
+		dbg!(ev);
+	}
+
+	for call_data in res.calls.iter().flatten() {
+		let hex_decoded = hex::decode(call_data.call.trim_start_matches("0x").clone())?;
+		let app = AppUncheckedExtrinsic::decode(&mut hex_decoded.as_slice())?;
+		dbg!(app);
+	}
+
+	todo!();
 
 	let s = client.clone();
 	let t1 = tokio::spawn(async move { task(s, alice(), false).await });
@@ -24,7 +54,7 @@ pub async fn run() -> Result<(), ClientError> {
 	Ok(())
 }
 
-async fn task(client: Client, account: Keypair, _d: bool) -> Result<(), ClientError> {
+async fn task(client: Client, account: Keypair, _d: bool) -> ReturnResult {
 	// Data Submission
 	let data = String::from("My Data").into_bytes();
 	let options = Options::new().app_id(2);

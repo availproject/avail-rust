@@ -1,5 +1,6 @@
 use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 use codec::{Compact, Decode, Encode};
+use serde::{Deserialize, Serialize};
 use subxt::{
 	backend::legacy::rpc_methods::BlockDetails as BlockDetailsRPC,
 	blocks::{Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, Extrinsics, FoundExtrinsic},
@@ -63,7 +64,7 @@ impl From<u32> for AppId {
 	}
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct BlockId {
 	pub hash: H256,
 	pub height: u32,
@@ -78,7 +79,7 @@ impl From<(H256, u32)> for BlockId {
 	}
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TransactionLocation {
 	pub hash: H256,
 	pub index: u32,
@@ -92,6 +93,26 @@ impl From<(H256, u32)> for TransactionLocation {
 		}
 	}
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum HashIndex {
+	Hash(H256),
+	Index(u32),
+}
+
+/// A phase of a block's execution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+pub enum RuntimePhase {
+	/// Applying an extrinsic.
+	ApplyExtrinsic(u32),
+	/// Finalizing the block.
+	Finalization,
+	/// Initializing the block.
+	Initialization,
+}
+
+pub type DispatchIndex = (u8, u8);
+pub type EmittedIndex = (u8, u8);
 
 #[derive(Clone, Debug, Default)]
 pub struct AvailConfig;
