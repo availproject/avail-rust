@@ -54,8 +54,7 @@ impl Proxy {
 	/// Parameters:
 	/// - `delegate`: The account that the `caller` would like to make a proxy.
 	/// - `proxy_type`: The permissions allowed for this proxy account.
-	/// - `delay`: The announcement period required of the initial proxy. Will generally be
-	/// zero.
+	/// - `delay`: The announcement period required of the initial proxy. Will generally be zero.
 	pub fn add_proxy(
 		&self,
 		delegate: MultiAddress<AccountId, u32>,
@@ -99,14 +98,13 @@ impl Proxy {
 	///
 	/// Requires a `Signed` origin.
 	///
-	///	- `proxy_type`: The type of the proxy that the sender will be registered as over the
-	///	new account. This will almost always be the most permissive `ProxyType` possible to
-	///	allow for maximum flexibility.
-	///	- `index`: A disambiguation index, in case this is called multiple times in the same
-	///	transaction (e.g. with `utility::batch`). Unless you're using `batch` you probably just
-	///	want to use `0`.
-	/// - `delay`: The announcement period required of the initial proxy. Will generally be
-	///	zero.
+	/// - `proxy_type`: The type of the proxy that the sender will be registered as over the
+	///    new account. This will almost always be the most permissive `ProxyType` possible to
+	///    allow for maximum flexibility.
+	/// - `index`: A disambiguation index, in case this is called multiple times in the same
+	///    transaction (e.g. with `utility::batch`). Unless you're using `batch` you probably just
+	///    want to use `0`.
+	/// - `delay`: The announcement period required of the initial proxy. Will generally be zero.
 	///
 	/// Fails with `Duplicate` if this has already been called in this transaction, from the
 	/// same sender, with the same parameters.

@@ -233,6 +233,29 @@ impl Client {
 
 	// Submission
 	/// TODO
+	pub async fn sign<T>(
+		&self,
+		signer: &Keypair,
+		payload: &DefaultPayload<T>,
+		options: Options,
+	) -> Result<Vec<u8>, RpcError>
+	where
+		T: StaticExtrinsic + EncodeAsFields,
+	{
+		let account_id = signer.public_key().to_account_id();
+		let options = options.build(self, &account_id).await?;
+		let params = options.clone().build().await;
+		if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data")
+		{
+			let err = RpcError::TransactionNotAllowed("Transaction is not compatible with non-zero AppIds".into());
+			return Err(err);
+		}
+
+		let mut tx_client = self.online_client.tx();
+		let signed_call = tx_client.create_signed(payload, signer, params).await?;
+		Ok(signed_call.into_encoded())
+	}
+
 	pub async fn sign_and_submit<T>(
 		&self,
 		signer: &Keypair,
@@ -260,7 +283,7 @@ impl Client {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct CachedChainBlocks {
 	blocks: [Option<(H256, Arc<ChainBlock>)>; MAX_CHAIN_BLOCKS],
 	ptr: usize,
@@ -272,11 +295,9 @@ impl CachedChainBlocks {
 	}
 
 	pub fn find(&self, block_hash: H256) -> Option<Arc<ChainBlock>> {
-		for value in self.blocks.iter() {
-			if let Some((hash, block)) = value {
-				if *hash == block_hash {
-					return Some(block.clone());
-				}
+		for (hash, block) in self.blocks.iter().flatten() {
+			if *hash == block_hash {
+				return Some(block.clone());
 			}
 		}
 
@@ -288,15 +309,6 @@ impl CachedChainBlocks {
 		self.ptr += 1;
 		if self.ptr >= MAX_CHAIN_BLOCKS {
 			self.ptr = 0;
-		}
-	}
-}
-
-impl Default for CachedChainBlocks {
-	fn default() -> Self {
-		Self {
-			blocks: [None, None, None],
-			ptr: 0,
 		}
 	}
 }

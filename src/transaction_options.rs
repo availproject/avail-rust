@@ -52,7 +52,7 @@ impl Options {
 		};
 		let mortality = match &self.mortality {
 			Some(MortalityOption::Period(period)) => Mortality::from_period(client, *period).await?,
-			Some(MortalityOption::Full(mortality)) => mortality.clone(),
+			Some(MortalityOption::Full(mortality)) => *mortality,
 			None => Mortality::from_period(client, 32).await?,
 		};
 
