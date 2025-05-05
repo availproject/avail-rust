@@ -1,6 +1,6 @@
 use super::platform::sleep;
 use crate::{
-	client_rpc::ChainBlock,
+	client::rpc::ChainBlock,
 	error::RpcError,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
 	AccountId, AvailConfig, AvailExtrinsicParamsBuilder, Client, H256,

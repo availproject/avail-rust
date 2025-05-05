@@ -1,4 +1,4 @@
-use super::platform::spawn;
+use crate::platform::spawn;
 use serde::Serialize;
 use serde_json::value::{to_raw_value, RawValue};
 use std::{

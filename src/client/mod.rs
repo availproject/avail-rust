@@ -1,81 +1,23 @@
+pub mod reqwest;
+pub mod rpc;
+pub mod runtime_api;
+
 use crate::{
 	avail::{runtime_types::pallet_balances::types::AccountData, system::storage::types::account::Account},
-	client_rpc::ChainBlock,
 	error::{ClientError, RpcError},
 	transaction::{BlockId, SubmittedTransaction},
 	transactions::Transactions,
-	AConstantsClient, AOnlineClient, AStorageClient, AccountId, AvailHeader, BlockState, Options, H256,
+	ABlocksClient, AConstantsClient, AOnlineClient, AStorageClient, AccountId, AvailHeader, BlockState, Options, H256,
 };
 use log::info;
+use rpc::ChainBlock;
 use std::{fmt::Debug, sync::Arc};
 use subxt::{backend::rpc::RpcClient, blocks::StaticExtrinsic, ext::scale_encode::EncodeAsFields, tx::DefaultPayload};
 use subxt_signer::sr25519::Keypair;
 
-/* pub async fn http_api(endpoint: &str) -> Result<Client, ClientError> {
-	let rpc_client = http::HttpClient::new(endpoint).map_err(|e| e.to_string())?;
-	let rpc_client = RpcClient::new(rpc_client);
-
-	// Cloning RpcClient is cheaper and doesn't create a new WS connection
-	let api = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
-	let client = Client::new(api, rpc_client);
-
-	Ok(client)
-} */
-
 type SharedCache = Arc<std::sync::Mutex<Cache>>;
 
 const MAX_CHAIN_BLOCKS: usize = 3;
-#[derive(Clone)]
-pub struct CachedChainBlocks {
-	blocks: [Option<(H256, Arc<ChainBlock>)>; MAX_CHAIN_BLOCKS],
-	ptr: usize,
-}
-
-impl CachedChainBlocks {
-	pub fn new() -> Self {
-		Self::default()
-	}
-
-	pub fn find(&self, block_hash: H256) -> Option<Arc<ChainBlock>> {
-		for value in self.blocks.iter() {
-			if let Some((hash, block)) = value {
-				if *hash == block_hash {
-					return Some(block.clone());
-				}
-			}
-		}
-
-		None
-	}
-
-	pub fn push(&mut self, value: (H256, Arc<ChainBlock>)) {
-		self.blocks[self.ptr] = Some(value);
-		self.ptr += 1;
-		if self.ptr >= MAX_CHAIN_BLOCKS {
-			self.ptr = 0;
-		}
-	}
-}
-
-impl Default for CachedChainBlocks {
-	fn default() -> Self {
-		Self {
-			blocks: [None, None, None],
-			ptr: 0,
-		}
-	}
-}
-
-#[derive(Default)]
-pub struct Cache {
-	pub chain_blocks_cache: CachedChainBlocks,
-}
-
-impl Debug for Cache {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.debug_struct("Cache").field("last_fetched_block", &"").finish()
-	}
-}
 
 #[derive(Clone)]
 pub struct Client {
@@ -86,9 +28,13 @@ pub struct Client {
 
 impl Client {
 	pub async fn new(endpoint: &str) -> Result<Client, ClientError> {
-		let rpc_client = super::client_reqwest::ReqwestClient::new(endpoint);
+		let rpc_client = reqwest::ReqwestClient::new(endpoint);
 		let rpc_client = RpcClient::new(rpc_client);
 
+		Self::new_custom(rpc_client).await
+	}
+
+	pub async fn new_custom(rpc_client: RpcClient) -> Result<Client, ClientError> {
 		// Cloning RpcClient is cheaper and doesn't create a new connection
 		let online_client = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
 
@@ -270,6 +216,10 @@ impl Client {
 	}
 
 	// Subxt
+	pub fn subxt_blocks(&self) -> ABlocksClient {
+		self.online_client.blocks()
+	}
+
 	pub fn subxt_storage(&self) -> AStorageClient {
 		self.online_client.storage()
 	}
@@ -304,5 +254,57 @@ impl Client {
 		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
 
 		Ok(SubmittedTransaction::new(self.clone(), tx_hash, account_id, &options))
+	}
+}
+
+#[derive(Clone)]
+pub struct CachedChainBlocks {
+	blocks: [Option<(H256, Arc<ChainBlock>)>; MAX_CHAIN_BLOCKS],
+	ptr: usize,
+}
+
+impl CachedChainBlocks {
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub fn find(&self, block_hash: H256) -> Option<Arc<ChainBlock>> {
+		for value in self.blocks.iter() {
+			if let Some((hash, block)) = value {
+				if *hash == block_hash {
+					return Some(block.clone());
+				}
+			}
+		}
+
+		None
+	}
+
+	pub fn push(&mut self, value: (H256, Arc<ChainBlock>)) {
+		self.blocks[self.ptr] = Some(value);
+		self.ptr += 1;
+		if self.ptr >= MAX_CHAIN_BLOCKS {
+			self.ptr = 0;
+		}
+	}
+}
+
+impl Default for CachedChainBlocks {
+	fn default() -> Self {
+		Self {
+			blocks: [None, None, None],
+			ptr: 0,
+		}
+	}
+}
+
+#[derive(Default)]
+pub struct Cache {
+	pub chain_blocks_cache: CachedChainBlocks,
+}
+
+impl Debug for Cache {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("Cache").field("last_fetched_block", &"").finish()
 	}
 }
