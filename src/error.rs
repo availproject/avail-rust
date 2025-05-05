@@ -1,22 +1,17 @@
-#[derive(Debug)]
-pub enum RpcError {
-	Subxt(subxt::Error),
-	SubxtCore(subxt_core::Error),
-	SubxtRpcs(subxt_rpcs::Error),
-	Custom(String),
-	TransactionNotAllowed(String),
-}
+use thiserror::Error;
 
-impl RpcError {
-	pub fn to_string(&self) -> String {
-		match self {
-			Self::Subxt(e) => e.to_string(),
-			Self::SubxtCore(e) => e.to_string(),
-			Self::SubxtRpcs(e) => e.to_string(),
-			Self::Custom(e) => e.to_string(),
-			Self::TransactionNotAllowed(e) => e.to_string(),
-		}
-	}
+#[derive(Error, Debug)]
+pub enum RpcError {
+	#[error("{0}")]
+	Subxt(subxt::Error),
+	#[error("{0}")]
+	SubxtCore(subxt_core::Error),
+	#[error("{0}")]
+	SubxtRpcs(subxt_rpcs::Error),
+	#[error("{0}")]
+	Custom(String),
+	#[error("Transaction is not allowed. {0}")]
+	TransactionNotAllowed(String),
 }
 
 impl From<subxt_core::Error> for RpcError {
@@ -49,38 +44,17 @@ impl From<&str> for RpcError {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum ClientError {
-	Custom(String),
+	#[error("Subxt error. {0}")]
 	Subxt(subxt::Error),
+	#[error("Rpc error. {0}")]
 	RpcError(RpcError),
-}
-
-impl ClientError {
-	pub fn to_string(&self) -> String {
-		match self {
-			Self::Custom(e) => e.clone(),
-			Self::Subxt(e) => e.to_string(),
-			Self::RpcError(e) => e.to_string(),
-		}
-	}
 }
 
 impl From<RpcError> for ClientError {
 	fn from(value: RpcError) -> Self {
 		Self::RpcError(value)
-	}
-}
-
-impl From<&str> for ClientError {
-	fn from(value: &str) -> Self {
-		Self::Custom(value.to_string())
-	}
-}
-
-impl From<String> for ClientError {
-	fn from(value: String) -> Self {
-		Self::Custom(value.to_string())
 	}
 }
 

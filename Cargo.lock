@@ -297,6 +297,7 @@ dependencies = [
  "subxt-core",
  "subxt-rpcs",
  "subxt-signer",
+ "thiserror 2.0.12",
  "tokio",
  "wasm-bindgen-futures",
  "wasmtimer",
