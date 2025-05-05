@@ -3146,7 +3146,6 @@ dependencies = [
  "frame-metadata 20.0.0",
  "futures",
  "hex",
- "jsonrpsee",
  "parity-scale-codec",
  "primitive-types",
  "scale-bits",
@@ -3167,7 +3166,6 @@ dependencies = [
  "tokio-util",
  "tracing",
  "url",
- "wasm-bindgen-futures",
  "web-time",
 ]
 
@@ -3298,7 +3296,6 @@ dependencies = [
  "subxt-core",
  "subxt-lightclient",
  "thiserror 2.0.12",
- "tokio-util",
  "tracing",
  "url",
  "wasm-bindgen-futures",

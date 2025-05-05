@@ -35,11 +35,11 @@ mod transaction_state;
 mod turbo_da;
 mod validator;
 
-use avail_rust::{error::ClientError, SDK};
+use avail_rust::{error::ClientError, Client};
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), ClientError> {
-	SDK::enable_logging();
+	Client::enable_logging();
 
 	// account::run().await?;
 	// batch::run().await?;

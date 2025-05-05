@@ -18,7 +18,7 @@ use subxt_signer::sr25519::Keypair;
 pub type Params =
 	<<AvailConfig as subxt::Config>::ExtrinsicParams as subxt::config::ExtrinsicParams<AvailConfig>>::Params;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SubmittableTransaction<T>
 where
 	T: StaticExtrinsic + EncodeAsFields,

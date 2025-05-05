@@ -14,15 +14,11 @@ derive_more = { version = "1", default-features = false, features = ["from", "co
 tokio = { version = "1.42.0", default-features = false }
 subxt = { version = "0.41.0", default-features = false }
 subxt-core = { version = "0.41.0", default-features = false  }
-subxt-signer = { version = "0.41.0", default-features = false }
+subxt-signer = { version = "0.41.0", default-features = false, features = ["sr25519", "subxt"] }
 subxt-rpcs = { version = "0.41.0", default-features = false }
 serde = { version = "1.0.195", features = ["derive", ] }
 serde_json = { version = "1.0.124", features = ["raw_value"] }
-codec = { package = "parity-scale-codec", version = "3", default-features = false, features = [
-	"derive",
-	"full",
-	"bit-vec",
-] }
+codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "full", "bit-vec"] }
 impl-serde = { version = "0.4.0", default-features = false }
 scale-info = { version = "2.5.0", features = ["bit-vec"] }
 hex = { version = "0.4" }
@@ -43,14 +39,12 @@ wasmtimer = { version = "0.4.1", optional = true }
 default = [ "native" ]
 native = [
 	"derive_more/std",
-	"subxt/default",
+	"subxt/native",
 	"subxt-core/std",
-	"subxt-signer/default",
+	"subxt-signer/std",
 ]
 wasm = [
 	"subxt/web",
 	"subxt-signer/web",
-	"subxt-signer/sr25519",
-	"subxt-signer/subxt",
 	"wasmtimer"
 ]

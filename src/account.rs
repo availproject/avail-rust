@@ -1,41 +1,8 @@
 use crate::{
 	avail::{self},
-	error::ClientError,
 	AccountId, Client,
 };
 use primitive_types::H256;
-use std::str::FromStr;
-use subxt_signer::{sr25519::Keypair, SecretUri};
-
-pub fn from_secret_uri(uri: &str) -> Result<Keypair, ClientError> {
-	let secret_uri = SecretUri::from_str(uri)?;
-	let keypair = Keypair::from_uri(&secret_uri)?;
-	Ok(keypair)
-}
-
-pub fn alice() -> Keypair {
-	subxt_signer::sr25519::dev::alice()
-}
-
-pub fn bob() -> Keypair {
-	subxt_signer::sr25519::dev::bob()
-}
-
-pub fn charlie() -> Keypair {
-	subxt_signer::sr25519::dev::charlie()
-}
-
-pub fn dave() -> Keypair {
-	subxt_signer::sr25519::dev::dave()
-}
-
-pub fn eve() -> Keypair {
-	subxt_signer::sr25519::dev::eve()
-}
-
-pub fn ferdie() -> Keypair {
-	subxt_signer::sr25519::dev::ferdie()
-}
 
 pub async fn app_keys(client: &Client, account_id: AccountId, block_hash: H256) -> Result<Vec<(String, u32)>, String> {
 	let storage = client.subxt_storage().at(block_hash);

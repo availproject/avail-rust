@@ -1,8 +1,9 @@
 use crate::{
 	avail::{runtime_types::pallet_balances::types::AccountData, system::storage::types::account::Account},
 	client_rpc::ChainBlock,
-	error::RpcError,
+	error::{ClientError, RpcError},
 	transaction::{BlockId, SubmittedTransaction},
+	transactions::Transactions,
 	AConstantsClient, AOnlineClient, AStorageClient, AccountId, AvailHeader, BlockState, Options, H256,
 };
 use log::info;
@@ -76,7 +77,7 @@ impl Debug for Cache {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Client {
 	pub online_client: AOnlineClient,
 	pub rpc_client: RpcClient,
@@ -84,12 +85,26 @@ pub struct Client {
 }
 
 impl Client {
-	pub fn new(online_client: AOnlineClient, rpc_client: RpcClient) -> Client {
-		Self {
+	pub async fn new(endpoint: &str) -> Result<Client, ClientError> {
+		let rpc_client = super::client_reqwest::ReqwestClient::new(endpoint);
+		let rpc_client = RpcClient::new(rpc_client);
+
+		// Cloning RpcClient is cheaper and doesn't create a new connection
+		let online_client = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
+
+		Ok(Self {
 			online_client,
 			rpc_client,
 			cache: SharedCache::default(),
-		}
+		})
+	}
+
+	pub fn tx(&self) -> Transactions {
+		Transactions::new(self.clone())
+	}
+
+	pub fn enable_logging() {
+		env_logger::builder().init();
 	}
 
 	// Header

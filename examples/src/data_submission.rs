@@ -1,23 +1,20 @@
 use std::time::Duration;
 
+use avail_rust::constants::*;
 use avail_rust::prelude::*;
 use tokio::time::sleep;
 
 pub async fn run() -> Result<(), ClientError> {
-	let sdk = SDK::new(SDK::local_endpoint()).await?;
+	let client = Client::new(LOCAL_ENDPOINT).await?;
 
-	let account_id = account::alice().public_key().to_account_id();
-	let a = sdk.client.nonce(&std::format!("{}", account_id)).await?;
-	dbg!(a);
-
-	let s = sdk.clone();
-	let t1 = tokio::spawn(async move { task(s, account::alice(), false).await });
-	let s = sdk.clone();
-	let t2 = tokio::spawn(async move { task(s, account::bob(), true).await });
-	let s = sdk.clone();
-	let t3 = tokio::spawn(async move { task(s, account::charlie(), true).await });
-	let s = sdk.clone();
-	let t4 = tokio::spawn(async move { task(s, account::dave(), true).await });
+	let s = client.clone();
+	let t1 = tokio::spawn(async move { task(s, alice(), false).await });
+	let s = client.clone();
+	let t2 = tokio::spawn(async move { task(s, bob(), true).await });
+	let s = client.clone();
+	let t3 = tokio::spawn(async move { task(s, charlie(), true).await });
+	let s = client.clone();
+	let t4 = tokio::spawn(async move { task(s, dave(), true).await });
 
 	t1.await.unwrap()?;
 	t2.await.unwrap()?;
@@ -27,11 +24,11 @@ pub async fn run() -> Result<(), ClientError> {
 	Ok(())
 }
 
-async fn task(sdk: SDK, account: Keypair, _d: bool) -> Result<(), ClientError> {
+async fn task(client: Client, account: Keypair, _d: bool) -> Result<(), ClientError> {
 	// Data Submission
 	let data = String::from("My Data").into_bytes();
 	let options = Options::new().app_id(2);
-	let tx = sdk.tx.data_availability.submit_data(data);
+	let tx = client.tx().data_availability.submit_data(data);
 
 	// SubmittedTransaction -> Transaction Hash, and Transaction extra
 	let st: SubmittedTransaction = tx.sign_and_submit(&account, options).await?;

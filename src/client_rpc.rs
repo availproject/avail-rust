@@ -69,6 +69,13 @@ pub struct ChainBlockBlock {
 }
 
 impl Client {
+	// TODO remove this is just for testing
+	pub async fn rpc_error(&self) -> Result<u32, subxt_rpcs::Error> {
+		let params = rpc_params![];
+		let value = self.rpc_client.request("system_accountNextIndexx", params).await?;
+		Ok(value)
+	}
+
 	pub async fn rpc_system_account_next_index(&self, address: &str) -> Result<u32, subxt_rpcs::Error> {
 		let params = rpc_params![address];
 		let value = self.rpc_client.request("system_accountNextIndex", params).await?;
