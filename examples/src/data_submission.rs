@@ -1,40 +1,53 @@
 use crate::ReturnResult;
-use avail_rust::block::rpc_block_data::BlockBuilder;
-use avail_rust::client::rpc::rpc_block_data::{CallFilter, EventFilter, PhaseFilterOptions, TransactionFilterOptions};
+use avail_rust::block::rpc_block_overview::BlockBuilder;
+use avail_rust::client::rpc::rpc_block_overview::{SignatureFilterOptions, TransactionFilterOptions};
+/* use avail_rust::block::rpc_block_data::BlockBuilder;
+use avail_rust::client::rpc::rpc_block_data::{CallFilter, EventFilter, PhaseFilterOptions, TransactionFilterOptions}; */
 use avail_rust::prelude::{dev_accounts::*, *};
-use avail_rust::primitives::block::extrinsics::UncheckedEvent;
-use avail_rust::AppUncheckedExtrinsic;
-use codec::Decode;
 use std::time::Duration;
 use tokio::time::sleep;
 
 pub async fn run() -> ReturnResult {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
-	let mut call_filter = CallFilter::default();
-	call_filter.transaction = TransactionFilterOptions::TxIndex(vec![1]);
-	let mut event_filter = EventFilter::default();
-	event_filter.phase = PhaseFilterOptions::TxIndex(vec![1]);
-	let builder = BlockBuilder::new(HashIndex::Index(3));
-	let builder = builder
+	let mut tx_filter = TransactionFilterOptions::default();
+	tx_filter = TransactionFilterOptions::TxHash(vec![H256::from_str(
+		"0xa719094b7be31c79dbf412561f28675f1f3c6294e07b296660f9f74143a0417a",
+	)
+	.unwrap()]);
+	let mut sig_filter = SignatureFilterOptions::default();
+	sig_filter.nonce = Some(0);
+
+	let block = BlockBuilder::new(HashIndex::Index(5))
+		.transaction_filter(tx_filter)
+		.signature_filter(sig_filter)
 		.fetch_events(true)
-		.fetch_calls(true)
-		.call_filter(call_filter)
-		.event_filter(event_filter);
-	let res = builder.build(&client).await?;
+		.enable_event_decoding(true)
+		.enable_call_decoding(true)
+		.build(&client)
+		.await?;
+	dbg!(block);
 
-	for event_data in res.events.iter().flatten() {
-		let hex_decoded = hex::decode(event_data.event.trim_start_matches("0x").clone())?;
-		let ev = UncheckedEvent::decode(&mut hex_decoded.as_slice())?;
-		dbg!(ev);
-	}
+	/* 	let mut call_filter = CallFilter::default();
+	   call_filter.transaction = TransactionFilterOptions::TxIndex(vec![1]);
+	   let mut event_filter = EventFilter::default();
+	   event_filter.phase = PhaseFilterOptions::TxIndex(vec![1]);
+	   let builder = BlockBuilder::new(HashIndex::Index(9));
+	   let builder = builder
+		   .fetch_events(true)
+		   .fetch_calls(true)
+		   .call_filter(call_filter)
+		   .event_filter(event_filter);
+	   let res = builder.build(&client).await?;
 
-	for call_data in res.calls.iter().flatten() {
-		let hex_decoded = hex::decode(call_data.call.trim_start_matches("0x").clone())?;
-		let app = AppUncheckedExtrinsic::decode(&mut hex_decoded.as_slice())?;
-		dbg!(app);
-	}
+	   for event_data in res.events.iter().flatten() {
+		   dbg!(event_data);
+	   }
 
+	   for call_data in res.calls.iter().flatten() {
+		   dbg!(call_data);
+	   }
+	*/
 	todo!();
 
 	let s = client.clone();
