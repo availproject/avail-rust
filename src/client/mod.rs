@@ -57,7 +57,7 @@ impl Client {
 	}
 
 	// Header
-	pub async fn header(&self, at: H256) -> Result<Option<AvailHeader>, subxt_rpcs::Error> {
+	pub async fn header(&self, at: H256) -> Result<Option<AvailHeader>, RpcError> {
 		self.rpc_chain_get_header(Some(at)).await
 	}
 
@@ -78,7 +78,7 @@ impl Client {
 	}
 
 	// (RPC) Block
-	pub async fn block(&self, at: H256) -> Result<Option<ChainBlock>, subxt_rpcs::Error> {
+	pub async fn block(&self, at: H256) -> Result<Option<ChainBlock>, RpcError> {
 		self.rpc_chain_get_block(Some(at)).await
 	}
 
@@ -99,7 +99,7 @@ impl Client {
 	}
 
 	// Block Hash
-	pub async fn block_hash(&self, block_height: u32) -> Result<Option<H256>, subxt_rpcs::Error> {
+	pub async fn block_hash(&self, block_height: u32) -> Result<Option<H256>, RpcError> {
 		self.rpc_chain_get_block_hash(Some(block_height)).await
 	}
 
@@ -111,12 +111,12 @@ impl Client {
 		Ok(hash)
 	}
 
-	pub async fn finalized_block_hash(&self) -> Result<H256, subxt_rpcs::Error> {
+	pub async fn finalized_block_hash(&self) -> Result<H256, RpcError> {
 		self.rpc_chain_get_finalized_head().await
 	}
 
 	// Block Height
-	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, subxt_rpcs::Error> {
+	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, RpcError> {
 		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
 		Ok(header.map(|x| x.number))
 	}
@@ -149,7 +149,7 @@ impl Client {
 	}
 
 	// Nonce
-	pub async fn nonce(&self, address: &str) -> Result<u32, subxt_rpcs::Error> {
+	pub async fn nonce(&self, address: &str) -> Result<u32, RpcError> {
 		self.rpc_system_account_next_index(address).await
 	}
 

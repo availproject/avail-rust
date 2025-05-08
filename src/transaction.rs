@@ -191,7 +191,7 @@ impl TransactionReceipt {
 }
 
 /// TODO
-pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Result<Arc<ChainBlock>, subxt::Error> {
+pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Result<Arc<ChainBlock>, RpcError> {
 	if let Ok(cache) = client.cache.lock() {
 		if let Some(block) = cache.chain_blocks_cache.find(block_id.hash) {
 			return Ok(block);
@@ -200,9 +200,8 @@ pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Res
 
 	let block = client.block(block_id.hash).await?;
 	let Some(block) = block else {
-		let err = std::format!("{}", block_id.hash);
-		let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
-		return Err(err);
+		let err = std::format!("{} not found", block_id.hash);
+		return Err(err.into());
 	};
 	let block = Arc::new(block);
 	if let Ok(mut cache) = client.cache.lock() {

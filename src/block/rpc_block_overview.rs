@@ -1,10 +1,8 @@
 use crate::{
 	client::{rpc::rpc_block_overview, Client},
-	config::{BlockId, DispatchIndex, EmittedIndex, HashIndex, RuntimePhase, TransactionLocation},
-	primitives::block::extrinsics::UncheckedEvent,
-	AppUncheckedExtrinsic,
+	config::HashIndex,
+	error::RpcError,
 };
-use codec::Decode;
 
 #[derive(Clone)]
 pub struct BlockBuilder {
@@ -53,7 +51,7 @@ impl BlockBuilder {
 		self
 	}
 
-	pub async fn build(&self, client: &Client) -> Result<rpc_block_overview::Block, subxt_rpcs::Error> {
+	pub async fn build(&self, client: &Client) -> Result<rpc_block_overview::Block, RpcError> {
 		client.rpc_block_overview(self.params.clone()).await.map(|x| x.value)
 	}
 }

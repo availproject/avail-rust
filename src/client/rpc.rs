@@ -318,101 +318,98 @@ impl Client {
 	pub async fn rpc_block_overview(
 		&self,
 		params: rpc_block_overview::Params,
-	) -> Result<rpc_block_overview::Response, subxt_rpcs::Error> {
+	) -> Result<rpc_block_overview::Response, RpcError> {
 		let params = rpc_params![params];
 		let value = self.rpc_client.request("block_overview", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_block_data(
-		&self,
-		params: rpc_block_data::Params,
-	) -> Result<rpc_block_data::Response, subxt_rpcs::Error> {
+	pub async fn rpc_block_data(&self, params: rpc_block_data::Params) -> Result<rpc_block_data::Response, RpcError> {
 		let params = rpc_params![params];
 		let value = self.rpc_client.request("block_data", params).await?;
 		Ok(value)
 	}
 
 	// TODO remove this is just for testing
-	pub async fn rpc_error(&self) -> Result<u32, subxt_rpcs::Error> {
+	pub async fn rpc_error(&self) -> Result<u32, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_accountNextIndexx", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_account_next_index(&self, address: &str) -> Result<u32, subxt_rpcs::Error> {
+	pub async fn rpc_system_account_next_index(&self, address: &str) -> Result<u32, RpcError> {
 		let params = rpc_params![address];
 		let value = self.rpc_client.request("system_accountNextIndex", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_chain(&self) -> Result<String, subxt_rpcs::Error> {
+	pub async fn rpc_system_chain(&self) -> Result<String, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_chain", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_chain_type(&self) -> Result<String, subxt_rpcs::Error> {
+	pub async fn rpc_system_chain_type(&self) -> Result<String, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_chainType", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_health(&self) -> Result<SystemHealth, subxt_rpcs::Error> {
+	pub async fn rpc_system_health(&self) -> Result<SystemHealth, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_health", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_local_listen_addresses(&self) -> Result<Vec<String>, subxt_rpcs::Error> {
+	pub async fn rpc_system_local_listen_addresses(&self) -> Result<Vec<String>, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_localListenAddresses", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_local_peer_id(&self) -> Result<String, subxt_rpcs::Error> {
+	pub async fn rpc_system_local_peer_id(&self) -> Result<String, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_localPeerId", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_name(&self) -> Result<String, subxt_rpcs::Error> {
+	pub async fn rpc_system_name(&self) -> Result<String, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_name", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_node_roles(&self) -> Result<Vec<NodeRole>, subxt_rpcs::Error> {
+	pub async fn rpc_system_node_roles(&self) -> Result<Vec<NodeRole>, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_nodeRoles", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_peers(&self) -> Result<Vec<PeerInfo>, subxt_rpcs::Error> {
+	pub async fn rpc_system_peers(&self) -> Result<Vec<PeerInfo>, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_peers", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_properties(&self) -> Result<SystemProperties, subxt_rpcs::Error> {
+	pub async fn rpc_system_properties(&self) -> Result<SystemProperties, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_properties", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_sync_state(&self) -> Result<SyncState, subxt_rpcs::Error> {
+	pub async fn rpc_system_sync_state(&self) -> Result<SyncState, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_syncState", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_system_version(&self) -> Result<String, subxt_rpcs::Error> {
+	pub async fn rpc_system_version(&self) -> Result<String, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("system_version", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_chain_get_block(&self, at: Option<H256>) -> Result<Option<ChainBlock>, subxt_rpcs::Error> {
+	pub async fn rpc_chain_get_block(&self, at: Option<H256>) -> Result<Option<ChainBlock>, RpcError> {
 		let params = rpc_params![at];
 		let res: Option<ABlockDetailsRPC> = self.rpc_client.request("chain_getBlock", params).await?;
 		let Some(res) = res else { return Ok(None) };
@@ -427,22 +424,19 @@ impl Client {
 		Ok(Some(value))
 	}
 
-	pub async fn rpc_chain_get_block_hash(
-		&self,
-		block_height: Option<BlockNumber>,
-	) -> Result<Option<H256>, subxt_rpcs::Error> {
+	pub async fn rpc_chain_get_block_hash(&self, block_height: Option<BlockNumber>) -> Result<Option<H256>, RpcError> {
 		let params = rpc_params![block_height];
 		let value = self.rpc_client.request("chain_getBlockHash", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_chain_get_finalized_head(&self) -> Result<H256, subxt_rpcs::Error> {
+	pub async fn rpc_chain_get_finalized_head(&self) -> Result<H256, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("chain_getFinalizedHead", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_chain_get_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, subxt_rpcs::Error> {
+	pub async fn rpc_chain_get_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, RpcError> {
 		let params = rpc_params![at];
 		let value = self.rpc_client.request("chain_getHeader", params).await?;
 		Ok(value)
@@ -455,32 +449,27 @@ impl Client {
 		Ok(keys)
 	}
 
-	pub async fn rpc_author_submit_extrinsic(&self, extrinsic: &[u8]) -> Result<H256, subxt_rpcs::Error> {
+	pub async fn rpc_author_submit_extrinsic(&self, extrinsic: &[u8]) -> Result<H256, RpcError> {
 		let ext = std::format!("0x{}", hex::encode(extrinsic));
 		let params = rpc_params![ext];
 		let value: H256 = self.rpc_client.request("author_submitExtrinsic", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_state_get_runtime_version(&self, at: Option<H256>) -> Result<RuntimeVersion, subxt_rpcs::Error> {
+	pub async fn rpc_state_get_runtime_version(&self, at: Option<H256>) -> Result<RuntimeVersion, RpcError> {
 		let params = rpc_params![at];
 		let value = self.rpc_client.request("state_getRuntimeVersion", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_state_call(
-		&self,
-		method: &str,
-		data: &[u8],
-		at: Option<H256>,
-	) -> Result<String, subxt_rpcs::Error> {
+	pub async fn rpc_state_call(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<String, RpcError> {
 		let data = std::format!("0x{}", hex::encode(data));
 		let params = rpc_params![method, data, at];
 		let value = self.rpc_client.request("state_call", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, subxt_rpcs::Error> {
+	pub async fn rpc_kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, RpcError> {
 		let params = rpc_params![at];
 		let value = self.rpc_client.request("kate_blockLength", params).await?;
 		Ok(value)
@@ -496,23 +485,19 @@ impl Client {
 		Ok(value)
 	} */
 
-	pub async fn rpc_kate_query_proof(
-		&self,
-		cells: Vec<Cell>,
-		at: Option<H256>,
-	) -> Result<Vec<GDataProof>, subxt_rpcs::Error> {
+	pub async fn rpc_kate_query_proof(&self, cells: Vec<Cell>, at: Option<H256>) -> Result<Vec<GDataProof>, RpcError> {
 		let params = rpc_params![cells, at];
 		let value = self.rpc_client.request("kate_queryProof", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_kate_query_rows(&self, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, subxt_rpcs::Error> {
+	pub async fn rpc_kate_query_rows(&self, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, RpcError> {
 		let params = rpc_params![rows, at];
 		let value = self.rpc_client.request("kate_queryRows", params).await?;
 		Ok(value)
 	}
 
-	pub async fn rpc_rpc_methods(&self) -> Result<RpcMethods, subxt_rpcs::Error> {
+	pub async fn rpc_rpc_methods(&self) -> Result<RpcMethods, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("rpc_methods", params).await?;
 		Ok(value)

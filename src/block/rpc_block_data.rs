@@ -1,6 +1,7 @@
 use crate::{
 	client::{rpc::rpc_block_data, Client},
 	config::{BlockId, DispatchIndex, EmittedIndex, HashIndex, RuntimePhase, TransactionLocation},
+	error::RpcError,
 	primitives::block::extrinsics::UncheckedEvent,
 	AppUncheckedExtrinsic,
 };
@@ -43,7 +44,7 @@ impl BlockBuilder {
 		self
 	}
 
-	pub async fn build(&self, client: &Client) -> Result<Block, subxt_rpcs::Error> {
+	pub async fn build(&self, client: &Client) -> Result<Block, RpcError> {
 		let response = client.rpc_block_data(self.params.clone()).await.map(|x| x.value)?;
 		let calls = if let Some(list) = response.calls {
 			Some(list.into_iter().map(CallData::from).collect())
