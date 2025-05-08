@@ -3,7 +3,7 @@
 [package]
 name = "avail-rust"
 edition = "2021"
-version = "0.1.9"
+version = "0.1.10"
 license = "ISC"
 
 [lib]
