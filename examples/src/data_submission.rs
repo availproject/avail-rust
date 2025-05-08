@@ -10,7 +10,7 @@ use tokio::time::sleep;
 pub async fn run() -> ReturnResult {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
-	let mut tx_filter = TransactionFilterOptions::default();
+	/* 	let mut tx_filter = TransactionFilterOptions::default();
 	tx_filter = TransactionFilterOptions::TxHash(vec![H256::from_str(
 		"0xa719094b7be31c79dbf412561f28675f1f3c6294e07b296660f9f74143a0417a",
 	)
@@ -26,7 +26,7 @@ pub async fn run() -> ReturnResult {
 		.enable_call_decoding(true)
 		.build(&client)
 		.await?;
-	dbg!(block);
+	dbg!(block); */
 
 	/* 	let mut call_filter = CallFilter::default();
 	   call_filter.transaction = TransactionFilterOptions::TxIndex(vec![1]);
@@ -48,28 +48,27 @@ pub async fn run() -> ReturnResult {
 		   dbg!(call_data);
 	   }
 	*/
-	todo!();
 
 	let s = client.clone();
 	let t1 = tokio::spawn(async move { task(s, alice(), false).await });
-	let s = client.clone();
+	/* 	let s = client.clone();
 	let t2 = tokio::spawn(async move { task(s, bob(), true).await });
 	let s = client.clone();
 	let t3 = tokio::spawn(async move { task(s, charlie(), true).await });
 	let s = client.clone();
-	let t4 = tokio::spawn(async move { task(s, dave(), true).await });
+	let t4 = tokio::spawn(async move { task(s, dave(), true).await }); */
 
 	t1.await.unwrap()?;
-	t2.await.unwrap()?;
+	/* 	t2.await.unwrap()?;
 	t3.await.unwrap()?;
-	t4.await.unwrap()?;
+	t4.await.unwrap()?; */
 
 	Ok(())
 }
 
 async fn task(client: Client, account: Keypair, _d: bool) -> ReturnResult {
 	// Data Submission
-	let data = String::from("My Data").into_bytes();
+	let data = String::from("123").into_bytes();
 	let options = Options::new().app_id(2);
 	let tx = client.tx().data_availability.submit_data(data);
 

@@ -1,20 +1,25 @@
 use crate::{
-	avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength},
 	client::Client,
 	config::*,
 	error::RpcError,
 	from_substrate::{NodeRole, PeerInfo, SyncState},
-	utils::{self},
 	AvailHeader, Cell, GDataProof, GRow,
 };
 use primitive_types::H256;
 // use avail_core::data_proof::ProofResponse;
 use serde::{Deserialize, Serialize};
-use subxt::{
-	backend::legacy::rpc_methods::{BlockJustification, Bytes, RuntimeVersion, SystemHealth},
-	ext::subxt_rpcs::rpc_params,
-};
+use serde_json::value::RawValue;
 use subxt_core::config::{substrate::BlakeTwo256, Hasher};
+use subxt_rpcs::{
+	methods::legacy::{BlockJustification, Bytes, RuntimeVersion, SystemHealth},
+	rpc_params,
+};
+
+#[cfg(feature = "subxt")]
+use crate::utils;
+
+#[cfg(feature = "subxt")]
+use crate::avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength};
 
 /// Arbitrary properties defined in chain spec as a JSON object
 pub type SystemProperties = serde_json::map::Map<String, serde_json::Value>;
@@ -442,6 +447,7 @@ impl Client {
 		Ok(value)
 	}
 
+	#[cfg(feature = "subxt")]
 	pub async fn rpc_author_rotate_keys(&self) -> Result<SessionKeys, RpcError> {
 		let params = rpc_params![];
 		let value: Bytes = self.rpc_client.request("author_rotateKeys", params).await?;
@@ -469,6 +475,22 @@ impl Client {
 		Ok(value)
 	}
 
+	pub async fn rpc_state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
+		let params = rpc_params![at];
+		let value: String = self.rpc_client.request("state_getMetadata", params).await?;
+
+		Ok(hex::decode(value.trim_start_matches("0x")).unwrap())
+	}
+
+	pub async fn rpc_state_get_storage(&self, key: Vec<u8>, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
+		let key = hex::encode(key);
+		let params = rpc_params![key, at];
+		let value: String = self.rpc_client.request("state_getStorage", params).await?;
+
+		Ok(hex::decode(value.trim_start_matches("0x")).unwrap())
+	}
+
+	#[cfg(feature = "subxt")]
 	pub async fn rpc_kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, RpcError> {
 		let params = rpc_params![at];
 		let value = self.rpc_client.request("kate_blockLength", params).await?;

@@ -9,10 +9,10 @@ use crate::{
 use log::info;
 use primitive_types::H256;
 use std::{sync::Arc, time::Duration};
-use subxt::{
+use subxt_core::ext::scale_encode::EncodeAsFields;
+use subxt_core::{
 	blocks::StaticExtrinsic,
-	ext::scale_encode::EncodeAsFields,
-	tx::{DefaultPayload, Payload},
+	tx::payload::{DefaultPayload, Payload},
 };
 use subxt_signer::sr25519::Keypair;
 
@@ -38,7 +38,8 @@ where
 		account: &Keypair,
 		options: Option<Options>,
 	) -> Result<RuntimeDispatchInfo, RpcError> {
-		let account_id = account.public_key().to_account_id();
+		todo!()
+		/* 		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
 		let params = options.build().await;
@@ -51,7 +52,7 @@ where
 
 		let tx = tx.encoded();
 
-		self.client.api_transaction_payment_query_info(tx.to_vec(), None).await
+		self.client.api_transaction_payment_query_info(tx.to_vec(), None).await */
 	}
 
 	pub async fn payment_query_fee_details(
@@ -59,7 +60,8 @@ where
 		account: &Keypair,
 		options: Option<Options>,
 	) -> Result<FeeDetails, RpcError> {
-		let account_id = account.public_key().to_account_id();
+		todo!()
+		/* 		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
 		let params = options.build().await;
@@ -74,23 +76,25 @@ where
 
 		self.client
 			.api_transaction_payment_query_fee_details(tx.to_vec(), None)
-			.await
+			.await */
 	}
 
 	pub async fn payment_query_call_info(&self) -> Result<RuntimeDispatchInfo, RpcError> {
-		let metadata = self.client.online_client.metadata();
+		todo!()
+		/* 		let metadata = self.client.online_client.metadata();
 		let call = self.payload.encode_call_data(&metadata)?;
 
-		self.client.api_transaction_payment_query_call_info(call, None).await
+		self.client.api_transaction_payment_query_call_info(call, None).await */
 	}
 
 	pub async fn payment_query_call_fee_details(&self) -> Result<FeeDetails, RpcError> {
-		let metadata = self.client.online_client.metadata();
+		todo!()
+		/* 		let metadata = self.client.online_client.metadata();
 		let call = self.payload.encode_call_data(&metadata)?;
 
 		self.client
 			.api_transaction_payment_query_call_fee_details(call, None)
-			.await
+			.await */
 	}
 
 	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, RpcError> {

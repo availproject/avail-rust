@@ -5,8 +5,7 @@ use std::{
 	borrow::Cow,
 	sync::{Arc, Mutex},
 };
-use subxt::backend::rpc::RpcClientT;
-use subxt_rpcs::UserError;
+use subxt_rpcs::{RpcClientT, UserError};
 use tokio::sync::mpsc::{Receiver, Sender};
 
 /// Serializable [JSON-RPC object](https://www.jsonrpc.org/specification#request-object).

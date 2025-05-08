@@ -19,6 +19,30 @@ pub struct CheckAppId(pub AppId);
 impl<T: Config> transaction_extensions::Params<T> for AppId {}
 impl<T: Config> transaction_extensions::Params<T> for CheckAppId {}
 
+impl ExtrinsicParamsEncoder for CheckAppId {
+	fn encode_value_to(&self, v: &mut Vec<u8>) {
+		Compact::<u32>(self.0 .0 .0).encode_to(v);
+	}
+
+	fn encode_implicit_to(&self, _: &mut Vec<u8>) {}
+}
+
+impl<T: Config> subxt_core::config::ExtrinsicParams<T> for CheckAppId {
+	type Params = AppId;
+
+	fn new(_client: &ClientState<T>, id: Self::Params) -> Result<Self, ExtrinsicParamsError> {
+		Ok(CheckAppId(id))
+	}
+}
+
+impl<T: Config> transaction_extensions::TransactionExtension<T> for CheckAppId {
+	type Decoded = Compact<u32>;
+
+	fn matches(identifier: &str, _type_id: u32, _types: &PortableRegistry) -> bool {
+		identifier == "CheckAppId"
+	}
+}
+
 /// Type used only for decoding extrinsic from blocks.
 pub type OnlyCodecExtra = (
 	(),            // CheckNonZeroSender,
@@ -59,7 +83,7 @@ pub struct DefaultExtrinsicParamsBuilder<T: Config> {
 	app_id: AppId,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct Mortality<Hash> {
 	/// Block hash that mortality starts from
 	checkpoint_hash: Hash,
@@ -136,6 +160,7 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 	/// Build the extrinsic parameters.
 	pub fn build(self) -> <DefaultExtrinsicParams<T> as ExtrinsicParams<T>>::Params {
 		let check_mortality_params = if let Some(mortality) = self.mortality {
+			dbg!(&mortality);
 			transaction_extensions::CheckMortalityParams::mortal_from_unchecked(
 				mortality.period,
 				mortality.checkpoint_number,
@@ -160,29 +185,5 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 			charge_transaction_params,
 			self.app_id,
 		)
-	}
-}
-
-impl ExtrinsicParamsEncoder for CheckAppId {
-	fn encode_value_to(&self, v: &mut Vec<u8>) {
-		Compact::<u32>(self.0 .0 .0).encode_to(v);
-	}
-
-	fn encode_implicit_to(&self, _: &mut Vec<u8>) {}
-}
-
-impl<T: Config> transaction_extensions::TransactionExtension<T> for CheckAppId {
-	type Decoded = Compact<u32>;
-
-	fn matches(identifier: &str, _type_id: u32, _types: &PortableRegistry) -> bool {
-		identifier == "CheckAppId"
-	}
-}
-
-impl<T: Config> subxt::config::ExtrinsicParams<T> for CheckAppId {
-	type Params = AppId;
-
-	fn new(_client: &ClientState<T>, id: Self::Params) -> Result<Self, ExtrinsicParamsError> {
-		Ok(CheckAppId(id))
 	}
 }

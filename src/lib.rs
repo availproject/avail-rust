@@ -1,4 +1,6 @@
+#[cfg(feature = "subxt")]
 mod api_dev;
+
 mod from_substrate;
 
 pub mod block;
@@ -12,10 +14,16 @@ pub mod primitives;
 pub mod transaction;
 pub mod transaction_options;
 pub mod transactions;
+
+#[cfg(feature = "subxt")]
 pub mod utils;
 
+#[cfg(feature = "subxt")]
 pub use api_dev::api as avail;
-pub use avail::runtime_types::{bounded_collections::bounded_vec::BoundedVec, sp_arithmetic::per_things::Perbill};
+#[cfg(feature = "subxt")]
+pub use avail::runtime_types::sp_arithmetic::per_things::Perbill;
+
+pub use bounded_collections::BoundedVec;
 pub use primitives::{
 	block::{AppUncheckedExtrinsic, AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
 	kate::{Cell, GDataProof, GRow},
@@ -32,10 +40,12 @@ pub mod ext {
 	pub use scale_info;
 	pub use serde;
 	pub use serde_json;
-	pub use subxt;
 	pub use subxt_core;
 	pub use subxt_rpcs;
 	pub use subxt_signer;
+
+	#[cfg(feature = "subxt")]
+	pub use subxt;
 }
 
 pub mod prelude {
@@ -47,8 +57,11 @@ pub mod prelude {
 	pub use primitive_types::{H256, U256};
 	pub use subxt_signer::{sr25519::Keypair, SecretUri};
 
+	#[cfg(feature = "subxt")]
+	pub use super::{avail, Perbill};
+
 	pub use super::{
-		avail, client::Client, error::ClientError, error::RpcError, BlockState, BoundedVec, Perbill, ReceiptMethod,
+		client::Client, error::ClientError, error::RpcError, BlockState, BoundedVec, ReceiptMethod,
 		SubmittableTransaction, SubmittedTransaction, TransactionExtra, TransactionReceipt,
 	};
 }

@@ -1,9 +1,9 @@
 use crate::{client::Client, config::*, error::RpcError};
 use primitive_types::H256;
-use subxt::config::Header;
+use subxt_core::config::Header;
 
 pub type Params =
-	<<AvailConfig as subxt::Config>::ExtrinsicParams as subxt::config::ExtrinsicParams<AvailConfig>>::Params;
+	<<AvailConfig as subxt_core::Config>::ExtrinsicParams as subxt_core::config::ExtrinsicParams<AvailConfig>>::Params;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Options {
@@ -119,6 +119,8 @@ impl Mortality {
 
 	pub async fn from_period(client: &Client, period: u64) -> Result<Self, RpcError> {
 		let header = client.finalized_block_header().await?;
+		dbg!(&header.hash());
+		dbg!(&header.number());
 		let (block_hash, block_height) = (header.hash(), header.number());
 		Ok(Self {
 			period,

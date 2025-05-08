@@ -1,11 +1,10 @@
 use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
-use derive_more::Constructor;
 use primitive_types::U256;
 use serde::{Deserialize, Serialize};
 
 /// Compatible with `kate::com::Cell`
-#[derive(Clone, Constructor, Debug, Serialize, Deserialize, Encode, Decode)]
+#[derive(Clone, Debug, Serialize, Deserialize, Encode, Decode)]
 pub struct Cell {
 	#[codec(compact)]
 	pub row: u32,

@@ -1,13 +1,12 @@
 use super::extrinsics_params::OnlyCodecExtra;
-use crate::{
-	avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent},
-	config::{AppId, MultiAddress, RuntimePhase, Signature},
-};
+use crate::config::{AppId, MultiAddress, RuntimePhase, Signature};
+
+#[cfg(feature = "subxt")]
+use crate::avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
 
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
 use serde::{Deserialize, Serialize};
 use std::mem::size_of;
-use subxt::backend::legacy::rpc_methods::Bytes;
 
 pub type SignaturePayload = (MultiAddress, Signature, OnlyCodecExtra);
 
@@ -25,7 +24,10 @@ pub struct AppUncheckedExtrinsic {
 	/// if this is a signed extrinsic.
 	pub signature: Option<SignaturePayload>,
 	/// The function that should be called.
+	#[cfg(feature = "subxt")]
 	pub function: RuntimeCall,
+	#[cfg(not(feature = "subxt"))]
+	pub function: Vec<u8>,
 }
 
 impl AppUncheckedExtrinsic {
@@ -121,11 +123,10 @@ impl<'a> Deserialize<'a> for AppUncheckedExtrinsic {
 	}
 }
 
-impl TryFrom<Bytes> for AppUncheckedExtrinsic {
+impl TryFrom<Vec<u8>> for AppUncheckedExtrinsic {
 	type Error = String;
 
-	fn try_from(value: Bytes) -> Result<Self, Self::Error> {
-		let value: Vec<u8> = value.to_vec();
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		let mut value_as_slice = value.as_slice();
 
 		AppUncheckedExtrinsic::decode(&mut value_as_slice).map_err(|s| s.to_string())
@@ -135,5 +136,8 @@ impl TryFrom<Bytes> for AppUncheckedExtrinsic {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub struct UncheckedEvent {
 	pub phase: RuntimePhase,
+	#[cfg(feature = "subxt")]
 	pub event: RuntimeEvent,
+	#[cfg(not(feature = "subxt"))]
+	pub event: Vec<u8>,
 }

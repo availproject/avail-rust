@@ -23,7 +23,6 @@ subxt codegen --crate "::subxt_core" --version 14 \
 --derive-for-type avail_core::AppId=serde::Deserialize \
 --derive-for-type avail_core::AppId=Default \
 --derive-for-type avail_core::AppId=Copy \
---derive-for-type avail_core::AppId=derive_more::From \
 --derive-for-type avail_core::BlockLengthColumns=serde::Serialize \
 --derive-for-type avail_core::BlockLengthColumns=serde::Deserialize \
 --derive-for-type avail_core::BlockLengthRows=serde::Serialize \

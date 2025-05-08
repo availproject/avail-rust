@@ -1,7 +1,11 @@
 use codec::{Codec, Decode};
 use serde::{Serialize, Serializer};
 
+#[cfg(feature = "subxt")]
 use crate::avail::runtime_types::sp_consensus_grandpa::app::Public;
+
+#[cfg(not(feature = "subxt"))]
+pub type Public = [u8; 32];
 
 #[derive(Decode)]
 pub struct AuthorityId(pub Public);
@@ -11,8 +15,9 @@ impl Serialize for AuthorityId {
 	where
 		S: Serializer,
 	{
-		let raw = hex::encode(self.0 .0 .0);
-		serializer.serialize_str(&raw)
+		todo!();
+		//let raw = hex::encode(self.0 .0 .0);
+		//serializer.serialize_str(&raw)
 	}
 }
 

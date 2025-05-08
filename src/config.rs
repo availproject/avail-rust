@@ -1,41 +1,61 @@
 use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 use codec::{Compact, Decode, Encode};
+use primitive_types::H256;
 use serde::{Deserialize, Serialize};
+use subxt_core::config::substrate::BlakeTwo256;
+use subxt_core::utils::{AccountId32, MultiSignature};
+use subxt_core::Config;
+use subxt_rpcs::methods::legacy::BlockDetails as BlockDetailsRPC;
+
+#[cfg(feature = "subxt")]
 use subxt::{
-	backend::legacy::rpc_methods::BlockDetails as BlockDetailsRPC,
 	blocks::{Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, Extrinsics, FoundExtrinsic},
-	config::substrate::BlakeTwo256,
 	constants::ConstantsClient,
 	events::{EventDetails, Events, EventsClient},
 	storage::StorageClient,
 	tx::TxClient,
-	utils::{AccountId32, MultiSignature, H256},
-	Config, OnlineClient,
+	OnlineClient,
 };
+use subxt_core::ext::scale_decode::DecodeAsType;
+use subxt_core::ext::scale_encode::EncodeAsType;
+use subxt_rpcs::RpcConfig;
 
 /// Chain Primitives
 pub type AccountId = AccountId32;
 pub type AccountIndex = u32;
-pub type MultiAddress = subxt::utils::MultiAddress<AccountId, AccountIndex>;
+pub type MultiAddress = subxt_core::utils::MultiAddress<AccountId, AccountIndex>;
 pub type Signature = MultiSignature;
 pub type BlockNumber = u32;
 pub type BlockHash = H256;
 
 /// Clients
+#[cfg(feature = "subxt")]
 pub type AOnlineClient = OnlineClient<AvailConfig>;
+#[cfg(feature = "subxt")]
 pub type ABlocksClient = BlocksClient<AvailConfig, AOnlineClient>;
+#[cfg(feature = "subxt")]
 pub type AStorageClient = StorageClient<AvailConfig, AOnlineClient>;
+#[cfg(feature = "subxt")]
 pub type AConstantsClient = ConstantsClient<AvailConfig, AOnlineClient>;
+#[cfg(feature = "subxt")]
 pub type AEventsClient = EventsClient<AvailConfig, AOnlineClient>;
+#[cfg(feature = "subxt")]
 pub type ATxClient = TxClient<AvailConfig, AOnlineClient>;
 
 /// TX status
+#[cfg(feature = "subxt")]
 pub type AExtrinsicEvents = ExtrinsicEvents<AvailConfig>;
+#[cfg(feature = "subxt")]
 pub type AEvents = Events<AvailConfig>;
+#[cfg(feature = "subxt")]
 pub type AEventDetails = EventDetails<AvailConfig>;
+#[cfg(feature = "subxt")]
 pub type AExtrinsicDetails = ExtrinsicDetails<AvailConfig, AOnlineClient>;
+#[cfg(feature = "subxt")]
 pub type AFoundExtrinsic<T> = FoundExtrinsic<AvailConfig, AOnlineClient, T>;
+#[cfg(feature = "subxt")]
 pub type AExtrinsics = Extrinsics<AvailConfig, AOnlineClient>;
+#[cfg(feature = "subxt")]
 pub type ABlock = Block<AvailConfig, AOnlineClient>;
 
 /// Used only when chain_getBlock RPC is called. This is part of legacy baggage.
@@ -48,6 +68,27 @@ pub type AvailExtrinsicParams<T> = DefaultExtrinsicParams<T>;
 /// A builder which leads to [`PolkadotExtrinsicParams`] being constructed.
 /// This is what you provide to methods like `sign_and_submit()`.
 pub type AvailExtrinsicParamsBuilder = DefaultExtrinsicParamsBuilder<AvailConfig>;
+
+#[derive(Clone, Debug, Default)]
+pub struct AvailConfig;
+
+impl Config for AvailConfig {
+	type AccountId = AccountId;
+	type Address = MultiAddress;
+	type ExtrinsicParams = AvailExtrinsicParams<Self>;
+	type Hash = BlockHash;
+	type Hasher = BlakeTwo256;
+	type Header = AvailHeader;
+	type Signature = Signature;
+	type AssetId = u32;
+}
+
+#[cfg(not(feature = "subxt"))]
+impl RpcConfig for AvailConfig {
+	type Header = AvailHeader;
+	type Hash = BlockHash;
+	type AccountId = AccountId;
+}
 
 #[derive(Clone, Copy, Debug, Encode, Decode, Eq, PartialEq)]
 pub struct AppId(pub Compact<u32>);
@@ -114,16 +155,28 @@ pub enum RuntimePhase {
 pub type DispatchIndex = (u8, u8);
 pub type EmittedIndex = (u8, u8);
 
-#[derive(Clone, Debug, Default)]
-pub struct AvailConfig;
+#[cfg(not(feature = "subxt"))]
+#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[codec (crate = codec)]
+#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+pub struct AccountData {
+	pub free: u128,
+	pub reserved: u128,
+	pub frozen: u128,
+	pub flags: u128,
+}
 
-impl Config for AvailConfig {
-	type AccountId = AccountId;
-	type Address = MultiAddress;
-	type ExtrinsicParams = AvailExtrinsicParams<Self>;
-	type Hash = BlockHash;
-	type Hasher = BlakeTwo256;
-	type Header = AvailHeader;
-	type Signature = Signature;
-	type AssetId = u32;
+#[cfg(not(feature = "subxt"))]
+#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[codec (crate = codec)]
+#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+#[serde(rename_all = "camelCase")]
+pub struct AccountInfo {
+	pub nonce: u32,
+	pub consumers: u32,
+	pub providers: u32,
+	pub sufficients: u32,
+	pub data: AccountData,
 }
