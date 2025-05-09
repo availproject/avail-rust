@@ -10,12 +10,10 @@ use crate::{
 	transactions::Transactions,
 	AvailHeader, BlockState,
 };
-use codec::Decode;
 use log::info;
 use primitive_types::H256;
 use rpc::ChainBlock;
 use std::{fmt::Debug, sync::Arc};
-use subxt_core::client::ClientState;
 use subxt_core::ext::scale_encode::EncodeAsFields;
 use subxt_core::{blocks::StaticExtrinsic, tx::payload::DefaultPayload};
 use subxt_rpcs::RpcClient;
@@ -25,6 +23,12 @@ use subxt_signer::sr25519::Keypair;
 pub type AccountData = crate::avail::runtime_types::pallet_balances::types::AccountData<u128>;
 #[cfg(feature = "subxt_metadata")]
 use crate::avail::system::storage::types::account::Account as AccountInfo;
+
+#[cfg(not(feature = "subxt"))]
+use codec::Decode;
+
+#[cfg(not(feature = "subxt"))]
+use subxt_core::client::ClientState;
 
 type SharedCache = Arc<std::sync::Mutex<Cache>>;
 
@@ -298,6 +302,90 @@ impl Client {
 	}
 }
 
+#[cfg(all(feature = "subxt", not(feature = "subxt_metadata")))]
+impl Client {
+	// Account Info (nonce, balance, ...)
+	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
+		let storage = self.subxt_storage().at(at);
+		let address = crate::transactions::system::account(account_id);
+		Ok(storage.fetch_or_default(&address).await?)
+	}
+
+	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+		let at = self.best_block_hash().await?;
+		let storage = self.subxt_storage().at(at);
+		let address = crate::transactions::system::account(account_id);
+		Ok(storage.fetch_or_default(&address).await?)
+	}
+
+	pub async fn finalized_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+		let at = self.finalized_block_hash().await?;
+		let storage = self.subxt_storage().at(at);
+		let address = crate::transactions::system::account(account_id);
+		Ok(storage.fetch_or_default(&address).await?)
+	}
+}
+
+#[cfg(all(not(feature = "subxt"), feature = "subxt_metadata"))]
+impl Client {
+	// Account Info (nonce, balance, ...)
+	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
+		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
+		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
+		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
+		let address = crate::avail::storage().system().account(account_id);
+		Ok(crate::transactions::system::full(&metadata, &address, &self, at).await)
+	}
+
+	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+		let at = self.best_block_hash().await?;
+		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
+		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
+		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
+		let address = crate::avail::storage().system().account(account_id);
+		Ok(crate::transactions::system::full(&metadata, &address, &self, at).await)
+	}
+
+	pub async fn finalized_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+		let at = self.finalized_block_hash().await?;
+		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
+		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
+		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
+		let address = crate::avail::storage().system().account(account_id);
+		Ok(crate::transactions::system::full(&metadata, &address, &self, at).await)
+	}
+}
+
+#[cfg(all(not(feature = "subxt"), not(feature = "subxt_metadata")))]
+impl Client {
+	// Account Info (nonce, balance, ...)
+	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
+		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
+		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
+		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
+		let address = crate::transactions::system::account(account_id);
+		Ok(crate::transactions::system::full(&metadata, &address, &self, at).await)
+	}
+
+	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+		let at = self.best_block_hash().await?;
+		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
+		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
+		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
+		let address = crate::transactions::system::account(account_id);
+		Ok(crate::transactions::system::full(&metadata, &address, &self, at).await)
+	}
+
+	pub async fn finalized_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+		let at = self.finalized_block_hash().await?;
+		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
+		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
+		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
+		let address = crate::transactions::system::account(account_id);
+		Ok(crate::transactions::system::full(&metadata, &address, &self, at).await)
+	}
+}
+
 #[cfg(not(feature = "subxt"))]
 impl Client {
 	pub async fn new_custom(rpc_client: RpcClient) -> Result<Client, ClientError> {
@@ -390,36 +478,6 @@ impl Client {
 		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
 
 		Ok(SubmittedTransaction::new(self.clone(), tx_hash, account_id, &options))
-	}
-}
-
-#[cfg(not(feature = "subxt_metadata"))]
-impl Client {
-	// Account Info (nonce, balance, ...)
-	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
-		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
-		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
-		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
-		let address = crate::transactions::system::account(account_id);
-		Ok(crate::transactions::system::full(&metadata, &address, &self, at).await)
-	}
-
-	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
-		let at = self.best_block_hash().await?;
-		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
-		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
-		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
-		let address = crate::transactions::system::account(account_id);
-		Ok(crate::transactions::system::full(&metadata, &address, &self, at).await)
-	}
-
-	pub async fn finalized_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
-		let at = self.finalized_block_hash().await?;
-		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
-		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
-		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
-		let address = crate::transactions::system::account(account_id);
-		Ok(crate::transactions::system::full(&metadata, &address, &self, at).await)
 	}
 }
 

@@ -1,9 +1,10 @@
-use crate::client::Client;
-use crate::config::{AccountId, AccountInfo};
-use primitive_types::H256;
+#[cfg(not(feature = "subxt"))]
 use subxt_core::storage::address::Address;
-use subxt_core::utils::Yes;
 
+#[cfg(not(feature = "subxt_metadata"))]
+use crate::config::{AccountId, AccountInfo};
+
+#[cfg(not(feature = "subxt_metadata"))]
 pub fn account(
 	account_id: &AccountId,
 ) -> subxt_core::storage::address::StaticAddress<
@@ -22,14 +23,15 @@ pub fn account(
 	address.unvalidated()
 }
 
+#[cfg(not(feature = "subxt"))]
 pub async fn full<'address, Addr>(
 	metadata: &subxt_core::Metadata,
 	address: &'address Addr,
-	client: &Client,
-	block_hash: H256,
+	client: &crate::client::Client,
+	block_hash: primitive_types::H256,
 ) -> Addr::Target
 where
-	Addr: Address<IsFetchable = Yes, IsDefaultable = Yes> + 'address,
+	Addr: Address<IsFetchable = subxt_core::utils::Yes, IsDefaultable = subxt_core::utils::Yes> + 'address,
 {
 	let key = subxt_core::storage::get_address_bytes(address, &metadata).unwrap();
 	let data = client.rpc_state_get_storage(key, Some(block_hash)).await.unwrap();

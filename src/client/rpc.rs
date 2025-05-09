@@ -8,10 +8,9 @@ use crate::{
 use primitive_types::H256;
 // use avail_core::data_proof::ProofResponse;
 use serde::{Deserialize, Serialize};
-use serde_json::value::RawValue;
 use subxt_core::config::{substrate::BlakeTwo256, Hasher};
 use subxt_rpcs::{
-	methods::legacy::{BlockJustification, Bytes, RuntimeVersion, SystemHealth},
+	methods::legacy::{BlockJustification, RuntimeVersion, SystemHealth},
 	rpc_params,
 };
 
@@ -450,8 +449,8 @@ impl Client {
 	#[cfg(feature = "subxt_metadata")]
 	pub async fn rpc_author_rotate_keys(&self) -> Result<SessionKeys, RpcError> {
 		let params = rpc_params![];
-		let value: Bytes = self.rpc_client.request("author_rotateKeys", params).await?;
-		let keys = utils::deconstruct_session_keys(value.0)?;
+		let value: Vec<u8> = self.rpc_client.request("author_rotateKeys", params).await?;
+		let keys = utils::deconstruct_session_keys(value)?;
 		Ok(keys)
 	}
 

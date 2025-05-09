@@ -15,9 +15,17 @@ impl Serialize for AuthorityId {
 	where
 		S: Serializer,
 	{
-		todo!();
-		//let raw = hex::encode(self.0 .0 .0);
-		//serializer.serialize_str(&raw)
+		#[cfg(feature = "subxt_metadata")]
+		{
+			let raw = hex::encode(self.0 .0 .0);
+			return serializer.serialize_str(&raw);
+		}
+
+		#[cfg(not(feature = "subxt_metadata"))]
+		{
+			let raw = hex::encode(self.0);
+			return serializer.serialize_str(&raw);
+		}
 	}
 }
 

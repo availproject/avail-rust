@@ -1,6 +1,6 @@
 /* pub mod balances; */
 pub mod da;
-#[cfg(not(feature = "subxt_metadata"))]
+
 pub mod system;
 /* pub mod nom_pools;
 pub mod proxy;

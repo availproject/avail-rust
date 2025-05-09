@@ -11,7 +11,7 @@ use subxt_core::{
 #[cfg(feature = "subxt_metadata")]
 use core::marker::PhantomData;
 #[cfg(feature = "subxt_metadata")]
-use subxt_core::substrate::DigestItem;
+use subxt_core::config::substrate::DigestItem;
 
 #[cfg(feature = "subxt_metadata")]
 use crate::avail::runtime_types::{
@@ -31,7 +31,7 @@ pub struct AvailHeader {
 	pub digest: Digest,
 	#[cfg(feature = "subxt_metadata")]
 	pub extension: HeaderExtension,
-	#[cfg(not(feature = "subxt"))]
+	#[cfg(not(feature = "subxt_metadata"))]
 	pub extension: no_subxt::HeaderExtension,
 }
 

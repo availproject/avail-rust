@@ -138,6 +138,6 @@ pub struct UncheckedEvent {
 	pub phase: RuntimePhase,
 	#[cfg(feature = "subxt_metadata")]
 	pub event: RuntimeEvent,
-	#[cfg(not(feature = "subxt"))]
+	#[cfg(not(feature = "subxt_metadata"))]
 	pub event: Vec<u8>,
 }

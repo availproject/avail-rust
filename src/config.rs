@@ -7,7 +7,9 @@ use subxt_core::utils::{AccountId32, MultiSignature};
 use subxt_core::Config;
 use subxt_rpcs::methods::legacy::BlockDetails as BlockDetailsRPC;
 
+#[cfg(not(feature = "subxt_metadata"))]
 use subxt_core::ext::scale_decode::DecodeAsType;
+#[cfg(not(feature = "subxt_metadata"))]
 use subxt_core::ext::scale_encode::EncodeAsType;
 
 #[cfg(not(feature = "subxt"))]

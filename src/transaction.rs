@@ -3,18 +3,19 @@ use crate::{
 	client::{rpc::ChainBlock, Client},
 	config::*,
 	error::RpcError,
-	from_substrate::{FeeDetails, RuntimeDispatchInfo},
 	transaction_options::{Mortality, Options, PopulatedOptions},
 };
 use log::info;
 use primitive_types::H256;
 use std::{sync::Arc, time::Duration};
 use subxt_core::ext::scale_encode::EncodeAsFields;
-use subxt_core::{
-	blocks::StaticExtrinsic,
-	tx::payload::{DefaultPayload, Payload},
-};
+use subxt_core::{blocks::StaticExtrinsic, tx::payload::DefaultPayload};
 use subxt_signer::sr25519::Keypair;
+
+#[cfg(feature = "subxt")]
+use crate::from_substrate::{FeeDetails, RuntimeDispatchInfo};
+#[cfg(feature = "subxt")]
+use subxt_core::tx::payload::Payload;
 
 #[derive(Clone)]
 pub struct SubmittableTransaction<T>
@@ -33,13 +34,13 @@ where
 		Self { client, payload }
 	}
 
+	#[cfg(feature = "subxt")]
 	pub async fn payment_query_info(
 		&self,
 		account: &Keypair,
 		options: Option<Options>,
 	) -> Result<RuntimeDispatchInfo, RpcError> {
-		todo!()
-		/* 		let account_id = account.public_key().to_account_id();
+		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
 		let params = options.build().await;
@@ -52,16 +53,16 @@ where
 
 		let tx = tx.encoded();
 
-		self.client.api_transaction_payment_query_info(tx.to_vec(), None).await */
+		self.client.api_transaction_payment_query_info(tx.to_vec(), None).await
 	}
 
+	#[cfg(feature = "subxt")]
 	pub async fn payment_query_fee_details(
 		&self,
 		account: &Keypair,
 		options: Option<Options>,
 	) -> Result<FeeDetails, RpcError> {
-		todo!()
-		/* 		let account_id = account.public_key().to_account_id();
+		let account_id = account.public_key().to_account_id();
 		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
 
 		let params = options.build().await;
@@ -76,25 +77,25 @@ where
 
 		self.client
 			.api_transaction_payment_query_fee_details(tx.to_vec(), None)
-			.await */
+			.await
 	}
 
+	#[cfg(feature = "subxt")]
 	pub async fn payment_query_call_info(&self) -> Result<RuntimeDispatchInfo, RpcError> {
-		todo!()
-		/* 		let metadata = self.client.online_client.metadata();
+		let metadata = self.client.online_client.metadata();
 		let call = self.payload.encode_call_data(&metadata)?;
 
-		self.client.api_transaction_payment_query_call_info(call, None).await */
+		self.client.api_transaction_payment_query_call_info(call, None).await
 	}
 
+	#[cfg(feature = "subxt")]
 	pub async fn payment_query_call_fee_details(&self) -> Result<FeeDetails, RpcError> {
-		todo!()
-		/* 		let metadata = self.client.online_client.metadata();
+		let metadata = self.client.online_client.metadata();
 		let call = self.payload.encode_call_data(&metadata)?;
 
 		self.client
 			.api_transaction_payment_query_call_fee_details(call, None)
-			.await */
+			.await
 	}
 
 	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, RpcError> {
