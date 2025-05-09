@@ -7,11 +7,6 @@ use subxt_core::utils::{AccountId32, MultiSignature};
 use subxt_core::Config;
 use subxt_rpcs::methods::legacy::BlockDetails as BlockDetailsRPC;
 
-#[cfg(not(feature = "subxt_metadata"))]
-use subxt_core::ext::scale_decode::DecodeAsType;
-#[cfg(not(feature = "subxt_metadata"))]
-use subxt_core::ext::scale_encode::EncodeAsType;
-
 #[cfg(not(feature = "subxt"))]
 use subxt_rpcs::RpcConfig;
 
@@ -154,27 +149,38 @@ pub type DispatchIndex = (u8, u8);
 pub type EmittedIndex = (u8, u8);
 
 #[cfg(not(feature = "subxt_metadata"))]
-#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-#[codec (crate = codec)]
-#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-pub struct AccountData {
-	pub free: u128,
-	pub reserved: u128,
-	pub frozen: u128,
-	pub flags: u128,
+pub mod no_subxt_metadata {
+	use codec::{Decode, Encode};
+	use subxt_core::ext::{scale_decode::DecodeAsType, scale_encode::EncodeAsType};
+
+	#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug)]
+	#[codec (crate = codec)]
+	#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+	#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+	pub struct AccountData {
+		pub free: u128,
+		pub reserved: u128,
+		pub frozen: u128,
+		pub flags: u128,
+	}
+
+	#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug)]
+	#[codec (crate = codec)]
+	#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+	#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+	pub struct AccountInfo {
+		pub nonce: u32,
+		pub consumers: u32,
+		pub providers: u32,
+		pub sufficients: u32,
+		pub data: AccountData,
+	}
 }
 
 #[cfg(not(feature = "subxt_metadata"))]
-#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-#[codec (crate = codec)]
-#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-#[serde(rename_all = "camelCase")]
-pub struct AccountInfo {
-	pub nonce: u32,
-	pub consumers: u32,
-	pub providers: u32,
-	pub sufficients: u32,
-	pub data: AccountData,
-}
+pub use no_subxt_metadata::*;
+
+#[cfg(feature = "subxt_metadata")]
+pub type AccountData = crate::avail::runtime_types::pallet_balances::types::AccountData<u128>;
+#[cfg(feature = "subxt_metadata")]
+pub use crate::avail::system::storage::types::account::Account as AccountInfo;

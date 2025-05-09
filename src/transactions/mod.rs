@@ -1,7 +1,9 @@
 /* pub mod balances; */
 pub mod da;
 
-pub mod system;
+#[cfg(not(feature = "subxt_metadata"))]
+pub mod fake_avail;
+
 /* pub mod nom_pools;
 pub mod proxy;
 pub mod session;

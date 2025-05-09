@@ -20,6 +20,9 @@ pub mod utils;
 
 #[cfg(feature = "subxt_metadata")]
 pub use api_dev::api as avail;
+#[cfg(not(feature = "subxt_metadata"))]
+pub use transactions::fake_avail::avail;
+
 #[cfg(feature = "subxt_metadata")]
 pub use avail::runtime_types::sp_arithmetic::per_things::Perbill;
 
