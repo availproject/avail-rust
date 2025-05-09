@@ -185,14 +185,10 @@ pub mod state {
 }
 
 pub mod kate {
-	use ::kate::{
-		couscous::multiproof_params,
-		gridgen::utils::{domain_points, AsBytes, Commitment},
-		ArkScalar,
-	};
-
+	use ::kate::{couscous::multiproof_params, gridgen::utils::domain_points, ArkScalar};
 	use kate_recovery::data::GCellBlock;
 	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
+	use poly_multiproof::{traits::AsBytes, Commitment};
 
 	use subxt::backend::rpc::RpcClient;
 
@@ -253,7 +249,7 @@ pub mod kate {
 		pmp: &M1NoPrecomp<Bls12_381, BlstMSMEngine>,
 		proof: &Vec<(GMultiProof, GCellBlock)>,
 		commitments: &Vec<u8>,
-		cols: usize, // Number of columns in the original grid
+		cols: usize,
 	) -> Result<bool, subxt::Error> {
 		let points =
 			domain_points(cols).map_err(|_| subxt::Error::Other("Failed to generate domain points".to_string()))?;

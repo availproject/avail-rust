@@ -44,22 +44,22 @@ use avail_rust::{error::ClientError, SDK};
 async fn main() -> Result<(), ClientError> {
 	SDK::enable_logging();
 
-	// account::run().await?;
-	// batch::run().await?;
-	// block::run().await?;
-	// data_submission::run().await?;
+	account::run().await?;
+	batch::run().await?;
+	block::run().await?;
+	data_submission::run().await?;
 	multiproof::run().await?;
-	// proxy::run().await?;
-	// rpc::run().await?;
-	// storage::run().await?;
-	// validator::run().await?;
-	// http_rpc_connection::run().await?;
-	// custom_rpc_connection::run().await?;
-	// transaction_payment::run().await?;
-	// transaction::run().await?;
-	// transaction_state::run().await?;
+	proxy::run().await?;
+	rpc::run().await?;
+	storage::run().await?;
+	validator::run().await?;
+	http_rpc_connection::run().await?;
+	custom_rpc_connection::run().await?;
+	transaction_payment::run().await?;
+	transaction::run().await?;
+	transaction_state::run().await?;
 	indexer::run().await?;
-	// turbo_da::run().await?;
+	turbo_da::run().await?;
 
 	Ok(())
 }
