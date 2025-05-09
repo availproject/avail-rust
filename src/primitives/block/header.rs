@@ -1,15 +1,19 @@
 use codec::{Decode, Encode};
-use core::marker::PhantomData;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use subxt_core::{
 	config::{
-		substrate::{BlakeTwo256, Digest, DigestItem},
+		substrate::{BlakeTwo256, Digest},
 		Hasher, Header,
 	},
 	utils::H256,
 };
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
+use core::marker::PhantomData;
+#[cfg(feature = "subxt_metadata")]
+use subxt_core::substrate::DigestItem;
+
+#[cfg(feature = "subxt_metadata")]
 use crate::avail::runtime_types::{
 	avail_core::header::{extension::HeaderExtension, Header as ApiHeader},
 	sp_runtime::generic::digest::{Digest as ApiDigest, DigestItem as ApiDigestItem},
@@ -25,13 +29,13 @@ pub struct AvailHeader {
 	pub state_root: H256,
 	pub extrinsics_root: H256,
 	pub digest: Digest,
-	#[cfg(feature = "subxt")]
+	#[cfg(feature = "subxt_metadata")]
 	pub extension: HeaderExtension,
 	#[cfg(not(feature = "subxt"))]
 	pub extension: no_subxt::HeaderExtension,
 }
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 impl AvailHeader {
 	pub fn data_root(&self) -> H256 {
 		match &self.extension {
@@ -70,7 +74,7 @@ where
 	Ok(u32::from_str_radix(without_prefix, 16).unwrap())
 }
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 impl<B, H> From<AvailHeader> for ApiHeader<B, H>
 where
 	B: From<u32>,
@@ -88,7 +92,7 @@ where
 	}
 }
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 impl From<Digest> for ApiDigest {
 	fn from(d: Digest) -> Self {
 		let logs = d.logs.into_iter().map(|xt_item| xt_item.into()).collect::<Vec<_>>();
@@ -96,7 +100,7 @@ impl From<Digest> for ApiDigest {
 	}
 }
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 impl From<DigestItem> for ApiDigestItem {
 	fn from(di: DigestItem) -> Self {
 		match di {

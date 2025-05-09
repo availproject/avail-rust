@@ -7,18 +7,14 @@ use subxt_core::utils::{AccountId32, MultiSignature};
 use subxt_core::Config;
 use subxt_rpcs::methods::legacy::BlockDetails as BlockDetailsRPC;
 
-#[cfg(feature = "subxt")]
-use subxt::{
-	blocks::{Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, Extrinsics, FoundExtrinsic},
-	constants::ConstantsClient,
-	events::{EventDetails, Events, EventsClient},
-	storage::StorageClient,
-	tx::TxClient,
-	OnlineClient,
-};
 use subxt_core::ext::scale_decode::DecodeAsType;
 use subxt_core::ext::scale_encode::EncodeAsType;
+
+#[cfg(not(feature = "subxt"))]
 use subxt_rpcs::RpcConfig;
+
+#[cfg(feature = "subxt")]
+pub use subxt_types::*;
 
 /// Chain Primitives
 pub type AccountId = AccountId32;
@@ -30,33 +26,33 @@ pub type BlockHash = H256;
 
 /// Clients
 #[cfg(feature = "subxt")]
-pub type AOnlineClient = OnlineClient<AvailConfig>;
-#[cfg(feature = "subxt")]
-pub type ABlocksClient = BlocksClient<AvailConfig, AOnlineClient>;
-#[cfg(feature = "subxt")]
-pub type AStorageClient = StorageClient<AvailConfig, AOnlineClient>;
-#[cfg(feature = "subxt")]
-pub type AConstantsClient = ConstantsClient<AvailConfig, AOnlineClient>;
-#[cfg(feature = "subxt")]
-pub type AEventsClient = EventsClient<AvailConfig, AOnlineClient>;
-#[cfg(feature = "subxt")]
-pub type ATxClient = TxClient<AvailConfig, AOnlineClient>;
+pub mod subxt_types {
+	use super::AvailConfig;
+	use subxt::{
+		blocks::{Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, Extrinsics, FoundExtrinsic},
+		constants::ConstantsClient,
+		events::{EventDetails, Events, EventsClient},
+		storage::StorageClient,
+		tx::TxClient,
+		OnlineClient,
+	};
 
-/// TX status
-#[cfg(feature = "subxt")]
-pub type AExtrinsicEvents = ExtrinsicEvents<AvailConfig>;
-#[cfg(feature = "subxt")]
-pub type AEvents = Events<AvailConfig>;
-#[cfg(feature = "subxt")]
-pub type AEventDetails = EventDetails<AvailConfig>;
-#[cfg(feature = "subxt")]
-pub type AExtrinsicDetails = ExtrinsicDetails<AvailConfig, AOnlineClient>;
-#[cfg(feature = "subxt")]
-pub type AFoundExtrinsic<T> = FoundExtrinsic<AvailConfig, AOnlineClient, T>;
-#[cfg(feature = "subxt")]
-pub type AExtrinsics = Extrinsics<AvailConfig, AOnlineClient>;
-#[cfg(feature = "subxt")]
-pub type ABlock = Block<AvailConfig, AOnlineClient>;
+	pub type AOnlineClient = OnlineClient<AvailConfig>;
+	pub type ABlocksClient = BlocksClient<AvailConfig, AOnlineClient>;
+	pub type AStorageClient = StorageClient<AvailConfig, AOnlineClient>;
+	pub type AConstantsClient = ConstantsClient<AvailConfig, AOnlineClient>;
+	pub type AEventsClient = EventsClient<AvailConfig, AOnlineClient>;
+	pub type ATxClient = TxClient<AvailConfig, AOnlineClient>;
+
+	/// TX status
+	pub type AExtrinsicEvents = ExtrinsicEvents<AvailConfig>;
+	pub type AEvents = Events<AvailConfig>;
+	pub type AEventDetails = EventDetails<AvailConfig>;
+	pub type AExtrinsicDetails = ExtrinsicDetails<AvailConfig, AOnlineClient>;
+	pub type AFoundExtrinsic<T> = FoundExtrinsic<AvailConfig, AOnlineClient, T>;
+	pub type AExtrinsics = Extrinsics<AvailConfig, AOnlineClient>;
+	pub type ABlock = Block<AvailConfig, AOnlineClient>;
+}
 
 /// Used only when chain_getBlock RPC is called. This is part of legacy baggage.
 pub type ABlockDetailsRPC = BlockDetailsRPC<AvailConfig>;
@@ -155,7 +151,7 @@ pub enum RuntimePhase {
 pub type DispatchIndex = (u8, u8);
 pub type EmittedIndex = (u8, u8);
 
-#[cfg(not(feature = "subxt"))]
+#[cfg(not(feature = "subxt_metadata"))]
 #[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[codec (crate = codec)]
 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
@@ -167,7 +163,7 @@ pub struct AccountData {
 	pub flags: u128,
 }
 
-#[cfg(not(feature = "subxt"))]
+#[cfg(not(feature = "subxt_metadata"))]
 #[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[codec (crate = codec)]
 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]

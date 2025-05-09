@@ -15,10 +15,10 @@ use subxt_rpcs::{
 	rpc_params,
 };
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 use crate::utils;
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 use crate::avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength};
 
 /// Arbitrary properties defined in chain spec as a JSON object
@@ -447,7 +447,7 @@ impl Client {
 		Ok(value)
 	}
 
-	#[cfg(feature = "subxt")]
+	#[cfg(feature = "subxt_metadata")]
 	pub async fn rpc_author_rotate_keys(&self) -> Result<SessionKeys, RpcError> {
 		let params = rpc_params![];
 		let value: Bytes = self.rpc_client.request("author_rotateKeys", params).await?;
@@ -490,7 +490,7 @@ impl Client {
 		Ok(hex::decode(value.trim_start_matches("0x")).unwrap())
 	}
 
-	#[cfg(feature = "subxt")]
+	#[cfg(feature = "subxt_metadata")]
 	pub async fn rpc_kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, RpcError> {
 		let params = rpc_params![at];
 		let value = self.rpc_client.request("kate_blockLength", params).await?;

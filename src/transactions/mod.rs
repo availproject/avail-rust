@@ -1,6 +1,6 @@
 /* pub mod balances; */
 pub mod da;
-#[cfg(not(feature = "subxt"))]
+#[cfg(not(feature = "subxt_metadata"))]
 pub mod system;
 /* pub mod nom_pools;
 pub mod proxy;
@@ -8,14 +8,14 @@ pub mod session;
 pub mod staking;
 pub mod vector;
  */
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 pub use crate::avail::{
 	balances::events as BalancesEvents, data_availability::events as DataAvailabilityEvents,
 	nomination_pools::events as NominationPoolsEvents, session::events as SessionEvents,
 	staking::events as StakingEvents, system::events as SystemEvents,
 };
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 pub use crate::avail::{
 	balances::calls::types as BalancesCalls, data_availability::calls::types as DataAvailabilityCalls,
 	nomination_pools::calls::types as NominationPoolsCalls, session::calls::types as SessionCalls,

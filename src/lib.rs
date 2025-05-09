@@ -1,4 +1,4 @@
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 mod api_dev;
 
 mod from_substrate;
@@ -15,12 +15,12 @@ pub mod transaction;
 pub mod transaction_options;
 pub mod transactions;
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 pub mod utils;
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 pub use api_dev::api as avail;
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 pub use avail::runtime_types::sp_arithmetic::per_things::Perbill;
 
 pub use bounded_collections::BoundedVec;
@@ -57,7 +57,7 @@ pub mod prelude {
 	pub use primitive_types::{H256, U256};
 	pub use subxt_signer::{sr25519::Keypair, SecretUri};
 
-	#[cfg(feature = "subxt")]
+	#[cfg(feature = "subxt_metadata")]
 	pub use super::{avail, Perbill};
 
 	pub use super::{

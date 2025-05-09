@@ -1,7 +1,7 @@
 use super::extrinsics_params::OnlyCodecExtra;
 use crate::config::{AppId, MultiAddress, RuntimePhase, Signature};
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 use crate::avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
 
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
@@ -24,9 +24,9 @@ pub struct AppUncheckedExtrinsic {
 	/// if this is a signed extrinsic.
 	pub signature: Option<SignaturePayload>,
 	/// The function that should be called.
-	#[cfg(feature = "subxt")]
+	#[cfg(feature = "subxt_metadata")]
 	pub function: RuntimeCall,
-	#[cfg(not(feature = "subxt"))]
+	#[cfg(not(feature = "subxt_metadata"))]
 	pub function: Vec<u8>,
 }
 
@@ -136,7 +136,7 @@ impl TryFrom<Vec<u8>> for AppUncheckedExtrinsic {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub struct UncheckedEvent {
 	pub phase: RuntimePhase,
-	#[cfg(feature = "subxt")]
+	#[cfg(feature = "subxt_metadata")]
 	pub event: RuntimeEvent,
 	#[cfg(not(feature = "subxt"))]
 	pub event: Vec<u8>,

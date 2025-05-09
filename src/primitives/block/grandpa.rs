@@ -1,10 +1,10 @@
 use codec::{Codec, Decode};
 use serde::{Serialize, Serializer};
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 use crate::avail::runtime_types::sp_consensus_grandpa::app::Public;
 
-#[cfg(not(feature = "subxt"))]
+#[cfg(not(feature = "subxt_metadata"))]
 pub type Public = [u8; 32];
 
 #[derive(Decode)]

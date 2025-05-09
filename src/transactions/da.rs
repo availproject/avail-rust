@@ -1,4 +1,4 @@
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 use crate::{
 	avail,
 	avail::data_availability::calls::types::{create_application_key::Key, submit_data::Data},
@@ -10,14 +10,14 @@ use subxt_core::blocks::StaticExtrinsic;
 use subxt_core::ext::{scale_decode::DecodeAsType, scale_encode::EncodeAsType};
 use subxt_core::tx::payload::DefaultPayload;
 
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 pub type SubmitDataCall = avail::data_availability::calls::types::SubmitData;
-#[cfg(feature = "subxt")]
+#[cfg(feature = "subxt_metadata")]
 pub type CreateApplicationKeyCall = avail::data_availability::calls::types::CreateApplicationKey;
 
-#[cfg(not(feature = "subxt"))]
+#[cfg(not(feature = "subxt_metadata"))]
 pub type SubmitDataCall = SubmitData;
-#[cfg(not(feature = "subxt"))]
+#[cfg(not(feature = "subxt_metadata"))]
 pub type CreateApplicationKeyCall = CreateApplicationKey;
 
 #[derive(Clone)]
@@ -25,31 +25,29 @@ pub struct DataAvailability {
 	pub client: Client,
 }
 
+#[cfg(feature = "subxt_metadata")]
 impl DataAvailability {
 	pub fn create_application_key(&self, key: Vec<u8>) -> SubmittableTransaction<CreateApplicationKeyCall> {
-		#[cfg(feature = "subxt")]
-		let payload = {
-			let key = Key { 0: key };
-			avail::tx().data_availability().create_application_key(key)
-		};
-
-		#[cfg(not(feature = "subxt"))]
-		let payload = payload_crate_application_key(key);
+		let payload = avail::tx().data_availability().create_application_key(Key { 0: key });
 
 		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
 	pub fn submit_data(&self, data: Vec<u8>) -> SubmittableTransaction<SubmitDataCall> {
-		#[cfg(feature = "subxt")]
-		let payload = {
-			let data = Data { 0: data };
-			avail::tx().data_availability().submit_data(data)
-		};
-
-		#[cfg(not(feature = "subxt"))]
-		let payload = payload_submit_data(data);
+		let payload = avail::tx().data_availability().submit_data(Data { 0: data });
 
 		SubmittableTransaction::new(self.client.clone(), payload)
+	}
+}
+
+#[cfg(not(feature = "subxt_metadata"))]
+impl DataAvailability {
+	pub fn create_application_key(&self, key: Vec<u8>) -> SubmittableTransaction<CreateApplicationKeyCall> {
+		SubmittableTransaction::new(self.client.clone(), payload_crate_application_key(key))
+	}
+
+	pub fn submit_data(&self, data: Vec<u8>) -> SubmittableTransaction<SubmitDataCall> {
+		SubmittableTransaction::new(self.client.clone(), payload_submit_data(data))
 	}
 }
 
