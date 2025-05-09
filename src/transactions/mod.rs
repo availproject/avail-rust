@@ -1,15 +1,18 @@
-/* pub mod balances; */
 pub mod da;
 
-#[cfg(not(feature = "subxt_metadata"))]
-pub mod fake_avail;
-
-/* pub mod nom_pools;
+#[cfg(feature = "subxt_metadata")]
+pub mod balances;
+#[cfg(feature = "subxt_metadata")]
+pub mod nom_pools;
+#[cfg(feature = "subxt_metadata")]
 pub mod proxy;
+#[cfg(feature = "subxt_metadata")]
 pub mod session;
+#[cfg(feature = "subxt_metadata")]
 pub mod staking;
+#[cfg(feature = "subxt_metadata")]
 pub mod vector;
- */
+
 #[cfg(feature = "subxt_metadata")]
 pub use crate::avail::{
 	balances::events as BalancesEvents, data_availability::events as DataAvailabilityEvents,
@@ -27,25 +30,37 @@ use crate::client::Client;
 
 #[derive(Clone)]
 pub struct Transactions {
-	// pub balances: balances::Balances,
-	// pub staking: staking::Staking,
 	pub data_availability: da::DataAvailability,
-	// pub session: session::Session,
-	// pub nomination_pools: nom_pools::NominationPools,
-	// pub proxy: proxy::Proxy,
-	// pub vector: vector::Vector,
+	#[cfg(feature = "subxt_metadata")]
+	pub balances: balances::Balances,
+	#[cfg(feature = "subxt_metadata")]
+	pub staking: staking::Staking,
+	#[cfg(feature = "subxt_metadata")]
+	pub session: session::Session,
+	#[cfg(feature = "subxt_metadata")]
+	pub nomination_pools: nom_pools::NominationPools,
+	#[cfg(feature = "subxt_metadata")]
+	pub proxy: proxy::Proxy,
+	#[cfg(feature = "subxt_metadata")]
+	pub vector: vector::Vector,
 }
 
 impl Transactions {
 	pub fn new(client: Client) -> Self {
 		Self {
-			// balances: balances::Balances { client: client.clone() },
-			// staking: staking::Staking { client: client.clone() },
 			data_availability: da::DataAvailability { client: client.clone() },
-			// session: session::Session { client: client.clone() },
-			// nomination_pools: nom_pools::NominationPools { client: client.clone() },
-			// proxy: proxy::Proxy { client: client.clone() },
-			// vector: vector::Vector { client: client.clone() },
+			#[cfg(feature = "subxt_metadata")]
+			balances: balances::Balances { client: client.clone() },
+			#[cfg(feature = "subxt_metadata")]
+			staking: staking::Staking { client: client.clone() },
+			#[cfg(feature = "subxt_metadata")]
+			session: session::Session { client: client.clone() },
+			#[cfg(feature = "subxt_metadata")]
+			nomination_pools: nom_pools::NominationPools { client: client.clone() },
+			#[cfg(feature = "subxt_metadata")]
+			proxy: proxy::Proxy { client: client.clone() },
+			#[cfg(feature = "subxt_metadata")]
+			vector: vector::Vector { client: client.clone() },
 		}
 	}
 }

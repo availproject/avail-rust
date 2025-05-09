@@ -1,5 +1,4 @@
 use primitive_types::H256;
-use subxt::utils::MultiAddress;
 
 use crate::{
 	avail::{
@@ -7,7 +6,7 @@ use crate::{
 		runtime_types::da_runtime::{impls::ProxyType, RuntimeCall},
 	},
 	client::Client,
-	config::AccountId,
+	config::MultiAddress,
 	SubmittableTransaction,
 };
 
@@ -39,7 +38,7 @@ impl Proxy {
 	/// - `call`: The call to be made by the `real` account.
 	pub fn proxy(
 		&self,
-		real: MultiAddress<AccountId, u32>,
+		real: MultiAddress,
 		force_proxy_type: Option<ProxyType>,
 		call: RuntimeCall,
 	) -> SubmittableTransaction<ProxyCall> {
@@ -57,7 +56,7 @@ impl Proxy {
 	/// - `delay`: The announcement period required of the initial proxy. Will generally be zero.
 	pub fn add_proxy(
 		&self,
-		delegate: MultiAddress<AccountId, u32>,
+		delegate: MultiAddress,
 		proxy_type: ProxyType,
 		delay: u32,
 	) -> SubmittableTransaction<AddProxyCall> {
@@ -75,7 +74,7 @@ impl Proxy {
 	/// - `delay`:  Will generally be zero.
 	pub fn remove_proxy(
 		&self,
-		delegate: MultiAddress<AccountId, u32>,
+		delegate: MultiAddress,
 		proxy_type: ProxyType,
 		delay: u32,
 	) -> SubmittableTransaction<RemoveProxyCall> {
@@ -133,7 +132,7 @@ impl Proxy {
 	/// account whose `pure` call has corresponding parameters.
 	pub fn kill_pure(
 		&self,
-		spawner: MultiAddress<AccountId, u32>,
+		spawner: MultiAddress,
 		proxy_type: ProxyType,
 		index: u16,
 		height: u32,
@@ -160,11 +159,7 @@ impl Proxy {
 	/// Parameters:
 	/// - `real`: The account that the proxy will make a call on behalf of.
 	/// - `call_hash`: The hash of the call to be made by the `real` account.
-	pub fn announce(
-		&self,
-		real: MultiAddress<AccountId, u32>,
-		call_hash: H256,
-	) -> SubmittableTransaction<AnnounceCall> {
+	pub fn announce(&self, real: MultiAddress, call_hash: H256) -> SubmittableTransaction<AnnounceCall> {
 		let payload = avail::tx().proxy().announce(real, call_hash);
 		SubmittableTransaction::new(self.client.clone(), payload)
 	}
@@ -181,7 +176,7 @@ impl Proxy {
 	/// - `call_hash`: The hash of the call to be made by the `real` account.
 	pub fn remove_announce(
 		&self,
-		real: MultiAddress<AccountId, u32>,
+		real: MultiAddress,
 		call_hash: H256,
 	) -> SubmittableTransaction<RemoveAnnouncementCall> {
 		let payload = avail::tx().proxy().remove_announcement(real, call_hash);
@@ -200,7 +195,7 @@ impl Proxy {
 	/// - `call_hash`: The hash of the call to be made.
 	pub fn reject_announcement(
 		&self,
-		delegate: MultiAddress<AccountId, u32>,
+		delegate: MultiAddress,
 		call_hash: H256,
 	) -> SubmittableTransaction<RejectAnnouncementCall> {
 		let payload = avail::tx().proxy().reject_announcement(delegate, call_hash);
@@ -220,8 +215,8 @@ impl Proxy {
 	/// - `Call`: The call to be made by the `real` account.
 	pub fn proxy_announced(
 		&self,
-		delegate: MultiAddress<AccountId, u32>,
-		real: MultiAddress<AccountId, u32>,
+		delegate: MultiAddress,
+		real: MultiAddress,
 		force_proxy_type: Option<ProxyType>,
 		call: RuntimeCall,
 	) -> SubmittableTransaction<ProxyAnnouncedCall> {
