@@ -13,6 +13,16 @@ pub struct TransactionCall {
 	pub data: Vec<u8>,
 }
 
+impl TransactionCall {
+	pub fn new(pallet_id: u8, call_id: u8, data: Vec<u8>) -> Self {
+		Self {
+			pallet_id,
+			call_id,
+			data,
+		}
+	}
+}
+
 impl Encode for TransactionCall {
 	fn encode(&self) -> Vec<u8> {
 		let mut dest = Vec::new();

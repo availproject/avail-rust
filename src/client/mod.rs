@@ -1,3 +1,4 @@
+pub mod foreign;
 pub mod reqwest;
 pub mod rpc;
 pub mod runtime_api;
