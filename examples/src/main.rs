@@ -24,6 +24,7 @@ mod custom_rpc_connection;
 mod data_submission;
 mod http_rpc_connection;
 mod indexer;
+mod multiproof;
 mod proxy;
 mod rpc;
 mod storage;
@@ -47,6 +48,7 @@ async fn main() -> Result<(), ClientError> {
 	batch::run().await?;
 	block::run().await?;
 	data_submission::run().await?;
+	multiproof::run().await?;
 	proxy::run().await?;
 	rpc::run().await?;
 	storage::run().await?;
@@ -55,9 +57,9 @@ async fn main() -> Result<(), ClientError> {
 	custom_rpc_connection::run().await?;
 	transaction_payment::run().await?;
 	transaction::run().await?;
-	// transaction_state::run().await?;
+	transaction_state::run().await?;
 	indexer::run().await?;
-	// turbo_da::run().await?;
+	turbo_da::run().await?;
 
 	Ok(())
 }

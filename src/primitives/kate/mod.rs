@@ -29,7 +29,7 @@ where
 pub type GRawScalar = U256;
 pub type GRow = Vec<GRawScalar>;
 pub type GDataProof = (GRawScalar, GProof);
-
+pub type GMultiProof = (Vec<GRawScalar>, GProof);
 pub type MaxCells = ConstU32<64>;
 pub type Cells = bounded_collections::BoundedVec<Cell, MaxCells>;
 pub type MaxRows = ConstU32<64>;
