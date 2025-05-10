@@ -51,24 +51,24 @@ pub async fn run() -> ReturnResult {
 
 	let s = client.clone();
 	let t1 = tokio::spawn(async move { task(s, alice(), false).await });
-	/* 	let s = client.clone();
+	let s = client.clone();
 	let t2 = tokio::spawn(async move { task(s, bob(), true).await });
 	let s = client.clone();
 	let t3 = tokio::spawn(async move { task(s, charlie(), true).await });
 	let s = client.clone();
-	let t4 = tokio::spawn(async move { task(s, dave(), true).await }); */
+	let t4 = tokio::spawn(async move { task(s, dave(), true).await });
 
 	t1.await.unwrap()?;
-	/* 	t2.await.unwrap()?;
+	t2.await.unwrap()?;
 	t3.await.unwrap()?;
-	t4.await.unwrap()?; */
+	t4.await.unwrap()?;
 
 	Ok(())
 }
 
 async fn task(client: Client, account: Keypair, _d: bool) -> ReturnResult {
 	// Data Submission
-	let data = String::from("123").into_bytes();
+	let data = String::from("123").as_bytes().to_vec();
 	let options = Options::new().app_id(2);
 	let tx = client.tx().data_availability.submit_data(data);
 

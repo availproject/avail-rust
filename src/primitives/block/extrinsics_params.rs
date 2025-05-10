@@ -160,7 +160,6 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 	/// Build the extrinsic parameters.
 	pub fn build(self) -> <DefaultExtrinsicParams<T> as ExtrinsicParams<T>>::Params {
 		let check_mortality_params = if let Some(mortality) = self.mortality {
-			dbg!(&mortality);
 			transaction_extensions::CheckMortalityParams::mortal_from_unchecked(
 				mortality.period,
 				mortality.checkpoint_number,

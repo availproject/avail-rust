@@ -1,10 +1,7 @@
 use crate::config::{AccountId, AccountInfo};
 use crate::primitives;
 use codec::{Decode, Encode};
-use subxt_core::blocks::StaticExtrinsic;
-use subxt_core::ext::{scale_decode::DecodeAsType, scale_encode::EncodeAsType};
 use subxt_core::storage::address::{StaticAddress, StaticStorageKey};
-use subxt_core::tx::payload::DefaultPayload;
 use subxt_core::utils::Yes;
 
 pub trait TxDispatchIndex {
@@ -73,7 +70,7 @@ pub mod transactions {
 		}
 
 		pub fn submit_data(&self, data: Vec<u8>) -> primitives::TransactionCall {
-			types::data_availability::CreateApplicationKey::to_call(data)
+			types::data_availability::SubmitData::to_call(data)
 		}
 	}
 }

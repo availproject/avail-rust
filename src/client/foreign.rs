@@ -11,7 +11,7 @@ impl primitives::TransactionCall {
 		signer: &Keypair,
 		options: Options,
 	) -> Result<SubmittedTransaction, RpcError> {
-		client.sign_and_submit_call(signer, &self, options).await
+		client.sign_and_submit_call(signer, self, options).await
 	}
 }
 impl<'a> primitives::TransactionPayload<'a> {

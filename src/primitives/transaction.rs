@@ -34,15 +34,18 @@ impl Encode for TransactionCall {
 	}
 }
 
-#[derive(Clone, Encode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct TransactionExtra {
 	pub era: Era,
-	pub nonce: Compact<u32>,
-	pub tip: Compact<u128>,
-	pub app_id: Compact<u32>,
+	#[codec(compact)]
+	pub nonce: u32,
+	#[codec(compact)]
+	pub tip: u128,
+	#[codec(compact)]
+	pub app_id: u32,
 }
 
-#[derive(Clone, Encode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct TransactionAdditional {
 	pub spec_version: u32,
 	pub tx_version: u32,
@@ -50,7 +53,7 @@ pub struct TransactionAdditional {
 	pub fork_hash: H256,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Era {
 	Immortal,
 	Mortal { period: u64, phase: u64 },
@@ -112,7 +115,7 @@ impl Decode for Era {
 	}
 }
 
-#[derive(Clone, Encode)]
+#[derive(Clone)]
 pub struct TransactionPayload<'a> {
 	pub call: Cow<'a, TransactionCall>,
 	pub extra: TransactionExtra,
@@ -137,11 +140,8 @@ impl<'a> TransactionPayload<'a> {
 	}
 
 	pub fn sign(&self, signer: &Keypair) -> [u8; 64] {
-		let size_hint = self.call.pallet_id.size_hint()
-			+ self.call.call_id.size_hint()
-			+ self.call.data.size_hint()
-			+ self.extra.size_hint()
-			+ self.additional.size_hint();
+		let call = self.call.as_ref();
+		let size_hint = call.size_hint() + self.extra.size_hint() + self.additional.size_hint();
 
 		let mut data: Vec<u8> = Vec::with_capacity(size_hint);
 		self.call.encode_to(&mut data);
@@ -150,7 +150,7 @@ impl<'a> TransactionPayload<'a> {
 
 		if data.len() > 256 {
 			let hash = BlakeTwo256::hash(&data);
-			signer.sign(&hash.0).0
+			signer.sign(hash.as_ref()).0
 		} else {
 			signer.sign(&data).0
 		}
@@ -185,15 +185,17 @@ impl<'a> Transaction<'a> {
 	}
 
 	pub fn encode(&self) -> Vec<u8> {
-		let signed = self.signed.clone().unwrap();
-
 		let mut encoded_tx_inner = Vec::new();
-		132.encode_to(&mut encoded_tx_inner);
-		signed.address.encode_to(&mut encoded_tx_inner);
-		signed.signature.encode_to(&mut encoded_tx_inner);
-		self.payload.extra.encode_to(&mut encoded_tx_inner);
-		self.payload.call.encode_to(&mut encoded_tx_inner);
+		if let Some(signed) = &self.signed {
+			0x84u8.encode_to(&mut encoded_tx_inner);
+			signed.address.encode_to(&mut encoded_tx_inner);
+			signed.signature.encode_to(&mut encoded_tx_inner);
+			self.payload.extra.encode_to(&mut encoded_tx_inner);
+		} else {
+			0x4u8.encode_to(&mut encoded_tx_inner);
+		}
 
+		self.payload.call.encode_to(&mut encoded_tx_inner);
 		let mut encoded_tx = Compact(encoded_tx_inner.len() as u32).encode();
 		encoded_tx.append(&mut encoded_tx_inner);
 

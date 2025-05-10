@@ -221,8 +221,8 @@ impl Client {
 
 		let gt = self.block_hash(0).await.unwrap().unwrap();
 		let tx_additional = primitives::TransactionAdditional {
-			spec_version: 47,
-			tx_version: 0,
+			spec_version: 46,
+			tx_version: 1,
 			genesis_hash: gt,
 			fork_hash: refined_options.mortality.block_hash,
 		};
@@ -294,19 +294,19 @@ impl Client {
 	// Account Info (nonce, balance, ...)
 	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
 		let address = avail::storage().system().account(account_id);
-		Ok(self.storage_fetch_or_default(&address, at).await?)
+		self.storage_fetch_or_default(&address, at).await
 	}
 
 	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
 		let at = self.best_block_hash().await?;
 		let address = avail::storage().system().account(account_id);
-		Ok(self.storage_fetch_or_default(&address, at).await?)
+		self.storage_fetch_or_default(&address, at).await
 	}
 
 	pub async fn finalized_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
 		let at = self.finalized_block_hash().await?;
 		let address = avail::storage().system().account(account_id);
-		Ok(self.storage_fetch_or_default(&address, at).await?)
+		self.storage_fetch_or_default(&address, at).await
 	}
 }
 

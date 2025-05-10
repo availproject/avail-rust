@@ -89,9 +89,9 @@ impl From<&RefinedOptions> for TransactionExtra {
 		let era = Era::mortal(value.mortality.period, value.mortality.block_height as u64);
 		TransactionExtra {
 			era,
-			nonce: value.nonce.into(),
-			tip: value.tip.into(),
-			app_id: value.app_id.into(),
+			nonce: value.nonce,
+			tip: value.tip,
+			app_id: value.app_id,
 		}
 	}
 }

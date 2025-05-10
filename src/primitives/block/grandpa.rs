@@ -18,13 +18,13 @@ impl Serialize for AuthorityId {
 		#[cfg(feature = "subxt_metadata")]
 		{
 			let raw = hex::encode(self.0 .0 .0);
-			return serializer.serialize_str(&raw);
+			serializer.serialize_str(&raw)
 		}
 
 		#[cfg(not(feature = "subxt_metadata"))]
 		{
 			let raw = hex::encode(self.0);
-			return serializer.serialize_str(&raw);
+			serializer.serialize_str(&raw)
 		}
 	}
 }
