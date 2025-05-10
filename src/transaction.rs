@@ -3,103 +3,29 @@ use crate::{
 	client::{rpc::ChainBlock, Client},
 	config::*,
 	error::RpcError,
-	transaction_options::{Mortality, Options, PopulatedOptions},
+	primitives::transaction::{TransactionAdditional, TransactionCall},
+	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use log::info;
 use primitive_types::H256;
 use std::{sync::Arc, time::Duration};
-use subxt_core::ext::scale_encode::EncodeAsFields;
-use subxt_core::{blocks::StaticExtrinsic, tx::payload::DefaultPayload};
 use subxt_signer::sr25519::Keypair;
 
-#[cfg(feature = "subxt")]
-use crate::from_substrate::{FeeDetails, RuntimeDispatchInfo};
-#[cfg(feature = "subxt")]
-use subxt_core::tx::payload::Payload;
-
 #[derive(Clone)]
-pub struct SubmittableTransaction<T>
-where
-	T: StaticExtrinsic + EncodeAsFields,
-{
+pub struct SubmittableTransaction {
 	client: Client,
-	payload: DefaultPayload<T>,
+	pub call: TransactionCall,
 }
 
-impl<T> SubmittableTransaction<T>
-where
-	T: StaticExtrinsic + EncodeAsFields,
-{
-	pub fn new(client: Client, payload: DefaultPayload<T>) -> Self {
-		Self { client, payload }
-	}
-
-	#[cfg(feature = "subxt")]
-	pub async fn payment_query_info(
-		&self,
-		account: &Keypair,
-		options: Option<Options>,
-	) -> Result<RuntimeDispatchInfo, RpcError> {
-		let account_id = account.public_key().to_account_id();
-		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
-
-		let params = options.build().await;
-		let tx = self
-			.client
-			.online_client
-			.tx()
-			.create_signed(&self.payload, account, params)
-			.await?;
-
-		let tx = tx.encoded();
-
-		self.client.api_transaction_payment_query_info(tx.to_vec(), None).await
-	}
-
-	#[cfg(feature = "subxt")]
-	pub async fn payment_query_fee_details(
-		&self,
-		account: &Keypair,
-		options: Option<Options>,
-	) -> Result<FeeDetails, RpcError> {
-		let account_id = account.public_key().to_account_id();
-		let options = options.unwrap_or_default().build(&self.client, &account_id).await?;
-
-		let params = options.build().await;
-		let tx = self
-			.client
-			.online_client
-			.tx()
-			.create_signed(&self.payload, account, params)
-			.await?;
-
-		let tx = tx.encoded();
-
-		self.client
-			.api_transaction_payment_query_fee_details(tx.to_vec(), None)
-			.await
-	}
-
-	#[cfg(feature = "subxt")]
-	pub async fn payment_query_call_info(&self) -> Result<RuntimeDispatchInfo, RpcError> {
-		let metadata = self.client.online_client.metadata();
-		let call = self.payload.encode_call_data(&metadata)?;
-
-		self.client.api_transaction_payment_query_call_info(call, None).await
-	}
-
-	#[cfg(feature = "subxt")]
-	pub async fn payment_query_call_fee_details(&self) -> Result<FeeDetails, RpcError> {
-		let metadata = self.client.online_client.metadata();
-		let call = self.payload.encode_call_data(&metadata)?;
-
-		self.client
-			.api_transaction_payment_query_call_fee_details(call, None)
-			.await
+impl SubmittableTransaction {
+	pub fn new(client: Client, call: TransactionCall) -> Self {
+		{
+			Self { client, call }
+		}
 	}
 
 	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, RpcError> {
-		self.client.sign_and_submit(signer, &self.payload, options).await
+		self.client.sign_and_submit_call(signer, &self.call, options).await
 	}
 }
 
@@ -118,41 +44,43 @@ impl Default for ReceiptMethod {
 pub struct SubmittedTransaction {
 	client: Client,
 	pub tx_hash: H256,
-	pub tx_extra: TransactionExtra,
+	pub account_id: AccountId,
+	pub options: RefinedOptions,
+	pub additional: TransactionAdditional,
 }
 
 impl SubmittedTransaction {
-	pub fn new(client: Client, tx_hash: H256, account_id: AccountId, options: &PopulatedOptions) -> Self {
-		let tx_extra = TransactionExtra {
-			account_id,
-			nonce: options.nonce as u32,
-			app_id: options.app_id,
-			tip: options.tip,
-			mortality: options.mortality,
-		};
+	pub fn new(
+		client: Client,
+		tx_hash: H256,
+		account_id: AccountId,
+		options: RefinedOptions,
+		additional: TransactionAdditional,
+	) -> Self {
 		Self {
 			client,
 			tx_hash,
-			tx_extra,
+			account_id,
+			options,
+			additional,
 		}
 	}
 
 	pub async fn receipt(&self, method: ReceiptMethod) -> Result<Option<TransactionReceipt>, RpcError> {
-		Utils::transaction_receipt(self.client.clone(), self.tx_hash, self.tx_extra.clone(), &method).await
+		Utils::transaction_receipt(
+			self.client.clone(),
+			self.tx_hash,
+			self.options.nonce,
+			&self.account_id,
+			&self.options.mortality,
+			&method,
+		)
+		.await
 	}
 
 	pub async fn transaction_overview(&self) -> Result<(), RpcError> {
 		unimplemented!()
 	}
-}
-
-#[derive(Clone)]
-pub struct TransactionExtra {
-	pub account_id: AccountId,
-	pub nonce: u32,
-	pub app_id: u32,
-	pub tip: u128,
-	pub mortality: Mortality,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -168,21 +96,14 @@ pub struct TransactionReceipt {
 	client: Client,
 	pub block_id: BlockId,
 	pub tx_location: TransactionLocation,
-	pub tx_extra: TransactionExtra,
 }
 
 impl TransactionReceipt {
-	pub fn new(
-		client: Client,
-		block_id: BlockId,
-		tx_location: TransactionLocation,
-		tx_extra: TransactionExtra,
-	) -> Self {
+	pub fn new(client: Client, block_id: BlockId, tx_location: TransactionLocation) -> Self {
 		Self {
 			client,
 			block_id,
 			tx_location,
-			tx_extra,
 		}
 	}
 
@@ -225,11 +146,15 @@ impl Utils {
 	pub async fn transaction_receipt(
 		client: Client,
 		tx_hash: H256,
-		tx_extra: TransactionExtra,
+		nonce: u32,
+		account_id: &AccountId,
+		mortality: &RefinedMortality,
 		method: &ReceiptMethod,
 	) -> Result<Option<TransactionReceipt>, RpcError> {
 		let ReceiptMethod::Default { use_best_block } = *method;
-		let Some(block_id) = Self::find_block_id_via_nonce(&client, &tx_extra, use_best_block).await? else {
+		let Some(block_id) =
+			Self::find_block_id_via_nonce(&client, nonce, account_id, mortality, use_best_block).await?
+		else {
 			return Ok(None);
 		};
 
@@ -238,23 +163,17 @@ impl Utils {
 			return Ok(None);
 		};
 
-		let receipt = TransactionReceipt {
-			client,
-			block_id,
-			tx_location,
-			tx_extra,
-		};
-
-		Ok(Some(receipt))
+		Ok(Some(TransactionReceipt::new(client, block_id, tx_location)))
 	}
 
 	/// TODO
 	pub async fn find_block_id_via_nonce(
 		client: &Client,
-		tx_extra: &TransactionExtra,
+		nonce: u32,
+		account_id: &AccountId,
+		mortality: &RefinedMortality,
 		use_best_block: bool,
 	) -> Result<Option<BlockId>, RpcError> {
-		let (nonce, account_id, mortality) = (tx_extra.nonce, &tx_extra.account_id, &tx_extra.mortality);
 		match use_best_block {
 			true => Self::find_best_block_block_id_via_nonce(client, nonce, account_id, mortality).await,
 			false => Self::find_finalized_block_block_id_via_nonce(client, nonce, account_id, mortality).await,
@@ -266,7 +185,7 @@ impl Utils {
 		client: &Client,
 		nonce: u32,
 		account_id: &AccountId,
-		mortality: &Mortality,
+		mortality: &RefinedMortality,
 	) -> Result<Option<BlockId>, RpcError> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
@@ -303,7 +222,7 @@ impl Utils {
 		client: &Client,
 		nonce: u32,
 		account_id: &AccountId,
-		mortality: &Mortality,
+		mortality: &RefinedMortality,
 	) -> Result<Option<BlockId>, RpcError> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 

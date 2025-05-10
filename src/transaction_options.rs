@@ -1,4 +1,9 @@
-use crate::{client::Client, config::*, error::RpcError};
+use crate::{
+	client::Client,
+	config::*,
+	error::RpcError,
+	primitives::transaction::{Era, TransactionExtra},
+};
 use primitive_types::H256;
 use subxt_core::config::Header;
 
@@ -43,20 +48,20 @@ impl Options {
 		self
 	}
 
-	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<PopulatedOptions, RpcError> {
+	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<RefinedOptions, RpcError> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {
-			Some(x) => x as u64,
-			None => client.rpc_system_account_next_index(&account_id.to_string()).await? as u64,
+			Some(x) => x,
+			None => client.rpc_system_account_next_index(&account_id.to_string()).await?,
 		};
 		let mortality = match &self.mortality {
-			Some(MortalityOption::Period(period)) => Mortality::from_period(client, *period).await?,
+			Some(MortalityOption::Period(period)) => RefinedMortality::from_period(client, *period).await?,
 			Some(MortalityOption::Full(mortality)) => *mortality,
-			None => Mortality::from_period(client, 32).await?,
+			None => RefinedMortality::from_period(client, 32).await?,
 		};
 
-		Ok(PopulatedOptions {
+		Ok(RefinedOptions {
 			app_id,
 			mortality,
 			nonce,
@@ -72,43 +77,38 @@ impl Default for Options {
 }
 
 #[derive(Debug, Clone)]
-pub struct PopulatedOptions {
+pub struct RefinedOptions {
 	pub app_id: u32,
-	pub mortality: Mortality,
-	pub nonce: u64,
+	pub mortality: RefinedMortality,
+	pub nonce: u32,
 	pub tip: u128,
 }
 
-impl PopulatedOptions {
-	pub async fn build(self) -> Params {
-		let mut builder = AvailExtrinsicParamsBuilder::new();
-		builder = builder.app_id(self.app_id);
-		builder = builder.tip(self.tip);
-		builder = builder.nonce(self.nonce);
-
-		builder = builder.mortal_unchecked(
-			self.mortality.block_height as u64,
-			self.mortality.block_hash,
-			self.mortality.period,
-		);
-
-		builder.build()
+impl From<&RefinedOptions> for TransactionExtra {
+	fn from(value: &RefinedOptions) -> Self {
+		let era = Era::mortal(value.mortality.period, value.mortality.block_height as u64);
+		TransactionExtra {
+			era,
+			nonce: value.nonce.into(),
+			tip: value.tip.into(),
+			app_id: value.app_id.into(),
+		}
 	}
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum MortalityOption {
 	Period(u64),
-	Full(Mortality),
+	Full(RefinedMortality),
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Mortality {
+pub struct RefinedMortality {
 	pub period: u64,
 	pub block_hash: H256,
 	pub block_height: u32,
 }
-impl Mortality {
+impl RefinedMortality {
 	pub fn new(period: u64, block_hash: H256, block_height: u32) -> Self {
 		Self {
 			period,
@@ -119,8 +119,6 @@ impl Mortality {
 
 	pub async fn from_period(client: &Client, period: u64) -> Result<Self, RpcError> {
 		let header = client.finalized_block_header().await?;
-		dbg!(&header.hash());
-		dbg!(&header.number());
 		let (block_hash, block_height) = (header.hash(), header.number());
 		Ok(Self {
 			period,

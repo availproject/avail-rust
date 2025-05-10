@@ -3,6 +3,7 @@ pub mod rpc;
 pub mod runtime_api;
 
 use crate::avail;
+use crate::primitives;
 use crate::{
 	config::*,
 	error::{ClientError, RpcError},
@@ -11,20 +12,13 @@ use crate::{
 	transactions::Transactions,
 	AvailHeader, BlockState,
 };
-use log::info;
+#[cfg(not(feature = "subxt"))]
+use codec::Decode;
 use primitive_types::H256;
 use rpc::ChainBlock;
 use std::{fmt::Debug, sync::Arc};
-use subxt_core::ext::scale_encode::EncodeAsFields;
-use subxt_core::{blocks::StaticExtrinsic, tx::payload::DefaultPayload};
 use subxt_rpcs::RpcClient;
 use subxt_signer::sr25519::Keypair;
-
-#[cfg(not(feature = "subxt"))]
-use codec::Decode;
-
-#[cfg(not(feature = "subxt"))]
-use subxt_core::client::ClientState;
 
 type SharedCache = Arc<std::sync::Mutex<Cache>>;
 
@@ -195,6 +189,50 @@ impl Client {
 		Ok(BlockState::Finalized)
 	}
 
+	pub async fn sign_and_submit<'a>(
+		&self,
+		signer: &Keypair,
+		tx_payload: primitives::TransactionPayload<'a>,
+	) -> Result<H256, RpcError> {
+		use crate::primitives::transaction::Transaction;
+
+		let account_id = signer.public_key().to_account_id();
+		let signature = tx_payload.sign(signer);
+		let tx = Transaction::new(account_id, signature, tx_payload);
+		let encoded = tx.encode();
+		let tx_hash = self.rpc_author_submit_extrinsic(&encoded).await?;
+
+		// info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
+
+		Ok(tx_hash)
+	}
+
+	pub async fn sign_and_submit_call(
+		&self,
+		signer: &Keypair,
+		tx_call: &primitives::TransactionCall,
+		options: Options,
+	) -> Result<SubmittedTransaction, RpcError> {
+		let account_id = signer.public_key().to_account_id();
+		let refined_options = options.build(self, &account_id).await?;
+
+		let tx_extra = primitives::TransactionExtra::from(&refined_options);
+
+		let gt = self.block_hash(0).await.unwrap().unwrap();
+		let tx_additional = primitives::TransactionAdditional {
+			spec_version: 47,
+			tx_version: 0,
+			genesis_hash: gt,
+			fork_hash: refined_options.mortality.block_hash,
+		};
+
+		let tx_payload = primitives::TransactionPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
+		let tx_hash = self.sign_and_submit(signer, tx_payload).await?;
+
+		let value = SubmittedTransaction::new(self.clone(), tx_hash, account_id, refined_options, tx_additional);
+		Ok(value)
+	}
+
 	pub async fn storage_fetch_or_default<'address, Addr>(
 		&self,
 		address: &Addr,
@@ -249,57 +287,6 @@ impl Client {
 	pub fn subxt_constants(&self) -> AConstantsClient {
 		self.online_client.constants()
 	}
-
-	// Submission
-	/// TODO
-	pub async fn sign<T>(
-		&self,
-		signer: &Keypair,
-		payload: &DefaultPayload<T>,
-		options: Options,
-	) -> Result<Vec<u8>, RpcError>
-	where
-		T: StaticExtrinsic + EncodeAsFields,
-	{
-		let account_id = signer.public_key().to_account_id();
-		let options = options.build(self, &account_id).await?;
-		let params = options.clone().build().await;
-		if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data")
-		{
-			let err = RpcError::TransactionNotAllowed("Transaction is not compatible with non-zero AppIds".into());
-			return Err(err);
-		}
-
-		let mut tx_client = self.online_client.tx();
-		let signed_call = tx_client.create_signed(payload, signer, params).await?;
-		Ok(signed_call.into_encoded())
-	}
-
-	pub async fn sign_and_submit<T>(
-		&self,
-		signer: &Keypair,
-		payload: &DefaultPayload<T>,
-		options: Options,
-	) -> Result<SubmittedTransaction, RpcError>
-	where
-		T: StaticExtrinsic + EncodeAsFields,
-	{
-		let account_id = signer.public_key().to_account_id();
-		let options = options.build(self, &account_id).await?;
-		let params = options.clone().build().await;
-		if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data")
-		{
-			let err = RpcError::TransactionNotAllowed("Transaction is not compatible with non-zero AppIds".into());
-			return Err(err);
-		}
-
-		let mut tx_client = self.online_client.tx();
-		let signed_call = tx_client.create_signed(payload, signer, params).await?;
-		let tx_hash = self.rpc_author_submit_extrinsic(signed_call.encoded()).await?;
-		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
-
-		Ok(SubmittedTransaction::new(self.clone(), tx_hash, account_id, &options))
-	}
 }
 
 impl Client {
@@ -329,91 +316,6 @@ impl Client {
 			rpc_client,
 			cache: SharedCache::default(),
 		})
-	}
-
-	// Submission
-	/// TODO
-	pub async fn sign<T>(
-		&self,
-		signer: &Keypair,
-		payload: &DefaultPayload<T>,
-		options: Options,
-	) -> Result<Vec<u8>, RpcError>
-	where
-		T: StaticExtrinsic + EncodeAsFields,
-	{
-		let account_id = signer.public_key().to_account_id();
-		let options = options.build(self, &account_id).await?;
-		let params = options.clone().build().await;
-		if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data")
-		{
-			let err = RpcError::TransactionNotAllowed("Transaction is not compatible with non-zero AppIds".into());
-			return Err(err);
-		}
-
-		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
-		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
-		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
-		let gh = self.block_hash(0).await.unwrap().unwrap();
-		let rt = self.rpc_state_get_runtime_version(Some(gh)).await.unwrap();
-		let cs = ClientState::<AvailConfig> {
-			genesis_hash: gh,
-			runtime_version: subxt_core::client::RuntimeVersion {
-				spec_version: rt.spec_version,
-				transaction_version: rt.transaction_version,
-			},
-			metadata,
-		};
-
-		let tx = subxt_core::tx::create_v4_signed(payload, &cs, params)?;
-		let tx = tx.sign(signer);
-
-		/* 		let mut tx_client = self.online_client.tx();
-		let signed_call = tx_client.create_signed(payload, signer, params).await?; */
-		Ok(tx.into_encoded())
-	}
-
-	pub async fn sign_and_submit<T>(
-		&self,
-		signer: &Keypair,
-		payload: &DefaultPayload<T>,
-		options: Options,
-	) -> Result<SubmittedTransaction, RpcError>
-	where
-		T: StaticExtrinsic + EncodeAsFields,
-	{
-		let account_id = signer.public_key().to_account_id();
-		let options = options.build(self, &account_id).await?;
-		let params = options.clone().build().await;
-		if params.6 .0 .0 != 0 && (payload.pallet_name() != "DataAvailability" || payload.call_name() != "submit_data")
-		{
-			let err = RpcError::TransactionNotAllowed("Transaction is not compatible with non-zero AppIds".into());
-			return Err(err);
-		}
-
-		let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
-		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
-		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
-		let gh = self.block_hash(0).await.unwrap().unwrap();
-		let rt = self.rpc_state_get_runtime_version(Some(gh)).await.unwrap();
-		let cs = ClientState::<AvailConfig> {
-			genesis_hash: gh,
-			runtime_version: subxt_core::client::RuntimeVersion {
-				spec_version: rt.spec_version,
-				transaction_version: rt.transaction_version,
-			},
-			metadata,
-		};
-
-		let tx = subxt_core::tx::create_v4_signed(payload, &cs, params)?;
-		let tx = tx.sign(signer);
-
-		/* 		let mut tx_client = self.online_client.tx();
-		let signed_call = tx_client.create_signed(payload, signer, params).await?; */
-		let tx_hash = self.rpc_author_submit_extrinsic(tx.encoded()).await?;
-		info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
-
-		Ok(SubmittedTransaction::new(self.clone(), tx_hash, account_id, &options))
 	}
 }
 

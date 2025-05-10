@@ -12,21 +12,19 @@ pub struct DataAvailability {
 }
 
 impl DataAvailability {
-	pub fn create_application_key(&self, key: Vec<u8>) -> SubmittableTransaction<CreateApplicationKeyCall> {
+	pub fn create_application_key(&self, key: Vec<u8>) -> SubmittableTransaction {
 		#[cfg(feature = "subxt_metadata")]
 		let payload = avail::tx().data_availability().create_application_key(Key { 0: key });
 		#[cfg(not(feature = "subxt_metadata"))]
 		let payload = avail::tx().data_availability().create_application_key(key);
-
 		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 
-	pub fn submit_data(&self, data: Vec<u8>) -> SubmittableTransaction<SubmitDataCall> {
+	pub fn submit_data(&self, data: Vec<u8>) -> SubmittableTransaction {
 		#[cfg(feature = "subxt_metadata")]
 		let payload = avail::tx().data_availability().submit_data(Data { 0: data });
 		#[cfg(not(feature = "subxt_metadata"))]
 		let payload = avail::tx().data_availability().submit_data(data);
-
 		SubmittableTransaction::new(self.client.clone(), payload)
 	}
 }

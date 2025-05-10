@@ -1,9 +1,9 @@
+use crate::primitives::transaction;
 use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use subxt_core::config::substrate::BlakeTwo256;
-use subxt_core::utils::{AccountId32, MultiSignature};
 use subxt_core::Config;
 use subxt_rpcs::methods::legacy::BlockDetails as BlockDetailsRPC;
 
@@ -13,13 +13,15 @@ use subxt_rpcs::RpcConfig;
 #[cfg(feature = "subxt")]
 pub use subxt_types::*;
 
+pub use transaction::AccountId;
+pub use transaction::AccountIndex;
+pub use transaction::BlockHash;
+pub use transaction::BlockNumber;
+pub use transaction::MultiAddress;
+pub use transaction::MultiSignature;
+
 /// Chain Primitives
-pub type AccountId = AccountId32;
-pub type AccountIndex = u32;
-pub type MultiAddress = subxt_core::utils::MultiAddress<AccountId, AccountIndex>;
 pub type Signature = MultiSignature;
-pub type BlockNumber = u32;
-pub type BlockHash = H256;
 
 /// Clients
 #[cfg(feature = "subxt")]

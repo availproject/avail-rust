@@ -45,33 +45,27 @@ pub mod avail {
 					)
 				}
 
-				#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Eq, PartialEq)]
-				#[codec (crate = codec)]
-				#[decode_as_type(crate_path = "subxt_core :: ext :: scale_decode")]
-				#[encode_as_type(crate_path = "subxt_core :: ext :: scale_encode")]
+				#[derive(Clone, Decode, Encode)]
 				pub struct SubmitData {
 					pub data: Vec<u8>,
-				}
-				impl StaticExtrinsic for SubmitData {
-					const PALLET: &'static str = "DataAvailability";
-					const CALL: &'static str = "submit_data";
-				}
-				pub fn payload_submit_data(data: Vec<u8>) -> DefaultPayload<SubmitData> {
-					DefaultPayload::<SubmitData>::new(SubmitData::PALLET, SubmitData::CALL, SubmitData { data })
 				}
 			}
 
 			pub struct DataAvailability;
 			impl DataAvailability {
-				pub fn create_application_key(&self, key: Vec<u8>) -> DefaultPayload<CreateApplicationKey> {
-					DefaultPayload::<CreateApplicationKey>::new(
-						CreateApplicationKey::PALLET,
-						CreateApplicationKey::CALL,
-						CreateApplicationKey { key },
-					)
+				pub fn create_application_key(&self, key: Vec<u8>) -> crate::primitives::transaction::TransactionCall {
+					crate::primitives::transaction::TransactionCall {
+						pallet_id: 29,
+						call_id: 0,
+						data: key.encode(),
+					}
 				}
-				pub fn submit_data(&self, data: Vec<u8>) -> DefaultPayload<SubmitData> {
-					DefaultPayload::<SubmitData>::new(SubmitData::PALLET, SubmitData::CALL, SubmitData { data })
+				pub fn submit_data(&self, data: Vec<u8>) -> crate::primitives::transaction::TransactionCall {
+					crate::primitives::transaction::TransactionCall {
+						pallet_id: 29,
+						call_id: 1,
+						data: data.encode(),
+					}
 				}
 			}
 		}
