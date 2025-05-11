@@ -1,4 +1,7 @@
-use crate::{avail, client::Client, config::AccountId, SubmittableTransaction};
+use crate::{
+	api_dev_custom::TransactionCallLike, avail, client::Client, config::AccountId, primitives::TransactionCall,
+	SubmittableTransaction,
+};
 
 #[cfg(feature = "subxt_metadata")]
 pub mod balances;
@@ -22,6 +25,10 @@ impl Transactions {
 	pub fn balances(&self) -> Balances {
 		Balances(self.0.clone())
 	}
+
+	pub fn utility(&self) -> Utility {
+		Utility(self.0.clone())
+	}
 }
 
 pub struct DataAvailability(Client);
@@ -40,17 +47,47 @@ impl DataAvailability {
 pub struct Balances(Client);
 impl Balances {
 	pub fn transfer_allow_death(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
-		let call = avail::balances::tx::TransferAllowDeath { dest, amount }.to_call();
+		let call = avail::balances::tx::TransferAllowDeath {
+			dest: dest.into(),
+			amount,
+		}
+		.to_call();
 		SubmittableTransaction::new(self.0.clone(), call)
 	}
 
 	pub fn transfer_keep_alive(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
-		let call = avail::balances::tx::TransferKeepAlive { dest, amount }.to_call();
+		let call = avail::balances::tx::TransferKeepAlive {
+			dest: dest.into(),
+			amount,
+		}
+		.to_call();
 		SubmittableTransaction::new(self.0.clone(), call)
 	}
 
 	pub fn transfer_all(&self, dest: AccountId, keep_alive: bool) -> SubmittableTransaction {
-		let call = avail::balances::tx::TransferAll { dest, keep_alive }.to_call();
+		let call = avail::balances::tx::TransferAll {
+			dest: dest.into(),
+			keep_alive,
+		}
+		.to_call();
+		SubmittableTransaction::new(self.0.clone(), call)
+	}
+}
+
+pub struct Utility(Client);
+impl Utility {
+	pub fn batch(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
+		let call = avail::utility::tx::Batch { calls }.to_call();
+		SubmittableTransaction::new(self.0.clone(), call)
+	}
+
+	pub fn batch_call(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
+		let call = avail::utility::tx::BatchAll { calls }.to_call();
+		SubmittableTransaction::new(self.0.clone(), call)
+	}
+
+	pub fn force_batch(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
+		let call = avail::utility::tx::ForceBatch { calls }.to_call();
 		SubmittableTransaction::new(self.0.clone(), call)
 	}
 }

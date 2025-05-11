@@ -1,5 +1,5 @@
 use crate::config::{AccountId, AccountInfo};
-use crate::primitives;
+use crate::primitives::TransactionCall;
 use codec::Encode;
 use subxt_core::storage::address::{StaticAddress, StaticStorageKey};
 use subxt_core::utils::Yes;
@@ -7,6 +7,16 @@ use subxt_core::utils::Yes;
 pub trait TxDispatchIndex {
 	// Pallet ID, Call ID
 	const DISPATCH_INDEX: (u8, u8);
+}
+
+pub trait TransactionCallLike {
+	fn to_call(&self) -> TransactionCall;
+}
+
+impl<T: TxDispatchIndex + Encode> TransactionCallLike for T {
+	fn to_call(&self) -> TransactionCall {
+		TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
+	}
 }
 
 pub mod data_availability {
@@ -23,11 +33,6 @@ pub mod data_availability {
 		impl TxDispatchIndex for CreateApplicationKey {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
-		impl CreateApplicationKey {
-			pub fn to_call(&self) -> primitives::TransactionCall {
-				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
-			}
-		}
 
 		#[derive(Encode)]
 		pub struct SubmitData {
@@ -35,11 +40,6 @@ pub mod data_availability {
 		}
 		impl TxDispatchIndex for SubmitData {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
-		}
-		impl SubmitData {
-			pub fn to_call(&self) -> primitives::TransactionCall {
-				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
-			}
 		}
 	}
 }
@@ -49,50 +49,70 @@ pub mod balances {
 	const PALLET_ID: u8 = 6;
 
 	pub mod tx {
+		use crate::config::MultiAddress;
+
 		use super::*;
 
 		#[derive(Encode)]
 		pub struct TransferAllowDeath {
-			pub dest: AccountId,
+			pub dest: MultiAddress,
 			#[codec(compact)]
 			pub amount: u128,
 		}
 		impl TxDispatchIndex for TransferAllowDeath {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
-		impl TransferAllowDeath {
-			pub fn to_call(&self) -> primitives::TransactionCall {
-				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
-			}
-		}
 
 		#[derive(Encode)]
 		pub struct TransferKeepAlive {
-			pub dest: AccountId,
+			pub dest: MultiAddress,
 			#[codec(compact)]
 			pub amount: u128,
 		}
 		impl TxDispatchIndex for TransferKeepAlive {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
-		impl TransferKeepAlive {
-			pub fn to_call(&self) -> primitives::TransactionCall {
-				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
-			}
-		}
 
 		#[derive(Encode)]
 		pub struct TransferAll {
-			pub dest: AccountId,
+			pub dest: MultiAddress,
 			pub keep_alive: bool,
 		}
 		impl TxDispatchIndex for TransferAll {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
-		impl TransferAll {
-			pub fn to_call(&self) -> primitives::TransactionCall {
-				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
-			}
+	}
+}
+
+pub mod utility {
+	use super::*;
+	const PALLET_ID: u8 = 1;
+
+	pub mod tx {
+		use super::*;
+
+		#[derive(Encode)]
+		pub struct Batch {
+			pub calls: Vec<TransactionCall>,
+		}
+		impl TxDispatchIndex for Batch {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Encode)]
+		pub struct BatchAll {
+			pub calls: Vec<TransactionCall>,
+		}
+		impl TxDispatchIndex for BatchAll {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+
+		#[derive(Encode)]
+		pub struct ForceBatch {
+			pub calls: Vec<TransactionCall>,
+		}
+		impl TxDispatchIndex for ForceBatch {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 	}
 }

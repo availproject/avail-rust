@@ -96,7 +96,6 @@ impl Encode for AlreadyEncoded {
 
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		dest.write(&self.0);
-		self.using_encoded(|buf| dest.write(buf));
 	}
 }
 
