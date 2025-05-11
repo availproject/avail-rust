@@ -14,7 +14,7 @@ use core::marker::PhantomData;
 use subxt_core::config::substrate::DigestItem;
 
 #[cfg(feature = "subxt_metadata")]
-use crate::avail::runtime_types::{
+use crate::subxt_avail::runtime_types::{
 	avail_core::header::{extension::HeaderExtension, Header as ApiHeader},
 	sp_runtime::generic::digest::{Digest as ApiDigest, DigestItem as ApiDigestItem},
 };

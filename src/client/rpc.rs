@@ -18,7 +18,7 @@ use subxt_rpcs::{
 use crate::utils;
 
 #[cfg(feature = "subxt_metadata")]
-use crate::avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength};
+use crate::subxt_avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength};
 
 /// Arbitrary properties defined in chain spec as a JSON object
 pub type SystemProperties = serde_json::map::Map<String, serde_json::Value>;

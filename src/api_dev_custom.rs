@@ -265,6 +265,249 @@ pub mod multisig {
 	}
 }
 
+pub mod vector {
+	use super::*;
+	const PALLET_ID: u8 = 39;
+
+	pub mod types {
+		use super::*;
+		pub use crate::from_substrate::Weight;
+
+		/// Message type used to bridge between Avail & other chains
+		#[derive(Debug, Clone, Encode)]
+		pub struct AddressedMessage {
+			pub message: Message,
+			pub from: H256,
+			pub to: H256,
+			#[codec(compact)]
+			pub origin_domain: u32,
+			#[codec(compact)]
+			pub destination_domain: u32,
+			/// Unique identifier for the message
+			#[codec(compact)]
+			pub id: u64,
+		}
+
+		/// Possible types of Messages allowed by Avail to bridge to other chains.
+		#[derive(Debug, Clone, Encode)]
+		pub enum Message {
+			ArbitraryMessage(Vec<u8>),
+			FungibleToken {
+				asset_id: H256,
+				#[codec(compact)]
+				amount: u128,
+			},
+		}
+
+		#[derive(Debug, Clone, Encode)]
+		pub struct Configuration {
+			#[codec(compact)]
+			pub slots_per_period: u64,
+			#[codec(compact)]
+			pub finality_threshold: u16,
+		}
+	}
+
+	pub mod tx {
+		use super::*;
+
+		#[derive(Encode)]
+		pub struct FulfillCall {
+			pub function_id: H256,
+			pub input: Vec<u8>,
+			pub output: Vec<u8>,
+			pub proof: Vec<u8>,
+			#[codec(compact)]
+			pub slot: u64,
+		}
+		impl TxDispatchIndex for FulfillCall {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Encode)]
+		pub struct Execute {
+			#[codec(compact)]
+			pub slot: u64,
+			pub addr_message: super::types::AddressedMessage,
+			pub account_proof: Vec<Vec<u8>>,
+			pub storage_proof: Vec<Vec<u8>>,
+		}
+		impl TxDispatchIndex for Execute {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+
+		#[derive(Encode)]
+		pub struct SourceChainFroze {
+			#[codec(compact)]
+			pub source_chain_id: u32,
+			pub frozen: bool,
+		}
+		impl TxDispatchIndex for SourceChainFroze {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+
+		#[derive(Encode)]
+		pub struct SendMessage {
+			#[codec(compact)]
+			pub slot: u64,
+			pub message: super::types::Message,
+			pub to: H256,
+			#[codec(compact)]
+			pub domain: u32,
+		}
+		impl TxDispatchIndex for SendMessage {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+
+		#[derive(Encode)]
+		pub struct SetPoseidonHash {
+			#[codec(compact)]
+			pub period: u64,
+			pub poseidon_hash: Vec<u8>,
+		}
+		impl TxDispatchIndex for SetPoseidonHash {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+
+		#[derive(Encode)]
+		pub struct SetBroadcaster {
+			#[codec(compact)]
+			pub broadcaster_domain: u32,
+			pub broadcaster: H256,
+		}
+		impl TxDispatchIndex for SetBroadcaster {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 5);
+		}
+
+		#[derive(Encode)]
+		pub struct SetWhitelistedDomains {
+			pub value: Vec<u32>,
+		}
+		impl TxDispatchIndex for SetWhitelistedDomains {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 6);
+		}
+
+		#[derive(Encode)]
+		pub struct SetConfiguration {
+			pub value: super::types::Configuration,
+		}
+		impl TxDispatchIndex for SetConfiguration {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 7);
+		}
+
+		#[derive(Encode)]
+		pub struct SetFunctionIds {
+			pub value: Option<(H256, H256)>,
+		}
+		impl TxDispatchIndex for SetFunctionIds {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 8);
+		}
+
+		#[derive(Encode)]
+		pub struct SetStepVerificationKey {
+			pub value: Option<Vec<u8>>,
+		}
+		impl TxDispatchIndex for SetStepVerificationKey {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 9);
+		}
+
+		#[derive(Encode)]
+		pub struct SetRotateVerificationKey {
+			pub value: Option<Vec<u8>>,
+		}
+		impl TxDispatchIndex for SetRotateVerificationKey {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 10);
+		}
+
+		#[derive(Encode)]
+		pub struct SetUpdater {
+			pub updater: H256,
+		}
+		impl TxDispatchIndex for SetUpdater {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 12);
+		}
+
+		#[derive(Encode)]
+		pub struct Fulfill {
+			pub proof: Vec<u8>,
+			pub public_values: Vec<u8>,
+		}
+		impl TxDispatchIndex for Fulfill {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 13);
+		}
+
+		#[derive(Encode)]
+		pub struct SetSp1VerificationKey {
+			pub sp1_vk: H256,
+		}
+		impl TxDispatchIndex for SetSp1VerificationKey {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 14);
+		}
+
+		#[derive(Encode)]
+		pub struct SetSyncCommitteeHash {
+			pub period: u64,
+			pub hash: H256,
+		}
+		impl TxDispatchIndex for SetSyncCommitteeHash {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 15);
+		}
+
+		#[derive(Encode)]
+		pub struct EnableMock {
+			pub value: bool,
+		}
+		impl TxDispatchIndex for EnableMock {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 16);
+		}
+
+		#[derive(Encode)]
+		pub struct MockFulfill {
+			pub public_values: Vec<u8>,
+		}
+		impl TxDispatchIndex for MockFulfill {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 17);
+		}
+	}
+}
+
+pub mod utils {
+	use std::array::TryFromSliceError;
+
+	#[derive(Debug, Clone)]
+	pub struct SessionKeys {
+		pub babe: [u8; 32],
+		pub grandpa: [u8; 32],
+		pub im_online: [u8; 32],
+		pub authority_discovery: [u8; 32],
+	}
+
+	impl TryFrom<&[u8]> for SessionKeys {
+		type Error = String;
+
+		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+			if value.len() != 128 {
+				return Err(String::from(
+					"Session keys len cannot have length be more or less than 128",
+				));
+			}
+
+			let err = |e: TryFromSliceError| e.to_string();
+
+			let babe: [u8; 32] = value[0..32].try_into().map_err(err)?;
+			let grandpa: [u8; 32] = value[32..64].try_into().map_err(err)?;
+			let im_online: [u8; 32] = value[64..96].try_into().map_err(err)?;
+			let authority_discovery: [u8; 32] = value[96..128].try_into().map_err(err)?;
+			Ok(Self {
+				babe,
+				grandpa,
+				im_online,
+				authority_discovery,
+			})
+		}
+	}
+}
+
 pub mod system {
 	use super::*;
 	pub mod storage {

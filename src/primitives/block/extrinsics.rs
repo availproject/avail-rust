@@ -2,7 +2,7 @@ use super::extrinsics_params::OnlyCodecExtra;
 use crate::config::{AppId, MultiAddress, RuntimePhase, Signature};
 
 #[cfg(feature = "subxt_metadata")]
-use crate::avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
+use crate::subxt_avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
 
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
 use serde::{Deserialize, Serialize};

@@ -157,6 +157,6 @@ pub mod no_subxt_metadata {
 pub use no_subxt_metadata::*;
 
 #[cfg(feature = "subxt_metadata")]
-pub type AccountData = crate::avail::runtime_types::pallet_balances::types::AccountData<u128>;
+pub type AccountData = crate::subxt_avail::runtime_types::pallet_balances::types::AccountData<u128>;
 #[cfg(feature = "subxt_metadata")]
-pub use crate::avail::system::storage::types::account::Account as AccountInfo;
+pub use crate::subxt_avail::system::storage::types::account::Account as AccountInfo;
