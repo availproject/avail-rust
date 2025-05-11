@@ -1,5 +1,6 @@
 use super::platform::sleep;
 use crate::{
+	api_dev_custom::TransactionCallLike,
 	client::{rpc::ChainBlock, Client},
 	config::*,
 	error::RpcError,
@@ -10,6 +11,17 @@ use log::info;
 use primitive_types::H256;
 use std::{sync::Arc, time::Duration};
 use subxt_signer::sr25519::Keypair;
+
+pub trait SubmittableTransactionLike {
+	fn to_submittable(&self, client: Client) -> SubmittableTransaction;
+}
+
+impl<T: TransactionCallLike> SubmittableTransactionLike for T {
+	fn to_submittable(&self, client: Client) -> SubmittableTransaction {
+		let call = self.to_call();
+		SubmittableTransaction::new(client, call)
+	}
+}
 
 #[derive(Clone)]
 pub struct SubmittableTransaction {

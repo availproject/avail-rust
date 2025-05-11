@@ -1,5 +1,5 @@
 use crate::config::*;
-use codec::Decode;
+use codec::{Decode, Encode};
 use serde::Deserialize;
 
 /// Network Peer information
@@ -131,7 +131,7 @@ pub enum DispatchClass {
 	Mandatory,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Decode)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Encode, Decode)]
 pub struct Weight {
 	/// The weight of computational time used based on some reference hardware.
 	#[codec(compact)]

@@ -33,7 +33,10 @@ pub use primitives::{
 	block::{AppUncheckedExtrinsic, AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
 	kate::{Cell, GDataProof, GRow},
 };
-pub use transaction::{BlockState, ReceiptMethod, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
+pub use transaction::{
+	BlockState, ReceiptMethod, SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction,
+	TransactionReceipt,
+};
 
 // External
 pub mod ext {
