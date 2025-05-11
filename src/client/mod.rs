@@ -42,7 +42,7 @@ impl Client {
 	}
 
 	pub fn tx(&self) -> Transactions {
-		Transactions::new(self.clone())
+		Transactions(self.clone())
 	}
 
 	pub fn enable_logging() {
@@ -171,6 +171,24 @@ impl Client {
 		self.finalized_block_account_info(account_id).await.map(|x| x.data)
 	}
 
+	// Account Info (nonce, balance, ...)
+	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
+		let address = avail::system::storage::account(account_id);
+		self.storage_fetch_or_default(&address, at).await
+	}
+
+	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+		let at = self.best_block_hash().await?;
+		let address = avail::system::storage::account(account_id);
+		self.storage_fetch_or_default(&address, at).await
+	}
+
+	pub async fn finalized_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+		let at = self.finalized_block_hash().await?;
+		let address = avail::system::storage::account(account_id);
+		self.storage_fetch_or_default(&address, at).await
+	}
+
 	// Block State
 	pub async fn block_state(&self, block_id: BlockId) -> Result<BlockState, RpcError> {
 		let real_block_hash = self.block_hash(block_id.height).await?;
@@ -190,7 +208,17 @@ impl Client {
 		Ok(BlockState::Finalized)
 	}
 
-	pub async fn sign_and_submit<'a>(
+	// Sign and submit
+	pub async fn sign_and_submit<'a>(&self, tx: &primitives::Transaction<'a>) -> Result<H256, RpcError> {
+		let encoded = tx.encode();
+		let tx_hash = self.rpc_author_submit_extrinsic(&encoded).await?;
+
+		//info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
+
+		Ok(tx_hash)
+	}
+
+	pub async fn sign_and_submit_payload<'a>(
 		&self,
 		signer: &Keypair,
 		tx_payload: primitives::TransactionPayload<'a>,
@@ -228,12 +256,13 @@ impl Client {
 		};
 
 		let tx_payload = primitives::TransactionPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
-		let tx_hash = self.sign_and_submit(signer, tx_payload).await?;
+		let tx_hash = self.sign_and_submit_payload(signer, tx_payload).await?;
 
 		let value = SubmittedTransaction::new(self.clone(), tx_hash, account_id, refined_options, tx_additional);
 		Ok(value)
 	}
 
+	// Storage
 	pub async fn storage_fetch_or_default<'address, Addr>(
 		&self,
 		address: &Addr,
@@ -287,26 +316,6 @@ impl Client {
 
 	pub fn subxt_constants(&self) -> AConstantsClient {
 		self.online_client.constants()
-	}
-}
-
-impl Client {
-	// Account Info (nonce, balance, ...)
-	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
-		let address = avail::storage().system().account(account_id);
-		self.storage_fetch_or_default(&address, at).await
-	}
-
-	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
-		let at = self.best_block_hash().await?;
-		let address = avail::storage().system().account(account_id);
-		self.storage_fetch_or_default(&address, at).await
-	}
-
-	pub async fn finalized_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
-		let at = self.finalized_block_hash().await?;
-		let address = avail::storage().system().account(account_id);
-		self.storage_fetch_or_default(&address, at).await
 	}
 }
 

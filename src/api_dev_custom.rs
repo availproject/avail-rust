@@ -1,6 +1,6 @@
 use crate::config::{AccountId, AccountInfo};
 use crate::primitives;
-use codec::{Decode, Encode};
+use codec::Encode;
 use subxt_core::storage::address::{StaticAddress, StaticStorageKey};
 use subxt_core::utils::Yes;
 
@@ -9,79 +9,99 @@ pub trait TxDispatchIndex {
 	const DISPATCH_INDEX: (u8, u8);
 }
 
-pub mod avail {
-	pub fn tx() -> TransactionsApi {
-		TransactionsApi
-	}
-
-	pub fn storage() -> StorageApi {
-		StorageApi
-	}
-
-	pub struct TransactionsApi;
-	impl TransactionsApi {
-		pub fn data_availability(&self) -> super::transactions::DataAvailability {
-			super::transactions::DataAvailability
-		}
-	}
-
-	pub struct StorageApi;
-	impl StorageApi {
-		pub fn system(&self) -> super::storage::System {
-			super::storage::System
-		}
-	}
-}
-
-pub mod types {
+pub mod data_availability {
 	use super::*;
-	pub mod data_availability {
+	const PALLET_ID: u8 = 29;
+
+	pub mod tx {
 		use super::*;
 
-		pub struct CreateApplicationKey;
+		#[derive(Encode)]
+		pub struct CreateApplicationKey {
+			pub key: Vec<u8>,
+		}
 		impl TxDispatchIndex for CreateApplicationKey {
-			const DISPATCH_INDEX: (u8, u8) = (29, 0);
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 		impl CreateApplicationKey {
-			pub fn to_call(key: Vec<u8>) -> primitives::TransactionCall {
-				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, key.encode())
+			pub fn to_call(&self) -> primitives::TransactionCall {
+				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
 			}
 		}
 
-		pub struct SubmitData;
+		#[derive(Encode)]
+		pub struct SubmitData {
+			pub data: Vec<u8>,
+		}
 		impl TxDispatchIndex for SubmitData {
-			const DISPATCH_INDEX: (u8, u8) = (29, 1);
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 		impl SubmitData {
-			pub fn to_call(data: Vec<u8>) -> primitives::TransactionCall {
-				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, data.encode())
+			pub fn to_call(&self) -> primitives::TransactionCall {
+				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
 			}
 		}
 	}
 }
 
-pub mod transactions {
+pub mod balances {
 	use super::*;
+	const PALLET_ID: u8 = 6;
 
-	pub struct DataAvailability;
-	impl DataAvailability {
-		pub fn create_application_key(&self, key: Vec<u8>) -> primitives::TransactionCall {
-			types::data_availability::CreateApplicationKey::to_call(key)
+	pub mod tx {
+		use super::*;
+
+		#[derive(Encode)]
+		pub struct TransferAllowDeath {
+			pub dest: AccountId,
+			#[codec(compact)]
+			pub amount: u128,
+		}
+		impl TxDispatchIndex for TransferAllowDeath {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl TransferAllowDeath {
+			pub fn to_call(&self) -> primitives::TransactionCall {
+				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
+			}
 		}
 
-		pub fn submit_data(&self, data: Vec<u8>) -> primitives::TransactionCall {
-			types::data_availability::SubmitData::to_call(data)
+		#[derive(Encode)]
+		pub struct TransferKeepAlive {
+			pub dest: AccountId,
+			#[codec(compact)]
+			pub amount: u128,
+		}
+		impl TxDispatchIndex for TransferKeepAlive {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+		impl TransferKeepAlive {
+			pub fn to_call(&self) -> primitives::TransactionCall {
+				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
+			}
+		}
+
+		#[derive(Encode)]
+		pub struct TransferAll {
+			pub dest: AccountId,
+			pub keep_alive: bool,
+		}
+		impl TxDispatchIndex for TransferAll {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+		impl TransferAll {
+			pub fn to_call(&self) -> primitives::TransactionCall {
+				primitives::TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
+			}
 		}
 	}
 }
 
-pub mod storage {
+pub mod system {
 	use super::*;
-
-	pub struct System;
-	impl System {
+	pub mod storage {
+		use super::*;
 		pub fn account(
-			&self,
 			account_id: &AccountId,
 		) -> StaticAddress<StaticStorageKey<AccountId>, AccountInfo, Yes, Yes, ()> {
 			let address = StaticAddress::new_static(

@@ -428,7 +428,7 @@ impl Client {
 		Ok(Some(value))
 	}
 
-	pub async fn rpc_chain_get_block_hash(&self, block_height: Option<BlockNumber>) -> Result<Option<H256>, RpcError> {
+	pub async fn rpc_chain_get_block_hash(&self, block_height: Option<BlockHeight>) -> Result<Option<H256>, RpcError> {
 		let params = rpc_params![block_height];
 		let value = self.rpc_client.request("chain_getBlockHash", params).await?;
 		Ok(value)

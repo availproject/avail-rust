@@ -2,7 +2,6 @@
 // This file is dual-licensed as Apache-2.0 or GPL-3.0.
 // see LICENSE for license details.
 
-use crate::config::AppId;
 use codec::{Compact, Encode};
 use scale_info::PortableRegistry;
 use subxt_core::{
@@ -11,6 +10,8 @@ use subxt_core::{
 	error::ExtrinsicParamsError,
 	utils::Era,
 };
+
+use crate::config::AppId;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct CheckAppId(pub AppId);
@@ -21,7 +22,7 @@ impl<T: Config> transaction_extensions::Params<T> for CheckAppId {}
 
 impl ExtrinsicParamsEncoder for CheckAppId {
 	fn encode_value_to(&self, v: &mut Vec<u8>) {
-		Compact::<u32>(self.0 .0 .0).encode_to(v);
+		Compact::<u32>(self.0 .0).encode_to(v);
 	}
 
 	fn encode_implicit_to(&self, _: &mut Vec<u8>) {}
@@ -132,7 +133,7 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 
 	/// App Id
 	pub fn app_id(mut self, app_id: u32) -> Self {
-		self.app_id = AppId::from(app_id);
+		self.app_id = AppId(app_id);
 		self
 	}
 

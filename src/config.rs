@@ -1,6 +1,7 @@
-use crate::primitives::transaction;
+pub use crate::primitives;
+pub use crate::primitives::config::*;
 use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
-use codec::{Compact, Decode, Encode};
+use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use subxt_core::config::substrate::BlakeTwo256;
@@ -12,13 +13,6 @@ use subxt_rpcs::RpcConfig;
 
 #[cfg(feature = "subxt")]
 pub use subxt_types::*;
-
-pub use transaction::AccountId;
-pub use transaction::AccountIndex;
-pub use transaction::BlockHash;
-pub use transaction::BlockNumber;
-pub use transaction::MultiAddress;
-pub use transaction::MultiSignature;
 
 /// Chain Primitives
 pub type Signature = MultiSignature;
@@ -68,36 +62,21 @@ pub type AvailExtrinsicParamsBuilder = DefaultExtrinsicParamsBuilder<AvailConfig
 pub struct AvailConfig;
 
 impl Config for AvailConfig {
-	type AccountId = AccountId;
-	type Address = MultiAddress;
+	type AccountId = primitives::AccountId;
+	type Address = primitives::MultiAddress;
 	type ExtrinsicParams = AvailExtrinsicParams<Self>;
-	type Hash = BlockHash;
+	type Hash = primitives::BlockHash;
 	type Hasher = BlakeTwo256;
 	type Header = AvailHeader;
-	type Signature = Signature;
+	type Signature = primitives::MultiSignature;
 	type AssetId = u32;
 }
 
 #[cfg(not(feature = "subxt"))]
 impl RpcConfig for AvailConfig {
 	type Header = AvailHeader;
-	type Hash = BlockHash;
-	type AccountId = AccountId;
-}
-
-#[derive(Clone, Copy, Debug, Encode, Decode, Eq, PartialEq)]
-pub struct AppId(pub Compact<u32>);
-
-impl Default for AppId {
-	fn default() -> Self {
-		Self(Compact(0))
-	}
-}
-
-impl From<u32> for AppId {
-	fn from(value: u32) -> Self {
-		Self(Compact(value))
-	}
+	type Hash = primitives::BlockHash;
+	type AccountId = primitives::AccountId;
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -153,12 +132,10 @@ pub type EmittedIndex = (u8, u8);
 #[cfg(not(feature = "subxt_metadata"))]
 pub mod no_subxt_metadata {
 	use codec::{Decode, Encode};
-	use subxt_core::ext::{scale_decode::DecodeAsType, scale_encode::EncodeAsType};
+	use scale_decode::DecodeAsType;
+	use scale_encode::EncodeAsType;
 
-	#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug)]
-	#[codec (crate = codec)]
-	#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-	#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+	#[derive(Debug, Clone, Encode, Decode, DecodeAsType, EncodeAsType)]
 	pub struct AccountData {
 		pub free: u128,
 		pub reserved: u128,
@@ -166,10 +143,7 @@ pub mod no_subxt_metadata {
 		pub flags: u128,
 	}
 
-	#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug)]
-	#[codec (crate = codec)]
-	#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-	#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+	#[derive(Debug, Clone, Encode, Decode, DecodeAsType, EncodeAsType)]
 	pub struct AccountInfo {
 		pub nonce: u32,
 		pub consumers: u32,

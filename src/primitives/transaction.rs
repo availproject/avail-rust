@@ -1,38 +1,9 @@
-use std::borrow::Cow;
-
+use super::{AccountId, MultiAddress, MultiSignature};
 use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
+use std::borrow::Cow;
 use subxt_core::config::{substrate::BlakeTwo256, Hasher};
-use subxt_core::utils::AccountId32;
 use subxt_signer::sr25519::Keypair;
-
-#[derive(Clone)]
-pub struct TransactionCall {
-	pub pallet_id: u8,
-	pub call_id: u8,
-	pub data: Vec<u8>,
-}
-
-impl TransactionCall {
-	pub fn new(pallet_id: u8, call_id: u8, data: Vec<u8>) -> Self {
-		Self {
-			pallet_id,
-			call_id,
-			data,
-		}
-	}
-}
-
-impl Encode for TransactionCall {
-	fn encode(&self) -> Vec<u8> {
-		let mut dest = Vec::new();
-		self.pallet_id.encode_to(&mut dest);
-		self.call_id.encode_to(&mut dest);
-		dest.append(&mut self.data.clone());
-
-		dest
-	}
-}
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct TransactionExtra {
@@ -115,7 +86,45 @@ impl Decode for Era {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
+pub struct AlreadyEncoded(pub Vec<u8>);
+
+impl Encode for AlreadyEncoded {
+	fn size_hint(&self) -> usize {
+		self.0.len()
+	}
+
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		dest.write(&self.0);
+		self.using_encoded(|buf| dest.write(buf));
+	}
+}
+
+impl From<Vec<u8>> for AlreadyEncoded {
+	fn from(value: Vec<u8>) -> Self {
+		AlreadyEncoded(value)
+	}
+}
+
+#[derive(Debug, Clone, Encode)]
+pub struct TransactionCall {
+	pub pallet_id: u8,
+	pub call_id: u8,
+	pub data: AlreadyEncoded,
+}
+
+impl TransactionCall {
+	pub fn new(pallet_id: u8, call_id: u8, data: Vec<u8>) -> Self {
+		Self {
+			pallet_id,
+			call_id,
+			data: AlreadyEncoded::from(data),
+		}
+	}
+}
+
+// There is no need for Encode and Decode
+#[derive(Debug, Clone)]
 pub struct TransactionPayload<'a> {
 	pub call: Cow<'a, TransactionCall>,
 	pub extra: TransactionExtra,
@@ -157,16 +166,16 @@ impl<'a> TransactionPayload<'a> {
 	}
 }
 
-#[derive(Clone)]
-pub struct SignedTransaction {
+#[derive(Debug, Clone)]
+pub struct TransactionSigned {
 	pub address: MultiAddress,
 	pub signature: MultiSignature,
 	pub tx_extra: TransactionExtra,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Transaction<'a> {
-	pub signed: Option<SignedTransaction>,
+	pub signed: Option<TransactionSigned>,
 	pub payload: TransactionPayload<'a>,
 }
 
@@ -175,7 +184,7 @@ impl<'a> Transaction<'a> {
 		let address = MultiAddress::Id(account_id);
 		let signature = MultiSignature::Sr25519(signature);
 
-		let signed = Some(SignedTransaction {
+		let signed = Some(TransactionSigned {
 			address,
 			signature,
 			tx_extra: payload.extra.clone(),
@@ -200,42 +209,5 @@ impl<'a> Transaction<'a> {
 		encoded_tx.append(&mut encoded_tx_inner);
 
 		encoded_tx
-	}
-}
-
-pub type AccountId = AccountId32;
-pub type AccountIndex = u32;
-pub type BlockNumber = u32;
-pub type BlockHash = H256;
-
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, scale_info::TypeInfo)]
-#[repr(u8)]
-pub enum MultiSignature {
-	/// An Ed25519 signature.
-	Ed25519([u8; 64]) = 0,
-	/// An Sr25519 signature.
-	Sr25519([u8; 64]) = 1,
-	/// An ECDSA/SECP256k1 signature (a 512-bit value, plus 8 bits for recovery ID).
-	Ecdsa([u8; 65]) = 2,
-}
-
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, scale_info::TypeInfo)]
-#[repr(u8)]
-pub enum MultiAddress {
-	/// It's an account ID (pubkey).
-	Id(AccountId) = 0,
-	/// It's an account index.
-	Index(#[codec(compact)] u32) = 1,
-	/// It's some arbitrary raw bytes.
-	Raw(Vec<u8>) = 2,
-	/// It's a 32 byte representation.
-	Address32([u8; 32]) = 3,
-	/// Its a 20 byte representation.
-	Address20([u8; 20]) = 4,
-}
-
-impl From<AccountId> for MultiAddress {
-	fn from(a: AccountId) -> Self {
-		Self::Id(a)
 	}
 }

@@ -13,7 +13,7 @@ pub struct PeerInfo {
 	/// Peer best block hash
 	pub best_hash: BlockHash,
 	/// Peer best block number
-	pub best_number: BlockNumber,
+	pub best_number: BlockHeight,
 }
 
 /// The role the node is running as
@@ -30,11 +30,11 @@ pub enum NodeRole {
 #[serde(rename_all = "camelCase")]
 pub struct SyncState {
 	/// Height of the block at which syncing started.
-	pub starting_block: BlockNumber,
+	pub starting_block: BlockHeight,
 	/// Height of the current best block of the node.
-	pub current_block: BlockNumber,
+	pub current_block: BlockHeight,
 	/// Height of the highest block in the network.
-	pub highest_block: BlockNumber,
+	pub highest_block: BlockHeight,
 }
 
 /// The base fee and adjusted weight and length fees constitute the _inclusion fee_.

@@ -70,7 +70,7 @@ async fn task(client: Client, account: Keypair, _d: bool) -> ReturnResult {
 	// Data Submission
 	let data = String::from("123").as_bytes().to_vec();
 	let options = Options::new().app_id(2);
-	let tx = client.tx().data_availability.submit_data(data);
+	let tx = client.tx().data_availability().submit_data(data);
 
 	// SubmittedTransaction -> Transaction Hash, and Transaction extra
 	let st: SubmittedTransaction = tx.sign_and_submit(&account, options).await?;
