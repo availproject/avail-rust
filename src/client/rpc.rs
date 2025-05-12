@@ -527,8 +527,11 @@ impl Client {
 	pub async fn rpc_state_get_storage(&self, key: Vec<u8>, at: Option<H256>) -> Result<Option<Vec<u8>>, RpcError> {
 		let key = hex::encode(key);
 		let params = rpc_params![key, at];
-		let value: Option<Vec<u8>> = self.rpc_client.request("state_getStorage", params).await?;
-		Ok(value)
+		let value: Option<String> = self.rpc_client.request("state_getStorage", params).await?;
+		let Some(value) = value else { return Ok(None) };
+		let value = hex::decode(value.trim_start_matches("0x"));
+		let value = value.map_err(|e| RpcError::from(e.to_string()))?;
+		Ok(Some(value))
 	}
 
 	pub async fn rpc_kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, RpcError> {

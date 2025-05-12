@@ -22,7 +22,7 @@ impl<T: TxDispatchIndex + Encode + Decode> TransactionCallLike for T {
 	}
 }
 
-/* #[derive(Clone, Encode, Decode)]
+#[derive(Clone)]
 #[repr(u8)]
 pub enum RuntimeCall {
 	DataAvailability(data_availability::tx::Call) = data_availability::PALLET_ID,
@@ -32,7 +32,35 @@ pub enum RuntimeCall {
 	Multisig(multisig::tx::Call) = multisig::PALLET_ID,
 	System(system::tx::Call) = system::PALLET_ID,
 }
- */
+impl Encode for RuntimeCall {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+		dest.write(&variant.encode());
+		match self {
+			Self::DataAvailability(x) => dest.write(&x.encode()),
+			Self::Balances(x) => dest.write(&x.encode()),
+			Self::Utility(x) => dest.write(&x.encode()),
+			Self::Proxy(x) => dest.write(&x.encode()),
+			Self::Multisig(x) => dest.write(&x.encode()),
+			Self::System(x) => dest.write(&x.encode()),
+		}
+	}
+}
+impl Decode for RuntimeCall {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let variant = u8::decode(input)?;
+		match variant {
+			data_availability::PALLET_ID => Ok(Self::DataAvailability(Decode::decode(input)?)),
+			balances::PALLET_ID => Ok(Self::Balances(Decode::decode(input)?)),
+			utility::PALLET_ID => Ok(Self::Utility(Decode::decode(input)?)),
+			proxy::PALLET_ID => Ok(Self::Proxy(Decode::decode(input)?)),
+			multisig::PALLET_ID => Ok(Self::Multisig(Decode::decode(input)?)),
+			system::PALLET_ID => Ok(Self::System(Decode::decode(input)?)),
+			_ => Err("Failed to decode Runtime Call. Unknown variant".into()),
+		}
+	}
+}
+
 pub mod data_availability {
 	use super::*;
 	pub const PALLET_ID: u8 = 29;
@@ -40,12 +68,34 @@ pub mod data_availability {
 	pub mod tx {
 		use super::*;
 
-		/* 		#[derive(Clone, Encode, Decode)]
+		#[derive(Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			CreateApplicationKey(CreateApplicationKey) = CreateApplicationKey::DISPATCH_INDEX.1,
 			SubmitData(SubmitData) = SubmitData::DISPATCH_INDEX.1,
-		} */
+		}
+		impl Encode for Call {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				dest.write(&variant.encode());
+				match self {
+					Self::CreateApplicationKey(x) => dest.write(&x.encode()),
+					Self::SubmitData(x) => dest.write(&x.encode()),
+				}
+			}
+		}
+		impl Decode for Call {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					val if val == CreateApplicationKey::DISPATCH_INDEX.1 => {
+						Ok(Self::CreateApplicationKey(Decode::decode(input)?))
+					},
+					val if val == SubmitData::DISPATCH_INDEX.1 => Ok(Self::SubmitData(Decode::decode(input)?)),
+					_ => Err("Failed to decode DataAvailability Call. Unknown variant".into()),
+				}
+			}
+		}
 
 		#[derive(Clone)]
 		pub struct CreateApplicationKey {
@@ -129,13 +179,39 @@ pub mod balances {
 	pub mod tx {
 		use super::*;
 
-		/* 		#[derive(Clone, Encode, Decode)]
+		#[derive(Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			TransferAllowDeath(TransferAllowDeath) = TransferAllowDeath::DISPATCH_INDEX.1,
 			TransferKeepAlive(TransferKeepAlive) = TransferKeepAlive::DISPATCH_INDEX.1,
 			TransferAll(TransferAll) = TransferAll::DISPATCH_INDEX.1,
-		} */
+		}
+		impl Encode for Call {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				dest.write(&variant.encode());
+				match self {
+					Self::TransferAllowDeath(x) => dest.write(&x.encode()),
+					Self::TransferKeepAlive(x) => dest.write(&x.encode()),
+					Self::TransferAll(x) => dest.write(&x.encode()),
+				}
+			}
+		}
+		impl Decode for Call {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					val if val == TransferAllowDeath::DISPATCH_INDEX.1 => {
+						Ok(Self::TransferAllowDeath(Decode::decode(input)?))
+					},
+					val if val == TransferKeepAlive::DISPATCH_INDEX.1 => {
+						Ok(Self::TransferKeepAlive(Decode::decode(input)?))
+					},
+					val if val == TransferAll::DISPATCH_INDEX.1 => Ok(Self::TransferAll(Decode::decode(input)?)),
+					_ => Err("Failed to decode Balances Call. Unknown variant".into()),
+				}
+			}
+		}
 
 		#[derive(Clone)]
 		pub struct TransferAllowDeath {
@@ -212,13 +288,35 @@ pub mod utility {
 	pub mod tx {
 		use super::*;
 
-		/* 		#[derive(Clone, Encode, Decode)]
+		#[derive(Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			Batch(Batch) = Batch::DISPATCH_INDEX.1,
 			BatchAll(BatchAll) = BatchAll::DISPATCH_INDEX.1,
 			ForceBatch(ForceBatch) = ForceBatch::DISPATCH_INDEX.1,
-		} */
+		}
+		impl Encode for Call {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				dest.write(&variant.encode());
+				match self {
+					Self::Batch(x) => dest.write(&x.encode()),
+					Self::BatchAll(x) => dest.write(&x.encode()),
+					Self::ForceBatch(x) => dest.write(&x.encode()),
+				}
+			}
+		}
+		impl Decode for Call {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					val if val == Batch::DISPATCH_INDEX.1 => Ok(Self::Batch(Decode::decode(input)?)),
+					val if val == BatchAll::DISPATCH_INDEX.1 => Ok(Self::BatchAll(Decode::decode(input)?)),
+					val if val == ForceBatch::DISPATCH_INDEX.1 => Ok(Self::ForceBatch(Decode::decode(input)?)),
+					_ => Err("Failed to decode Utility Call. Unknown variant".into()),
+				}
+			}
+		}
 
 		#[derive(Clone)]
 		pub struct Batch {
@@ -286,7 +384,7 @@ pub mod proxy {
 	pub mod types {
 		use super::*;
 
-		#[derive(Debug, Encode, Decode, Clone, Copy)]
+		#[derive(Debug, Clone, Copy)]
 		#[repr(u8)]
 		pub enum ProxyType {
 			Any = 0,
@@ -296,12 +394,32 @@ pub mod proxy {
 			IdentityJudgement = 4,
 			NominationPools = 5,
 		}
+		impl Encode for ProxyType {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = *self as u8;
+				dest.write(&variant.encode());
+			}
+		}
+		impl Decode for ProxyType {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::Any),
+					1 => Ok(Self::NonTransfer),
+					2 => Ok(Self::Governance),
+					3 => Ok(Self::Staking),
+					4 => Ok(Self::IdentityJudgement),
+					5 => Ok(Self::NominationPools),
+					_ => Err("Failed to decode ProxyType. Unknown variant".into()),
+				}
+			}
+		}
 	}
 
 	pub mod tx {
 		use super::*;
 
-		/* 		#[derive(Clone, Encode, Decode)]
+		#[derive(Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			Proxy(Proxy) = Proxy::DISPATCH_INDEX.1,
@@ -310,7 +428,35 @@ pub mod proxy {
 			RemoveProxies(RemoveProxies) = RemoveProxies::DISPATCH_INDEX.1,
 			CreatePure(CreatePure) = CreatePure::DISPATCH_INDEX.1,
 			KillPure(KillPure) = KillPure::DISPATCH_INDEX.1,
-		} */
+		}
+		impl Encode for Call {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				dest.write(&variant.encode());
+				match self {
+					Self::Proxy(x) => dest.write(&x.encode()),
+					Self::AddProxy(x) => dest.write(&x.encode()),
+					Self::RemoveProxy(x) => dest.write(&x.encode()),
+					Self::RemoveProxies(x) => dest.write(&x.encode()),
+					Self::CreatePure(x) => dest.write(&x.encode()),
+					Self::KillPure(x) => dest.write(&x.encode()),
+				}
+			}
+		}
+		impl Decode for Call {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					val if val == Proxy::DISPATCH_INDEX.1 => Ok(Self::Proxy(Decode::decode(input)?)),
+					val if val == AddProxy::DISPATCH_INDEX.1 => Ok(Self::AddProxy(Decode::decode(input)?)),
+					val if val == RemoveProxy::DISPATCH_INDEX.1 => Ok(Self::RemoveProxy(Decode::decode(input)?)),
+					val if val == RemoveProxies::DISPATCH_INDEX.1 => Ok(Self::RemoveProxies(Decode::decode(input)?)),
+					val if val == CreatePure::DISPATCH_INDEX.1 => Ok(Self::CreatePure(Decode::decode(input)?)),
+					val if val == KillPure::DISPATCH_INDEX.1 => Ok(Self::KillPure(Decode::decode(input)?)),
+					_ => Err("Failed to decode Proxy Call. Unknown variant".into()),
+				}
+			}
+		}
 
 		#[derive(Clone)]
 		pub struct Proxy {
@@ -508,15 +654,41 @@ pub mod multisig {
 	pub mod tx {
 		use super::*;
 
-		/* 		#[derive(Clone, Encode, Decode)]
-			   #[repr(u8)]
-			   pub enum Call {
-				   AsMultiThreshold1(AsMultiThreshold1) = AsMultiThreshold1::DISPATCH_INDEX.1,
-				   AsMulti(AsMulti) = AsMulti::DISPATCH_INDEX.1,
-				   ApproveAsMulti(ApproveAsMulti) = ApproveAsMulti::DISPATCH_INDEX.1,
-				   CancelAsMulti(CancelAsMulti) = CancelAsMulti::DISPATCH_INDEX.1,
-			   }
-		*/
+		#[derive(Clone)]
+		#[repr(u8)]
+		pub enum Call {
+			AsMultiThreshold1(AsMultiThreshold1) = AsMultiThreshold1::DISPATCH_INDEX.1,
+			AsMulti(AsMulti) = AsMulti::DISPATCH_INDEX.1,
+			ApproveAsMulti(ApproveAsMulti) = ApproveAsMulti::DISPATCH_INDEX.1,
+			CancelAsMulti(CancelAsMulti) = CancelAsMulti::DISPATCH_INDEX.1,
+		}
+		impl Encode for Call {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				dest.write(&variant.encode());
+				match self {
+					Self::AsMultiThreshold1(x) => dest.write(&x.encode()),
+					Self::AsMulti(x) => dest.write(&x.encode()),
+					Self::ApproveAsMulti(x) => dest.write(&x.encode()),
+					Self::CancelAsMulti(x) => dest.write(&x.encode()),
+				}
+			}
+		}
+		impl Decode for Call {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					val if val == AsMultiThreshold1::DISPATCH_INDEX.1 => {
+						Ok(Self::AsMultiThreshold1(Decode::decode(input)?))
+					},
+					val if val == AsMulti::DISPATCH_INDEX.1 => Ok(Self::AsMulti(Decode::decode(input)?)),
+					val if val == ApproveAsMulti::DISPATCH_INDEX.1 => Ok(Self::ApproveAsMulti(Decode::decode(input)?)),
+					val if val == CancelAsMulti::DISPATCH_INDEX.1 => Ok(Self::CancelAsMulti(Decode::decode(input)?)),
+					_ => Err("Failed to decode Multisig Call. Unknown variant".into()),
+				}
+			}
+		}
+
 		#[derive(Clone)]
 		pub struct AsMultiThreshold1 {
 			pub other_signatories: Vec<AccountId>,
@@ -656,10 +828,9 @@ pub mod vector {
 	pub const PALLET_ID: u8 = 39;
 
 	pub mod types {
-		use serde::Deserialize;
-
 		use super::*;
 		pub use crate::from_substrate::Weight;
+		use serde::Deserialize;
 
 		/// Message type used to bridge between Avail & other chains
 		#[derive(Debug, Clone, Deserialize)]
@@ -711,13 +882,13 @@ pub mod vector {
 		}
 		impl Encode for Message {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				dest.write(&variant.encode());
 				match self {
 					Message::ArbitraryMessage(items) => {
-						dest.write(&0u8.encode());
 						dest.write(&items.encode());
 					},
 					Message::FungibleToken { asset_id, amount } => {
-						dest.write(&1u8.encode());
 						dest.write(&asset_id.encode());
 						dest.write(&amount.encode());
 					},
@@ -1219,14 +1390,42 @@ pub mod system {
 	pub mod tx {
 		use super::*;
 
-		/* 		#[derive(Clone, Encode, Decode)]
+		#[derive(Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			Remark(Remark) = Remark::DISPATCH_INDEX.1,
 			SetCode(SetCode) = SetCode::DISPATCH_INDEX.1,
 			SetCodeWithoutChecks(SetCodeWithoutChecks) = SetCodeWithoutChecks::DISPATCH_INDEX.1,
 			RemarkWithEvent(RemarkWithEvent) = RemarkWithEvent::DISPATCH_INDEX.1,
-		} */
+		}
+		impl Encode for Call {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				dest.write(&variant.encode());
+				match self {
+					Self::Remark(x) => dest.write(&x.encode()),
+					Self::SetCode(x) => dest.write(&x.encode()),
+					Self::SetCodeWithoutChecks(x) => dest.write(&x.encode()),
+					Self::RemarkWithEvent(x) => dest.write(&x.encode()),
+				}
+			}
+		}
+		impl Decode for Call {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					val if val == Remark::DISPATCH_INDEX.1 => Ok(Self::Remark(Decode::decode(input)?)),
+					val if val == SetCode::DISPATCH_INDEX.1 => Ok(Self::SetCode(Decode::decode(input)?)),
+					val if val == SetCodeWithoutChecks::DISPATCH_INDEX.1 => {
+						Ok(Self::SetCodeWithoutChecks(Decode::decode(input)?))
+					},
+					val if val == RemarkWithEvent::DISPATCH_INDEX.1 => {
+						Ok(Self::RemarkWithEvent(Decode::decode(input)?))
+					},
+					_ => Err("Failed to decode System Call. Unknown variant".into()),
+				}
+			}
+		}
 
 		#[derive(Clone)]
 		pub struct Remark {
