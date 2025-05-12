@@ -1,4 +1,5 @@
 use crate::{
+	avail,
 	client::Client,
 	config::*,
 	error::RpcError,
@@ -6,7 +7,6 @@ use crate::{
 	AvailHeader, Cell, GDataProof, GRow,
 };
 use primitive_types::H256;
-// use avail_core::data_proof::ProofResponse;
 use serde::{Deserialize, Serialize};
 use subxt_core::config::{substrate::BlakeTwo256, Hasher};
 use subxt_rpcs::{
@@ -16,9 +16,6 @@ use subxt_rpcs::{
 
 #[cfg(feature = "subxt_metadata")]
 use crate::utils;
-
-#[cfg(feature = "subxt_metadata")]
-use crate::subxt_avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength};
 
 /// Arbitrary properties defined in chain spec as a JSON object
 pub type SystemProperties = serde_json::map::Map<String, serde_json::Value>;
@@ -318,6 +315,60 @@ pub mod rpc_block_overview {
 	}
 }
 
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct PerDispatchClassU32 {
+	pub normal: u32,
+	pub operational: u32,
+	pub mandatory: u32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BlockLength {
+	pub max: PerDispatchClassU32,
+	pub cols: u32,
+	pub rows: u32,
+	pub chunk_size: u32,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProofResponse {
+	pub data_proof: DataProof,
+	pub message: Option<avail::vector::types::AddressedMessage>,
+}
+
+/// Wrapper of `binary-merkle-tree::MerkleProof` with codec support.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataProof {
+	pub roots: TxDataRoots,
+	/// Proof items (does not contain the leaf hash, nor the root obviously).
+	///
+	/// This vec contains all inner node hashes necessary to reconstruct the root hash given the
+	/// leaf hash.
+	pub proof: Vec<H256>,
+	/// Number of leaves in the original tree.
+	///
+	/// This is needed to detect a case where we have an odd number of leaves that "get promoted"
+	/// to upper layers.
+	pub number_of_leaves: u32,
+	/// Index of the leaf the proof is for (0-based).
+	pub leaf_index: u32,
+	/// Leaf content.
+	pub leaf: H256,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TxDataRoots {
+	/// Global Merkle root
+	pub data_root: H256,
+	/// Merkle root hash of submitted data
+	pub blob_root: H256,
+	/// Merkle root of bridged data
+	pub bridge_root: H256,
+}
+
 impl Client {
 	pub async fn rpc_block_overview(
 		&self,
@@ -435,9 +486,7 @@ impl Client {
 	}
 
 	pub async fn rpc_chain_get_finalized_head(&self) -> Result<H256, RpcError> {
-		let params = rpc_params![];
-		let value = self.rpc_client.request("chain_getFinalizedHead", params).await?;
-		Ok(value)
+		raw::rpc_chain_get_finalized_head(&self.rpc_client).await
 	}
 
 	pub async fn rpc_chain_get_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, RpcError> {
@@ -446,11 +495,10 @@ impl Client {
 		Ok(value)
 	}
 
-	#[cfg(feature = "subxt_metadata")]
-	pub async fn rpc_author_rotate_keys(&self) -> Result<SessionKeys, RpcError> {
+	pub async fn rpc_author_rotate_keys(&self) -> Result<avail::utils::SessionKeys, RpcError> {
 		let params = rpc_params![];
 		let value: Vec<u8> = self.rpc_client.request("author_rotateKeys", params).await?;
-		let keys = utils::deconstruct_session_keys(value)?;
+		let keys = avail::utils::SessionKeys::try_from(value.as_slice())?;
 		Ok(keys)
 	}
 
@@ -462,9 +510,7 @@ impl Client {
 	}
 
 	pub async fn rpc_state_get_runtime_version(&self, at: Option<H256>) -> Result<RuntimeVersion, RpcError> {
-		let params = rpc_params![at];
-		let value = self.rpc_client.request("state_getRuntimeVersion", params).await?;
-		Ok(value)
+		raw::rpc_state_get_runtime_version(&self.rpc_client, at).await
 	}
 
 	pub async fn rpc_state_call(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<String, RpcError> {
@@ -475,28 +521,23 @@ impl Client {
 	}
 
 	pub async fn rpc_state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
-		let params = rpc_params![at];
-		let value: String = self.rpc_client.request("state_getMetadata", params).await?;
-
-		Ok(hex::decode(value.trim_start_matches("0x")).unwrap())
+		raw::rpc_state_get_metadata(&self.rpc_client, at).await
 	}
 
-	pub async fn rpc_state_get_storage(&self, key: Vec<u8>, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
+	pub async fn rpc_state_get_storage(&self, key: Vec<u8>, at: Option<H256>) -> Result<Option<Vec<u8>>, RpcError> {
 		let key = hex::encode(key);
 		let params = rpc_params![key, at];
-		let value: String = self.rpc_client.request("state_getStorage", params).await?;
-
-		Ok(hex::decode(value.trim_start_matches("0x")).unwrap())
+		let value: Option<Vec<u8>> = self.rpc_client.request("state_getStorage", params).await?;
+		Ok(value)
 	}
 
-	#[cfg(feature = "subxt_metadata")]
 	pub async fn rpc_kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, RpcError> {
 		let params = rpc_params![at];
 		let value = self.rpc_client.request("kate_blockLength", params).await?;
 		Ok(value)
 	}
 
-	/* 	pub async fn rpc_kate_query_data_proof(
+	pub async fn rpc_kate_query_data_proof(
 		&self,
 		transaction_index: u32,
 		at: Option<H256>,
@@ -504,7 +545,7 @@ impl Client {
 		let params = rpc_params![transaction_index, at];
 		let value = self.rpc_client.request("kate_queryDataProof", params).await?;
 		Ok(value)
-	} */
+	}
 
 	pub async fn rpc_kate_query_proof(&self, cells: Vec<Cell>, at: Option<H256>) -> Result<Vec<GDataProof>, RpcError> {
 		let params = rpc_params![cells, at];
@@ -521,6 +562,44 @@ impl Client {
 	pub async fn rpc_rpc_methods(&self) -> Result<RpcMethods, RpcError> {
 		let params = rpc_params![];
 		let value = self.rpc_client.request("rpc_methods", params).await?;
+		Ok(value)
+	}
+
+	pub async fn rpc_chainspec_v1_genesishash(&self) -> Result<H256, RpcError> {
+		raw::rpc_chainspec_v1_genesishash(&self.rpc_client).await
+	}
+}
+
+pub mod raw {
+	use super::*;
+	use crate::prelude::H256Ext;
+	use subxt_rpcs::RpcClient;
+
+	pub async fn rpc_chainspec_v1_genesishash(client: &RpcClient) -> Result<H256, RpcError> {
+		let params = rpc_params![];
+		let value: String = client.request("chainSpec_v1_genesisHash", params).await?;
+		Ok(H256::from_str(&value).unwrap())
+	}
+
+	pub async fn rpc_state_get_metadata(client: &RpcClient, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
+		let params = rpc_params![at];
+		let value: String = client.request("state_getMetadata", params).await?;
+
+		Ok(hex::decode(value.trim_start_matches("0x")).unwrap())
+	}
+
+	pub async fn rpc_chain_get_finalized_head(client: &RpcClient) -> Result<H256, RpcError> {
+		let params = rpc_params![];
+		let value = client.request("chain_getFinalizedHead", params).await?;
+		Ok(value)
+	}
+
+	pub async fn rpc_state_get_runtime_version(
+		client: &RpcClient,
+		at: Option<H256>,
+	) -> Result<RuntimeVersion, RpcError> {
+		let params = rpc_params![at];
+		let value = client.request("state_getRuntimeVersion", params).await?;
 		Ok(value)
 	}
 }

@@ -3,6 +3,8 @@ pub use crate::primitives::config::*;
 use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 use codec::{Decode, Encode};
 use primitive_types::H256;
+use scale_decode::DecodeAsType;
+use scale_encode::EncodeAsType;
 use serde::{Deserialize, Serialize};
 use subxt_core::config::substrate::BlakeTwo256;
 use subxt_core::Config;
@@ -129,34 +131,19 @@ pub enum RuntimePhase {
 pub type DispatchIndex = (u8, u8);
 pub type EmittedIndex = (u8, u8);
 
-#[cfg(not(feature = "subxt_metadata"))]
-pub mod no_subxt_metadata {
-	use codec::{Decode, Encode};
-	use scale_decode::DecodeAsType;
-	use scale_encode::EncodeAsType;
-
-	#[derive(Debug, Clone, Encode, Decode, DecodeAsType, EncodeAsType)]
-	pub struct AccountData {
-		pub free: u128,
-		pub reserved: u128,
-		pub frozen: u128,
-		pub flags: u128,
-	}
-
-	#[derive(Debug, Clone, Encode, Decode, DecodeAsType, EncodeAsType)]
-	pub struct AccountInfo {
-		pub nonce: u32,
-		pub consumers: u32,
-		pub providers: u32,
-		pub sufficients: u32,
-		pub data: AccountData,
-	}
+#[derive(Debug, Clone, Encode, Decode, DecodeAsType, EncodeAsType)]
+pub struct AccountData {
+	pub free: u128,
+	pub reserved: u128,
+	pub frozen: u128,
+	pub flags: u128,
 }
 
-#[cfg(not(feature = "subxt_metadata"))]
-pub use no_subxt_metadata::*;
-
-#[cfg(feature = "subxt_metadata")]
-pub type AccountData = crate::subxt_avail::runtime_types::pallet_balances::types::AccountData<u128>;
-#[cfg(feature = "subxt_metadata")]
-pub use crate::subxt_avail::system::storage::types::account::Account as AccountInfo;
+#[derive(Debug, Clone, Encode, Decode, DecodeAsType, EncodeAsType)]
+pub struct AccountInfo {
+	pub nonce: u32,
+	pub consumers: u32,
+	pub providers: u32,
+	pub sufficients: u32,
+	pub data: AccountData,
+}

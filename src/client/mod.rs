@@ -25,12 +25,23 @@ type SharedCache = Arc<std::sync::Mutex<Cache>>;
 
 const MAX_CHAIN_BLOCKS: usize = 3;
 
+#[cfg(not(feature = "subxt"))]
+#[derive(Clone)]
+pub struct ClientState {
+	pub genesis_hash: H256,
+	pub spec_version: u32,
+	pub tx_version: u32,
+	pub metadata: subxt_core::Metadata,
+}
+
 #[derive(Clone)]
 pub struct Client {
 	#[cfg(feature = "subxt")]
 	pub online_client: AOnlineClient,
 	pub rpc_client: RpcClient,
 	pub cache: SharedCache,
+	#[cfg(not(feature = "subxt"))]
+	pub state: ClientState,
 }
 
 impl Client {
@@ -223,7 +234,7 @@ impl Client {
 		signer: &Keypair,
 		tx_payload: primitives::TransactionPayload<'a>,
 	) -> Result<H256, RpcError> {
-		use crate::primitives::transaction::Transaction;
+		use primitives::Transaction;
 
 		let account_id = signer.public_key().to_account_id();
 		let signature = tx_payload.sign(signer);
@@ -246,12 +257,10 @@ impl Client {
 		let refined_options = options.build(self, &account_id).await?;
 
 		let tx_extra = primitives::TransactionExtra::from(&refined_options);
-
-		let gt = self.block_hash(0).await.unwrap().unwrap();
 		let tx_additional = primitives::TransactionAdditional {
-			spec_version: 46,
-			tx_version: 1,
-			genesis_hash: gt,
+			spec_version: self.spec_version(),
+			tx_version: self.transaction_version(),
+			genesis_hash: self.genesis_hash(),
 			fork_hash: refined_options.mortality.block_hash,
 		};
 
@@ -260,35 +269,6 @@ impl Client {
 
 		let value = SubmittedTransaction::new(self.clone(), tx_hash, account_id, refined_options, tx_additional);
 		Ok(value)
-	}
-
-	// Storage
-	pub async fn storage_fetch_or_default<'address, Addr>(
-		&self,
-		address: &Addr,
-		at: H256,
-	) -> Result<Addr::Target, RpcError>
-	where
-		Addr: subxt_core::storage::address::Address<
-				IsFetchable = subxt_core::utils::Yes,
-				IsDefaultable = subxt_core::utils::Yes,
-			> + 'address,
-	{
-		#[cfg(not(feature = "subxt"))]
-		{
-			let rpc_metadata = self.rpc_state_get_metadata(None).await.unwrap();
-			let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
-			let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
-			let key = subxt_core::storage::get_address_bytes(address, &metadata).unwrap();
-			let data = self.rpc_state_get_storage(key, Some(at)).await.unwrap();
-			return Ok(subxt_core::storage::decode_value(&mut &*data, address, &metadata).unwrap());
-		}
-
-		#[cfg(feature = "subxt")]
-		{
-			let storage = self.subxt_storage().at(at);
-			return Ok(storage.fetch_or_default(address).await.unwrap());
-		}
 	}
 }
 
@@ -305,7 +285,22 @@ impl Client {
 		})
 	}
 
-	// Subxt
+	pub fn metadata(&self) -> subxt_core::Metadata {
+		self.online_client.metadata()
+	}
+
+	pub fn genesis_hash(&self) -> H256 {
+		self.online_client.genesis_hash()
+	}
+
+	pub fn spec_version(&self) -> u32 {
+		self.online_client.runtime_version().spec_version
+	}
+
+	pub fn transaction_version(&self) -> u32 {
+		self.online_client.runtime_version().transaction_version
+	}
+
 	pub fn subxt_blocks(&self) -> ABlocksClient {
 		self.online_client.blocks()
 	}
@@ -317,15 +312,136 @@ impl Client {
 	pub fn subxt_constants(&self) -> AConstantsClient {
 		self.online_client.constants()
 	}
+
+	// Storage
+	pub async fn storage_fetch<'address, Addr>(
+		&self,
+		address: &Addr,
+		at: H256,
+	) -> Result<Option<Addr::Target>, RpcError>
+	where
+		Addr: subxt_core::storage::address::Address<IsFetchable = subxt_core::utils::Yes> + 'address,
+	{
+		let storage = self.subxt_storage().at(at);
+		return Ok(storage.fetch(address).await.unwrap());
+	}
+
+	pub async fn storage_fetch_or_default<'address, Addr>(
+		&self,
+		address: &Addr,
+		at: H256,
+	) -> Result<Addr::Target, RpcError>
+	where
+		Addr: subxt_core::storage::address::Address<
+				IsFetchable = subxt_core::utils::Yes,
+				IsDefaultable = subxt_core::utils::Yes,
+			> + 'address,
+	{
+		let storage = self.subxt_storage().at(at);
+		return Ok(storage.fetch_or_default(address).await.unwrap());
+	}
+
+	// constants
+	pub async fn constants_at<'address, Addr>(&self, address: &Addr) -> Result<Addr::Target, RpcError>
+	where
+		Addr: subxt_core::constants::address::Address,
+	{
+		let val = self.subxt_constants().at(address)?;
+		Ok(val)
+	}
 }
 
 #[cfg(not(feature = "subxt"))]
 impl Client {
 	pub async fn new_custom(rpc_client: RpcClient) -> Result<Client, ClientError> {
+		let finalized_hash = rpc::raw::rpc_chain_get_finalized_head(&rpc_client).await.unwrap();
+		let rpc_metadata = rpc::raw::rpc_state_get_metadata(&rpc_client, Some(finalized_hash))
+			.await
+			.unwrap();
+		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
+		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
+		let genesis_hash = rpc::raw::rpc_chainspec_v1_genesishash(&rpc_client).await.unwrap();
+		let runtime_version = rpc::raw::rpc_state_get_runtime_version(&rpc_client, Some(finalized_hash))
+			.await
+			.unwrap();
+
+		let state = ClientState {
+			genesis_hash,
+			spec_version: runtime_version.spec_version,
+			tx_version: runtime_version.transaction_version,
+			metadata,
+		};
+
 		Ok(Self {
 			rpc_client,
 			cache: SharedCache::default(),
+			state,
 		})
+	}
+
+	pub fn metadata(&self) -> subxt_core::Metadata {
+		self.state.metadata.clone()
+	}
+
+	pub fn genesis_hash(&self) -> H256 {
+		self.state.genesis_hash
+	}
+
+	pub fn spec_version(&self) -> u32 {
+		self.state.spec_version
+	}
+
+	pub fn transaction_version(&self) -> u32 {
+		self.state.tx_version
+	}
+
+	// Storage
+	pub async fn storage_fetch<'address, Addr>(
+		&self,
+		address: &Addr,
+		at: H256,
+	) -> Result<Option<Addr::Target>, RpcError>
+	where
+		Addr: subxt_core::storage::address::Address<IsFetchable = subxt_core::utils::Yes> + 'address,
+	{
+		let metadata = self.metadata();
+		let key = subxt_core::storage::get_address_bytes(address, &metadata).unwrap();
+		if let Some(data) = self.rpc_state_get_storage(key, Some(at)).await.unwrap() {
+			let val = subxt_core::storage::decode_value(&mut &*data, address, &metadata).unwrap();
+			Ok(Some(val))
+		} else {
+			Ok(None)
+		}
+	}
+
+	pub async fn storage_fetch_or_default<'address, Addr>(
+		&self,
+		address: &Addr,
+		at: H256,
+	) -> Result<Addr::Target, RpcError>
+	where
+		Addr: subxt_core::storage::address::Address<
+				IsFetchable = subxt_core::utils::Yes,
+				IsDefaultable = subxt_core::utils::Yes,
+			> + 'address,
+	{
+		if let Some(data) = self.storage_fetch(address, at).await.unwrap() {
+			Ok(data)
+		} else {
+			let metadata = self.metadata();
+			let val = subxt_core::storage::default_value(address, &metadata).unwrap();
+			Ok(val)
+		}
+	}
+
+	// constants
+	pub async fn constants_at<'address, Addr>(&self, address: &Addr) -> Result<Addr::Target, RpcError>
+	where
+		Addr: subxt_core::constants::address::Address,
+	{
+		let metadata = self.metadata();
+		let val = subxt_core::constants::get(address, &metadata)?;
+		Ok(val)
 	}
 }
 

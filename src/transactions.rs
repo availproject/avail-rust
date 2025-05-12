@@ -1,17 +1,8 @@
-use primitive_types::H256;
-
 use crate::{
 	avail, client::Client, config::AccountId, primitives::TransactionCall, SubmittableTransaction,
 	SubmittableTransactionLike,
 };
-
-/* #[cfg(feature = "subxt_metadata")]
-pub mod nom_pools;
-#[cfg(feature = "subxt_metadata")]
-pub mod session;
-#[cfg(feature = "subxt_metadata")]
-pub mod staking;*/
-
+use primitive_types::H256;
 pub struct Transactions(pub(crate) Client);
 impl Transactions {
 	pub fn data_availability(&self) -> DataAvailability {
@@ -279,5 +270,23 @@ impl Vector {
 
 	pub fn mock_fulfill(&self, public_values: Vec<u8>) -> SubmittableTransaction {
 		avail::vector::tx::MockFulfill { public_values }.to_submittable(self.0.clone())
+	}
+}
+
+pub struct System(Client);
+impl System {
+	pub fn remark(&self, remark: Vec<u8>) -> SubmittableTransaction {
+		avail::system::tx::Remark { remark }.to_submittable(self.0.clone())
+	}
+
+	pub fn set_code(&self, code: Vec<u8>) -> SubmittableTransaction {
+		avail::system::tx::SetCode { code }.to_submittable(self.0.clone())
+	}
+	pub fn set_code_without_checks(&self, code: Vec<u8>) -> SubmittableTransaction {
+		avail::system::tx::SetCodeWithoutChecks { code }.to_submittable(self.0.clone())
+	}
+
+	pub fn remark_with_event(&self, remark: Vec<u8>) -> SubmittableTransaction {
+		avail::system::tx::RemarkWithEvent { remark }.to_submittable(self.0.clone())
 	}
 }

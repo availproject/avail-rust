@@ -270,11 +270,14 @@ pub mod vector {
 	const PALLET_ID: u8 = 39;
 
 	pub mod types {
+		use serde::Deserialize;
+
 		use super::*;
 		pub use crate::from_substrate::Weight;
 
 		/// Message type used to bridge between Avail & other chains
-		#[derive(Debug, Clone, Encode)]
+		#[derive(Debug, Clone, Encode, Deserialize)]
+		#[serde(rename_all = "camelCase")]
 		pub struct AddressedMessage {
 			pub message: Message,
 			pub from: H256,
@@ -289,7 +292,7 @@ pub mod vector {
 		}
 
 		/// Possible types of Messages allowed by Avail to bridge to other chains.
-		#[derive(Debug, Clone, Encode)]
+		#[derive(Debug, Clone, Encode, Deserialize)]
 		pub enum Message {
 			ArbitraryMessage(Vec<u8>),
 			FungibleToken {
@@ -471,6 +474,62 @@ pub mod vector {
 	}
 }
 
+pub mod system {
+	use super::*;
+	const PALLET_ID: u8 = 0;
+
+	pub mod storage {
+		use super::*;
+		pub fn account(
+			account_id: &AccountId,
+		) -> StaticAddress<StaticStorageKey<AccountId>, AccountInfo, Yes, Yes, ()> {
+			let address = StaticAddress::new_static(
+				"System",
+				"Account",
+				StaticStorageKey::new(account_id),
+				Default::default(),
+			);
+			address.unvalidated()
+		}
+	}
+
+	pub mod tx {
+		use super::*;
+
+		#[derive(Encode)]
+		pub struct Remark {
+			pub remark: Vec<u8>,
+		}
+		impl TxDispatchIndex for Remark {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Encode)]
+		pub struct SetCode {
+			pub code: Vec<u8>,
+		}
+		impl TxDispatchIndex for SetCode {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+
+		#[derive(Encode)]
+		pub struct SetCodeWithoutChecks {
+			pub code: Vec<u8>,
+		}
+		impl TxDispatchIndex for SetCodeWithoutChecks {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+
+		#[derive(Encode)]
+		pub struct RemarkWithEvent {
+			pub remark: Vec<u8>,
+		}
+		impl TxDispatchIndex for RemarkWithEvent {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 7);
+		}
+	}
+}
+
 pub mod utils {
 	use std::array::TryFromSliceError;
 
@@ -504,24 +563,6 @@ pub mod utils {
 				im_online,
 				authority_discovery,
 			})
-		}
-	}
-}
-
-pub mod system {
-	use super::*;
-	pub mod storage {
-		use super::*;
-		pub fn account(
-			account_id: &AccountId,
-		) -> StaticAddress<StaticStorageKey<AccountId>, AccountInfo, Yes, Yes, ()> {
-			let address = StaticAddress::new_static(
-				"System",
-				"Account",
-				StaticStorageKey::new(account_id),
-				Default::default(),
-			);
-			address.unvalidated()
 		}
 	}
 }
