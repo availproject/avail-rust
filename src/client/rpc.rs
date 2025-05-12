@@ -1,3 +1,4 @@
+use crate::primitives::BlockHeight;
 use crate::{
 	avail,
 	client::Client,
@@ -13,9 +14,6 @@ use subxt_rpcs::{
 	methods::legacy::{BlockJustification, RuntimeVersion, SystemHealth},
 	rpc_params,
 };
-
-#[cfg(feature = "subxt_metadata")]
-use crate::utils;
 
 /// Arbitrary properties defined in chain spec as a JSON object
 pub type SystemProperties = serde_json::map::Map<String, serde_json::Value>;
@@ -73,6 +71,8 @@ pub struct ChainBlockBlock {
 }
 
 pub mod rpc_block_data {
+	use crate::primitives::block::extrinsics::RuntimePhase;
+
 	pub use super::*;
 
 	#[derive(Debug, Clone, Serialize, Deserialize)]

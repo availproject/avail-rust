@@ -1,21 +1,23 @@
-use super::extrinsics_params::OnlyCodecExtra;
-use crate::config::{AppId, MultiAddress, RuntimePhase, Signature};
-
-#[cfg(feature = "subxt_metadata")]
-use crate::subxt_avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
-
+use crate::primitives::{AppId, MultiAddress, MultiSignature, TransactionExtra};
 use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
 use serde::{Deserialize, Serialize};
 use std::mem::size_of;
 
-pub type SignaturePayload = (MultiAddress, Signature, OnlyCodecExtra);
+#[cfg(feature = "subxt_metadata")]
+use crate::subxt_avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
+#[cfg(not(feature = "subxt_metadata"))]
+pub type RuntimeCall = Vec<u8>;
+#[cfg(not(feature = "subxt_metadata"))]
+pub type RuntimeEvent = Vec<u8>;
+
+pub type SignaturePayload = (MultiAddress, MultiSignature, TransactionExtra);
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
 ///
 /// This version needs to be bumped if the encoded representation changes.
 /// It ensures that if the representation is changed and the format is not known,
 /// the decoding fails.
-const EXTRINSIC_FORMAT_VERSION: u8 = 4;
+pub const EXTRINSIC_FORMAT_VERSION: u8 = 4;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AppUncheckedExtrinsic {
@@ -24,10 +26,7 @@ pub struct AppUncheckedExtrinsic {
 	/// if this is a signed extrinsic.
 	pub signature: Option<SignaturePayload>,
 	/// The function that should be called.
-	#[cfg(feature = "subxt_metadata")]
 	pub function: RuntimeCall,
-	#[cfg(not(feature = "subxt_metadata"))]
-	pub function: Vec<u8>,
 }
 
 impl AppUncheckedExtrinsic {
@@ -44,8 +43,12 @@ impl AppUncheckedExtrinsic {
 	}
 
 	pub fn app_id(&self) -> AppId {
-		let app_id = self.signature.as_ref().map(|(_, _, extra)| extra.8).unwrap_or_default();
-		app_id
+		let app_id = self
+			.signature
+			.as_ref()
+			.map(|(_, _, extra)| extra.app_id)
+			.unwrap_or_default();
+		AppId(app_id)
 	}
 }
 
@@ -136,8 +139,16 @@ impl TryFrom<Vec<u8>> for AppUncheckedExtrinsic {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub struct UncheckedEvent {
 	pub phase: RuntimePhase,
-	#[cfg(feature = "subxt_metadata")]
 	pub event: RuntimeEvent,
-	#[cfg(not(feature = "subxt_metadata"))]
-	pub event: Vec<u8>,
+}
+
+/// A phase of a block's execution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+pub enum RuntimePhase {
+	/// Applying an extrinsic.
+	ApplyExtrinsic(u32),
+	/// Finalizing the block.
+	Finalization,
+	/// Initializing the block.
+	Initialization,
 }

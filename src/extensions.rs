@@ -1,4 +1,4 @@
-use crate::config::AccountId;
+use crate::primitives::AccountId;
 use primitive_types::H256;
 use subxt_signer::{sr25519::Keypair, SecretUri};
 

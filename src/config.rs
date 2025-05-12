@@ -1,10 +1,6 @@
 pub use crate::primitives;
-pub use crate::primitives::config::*;
-use crate::{AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
-use codec::{Decode, Encode};
+use crate::{DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 use primitive_types::H256;
-use scale_decode::DecodeAsType;
-use scale_encode::EncodeAsType;
 use serde::{Deserialize, Serialize};
 use subxt_core::config::substrate::BlakeTwo256;
 use subxt_core::Config;
@@ -15,9 +11,6 @@ use subxt_rpcs::RpcConfig;
 
 #[cfg(feature = "subxt")]
 pub use subxt_types::*;
-
-/// Chain Primitives
-pub type Signature = MultiSignature;
 
 /// Clients
 #[cfg(feature = "subxt")]
@@ -69,14 +62,14 @@ impl Config for AvailConfig {
 	type ExtrinsicParams = AvailExtrinsicParams<Self>;
 	type Hash = primitives::BlockHash;
 	type Hasher = BlakeTwo256;
-	type Header = AvailHeader;
+	type Header = primitives::AvailHeader;
 	type Signature = primitives::MultiSignature;
 	type AssetId = u32;
 }
 
 #[cfg(not(feature = "subxt"))]
 impl RpcConfig for AvailConfig {
-	type Header = AvailHeader;
+	type Header = primitives::AvailHeader;
 	type Hash = primitives::BlockHash;
 	type AccountId = primitives::AccountId;
 }
@@ -117,33 +110,5 @@ pub enum HashIndex {
 	Index(u32),
 }
 
-/// A phase of a block's execution.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
-pub enum RuntimePhase {
-	/// Applying an extrinsic.
-	ApplyExtrinsic(u32),
-	/// Finalizing the block.
-	Finalization,
-	/// Initializing the block.
-	Initialization,
-}
-
 pub type DispatchIndex = (u8, u8);
 pub type EmittedIndex = (u8, u8);
-
-#[derive(Debug, Clone, Encode, Decode, DecodeAsType, EncodeAsType)]
-pub struct AccountData {
-	pub free: u128,
-	pub reserved: u128,
-	pub frozen: u128,
-	pub flags: u128,
-}
-
-#[derive(Debug, Clone, Encode, Decode, DecodeAsType, EncodeAsType)]
-pub struct AccountInfo {
-	pub nonce: u32,
-	pub consumers: u32,
-	pub providers: u32,
-	pub sufficients: u32,
-	pub data: AccountData,
-}

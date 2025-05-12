@@ -1,25 +1,18 @@
 use codec::{Decode, Encode};
+use primitive_types::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use subxt_core::{
-	config::{
-		substrate::{BlakeTwo256, Digest},
-		Hasher, Header,
-	},
-	utils::H256,
+use subxt_core::config::{
+	substrate::{BlakeTwo256, Digest},
+	Hasher, Header,
 };
 
 #[cfg(feature = "subxt_metadata")]
-use core::marker::PhantomData;
-#[cfg(feature = "subxt_metadata")]
-use subxt_core::config::substrate::DigestItem;
+pub use with_subxt_metadata::{HeaderExtension, *};
 
-#[cfg(feature = "subxt_metadata")]
-use crate::subxt_avail::runtime_types::{
-	avail_core::header::{extension::HeaderExtension, Header as ApiHeader},
-	sp_runtime::generic::digest::{Digest as ApiDigest, DigestItem as ApiDigestItem},
-};
+#[cfg(not(feature = "subxt_metadata"))]
+pub use no_subxt::HeaderExtension;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct AvailHeader {
 	pub parent_hash: H256,
@@ -29,13 +22,9 @@ pub struct AvailHeader {
 	pub state_root: H256,
 	pub extrinsics_root: H256,
 	pub digest: Digest,
-	#[cfg(feature = "subxt_metadata")]
 	pub extension: HeaderExtension,
-	#[cfg(not(feature = "subxt_metadata"))]
-	pub extension: no_subxt::HeaderExtension,
 }
 
-#[cfg(feature = "subxt_metadata")]
 impl AvailHeader {
 	pub fn data_root(&self) -> H256 {
 		match &self.extension {
@@ -75,40 +64,48 @@ where
 }
 
 #[cfg(feature = "subxt_metadata")]
-impl<B, H> From<AvailHeader> for ApiHeader<B, H>
-where
-	B: From<u32>,
-{
-	fn from(h: AvailHeader) -> Self {
-		Self {
-			parent_hash: h.parent_hash,
-			number: h.number.into(),
-			state_root: h.state_root,
-			extrinsics_root: h.extrinsics_root,
-			digest: h.digest.into(),
-			extension: h.extension,
-			__ignore: PhantomData,
+pub mod with_subxt_metadata {
+	use super::*;
+	pub use crate::subxt_avail::runtime_types::{
+		avail_core::header::{extension::HeaderExtension, Header as ApiHeader},
+		sp_runtime::generic::digest::{Digest as ApiDigest, DigestItem as ApiDigestItem},
+	};
+	use core::marker::PhantomData;
+	pub use subxt_core::config::substrate::DigestItem;
+
+	impl<B, H> From<AvailHeader> for ApiHeader<B, H>
+	where
+		B: From<u32>,
+	{
+		fn from(h: AvailHeader) -> Self {
+			Self {
+				parent_hash: h.parent_hash,
+				number: h.number.into(),
+				state_root: h.state_root,
+				extrinsics_root: h.extrinsics_root,
+				digest: h.digest.into(),
+				extension: h.extension,
+				__ignore: PhantomData,
+			}
 		}
 	}
-}
 
-#[cfg(feature = "subxt_metadata")]
-impl From<Digest> for ApiDigest {
-	fn from(d: Digest) -> Self {
-		let logs = d.logs.into_iter().map(|xt_item| xt_item.into()).collect::<Vec<_>>();
-		Self { logs }
+	impl From<Digest> for ApiDigest {
+		fn from(d: Digest) -> Self {
+			let logs = d.logs.into_iter().map(|xt_item| xt_item.into()).collect::<Vec<_>>();
+			Self { logs }
+		}
 	}
-}
 
-#[cfg(feature = "subxt_metadata")]
-impl From<DigestItem> for ApiDigestItem {
-	fn from(di: DigestItem) -> Self {
-		match di {
-			DigestItem::PreRuntime(id, data) => ApiDigestItem::PreRuntime(id, data),
-			DigestItem::Consensus(id, data) => ApiDigestItem::Consensus(id, data),
-			DigestItem::Seal(id, data) => ApiDigestItem::Seal(id, data),
-			DigestItem::Other(data) => ApiDigestItem::Other(data),
-			DigestItem::RuntimeEnvironmentUpdated => ApiDigestItem::RuntimeEnvironmentUpdated,
+	impl From<DigestItem> for ApiDigestItem {
+		fn from(di: DigestItem) -> Self {
+			match di {
+				DigestItem::PreRuntime(id, data) => ApiDigestItem::PreRuntime(id, data),
+				DigestItem::Consensus(id, data) => ApiDigestItem::Consensus(id, data),
+				DigestItem::Seal(id, data) => ApiDigestItem::Seal(id, data),
+				DigestItem::Other(data) => ApiDigestItem::Other(data),
+				DigestItem::RuntimeEnvironmentUpdated => ApiDigestItem::RuntimeEnvironmentUpdated,
+			}
 		}
 	}
 }
@@ -116,35 +113,20 @@ impl From<DigestItem> for ApiDigestItem {
 pub mod no_subxt {
 	pub use super::*;
 
-	use subxt_core::ext::scale_decode::DecodeAsType;
-	use subxt_core::ext::scale_encode::EncodeAsType;
-	#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-	#[codec (crate = codec)]
-	#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-	#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+	#[repr(u8)]
 	pub enum HeaderExtension {
-		#[codec(index = 2)]
-		V3(V3HeaderExtension),
+		V3(V3HeaderExtension) = 2,
 	}
 
-	#[derive(
-		Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize,
-	)]
-	# [codec (crate = codec)]
-	#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-	#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 	#[serde(rename_all = "camelCase")]
 	pub struct V3HeaderExtension {
 		pub app_lookup: CompactDataLookup,
 		pub commitment: KateCommitment,
 	}
 
-	#[derive(
-		Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize,
-	)]
-	#[codec (crate = codec)]
-	#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-	#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 	#[serde(rename_all = "camelCase")]
 	pub struct CompactDataLookup {
 		#[codec(compact)]
@@ -152,10 +134,7 @@ pub mod no_subxt {
 		pub index: Vec<DataLookupItem>,
 	}
 
-	#[derive(Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-	#[codec (crate = codec)]
-	#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-	#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 	#[serde(rename_all = "camelCase")]
 	pub struct DataLookupItem {
 		#[codec(compact)]
@@ -164,12 +143,7 @@ pub mod no_subxt {
 		pub start: u32,
 	}
 
-	#[derive(
-		Decode, Encode, DecodeAsType, EncodeAsType, Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize,
-	)]
-	# [codec (crate = codec)]
-	#[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-	#[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 	#[serde(rename_all = "camelCase")]
 	pub struct KateCommitment {
 		#[codec(compact)]

@@ -5,7 +5,9 @@ use std::borrow::Cow;
 use subxt_core::config::{substrate::BlakeTwo256, Hasher};
 use subxt_signer::sr25519::Keypair;
 
-#[derive(Debug, Clone, Encode, Decode)]
+pub use subxt_core::utils::Era;
+
+#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq)]
 pub struct TransactionExtra {
 	pub era: Era,
 	#[codec(compact)]
@@ -25,68 +27,6 @@ pub struct TransactionAdditional {
 }
 
 #[derive(Debug, Clone)]
-pub enum Era {
-	Immortal,
-	Mortal { period: u64, phase: u64 },
-}
-impl Era {
-	/// Create a new era based on a period (which should be a power of two between 4 and 65536
-	/// inclusive) and a block number on which it should start (or, for long periods, be shortly
-	/// after the start).
-	///
-	/// If using `Era` in the context of `FRAME` runtime, make sure that `period`
-	/// does not exceed `BlockHashCount` parameter passed to `system` module, since that
-	/// prunes old blocks and renders transactions immediately invalid.
-	pub fn mortal(period: u64, block_number: u64) -> Self {
-		let period = period.checked_next_power_of_two().unwrap_or(1 << 16).clamp(4, 1 << 16);
-		let phase = block_number % period;
-		let quantize_factor = (period >> 12).max(1);
-		let quantized_phase = phase / quantize_factor * quantize_factor;
-
-		Self::Mortal {
-			period,
-			phase: quantized_phase,
-		}
-	}
-
-	pub fn immortal() -> Self {
-		Self::Immortal
-	}
-}
-impl Encode for Era {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		match self {
-			Self::Immortal => dest.push_byte(0),
-			Self::Mortal { period, phase } => {
-				let quantize_factor = (*period >> 12).max(1);
-				let encoded =
-					(period.trailing_zeros() - 1).clamp(1, 15) as u16 | ((phase / quantize_factor) << 4) as u16;
-				encoded.encode_to(dest);
-			},
-		}
-	}
-}
-
-impl Decode for Era {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let first = input.read_byte()?;
-		if first == 0 {
-			Ok(Self::Immortal)
-		} else {
-			let encoded = first as u64 + ((input.read_byte()? as u64) << 8);
-			let period = 2 << (encoded % (1 << 4));
-			let quantize_factor = (period >> 12).max(1);
-			let phase = (encoded >> 4) * quantize_factor;
-			if period >= 4 && phase < period {
-				Ok(Self::Mortal { period, phase })
-			} else {
-				Err("Invalid period and phase".into())
-			}
-		}
-	}
-}
-
-#[derive(Debug, Clone)]
 pub struct AlreadyEncoded(pub Vec<u8>);
 
 impl Encode for AlreadyEncoded {
@@ -99,13 +39,28 @@ impl Encode for AlreadyEncoded {
 	}
 }
 
+impl Decode for AlreadyEncoded {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let length = input.remaining_len()?;
+		let Some(length) = length else {
+			return Err("Failed to decode transaction".into());
+		};
+		if length == 0 {
+			return Ok(Self(Vec::new()));
+		}
+		let mut value = vec![0u8; length];
+		input.read(&mut value)?;
+		Ok(Self(value))
+	}
+}
+
 impl From<Vec<u8>> for AlreadyEncoded {
 	fn from(value: Vec<u8>) -> Self {
 		AlreadyEncoded(value)
 	}
 }
 
-#[derive(Debug, Clone, Encode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct TransactionCall {
 	pub pallet_id: u8,
 	pub call_id: u8,
@@ -165,7 +120,7 @@ impl<'a> TransactionPayload<'a> {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Decode)]
 pub struct TransactionSigned {
 	pub address: MultiAddress,
 	pub signature: MultiSignature,
@@ -175,7 +130,7 @@ pub struct TransactionSigned {
 #[derive(Debug, Clone)]
 pub struct Transaction<'a> {
 	pub signed: Option<TransactionSigned>,
-	pub payload: TransactionPayload<'a>,
+	pub call: Cow<'a, TransactionCall>,
 }
 
 impl<'a> Transaction<'a> {
@@ -189,7 +144,10 @@ impl<'a> Transaction<'a> {
 			tx_extra: payload.extra.clone(),
 		});
 
-		Self { signed, payload }
+		Self {
+			signed,
+			call: payload.call,
+		}
 	}
 
 	pub fn encode(&self) -> Vec<u8> {
@@ -198,15 +156,51 @@ impl<'a> Transaction<'a> {
 			0x84u8.encode_to(&mut encoded_tx_inner);
 			signed.address.encode_to(&mut encoded_tx_inner);
 			signed.signature.encode_to(&mut encoded_tx_inner);
-			self.payload.extra.encode_to(&mut encoded_tx_inner);
+			signed.tx_extra.encode_to(&mut encoded_tx_inner);
 		} else {
 			0x4u8.encode_to(&mut encoded_tx_inner);
 		}
 
-		self.payload.call.encode_to(&mut encoded_tx_inner);
+		let call = self.call.as_ref();
+		call.encode_to(&mut encoded_tx_inner);
 		let mut encoded_tx = Compact(encoded_tx_inner.len() as u32).encode();
 		encoded_tx.append(&mut encoded_tx_inner);
 
 		encoded_tx
+	}
+}
+
+impl<'a> Decode for Transaction<'a> {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		// This is a little more complicated than usual since the binary format must be compatible
+		// with SCALE's generic `Vec<u8>` type. Basically this just means accepting that there
+		// will be a prefix of vector length.
+		let expected_length = Compact::<u32>::decode(input)?;
+		let before_length = input.remaining_len()?;
+
+		let version = input.read_byte()?;
+
+		let is_signed = version & 0b1000_0000 != 0;
+		let version = version & 0b0111_1111;
+		if version != super::block::extrinsics::EXTRINSIC_FORMAT_VERSION {
+			return Err("Invalid transaction version".into());
+		}
+
+		let signed = is_signed.then(|| TransactionSigned::decode(input)).transpose()?;
+		let call = TransactionCall::decode(input)?;
+
+		if let Some((before_length, after_length)) = input.remaining_len()?.and_then(|a| before_length.map(|b| (b, a)))
+		{
+			let length = before_length.saturating_sub(after_length);
+
+			if length != expected_length.0 as usize {
+				return Err("Invalid length prefix".into());
+			}
+		}
+
+		Ok(Self {
+			signed,
+			call: Cow::Owned(call),
+		})
 	}
 }

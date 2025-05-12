@@ -1,16 +1,9 @@
-use crate::{
-	client::Client,
-	config::*,
-	error::RpcError,
-	primitives::transaction::{Era, TransactionExtra},
-};
+use crate::primitives::{AccountId, Era, TransactionExtra};
+use crate::{client::Client, error::RpcError};
 use primitive_types::H256;
 use subxt_core::config::Header;
 
-pub type Params =
-	<<AvailConfig as subxt_core::Config>::ExtrinsicParams as subxt_core::config::ExtrinsicParams<AvailConfig>>::Params;
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Options {
 	pub app_id: Option<u32>,
 	pub mortality: Option<MortalityOption>,
@@ -20,12 +13,7 @@ pub struct Options {
 
 impl Options {
 	pub fn new() -> Self {
-		Self {
-			app_id: None,
-			mortality: None,
-			nonce: None,
-			tip: None,
-		}
+		Self::default()
 	}
 
 	pub fn app_id(mut self, value: u32) -> Self {
@@ -55,10 +43,10 @@ impl Options {
 			Some(x) => x,
 			None => client.rpc_system_account_next_index(&account_id.to_string()).await?,
 		};
-		let mortality = match &self.mortality {
-			Some(MortalityOption::Period(period)) => RefinedMortality::from_period(client, *period).await?,
-			Some(MortalityOption::Full(mortality)) => *mortality,
-			None => RefinedMortality::from_period(client, 32).await?,
+		let mortality = self.mortality.unwrap_or_else(|| MortalityOption::Period(32));
+		let mortality = match mortality {
+			MortalityOption::Period(period) => RefinedMortality::from_period(client, period).await?,
+			MortalityOption::Full(mortality) => mortality,
 		};
 
 		Ok(RefinedOptions {
@@ -67,12 +55,6 @@ impl Options {
 			nonce,
 			tip,
 		})
-	}
-}
-
-impl Default for Options {
-	fn default() -> Self {
-		Self::new()
 	}
 }
 

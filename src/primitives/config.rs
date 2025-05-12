@@ -40,11 +40,5 @@ impl From<AccountId> for MultiAddress {
 	}
 }
 
-#[derive(Debug, Clone, Copy, Encode, Decode, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Encode, Decode, Eq, PartialEq)]
 pub struct AppId(#[codec(compact)] pub u32);
-
-impl Default for AppId {
-	fn default() -> Self {
-		AppId(0)
-	}
-}

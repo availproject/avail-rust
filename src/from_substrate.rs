@@ -1,4 +1,4 @@
-use crate::config::*;
+use crate::primitives::{BlockHash, BlockHeight};
 use codec::{Decode, Encode};
 use serde::Deserialize;
 

@@ -5,6 +5,7 @@ pub mod runtime_api;
 
 use crate::avail;
 use crate::primitives;
+use crate::primitives::AccountId;
 use crate::{
 	config::*,
 	error::{ClientError, RpcError},
@@ -13,6 +14,8 @@ use crate::{
 	transactions::Transactions,
 	AvailHeader, BlockState,
 };
+use avail::balances::types::AccountData;
+use avail::system::types::AccountInfo;
 #[cfg(not(feature = "subxt"))]
 use codec::Decode;
 use primitive_types::H256;

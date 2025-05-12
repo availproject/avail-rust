@@ -42,15 +42,11 @@ pub struct ScheduledChange<N> {
 }
 /// An consensus log item for GRANDPA.
 #[derive(Decode, Serialize)]
+#[repr(u8)]
 pub enum ConsensusLog<N: Codec> {
-	#[codec(index = 1)]
-	ScheduledChange(ScheduledChange<N>),
-	#[codec(index = 2)]
-	ForcedChange(N, ScheduledChange<N>),
-	#[codec(index = 3)]
-	OnDisabled(AuthorityIndex),
-	#[codec(index = 4)]
-	Pause(N),
-	#[codec(index = 5)]
-	Resume(N),
+	ScheduledChange(ScheduledChange<N>) = 1,
+	ForcedChange(N, ScheduledChange<N>) = 2,
+	OnDisabled(AuthorityIndex) = 3,
+	Pause(N) = 4,
+	Resume(N) = 5,
 }

@@ -3,5 +3,6 @@ pub mod config;
 pub mod kate;
 pub mod transaction;
 
-pub use config::{AccountId, AccountIndex, BlockHash, BlockHeight, MultiAddress, MultiSignature};
-pub use transaction::{Transaction, TransactionAdditional, TransactionCall, TransactionExtra, TransactionPayload};
+pub use block::AvailHeader;
+pub use config::{AccountId, AccountIndex, AppId, BlockHash, BlockHeight, MultiAddress, MultiSignature};
+pub use transaction::{Era, Transaction, TransactionAdditional, TransactionCall, TransactionExtra, TransactionPayload};

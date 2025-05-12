@@ -25,8 +25,9 @@ pub use avail::runtime_types::sp_arithmetic::per_things::Perbill; */
 
 pub use bounded_collections::BoundedVec;
 pub use primitives::{
-	block::{AppUncheckedExtrinsic, AvailHeader, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
+	block::{AppUncheckedExtrinsic, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
 	kate::{Cell, GDataProof, GRow},
+	AvailHeader,
 };
 pub use transaction::{
 	BlockState, ReceiptMethod, SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction,

@@ -1,7 +1,5 @@
-use crate::{
-	avail, client::Client, config::AccountId, primitives::TransactionCall, SubmittableTransaction,
-	SubmittableTransactionLike,
-};
+use crate::primitives::AccountId;
+use crate::{avail, client::Client, primitives::TransactionCall, SubmittableTransaction, SubmittableTransactionLike};
 use primitive_types::H256;
 pub struct Transactions(pub(crate) Client);
 impl Transactions {
@@ -42,7 +40,7 @@ impl Balances {
 	pub fn transfer_allow_death(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
 		avail::balances::tx::TransferAllowDeath {
 			dest: dest.into(),
-			amount,
+			amount: amount.into(),
 		}
 		.to_submittable(self.0.clone())
 	}
@@ -50,7 +48,7 @@ impl Balances {
 	pub fn transfer_keep_alive(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
 		avail::balances::tx::TransferKeepAlive {
 			dest: dest.into(),
-			amount,
+			amount: amount.into(),
 		}
 		.to_submittable(self.0.clone())
 	}
@@ -153,8 +151,8 @@ impl Proxy {
 			spawner: spawner.into(),
 			proxy_type,
 			index,
-			height,
-			ext_index,
+			height: height.into(),
+			ext_index: ext_index.into(),
 		}
 		.to_submittable(self.0.clone())
 	}
@@ -175,7 +173,7 @@ impl Vector {
 			input,
 			output,
 			proof,
-			slot,
+			slot: slot.into(),
 		}
 		.to_submittable(self.0.clone())
 	}
@@ -188,7 +186,7 @@ impl Vector {
 		storage_proof: Vec<Vec<u8>>,
 	) -> SubmittableTransaction {
 		avail::vector::tx::Execute {
-			slot,
+			slot: slot.into(),
 			addr_message,
 			account_proof,
 			storage_proof,
@@ -198,7 +196,7 @@ impl Vector {
 
 	pub fn source_chain_froze(&self, source_chain_id: u32, frozen: bool) -> SubmittableTransaction {
 		avail::vector::tx::SourceChainFroze {
-			source_chain_id,
+			source_chain_id: source_chain_id.into(),
 			frozen,
 		}
 		.to_submittable(self.0.clone())
@@ -212,21 +210,25 @@ impl Vector {
 		domain: u32,
 	) -> SubmittableTransaction {
 		avail::vector::tx::SendMessage {
-			slot,
+			slot: slot.into(),
 			message,
 			to,
-			domain,
+			domain: domain.into(),
 		}
 		.to_submittable(self.0.clone())
 	}
 
 	pub fn set_poseidon_hash(&self, period: u64, poseidon_hash: Vec<u8>) -> SubmittableTransaction {
-		avail::vector::tx::SetPoseidonHash { period, poseidon_hash }.to_submittable(self.0.clone())
+		avail::vector::tx::SetPoseidonHash {
+			period: period.into(),
+			poseidon_hash,
+		}
+		.to_submittable(self.0.clone())
 	}
 
 	pub fn set_broadcaster(&self, broadcaster_domain: u32, broadcaster: H256) -> SubmittableTransaction {
 		avail::vector::tx::SetBroadcaster {
-			broadcaster_domain,
+			broadcaster_domain: broadcaster_domain.into(),
 			broadcaster,
 		}
 		.to_submittable(self.0.clone())

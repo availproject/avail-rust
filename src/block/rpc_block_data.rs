@@ -1,8 +1,8 @@
 use crate::{
 	client::{rpc::rpc_block_data, Client},
-	config::{BlockId, DispatchIndex, EmittedIndex, HashIndex, RuntimePhase, TransactionLocation},
+	config::{BlockId, DispatchIndex, EmittedIndex, HashIndex, TransactionLocation},
 	error::RpcError,
-	primitives::block::extrinsics::UncheckedEvent,
+	primitives::block::extrinsics::{RuntimePhase, UncheckedEvent},
 	AppUncheckedExtrinsic,
 };
 use codec::Decode;
@@ -46,17 +46,13 @@ impl BlockBuilder {
 
 	pub async fn build(&self, client: &Client) -> Result<Block, RpcError> {
 		let response = client.rpc_block_data(self.params.clone()).await.map(|x| x.value)?;
-		let calls = if let Some(list) = response.calls {
-			Some(list.into_iter().map(CallData::from).collect())
-		} else {
-			None
-		};
+		let calls = response
+			.calls
+			.map(|list| list.into_iter().map(CallData::from).collect());
 
-		let events = if let Some(list) = response.events {
-			Some(list.into_iter().map(EventData::from).collect())
-		} else {
-			None
-		};
+		let events = response
+			.events
+			.map(|list| list.into_iter().map(EventData::from).collect());
 
 		Ok(Block {
 			block_id: response.block_id,
