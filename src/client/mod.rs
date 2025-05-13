@@ -13,13 +13,16 @@ use crate::{
 };
 use avail::balances::types::AccountData;
 use avail::system::types::AccountInfo;
-#[cfg(not(feature = "subxt"))]
-use codec::Decode;
 use log::info;
 use primitive_types::H256;
 use std::{fmt::Debug, sync::Arc};
 use subxt_rpcs::RpcClient;
 use subxt_signer::sr25519::Keypair;
+
+#[cfg(feature = "subxt")]
+use crate::config::{ABlocksClient, AConstantsClient, AOnlineClient, AStorageClient};
+#[cfg(not(feature = "subxt"))]
+use codec::Decode;
 
 type SharedCache = Arc<std::sync::Mutex<Cache>>;
 

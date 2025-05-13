@@ -60,6 +60,7 @@ where
 {
 	let buf = String::deserialize(deserializer)?;
 	let without_prefix = buf.trim_start_matches("0x");
+	// TODO
 	Ok(u32::from_str_radix(without_prefix, 16).unwrap())
 }
 
