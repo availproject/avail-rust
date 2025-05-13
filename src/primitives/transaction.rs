@@ -7,6 +7,13 @@ use subxt_signer::sr25519::Keypair;
 
 pub use subxt_core::utils::Era;
 
+/// Current version of the [`UncheckedExtrinsic`] encoded format.
+///
+/// This version needs to be bumped if the encoded representation changes.
+/// It ensures that if the representation is changed and the format is not known,
+/// the decoding fails.
+pub const EXTRINSIC_FORMAT_VERSION: u8 = 4;
+
 #[derive(Debug, Clone, Encode, Decode, PartialEq, Eq)]
 pub struct TransactionExtra {
 	pub era: Era,
@@ -127,6 +134,14 @@ pub struct TransactionSigned {
 	pub tx_extra: TransactionExtra,
 }
 
+impl Encode for TransactionSigned {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		self.address.encode_to(dest);
+		self.signature.encode_to(dest);
+		self.tx_extra.encode_to(dest);
+	}
+}
+
 #[derive(Debug, Clone)]
 pub struct Transaction<'a> {
 	pub signed: Option<TransactionSigned>,
@@ -182,7 +197,7 @@ impl<'a> Decode for Transaction<'a> {
 
 		let is_signed = version & 0b1000_0000 != 0;
 		let version = version & 0b0111_1111;
-		if version != super::block::extrinsics::EXTRINSIC_FORMAT_VERSION {
+		if version != EXTRINSIC_FORMAT_VERSION {
 			return Err("Invalid transaction version".into());
 		}
 

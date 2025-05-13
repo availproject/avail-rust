@@ -267,14 +267,14 @@ pub async fn rpc_methods(client: &RpcClient) -> Result<RpcMethods, subxt_rpcs::E
 	Ok(value)
 }
 
-pub async fn chainspec_v1_genesishash(client: &RpcClient) -> Result<H256, subxt_rpcs::Error> {
+pub async fn chainspec_v1_genesishash(client: &RpcClient) -> Result<H256, RpcError> {
 	let value: String = client.request("chainSpec_v1_genesisHash", rpc_params![]).await?;
-	Ok(H256::from_str(&value).unwrap())
+	Ok(H256::from_str(&value).map_err(|e| e.to_string())?)
 }
 
-pub async fn state_get_metadata(client: &RpcClient, at: Option<H256>) -> Result<Vec<u8>, subxt_rpcs::Error> {
+pub async fn state_get_metadata(client: &RpcClient, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
 	let value: String = client.request("state_getMetadata", rpc_params![at]).await?;
-	Ok(hex::decode(value.trim_start_matches("0x")).unwrap())
+	Ok(hex::decode(value.trim_start_matches("0x")).map_err(|e| e.to_string())?)
 }
 
 pub async fn chain_get_finalized_head(client: &RpcClient) -> Result<H256, subxt_rpcs::Error> {

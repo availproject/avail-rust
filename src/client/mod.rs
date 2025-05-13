@@ -326,7 +326,7 @@ impl Client {
 		Addr: subxt_core::storage::address::Address<IsFetchable = subxt_core::utils::Yes> + 'address,
 	{
 		let storage = self.subxt_storage().at(at);
-		return Ok(storage.fetch(address).await.unwrap());
+		return Ok(storage.fetch(address).await?);
 	}
 
 	pub async fn storage_fetch_or_default<'address, Addr>(
@@ -341,7 +341,7 @@ impl Client {
 			> + 'address,
 	{
 		let storage = self.subxt_storage().at(at);
-		return Ok(storage.fetch_or_default(address).await.unwrap());
+		return Ok(storage.fetch_or_default(address).await?);
 	}
 
 	// constants
@@ -407,9 +407,9 @@ impl Client {
 		Addr: subxt_core::storage::address::Address<IsFetchable = subxt_core::utils::Yes> + 'address,
 	{
 		let metadata = self.metadata();
-		let key = subxt_core::storage::get_address_bytes(address, &metadata).unwrap();
-		if let Some(data) = self.rpc_state_get_storage(key, Some(at)).await.unwrap() {
-			let val = subxt_core::storage::decode_value(&mut &*data, address, &metadata).unwrap();
+		let key = subxt_core::storage::get_address_bytes(address, &metadata)?;
+		if let Some(data) = self.rpc_state_get_storage(key, Some(at)).await? {
+			let val = subxt_core::storage::decode_value(&mut &*data, address, &metadata)?;
 			Ok(Some(val))
 		} else {
 			Ok(None)
@@ -427,11 +427,11 @@ impl Client {
 				IsDefaultable = subxt_core::utils::Yes,
 			> + 'address,
 	{
-		if let Some(data) = self.storage_fetch(address, at).await.unwrap() {
+		if let Some(data) = self.storage_fetch(address, at).await? {
 			Ok(data)
 		} else {
 			let metadata = self.metadata();
-			let val = subxt_core::storage::default_value(address, &metadata).unwrap();
+			let val = subxt_core::storage::default_value(address, &metadata)?;
 			Ok(val)
 		}
 	}

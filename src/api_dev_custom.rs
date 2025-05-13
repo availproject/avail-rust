@@ -35,14 +35,14 @@ pub enum RuntimeCall {
 impl Encode for RuntimeCall {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-		dest.write(&variant.encode());
+		variant.encode_to(dest);
 		match self {
-			Self::DataAvailability(x) => dest.write(&x.encode()),
-			Self::Balances(x) => dest.write(&x.encode()),
-			Self::Utility(x) => dest.write(&x.encode()),
-			Self::Proxy(x) => dest.write(&x.encode()),
-			Self::Multisig(x) => dest.write(&x.encode()),
-			Self::System(x) => dest.write(&x.encode()),
+			Self::DataAvailability(x) => x.encode_to(dest),
+			Self::Balances(x) => x.encode_to(dest),
+			Self::Utility(x) => x.encode_to(dest),
+			Self::Proxy(x) => x.encode_to(dest),
+			Self::Multisig(x) => x.encode_to(dest),
+			Self::System(x) => x.encode_to(dest),
 		}
 	}
 }
@@ -77,10 +77,10 @@ pub mod data_availability {
 		impl Encode for Call {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				dest.write(&variant.encode());
+				variant.encode_to(dest);
 				match self {
-					Self::CreateApplicationKey(x) => dest.write(&x.encode()),
-					Self::SubmitData(x) => dest.write(&x.encode()),
+					Self::CreateApplicationKey(x) => x.encode_to(dest),
+					Self::SubmitData(x) => x.encode_to(dest),
 				}
 			}
 		}
@@ -103,7 +103,7 @@ pub mod data_availability {
 		}
 		impl Encode for CreateApplicationKey {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.key.encode());
+				self.key.encode_to(dest);
 			}
 		}
 		impl Decode for CreateApplicationKey {
@@ -122,7 +122,7 @@ pub mod data_availability {
 		}
 		impl Encode for SubmitData {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.data.encode());
+				self.data.encode_to(dest);
 			}
 		}
 		impl Decode for SubmitData {
@@ -154,10 +154,10 @@ pub mod balances {
 
 		impl Encode for AccountData {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.free.encode());
-				dest.write(&self.reserved.encode());
-				dest.write(&self.frozen.encode());
-				dest.write(&self.flags.encode());
+				self.free.encode_to(dest);
+				self.reserved.encode_to(dest);
+				self.frozen.encode_to(dest);
+				self.flags.encode_to(dest);
 			}
 		}
 		impl Decode for AccountData {
@@ -189,11 +189,11 @@ pub mod balances {
 		impl Encode for Call {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				dest.write(&variant.encode());
+				variant.encode_to(dest);
 				match self {
-					Self::TransferAllowDeath(x) => dest.write(&x.encode()),
-					Self::TransferKeepAlive(x) => dest.write(&x.encode()),
-					Self::TransferAll(x) => dest.write(&x.encode()),
+					Self::TransferAllowDeath(x) => x.encode_to(dest),
+					Self::TransferKeepAlive(x) => x.encode_to(dest),
+					Self::TransferAll(x) => x.encode_to(dest),
 				}
 			}
 		}
@@ -298,11 +298,11 @@ pub mod utility {
 		impl Encode for Call {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				dest.write(&variant.encode());
+				variant.encode_to(dest);
 				match self {
-					Self::Batch(x) => dest.write(&x.encode()),
-					Self::BatchAll(x) => dest.write(&x.encode()),
-					Self::ForceBatch(x) => dest.write(&x.encode()),
+					Self::Batch(x) => x.encode_to(dest),
+					Self::BatchAll(x) => x.encode_to(dest),
+					Self::ForceBatch(x) => x.encode_to(dest),
 				}
 			}
 		}
@@ -397,7 +397,7 @@ pub mod proxy {
 		impl Encode for ProxyType {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = *self as u8;
-				dest.write(&variant.encode());
+				variant.encode_to(dest);
 			}
 		}
 		impl Decode for ProxyType {
@@ -432,14 +432,14 @@ pub mod proxy {
 		impl Encode for Call {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				dest.write(&variant.encode());
+				variant.encode_to(dest);
 				match self {
-					Self::Proxy(x) => dest.write(&x.encode()),
-					Self::AddProxy(x) => dest.write(&x.encode()),
-					Self::RemoveProxy(x) => dest.write(&x.encode()),
-					Self::RemoveProxies(x) => dest.write(&x.encode()),
-					Self::CreatePure(x) => dest.write(&x.encode()),
-					Self::KillPure(x) => dest.write(&x.encode()),
+					Self::Proxy(x) => x.encode_to(dest),
+					Self::AddProxy(x) => x.encode_to(dest),
+					Self::RemoveProxy(x) => x.encode_to(dest),
+					Self::RemoveProxies(x) => x.encode_to(dest),
+					Self::CreatePure(x) => x.encode_to(dest),
+					Self::KillPure(x) => x.encode_to(dest),
 				}
 			}
 		}
@@ -665,12 +665,12 @@ pub mod multisig {
 		impl Encode for Call {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				dest.write(&variant.encode());
+				variant.encode_to(dest);
 				match self {
-					Self::AsMultiThreshold1(x) => dest.write(&x.encode()),
-					Self::AsMulti(x) => dest.write(&x.encode()),
-					Self::ApproveAsMulti(x) => dest.write(&x.encode()),
-					Self::CancelAsMulti(x) => dest.write(&x.encode()),
+					Self::AsMultiThreshold1(x) => x.encode_to(dest),
+					Self::AsMulti(x) => x.encode_to(dest),
+					Self::ApproveAsMulti(x) => x.encode_to(dest),
+					Self::CancelAsMulti(x) => x.encode_to(dest),
 				}
 			}
 		}
@@ -883,14 +883,14 @@ pub mod vector {
 		impl Encode for Message {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				dest.write(&variant.encode());
+				variant.encode_to(dest);
 				match self {
 					Message::ArbitraryMessage(items) => {
-						dest.write(&items.encode());
+						items.encode_to(dest);
 					},
 					Message::FungibleToken { asset_id, amount } => {
-						dest.write(&asset_id.encode());
-						dest.write(&amount.encode());
+						asset_id.encode_to(dest);
+						amount.encode_to(dest);
 					},
 				}
 			}
@@ -1401,12 +1401,12 @@ pub mod system {
 		impl Encode for Call {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				dest.write(&variant.encode());
+				variant.encode_to(dest);
 				match self {
-					Self::Remark(x) => dest.write(&x.encode()),
-					Self::SetCode(x) => dest.write(&x.encode()),
-					Self::SetCodeWithoutChecks(x) => dest.write(&x.encode()),
-					Self::RemarkWithEvent(x) => dest.write(&x.encode()),
+					Self::Remark(x) => x.encode_to(dest),
+					Self::SetCode(x) => x.encode_to(dest),
+					Self::SetCodeWithoutChecks(x) => x.encode_to(dest),
+					Self::RemarkWithEvent(x) => x.encode_to(dest),
 				}
 			}
 		}
@@ -1433,7 +1433,7 @@ pub mod system {
 		}
 		impl Encode for Remark {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.remark.encode());
+				self.remark.encode_to(dest);
 			}
 		}
 		impl Decode for Remark {
@@ -1452,7 +1452,7 @@ pub mod system {
 		}
 		impl Encode for SetCode {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.code.encode());
+				self.code.encode_to(dest);
 			}
 		}
 		impl Decode for SetCode {
@@ -1471,7 +1471,7 @@ pub mod system {
 		}
 		impl Encode for SetCodeWithoutChecks {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.code.encode());
+				self.code.encode_to(dest);
 			}
 		}
 		impl Decode for SetCodeWithoutChecks {
@@ -1490,7 +1490,7 @@ pub mod system {
 		}
 		impl Encode for RemarkWithEvent {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.remark.encode());
+				self.remark.encode_to(dest);
 			}
 		}
 		impl Decode for RemarkWithEvent {

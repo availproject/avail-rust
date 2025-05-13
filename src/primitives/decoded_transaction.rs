@@ -1,7 +1,6 @@
-use crate::primitives::{AppId, MultiAddress, MultiSignature, TransactionExtra};
-use codec::{Compact, Decode, Encode, EncodeLike, Error, Input};
+use super::transaction::{TransactionSigned, EXTRINSIC_FORMAT_VERSION};
+use codec::{Compact, Decode, Encode, Error, Input};
 use serde::{Deserialize, Serialize};
-use std::mem::size_of;
 
 #[cfg(feature = "subxt_metadata")]
 use crate::subxt_avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
@@ -10,27 +9,18 @@ pub type RuntimeCall = crate::avail::RuntimeCall;
 #[cfg(not(feature = "subxt_metadata"))]
 pub type RuntimeEvent = Vec<u8>;
 
-pub type SignaturePayload = (MultiAddress, MultiSignature, TransactionExtra);
-
-/// Current version of the [`UncheckedExtrinsic`] encoded format.
-///
-/// This version needs to be bumped if the encoded representation changes.
-/// It ensures that if the representation is changed and the format is not known,
-/// the decoding fails.
-pub const EXTRINSIC_FORMAT_VERSION: u8 = 4;
-
 #[derive(Clone)]
-pub struct AppUncheckedExtrinsic {
+pub struct DecodedTransaction {
 	/// The signature, address, number of extrinsics have come before from
 	/// the same signer and an era describing the longevity of this transaction,
 	/// if this is a signed extrinsic.
-	pub signature: Option<SignaturePayload>,
+	pub signature: Option<TransactionSigned>,
 	/// The function that should be called.
 	pub function: RuntimeCall,
 }
 
-impl AppUncheckedExtrinsic {
-	fn encode_vec_compatible(inner: &[u8]) -> Vec<u8> {
+impl DecodedTransaction {
+	/* 	fn encode_vec_compatible(inner: &[u8]) -> Vec<u8> {
 		let compact_len = codec::Compact::<u32>(inner.len() as u32);
 
 		// Allocate the output buffer with the correct length
@@ -40,19 +30,14 @@ impl AppUncheckedExtrinsic {
 		output.extend(inner);
 
 		output
-	}
+	} */
 
-	pub fn app_id(&self) -> AppId {
-		let app_id = self
-			.signature
-			.as_ref()
-			.map(|(_, _, extra)| extra.app_id)
-			.unwrap_or_default();
-		AppId(app_id)
+	pub fn app_id(&self) -> Option<u32> {
+		self.signature.as_ref().map(|s| s.tx_extra.app_id)
 	}
 }
 
-impl Encode for AppUncheckedExtrinsic {
+/* impl Encode for DecodedTransaction {
 	fn encode(&self) -> Vec<u8> {
 		let mut tmp = Vec::with_capacity(size_of::<Self>());
 
@@ -67,14 +52,13 @@ impl Encode for AppUncheckedExtrinsic {
 			},
 		}
 		self.function.encode_to(&mut tmp);
-
 		Self::encode_vec_compatible(&tmp)
 	}
 }
 
-impl EncodeLike for AppUncheckedExtrinsic {}
+impl EncodeLike for DecodedTransaction {} */
 
-impl Serialize for AppUncheckedExtrinsic {
+/* impl Serialize for DecodedTransaction {
 	fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
 	where
 		S: ::serde::Serializer,
@@ -82,9 +66,9 @@ impl Serialize for AppUncheckedExtrinsic {
 		let encoded = self.encode();
 		impl_serde::serialize::serialize(&encoded, s)
 	}
-}
+} */
 
-impl Decode for AppUncheckedExtrinsic {
+impl Decode for DecodedTransaction {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		// This is a little more complicated than usual since the binary format must be compatible
 		// with SCALE's generic `Vec<u8>` type. Basically this just means accepting that there
@@ -116,23 +100,13 @@ impl Decode for AppUncheckedExtrinsic {
 	}
 }
 
-impl<'a> Deserialize<'a> for AppUncheckedExtrinsic {
+impl<'a> Deserialize<'a> for DecodedTransaction {
 	fn deserialize<D>(de: D) -> Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'a>,
 	{
 		let r = impl_serde::serialize::deserialize(de)?;
 		Decode::decode(&mut &r[..]).map_err(|e| serde::de::Error::custom(format!("Decode error: {}", e)))
-	}
-}
-
-impl TryFrom<Vec<u8>> for AppUncheckedExtrinsic {
-	type Error = String;
-
-	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		let mut value_as_slice = value.as_slice();
-
-		AppUncheckedExtrinsic::decode(&mut value_as_slice).map_err(|s| s.to_string())
 	}
 }
 

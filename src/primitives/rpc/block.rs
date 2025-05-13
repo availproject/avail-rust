@@ -1,5 +1,5 @@
-use crate::primitives::block::extrinsics::RuntimePhase;
 use crate::primitives::config::TransactionLocation;
+use crate::primitives::decoded_transaction::RuntimePhase;
 use crate::primitives::{BlockId, DispatchIndex, EmittedIndex, HashIndex};
 use primitive_types::H256;
 use serde::Deserialize;

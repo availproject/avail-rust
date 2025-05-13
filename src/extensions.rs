@@ -70,8 +70,8 @@ pub trait KeypairExt {
 
 impl KeypairExt for Keypair {
 	fn from_str(value: &str) -> Result<Keypair, String> {
-		let secret_uri = SecretUri::from_str(value).unwrap();
-		let keypair = Keypair::from_uri(&secret_uri).unwrap();
+		let secret_uri = SecretUri::from_str(value).map_err(|e| e.to_string())?;
+		let keypair = Keypair::from_uri(&secret_uri).map_err(|e| e.to_string())?;
 		Ok(keypair)
 	}
 }

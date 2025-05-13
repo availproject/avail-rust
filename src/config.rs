@@ -1,8 +1,4 @@
 pub use crate::primitives;
-use crate::{DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
-use subxt_core::config::substrate::BlakeTwo256;
-use subxt_core::Config;
-use subxt_rpcs::methods::legacy::BlockDetails as BlockDetailsRPC;
 
 #[cfg(not(feature = "subxt"))]
 use subxt_rpcs::RpcConfig;
@@ -40,26 +36,19 @@ pub mod subxt_types {
 	pub type ABlock = Block<AvailConfig, AOnlineClient>;
 }
 
-/// Used only when chain_getBlock RPC is called. This is part of legacy baggage.
-pub type ABlockDetailsRPC = BlockDetailsRPC<AvailConfig>;
-
 /// A struct representing the signed extra and additional parameters required
 /// to construct a transaction for a avail node.
-pub type AvailExtrinsicParams<T> = DefaultExtrinsicParams<T>;
-
-/// A builder which leads to [`PolkadotExtrinsicParams`] being constructed.
-/// This is what you provide to methods like `sign_and_submit()`.
-pub type AvailExtrinsicParamsBuilder = DefaultExtrinsicParamsBuilder<AvailConfig>;
+pub type AvailExtrinsicParams<T> = crate::primitives::block::extrinsics_params::DefaultExtrinsicParams<T>;
 
 #[derive(Clone, Debug, Default)]
 pub struct AvailConfig;
 
-impl Config for AvailConfig {
+impl subxt_core::Config for AvailConfig {
 	type AccountId = primitives::AccountId;
 	type Address = primitives::MultiAddress;
 	type ExtrinsicParams = AvailExtrinsicParams<Self>;
 	type Hash = primitives::BlockHash;
-	type Hasher = BlakeTwo256;
+	type Hasher = primitives::BlakeTwo256;
 	type Header = primitives::AvailHeader;
 	type Signature = primitives::MultiSignature;
 	type AssetId = u32;

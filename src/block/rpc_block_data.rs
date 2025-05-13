@@ -4,8 +4,8 @@ use crate::primitives::{BlockId, DispatchIndex, EmittedIndex, HashIndex};
 use crate::{
 	client::Client,
 	error::RpcError,
-	primitives::block::extrinsics::{RuntimePhase, UncheckedEvent},
-	AppUncheckedExtrinsic,
+	primitives::decoded_transaction::{RuntimePhase, UncheckedEvent},
+	DecodedTransaction,
 };
 use codec::Decode;
 
@@ -78,13 +78,13 @@ pub struct CallData {
 	pub tx_location: TransactionLocation,
 	pub dispatch_index: DispatchIndex,
 	// None if we failed to decode it
-	pub call: Option<AppUncheckedExtrinsic>,
+	pub call: Option<DecodedTransaction>,
 }
 
 impl From<block_data::CallData> for CallData {
 	fn from(value: block_data::CallData) -> Self {
 		let call = match hex::decode(value.call.trim_start_matches("0x")) {
-			Ok(x) => AppUncheckedExtrinsic::decode(&mut x.as_slice()).ok(),
+			Ok(x) => DecodedTransaction::decode(&mut x.as_slice()).ok(),
 			Err(_) => None,
 		};
 

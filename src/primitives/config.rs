@@ -8,6 +8,7 @@ pub type AccountIndex = u32;
 pub type BlockHeight = u32;
 pub type BlockHash = H256;
 pub type Signature = MultiSignature;
+pub type BlakeTwo256 = subxt_core::config::substrate::BlakeTwo256;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, scale_info::TypeInfo)]
 #[repr(u8)]
