@@ -1,6 +1,8 @@
+use crate::primitives::config::TransactionLocation;
+use crate::primitives::rpc::block::block_data;
+use crate::primitives::{BlockId, DispatchIndex, EmittedIndex, HashIndex};
 use crate::{
-	client::{rpc::rpc_block_data, Client},
-	config::{BlockId, DispatchIndex, EmittedIndex, HashIndex, TransactionLocation},
+	client::Client,
 	error::RpcError,
 	primitives::block::extrinsics::{RuntimePhase, UncheckedEvent},
 	AppUncheckedExtrinsic,
@@ -9,13 +11,13 @@ use codec::Decode;
 
 #[derive(Clone)]
 pub struct BlockBuilder {
-	params: rpc_block_data::Params,
+	params: block_data::Params,
 }
 
 impl BlockBuilder {
 	pub fn new(block_index: HashIndex) -> Self {
 		Self {
-			params: rpc_block_data::Params::new(block_index),
+			params: block_data::Params::new(block_index),
 		}
 	}
 
@@ -34,12 +36,12 @@ impl BlockBuilder {
 		self
 	}
 
-	pub fn call_filter(mut self, value: rpc_block_data::CallFilter) -> Self {
+	pub fn call_filter(mut self, value: block_data::CallFilter) -> Self {
 		self.params.call_filter = value;
 		self
 	}
 
-	pub fn event_filter(mut self, value: rpc_block_data::EventFilter) -> Self {
+	pub fn event_filter(mut self, value: block_data::EventFilter) -> Self {
 		self.params.event_filter = value;
 		self
 	}
@@ -63,15 +65,15 @@ impl BlockBuilder {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Block {
 	pub block_id: BlockId,
-	pub block_state: rpc_block_data::BlockState,
+	pub block_state: block_data::BlockState,
 	pub calls: Option<Vec<CallData>>,
 	pub events: Option<Vec<EventData>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CallData {
 	pub tx_location: TransactionLocation,
 	pub dispatch_index: DispatchIndex,
@@ -79,8 +81,8 @@ pub struct CallData {
 	pub call: Option<AppUncheckedExtrinsic>,
 }
 
-impl From<rpc_block_data::CallData> for CallData {
-	fn from(value: rpc_block_data::CallData) -> Self {
+impl From<block_data::CallData> for CallData {
+	fn from(value: block_data::CallData) -> Self {
 		let call = match hex::decode(value.call.trim_start_matches("0x")) {
 			Ok(x) => AppUncheckedExtrinsic::decode(&mut x.as_slice()).ok(),
 			Err(_) => None,
@@ -102,8 +104,8 @@ pub struct EventData {
 	pub event: Option<UncheckedEvent>,
 }
 
-impl From<rpc_block_data::EventData> for EventData {
-	fn from(value: rpc_block_data::EventData) -> Self {
+impl From<block_data::EventData> for EventData {
+	fn from(value: block_data::EventData) -> Self {
 		let event = match hex::decode(value.event.trim_start_matches("0x")) {
 			Ok(x) => UncheckedEvent::decode(&mut x.as_slice()).ok(),
 			Err(_) => None,

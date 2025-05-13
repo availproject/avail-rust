@@ -1,9 +1,10 @@
 use super::platform::sleep;
-use crate::primitives::AccountId;
+use crate::primitives::config::TransactionLocation;
+use crate::primitives::rpc::substrate::BlockDetails;
+use crate::primitives::{AccountId, BlockId};
 use crate::{
 	api_dev_custom::TransactionCallLike,
-	client::{rpc::ChainBlock, Client},
-	config::*,
+	client::Client,
 	error::RpcError,
 	primitives::transaction::{TransactionAdditional, TransactionCall},
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
@@ -130,7 +131,7 @@ impl TransactionReceipt {
 }
 
 /// TODO
-pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Result<Arc<ChainBlock>, RpcError> {
+pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Result<Arc<BlockDetails>, RpcError> {
 	if let Ok(cache) = client.cache.lock() {
 		if let Some(block) = cache.chain_blocks_cache.find(block_id.hash) {
 			return Ok(block);
@@ -172,7 +173,7 @@ impl Utils {
 		};
 
 		let block = get_new_or_cached_block(&client, &block_id).await?;
-		let Some(tx_location) = block.has_transaction(tx_hash) else {
+		let Some(tx_location) = block.block.has_transaction(tx_hash) else {
 			return Ok(None);
 		};
 
@@ -205,7 +206,7 @@ impl Utils {
 		let mut next_block_height = mortality.block_height + 1;
 		let mut block_height = client.finalized_block_height().await?;
 
-		info!(target: "nonce_search", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, block_height, mortality_ends_height);
+		info!(target: "lib", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, block_height, mortality_ends_height);
 		while mortality_ends_height >= next_block_height {
 			if next_block_height > block_height {
 				sleep(Duration::from_secs(3)).await;
@@ -219,11 +220,11 @@ impl Utils {
 
 			let state_nonce = client.nonce_state(account_id, next_block_hash).await?;
 			if state_nonce > nonce {
-				info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+				info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 				return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
 			}
 
-			info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+			info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 			next_block_height += 1;
 		}
 
@@ -243,7 +244,7 @@ impl Utils {
 		let mut next_block_hash = H256::zero();
 		let mut block_id = client.best_block_id().await?;
 
-		info!(target: "nonce_search", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, block_id.height, mortality_ends_height);
+		info!(target: "lib", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, block_id.height, mortality_ends_height);
 		while mortality_ends_height >= next_block_height {
 			if next_block_hash == block_id.hash || next_block_height > block_id.height {
 				sleep(Duration::from_secs(3)).await;
@@ -255,10 +256,10 @@ impl Utils {
 				next_block_hash = block_id.hash;
 				let state_nonce = client.nonce_state(account_id, next_block_hash).await?;
 				if state_nonce > nonce {
-					info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+					info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 					return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
 				}
-				info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?})found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+				info!(target: "lib", "Account ({}, {}). At block ({}, {:?})found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 			} else {
 				let Some(hash) = client.block_hash(next_block_height).await? else {
 					return Err(std::format!("Block hash not found. Height: {}", next_block_height).into());
@@ -267,10 +268,10 @@ impl Utils {
 				next_block_hash = hash;
 				let state_nonce = client.nonce_state(account_id, next_block_hash).await?;
 				if state_nonce > nonce {
-					info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+					info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 					return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
 				}
-				info!(target: "nonce_search", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+				info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 				next_block_height += 1;
 			}
 		}

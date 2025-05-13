@@ -1,7 +1,5 @@
 pub use crate::primitives;
 use crate::{DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
-use primitive_types::H256;
-use serde::{Deserialize, Serialize};
 use subxt_core::config::substrate::BlakeTwo256;
 use subxt_core::Config;
 use subxt_rpcs::methods::legacy::BlockDetails as BlockDetailsRPC;
@@ -73,42 +71,3 @@ impl RpcConfig for AvailConfig {
 	type Hash = primitives::BlockHash;
 	type AccountId = primitives::AccountId;
 }
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct BlockId {
-	pub hash: H256,
-	pub height: u32,
-}
-
-impl From<(H256, u32)> for BlockId {
-	fn from(value: (H256, u32)) -> Self {
-		Self {
-			hash: value.0,
-			height: value.1,
-		}
-	}
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct TransactionLocation {
-	pub hash: H256,
-	pub index: u32,
-}
-
-impl From<(H256, u32)> for TransactionLocation {
-	fn from(value: (H256, u32)) -> Self {
-		Self {
-			hash: value.0,
-			index: value.1,
-		}
-	}
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum HashIndex {
-	Hash(H256),
-	Index(u32),
-}
-
-pub type DispatchIndex = (u8, u8);
-pub type EmittedIndex = (u8, u8);

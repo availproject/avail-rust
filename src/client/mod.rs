@@ -1,25 +1,22 @@
 pub mod foreign;
 pub mod reqwest;
 pub mod rpc;
-pub mod runtime_api;
 
 use crate::avail;
 use crate::primitives;
+use crate::primitives::rpc::substrate::BlockDetails;
 use crate::primitives::AccountId;
+use crate::primitives::BlockId;
 use crate::{
-	config::*,
-	error::{ClientError, RpcError},
-	transaction::SubmittedTransaction,
-	transaction_options::Options,
-	transactions::Transactions,
+	error::RpcError, transaction::SubmittedTransaction, transaction_options::Options, transactions::Transactions,
 	AvailHeader, BlockState,
 };
 use avail::balances::types::AccountData;
 use avail::system::types::AccountInfo;
 #[cfg(not(feature = "subxt"))]
 use codec::Decode;
+use log::info;
 use primitive_types::H256;
-use rpc::ChainBlock;
 use std::{fmt::Debug, sync::Arc};
 use subxt_rpcs::RpcClient;
 use subxt_signer::sr25519::Keypair;
@@ -48,7 +45,7 @@ pub struct Client {
 }
 
 impl Client {
-	pub async fn new(endpoint: &str) -> Result<Client, ClientError> {
+	pub async fn new(endpoint: &str) -> Result<Client, RpcError> {
 		let rpc_client = reqwest::ReqwestClient::new(endpoint);
 		let rpc_client = RpcClient::new(rpc_client);
 
@@ -85,11 +82,11 @@ impl Client {
 	}
 
 	// (RPC) Block
-	pub async fn block(&self, at: H256) -> Result<Option<ChainBlock>, RpcError> {
+	pub async fn block(&self, at: H256) -> Result<Option<BlockDetails>, RpcError> {
 		self.rpc_chain_get_block(Some(at)).await
 	}
 
-	pub async fn best_block(&self) -> Result<ChainBlock, RpcError> {
+	pub async fn best_block(&self) -> Result<BlockDetails, RpcError> {
 		let block = self.block(self.best_block_hash().await?).await?;
 		let Some(block) = block else {
 			return Err("Best block not found.".into());
@@ -97,7 +94,7 @@ impl Client {
 		Ok(block)
 	}
 
-	pub async fn finalized_block(&self) -> Result<ChainBlock, RpcError> {
+	pub async fn finalized_block(&self) -> Result<BlockDetails, RpcError> {
 		let block = self.block(self.finalized_block_hash().await?).await?;
 		let Some(block) = block else {
 			return Err("Finalized block not found.".into());
@@ -227,7 +224,11 @@ impl Client {
 		let encoded = tx.encode();
 		let tx_hash = self.rpc_author_submit_extrinsic(&encoded).await?;
 
-		//info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
+		if let Some(signed) = &tx.signed {
+			if let primitives::MultiAddress::Id(account_id) = &signed.address {
+				info!(target: "lib", "Transaction submitted. Tx Hash: {:?}, Address: {}, Nonce: {}, App Id: {}", tx_hash, account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
+			}
+		}
 
 		Ok(tx_hash)
 	}
@@ -242,10 +243,7 @@ impl Client {
 		let account_id = signer.public_key().to_account_id();
 		let signature = tx_payload.sign(signer);
 		let tx = Transaction::new(account_id, signature, tx_payload);
-		let encoded = tx.encode();
-		let tx_hash = self.rpc_author_submit_extrinsic(&encoded).await?;
-
-		// info!(target: "submission", "Transaction submitted. Tx Hash: {:?}, Fork Hash: {:?}, Fork Height: {:?}, Period: {}, Nonce: {}, Account Address: {}", tx_hash, options.mortality.block_hash, options.mortality.block_height, options.mortality.period, options.nonce, account_id);
+		let tx_hash = self.sign_and_submit(&tx).await?;
 
 		Ok(tx_hash)
 	}
@@ -277,9 +275,11 @@ impl Client {
 
 #[cfg(feature = "subxt")]
 impl Client {
-	pub async fn new_custom(rpc_client: RpcClient) -> Result<Client, ClientError> {
+	pub async fn new_custom(rpc_client: RpcClient) -> Result<Client, RpcError> {
 		// Cloning RpcClient is cheaper and doesn't create a new connection
-		let online_client = AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
+		let online_client = AOnlineClient::from_rpc_client(rpc_client.clone())
+			.await
+			.map_err(|e| e.to_string())?;
 
 		Ok(Self {
 			online_client,
@@ -356,17 +356,16 @@ impl Client {
 
 #[cfg(not(feature = "subxt"))]
 impl Client {
-	pub async fn new_custom(rpc_client: RpcClient) -> Result<Client, ClientError> {
-		let finalized_hash = rpc::raw::rpc_chain_get_finalized_head(&rpc_client).await.unwrap();
-		let rpc_metadata = rpc::raw::rpc_state_get_metadata(&rpc_client, Some(finalized_hash))
-			.await
-			.unwrap();
-		let frame_metadata = frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).unwrap();
-		let metadata = subxt_core::Metadata::try_from(frame_metadata).unwrap();
-		let genesis_hash = rpc::raw::rpc_chainspec_v1_genesishash(&rpc_client).await.unwrap();
-		let runtime_version = rpc::raw::rpc_state_get_runtime_version(&rpc_client, Some(finalized_hash))
-			.await
-			.unwrap();
+	pub async fn new_custom(rpc_client: RpcClient) -> Result<Client, RpcError> {
+		use crate::primitives::rpc::substrate;
+		let finalized_hash = substrate::chain_get_finalized_head(&rpc_client).await?;
+		let rpc_metadata = substrate::state_get_metadata(&rpc_client, Some(finalized_hash)).await?;
+		let genesis_hash = substrate::chainspec_v1_genesishash(&rpc_client).await?;
+		let runtime_version = substrate::state_get_runtime_version(&rpc_client, Some(finalized_hash)).await?;
+
+		let frame_metadata =
+			frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).map_err(|e| e.to_string())?;
+		let metadata = subxt_core::Metadata::try_from(frame_metadata).map_err(|e| e.to_string())?;
 
 		let state = ClientState {
 			genesis_hash,
@@ -450,7 +449,7 @@ impl Client {
 
 #[derive(Clone, Default)]
 pub struct CachedChainBlocks {
-	blocks: [Option<(H256, Arc<ChainBlock>)>; MAX_CHAIN_BLOCKS],
+	blocks: [Option<(H256, Arc<BlockDetails>)>; MAX_CHAIN_BLOCKS],
 	ptr: usize,
 }
 
@@ -459,7 +458,7 @@ impl CachedChainBlocks {
 		Self::default()
 	}
 
-	pub fn find(&self, block_hash: H256) -> Option<Arc<ChainBlock>> {
+	pub fn find(&self, block_hash: H256) -> Option<Arc<BlockDetails>> {
 		for (hash, block) in self.blocks.iter().flatten() {
 			if *hash == block_hash {
 				return Some(block.clone());
@@ -469,7 +468,7 @@ impl CachedChainBlocks {
 		None
 	}
 
-	pub fn push(&mut self, value: (H256, Arc<ChainBlock>)) {
+	pub fn push(&mut self, value: (H256, Arc<BlockDetails>)) {
 		self.blocks[self.ptr] = Some(value);
 		self.ptr += 1;
 		if self.ptr >= MAX_CHAIN_BLOCKS {

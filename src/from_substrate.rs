@@ -1,41 +1,5 @@
-use crate::primitives::{BlockHash, BlockHeight};
 use codec::{Decode, Encode};
 use serde::Deserialize;
-
-/// Network Peer information
-#[derive(Clone, Debug, PartialEq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PeerInfo {
-	/// Peer ID
-	pub peer_id: String,
-	/// Roles
-	pub roles: String,
-	/// Peer best block hash
-	pub best_hash: BlockHash,
-	/// Peer best block number
-	pub best_number: BlockHeight,
-}
-
-/// The role the node is running as
-#[derive(Clone, Debug, PartialEq, Deserialize)]
-pub enum NodeRole {
-	/// The node is a full node
-	Full,
-	/// The node is an authority
-	Authority,
-}
-
-/// The state of the syncing of the node.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SyncState {
-	/// Height of the block at which syncing started.
-	pub starting_block: BlockHeight,
-	/// Height of the current best block of the node.
-	pub current_block: BlockHeight,
-	/// Height of the highest block in the network.
-	pub highest_block: BlockHeight,
-}
 
 /// The base fee and adjusted weight and length fees constitute the _inclusion fee_.
 #[derive(Clone, Debug, PartialEq, Deserialize, Decode)]

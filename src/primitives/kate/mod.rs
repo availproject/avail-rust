@@ -1,6 +1,7 @@
+use crate::avail;
 use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
-use primitive_types::U256;
+use primitive_types::{H256, U256};
 use serde::{Deserialize, Serialize};
 
 /// Compatible with `kate::com::Cell`
@@ -55,4 +56,58 @@ impl TryFrom<Vec<u8>> for GProof {
 		proof.copy_from_slice(&data);
 		Ok(GProof(proof))
 	}
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct PerDispatchClassU32 {
+	pub normal: u32,
+	pub operational: u32,
+	pub mandatory: u32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BlockLength {
+	pub max: PerDispatchClassU32,
+	pub cols: u32,
+	pub rows: u32,
+	pub chunk_size: u32,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProofResponse {
+	pub data_proof: DataProof,
+	pub message: Option<avail::vector::types::AddressedMessage>,
+}
+
+/// Wrapper of `binary-merkle-tree::MerkleProof` with codec support.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataProof {
+	pub roots: TxDataRoots,
+	/// Proof items (does not contain the leaf hash, nor the root obviously).
+	///
+	/// This vec contains all inner node hashes necessary to reconstruct the root hash given the
+	/// leaf hash.
+	pub proof: Vec<H256>,
+	/// Number of leaves in the original tree.
+	///
+	/// This is needed to detect a case where we have an odd number of leaves that "get promoted"
+	/// to upper layers.
+	pub number_of_leaves: u32,
+	/// Index of the leaf the proof is for (0-based).
+	pub leaf_index: u32,
+	/// Leaf content.
+	pub leaf: H256,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TxDataRoots {
+	/// Global Merkle root
+	pub data_root: H256,
+	/// Merkle root hash of submitted data
+	pub blob_root: H256,
+	/// Merkle root of bridged data
+	pub bridge_root: H256,
 }

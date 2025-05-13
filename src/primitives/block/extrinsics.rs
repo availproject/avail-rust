@@ -6,7 +6,7 @@ use std::mem::size_of;
 #[cfg(feature = "subxt_metadata")]
 use crate::subxt_avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
 #[cfg(not(feature = "subxt_metadata"))]
-pub type RuntimeCall = Vec<u8>;
+pub type RuntimeCall = crate::avail::RuntimeCall;
 #[cfg(not(feature = "subxt_metadata"))]
 pub type RuntimeEvent = Vec<u8>;
 
@@ -19,7 +19,7 @@ pub type SignaturePayload = (MultiAddress, MultiSignature, TransactionExtra);
 /// the decoding fails.
 pub const EXTRINSIC_FORMAT_VERSION: u8 = 4;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct AppUncheckedExtrinsic {
 	/// The signature, address, number of extrinsics have come before from
 	/// the same signer and an era describing the longevity of this transaction,

@@ -1,18 +1,17 @@
-use crate::{
-	client::{rpc::rpc_block_overview, Client},
-	config::HashIndex,
-	error::RpcError,
-};
+use crate::client::Client;
+use crate::error::RpcError;
+use crate::primitives::rpc::block::block_overview;
+use crate::primitives::HashIndex;
 
 #[derive(Clone)]
 pub struct BlockBuilder {
-	params: rpc_block_overview::Params,
+	params: block_overview::Params,
 }
 
 impl BlockBuilder {
 	pub fn new(block_index: HashIndex) -> Self {
 		Self {
-			params: rpc_block_overview::Params::new(block_index),
+			params: block_overview::Params::new(block_index),
 		}
 	}
 
@@ -41,17 +40,17 @@ impl BlockBuilder {
 		self
 	}
 
-	pub fn transaction_filter(mut self, value: rpc_block_overview::TransactionFilterOptions) -> Self {
+	pub fn transaction_filter(mut self, value: block_overview::TransactionFilterOptions) -> Self {
 		self.params.filter.transaction = value;
 		self
 	}
 
-	pub fn signature_filter(mut self, value: rpc_block_overview::SignatureFilterOptions) -> Self {
+	pub fn signature_filter(mut self, value: block_overview::SignatureFilterOptions) -> Self {
 		self.params.filter.signature = value;
 		self
 	}
 
-	pub async fn build(&self, client: &Client) -> Result<rpc_block_overview::Block, RpcError> {
+	pub async fn build(&self, client: &Client) -> Result<block_overview::Block, RpcError> {
 		client.rpc_block_overview(self.params.clone()).await.map(|x| x.value)
 	}
 }
