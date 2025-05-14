@@ -59,7 +59,7 @@ async fn main() -> Result<(), ClientError> {
 	transaction::run().await?;
 	transaction_state::run().await?;
 	indexer::run().await?;
-	// turbo_da::run().await?;
+	turbo_da::run().await?;
 
 	Ok(())
 }
