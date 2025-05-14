@@ -29,6 +29,7 @@ where
 pub type GRawScalar = U256;
 pub type GRow = Vec<GRawScalar>;
 pub type GDataProof = (GRawScalar, GProof);
+pub type GMultiProof = (Vec<GRawScalar>, GProof);
 
 pub type MaxCells = ConstU32<64>;
 pub type Cells = bounded_collections::BoundedVec<Cell, MaxCells>;
@@ -110,4 +111,12 @@ pub struct TxDataRoots {
 	pub blob_root: H256,
 	/// Merkle root of bridged data
 	pub bridge_root: H256,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub struct GCellBlock {
+	pub start_x: u32,
+	pub start_y: u32,
+	pub end_x: u32,
+	pub end_y: u32,
 }

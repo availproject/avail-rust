@@ -1,4 +1,4 @@
-use crate::primitives::kate::{BlockLength, Cell, GDataProof, GRow, ProofResponse};
+use crate::primitives::kate::{BlockLength, Cell, GCellBlock, GDataProof, GMultiProof, GRow, ProofResponse};
 use primitive_types::H256;
 use subxt_rpcs::rpc_params;
 use subxt_rpcs::RpcClient;
@@ -37,4 +37,15 @@ pub async fn kate_query_rows(
 	let params = rpc_params![rows, at];
 	let value = client.request("kate_queryRows", params).await?;
 	Ok(value)
+}
+
+pub async fn query_multi_proof(
+	client: &RpcClient,
+	at: Option<H256>,
+	cells: Vec<Cell>,
+) -> Result<Vec<(GMultiProof, GCellBlock)>, subxt_rpcs::Error> {
+	let params = rpc_params![cells.to_vec(), at];
+	let proofs: Vec<(GMultiProof, GCellBlock)> = client.request("kate_queryMultiProof", params).await?;
+
+	Ok(proofs)
 }
