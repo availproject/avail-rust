@@ -1,3 +1,6 @@
+# v0.1.10 Release
+- Updated metadata
+
 # v0.1.9 Release
 - Fixed HTTP unwrapping on RPC error.
 

@@ -42,7 +42,7 @@ pub async fn nonce_state(client: &Client, address: &str, block_hash: Option<H256
 	let account = account_id_from_str(address)?;
 	let block_hash = match block_hash {
 		Some(x) => x,
-		None => rpc::chain::get_block_hash(client, None).await?,
+		None => client.best_block_hash().await?,
 	};
 	let block = client.online_client.blocks().at(block_hash).await?;
 
@@ -60,8 +60,7 @@ pub async fn nonce(client: &Client, address: &str) -> Result<u32, ClientError> {
 }
 
 pub async fn app_keys(client: &Client, account_id: AccountId) -> Result<Vec<(String, u32)>, String> {
-	let block_hash = rpc::chain::get_block_hash(client, None).await;
-	let block_hash = block_hash.map_err(|e| e.to_string())?;
+	let block_hash = client.best_block_hash().await.map_err(|e| e.to_string())?;
 
 	let storage = client.storage().at(block_hash);
 	let address = avail::storage().data_availability().app_keys_iter();
@@ -92,9 +91,11 @@ pub async fn app_ids(client: &Client, account_id: AccountId) -> Result<Vec<u32>,
 	Ok(keys.into_iter().map(|v| v.1).collect())
 }
 
-pub async fn account_info(client: &Client, account_id: AccountId) -> Result<Account, String> {
-	let block_hash = rpc::chain::get_block_hash(client, None).await;
-	let block_hash = block_hash.map_err(|e| e.to_string())?;
+pub async fn account_info(client: &Client, account_id: AccountId, block_hash: Option<H256>) -> Result<Account, String> {
+	let block_hash = match block_hash {
+		Some(x) => x,
+		None => client.best_block_hash().await.map_err(|e| e.to_string())?,
+	};
 
 	let storage = client.storage().at(block_hash);
 	let address = avail::storage().system().account(account_id);

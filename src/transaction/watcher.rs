@@ -179,6 +179,11 @@ impl HTTPBlockFetch {
 				}
 
 				let block_hash = self.client.block_hash(self.current_block_height).await?;
+				let Some(block_hash) = block_hash else {
+					let err = std::format!("{}", self.current_block_height);
+					let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
+					return Err(TransactionExecutionError::SubxtError(err));
+				};
 
 				// We are lagging behind
 				if block_height > self.current_block_height {
@@ -203,6 +208,11 @@ impl HTTPBlockFetch {
 				}
 
 				let block_hash = self.client.block_hash(self.current_block_height).await?;
+				let Some(block_hash) = block_hash else {
+					let err = std::format!("{}", self.current_block_height);
+					let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
+					return Err(TransactionExecutionError::SubxtError(err));
+				};
 				self.current_block_height += 1;
 
 				return Ok(self.client.block_at(block_hash).await?);
@@ -293,6 +303,11 @@ impl TxStateRPCWatcher {
 			}
 
 			let block_height = client.block_number(current_block_hash.clone()).await?;
+			let Some(block_height) = block_height else {
+				let err = std::format!("{}", current_block_hash);
+				let err = subxt::Error::Block(subxt::error::BlockError::NotFound(err));
+				return Err(TransactionExecutionError::SubxtError(err));
+			};
 			if block_height >= block_height_timeout {
 				logger.log_watcher_stop();
 				return Ok(None);
