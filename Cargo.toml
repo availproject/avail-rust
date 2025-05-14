@@ -6,6 +6,13 @@ edition = "2021"
 version = "0.2.0"
 license = "ISC"
 
+exclude = [
+    "build_api.sh",
+    "build_sdk.sh",
+    "install_dependencies.sh",
+    "justfile",
+]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
