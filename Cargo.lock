@@ -889,7 +889,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 [[package]]
 name = "avail-core"
 version = "0.6.2"
-source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#5811cb9df17a2723a9947c11a3f6cc8f74385120"
+source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#23b54ac58bded13dba66bc26f66544ad003b3661"
 dependencies = [
  "binary-merkle-tree 13.0.0",
  "blake2b_simd",
@@ -2937,7 +2937,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "976dd42dc7e85965fe702eb8164f21f450704bdde31faefd6471dba214cb594e"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4483,7 +4483,7 @@ checksum = "e04d7f318608d35d4b61ddd75cbdaee86b023ebe2bd5a66ee0915f0bf93095a9"
 dependencies = [
  "hermit-abi 0.5.0",
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4742,7 +4742,7 @@ dependencies = [
 [[package]]
 name = "kate"
 version = "0.9.2"
-source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#5811cb9df17a2723a9947c11a3f6cc8f74385120"
+source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#23b54ac58bded13dba66bc26f66544ad003b3661"
 dependencies = [
  "avail-core",
  "derive_more 0.99.19",
@@ -4762,7 +4762,7 @@ dependencies = [
 [[package]]
 name = "kate-recovery"
 version = "0.10.0"
-source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#5811cb9df17a2723a9947c11a3f6cc8f74385120"
+source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#23b54ac58bded13dba66bc26f66544ad003b3661"
 dependencies = [
  "avail-core",
  "derive_more 0.99.19",
@@ -4770,6 +4770,7 @@ dependencies = [
  "dusk-plonk",
  "once_cell",
  "parity-scale-codec",
+ "poly-multiproof",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "serde",
@@ -8836,7 +8837,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8849,7 +8850,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.9.3",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8903,7 +8904,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -10471,7 +10472,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-ec-utils"
 version = "0.10.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#1b76f99e12e9751703417fdb58097a1860aa20b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#fc3a2074df9f22995eec6eb9075dbfca39ed84ff"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-377-ext",
@@ -10581,7 +10582,7 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#1b76f99e12e9751703417fdb58097a1860aa20b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#fc3a2074df9f22995eec6eb9075dbfca39ed84ff"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -10602,7 +10603,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.25.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#1b76f99e12e9751703417fdb58097a1860aa20b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#fc3a2074df9f22995eec6eb9075dbfca39ed84ff"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -10938,7 +10939,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "24.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#1b76f99e12e9751703417fdb58097a1860aa20b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#fc3a2074df9f22995eec6eb9075dbfca39ed84ff"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -10990,7 +10991,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "17.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#1b76f99e12e9751703417fdb58097a1860aa20b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#fc3a2074df9f22995eec6eb9075dbfca39ed84ff"
 dependencies = [
  "Inflector",
  "expander",
@@ -11146,7 +11147,7 @@ source = "git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.
 [[package]]
 name = "sp-std"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#1b76f99e12e9751703417fdb58097a1860aa20b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#fc3a2074df9f22995eec6eb9075dbfca39ed84ff"
 
 [[package]]
 name = "sp-storage"
@@ -11164,7 +11165,7 @@ dependencies = [
 [[package]]
 name = "sp-storage"
 version = "19.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#1b76f99e12e9751703417fdb58097a1860aa20b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#fc3a2074df9f22995eec6eb9075dbfca39ed84ff"
 dependencies = [
  "impl-serde 0.5.0",
  "parity-scale-codec",
@@ -11214,7 +11215,7 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "16.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#1b76f99e12e9751703417fdb58097a1860aa20b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#fc3a2074df9f22995eec6eb9075dbfca39ed84ff"
 dependencies = [
  "parity-scale-codec",
  "tracing",
@@ -11381,7 +11382,7 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "20.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#1b76f99e12e9751703417fdb58097a1860aa20b7"
+source = "git+https://github.com/paritytech/polkadot-sdk#fc3a2074df9f22995eec6eb9075dbfca39ed84ff"
 dependencies = [
  "anyhow",
  "impl-trait-for-tuples",
@@ -11951,7 +11952,7 @@ dependencies = [
  "getrandom 0.3.2",
  "once_cell",
  "rustix 1.0.5",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -13070,7 +13071,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

@@ -5,11 +5,7 @@ use crate::{
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
 };
 use avail_core::data_proof::ProofResponse;
-use poly_multiproof::{
-	method1::{M1NoPrecomp, Proof},
-	msm::blst::BlstMSMEngine,
-	traits::PolyMultiProofNoPrecomp,
-};
+use poly_multiproof::{method1::M1NoPrecomp, msm::blst::BlstMSMEngine};
 use serde::{Deserialize, Serialize};
 use subxt::{
 	backend::legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
@@ -185,14 +181,10 @@ pub mod state {
 }
 
 pub mod kate {
-	use ::kate::{
-		couscous::multiproof_params,
-		gridgen::utils::{domain_points, AsBytes, Commitment},
-		ArkScalar,
-	};
+	use ::kate::couscous::multiproof_params;
 
 	use kate_recovery::data::GCellBlock;
-	use poly_multiproof::{ark_bls12_381::Bls12_381, merlin::Transcript};
+	use poly_multiproof::ark_bls12_381::Bls12_381;
 
 	use subxt::backend::rpc::RpcClient;
 
@@ -247,52 +239,6 @@ pub mod kate {
 
 	pub async fn generate_pmp() -> M1NoPrecomp<Bls12_381, BlstMSMEngine> {
 		multiproof_params()
-	}
-
-	pub async fn verify_multi_proof(
-		pmp: &M1NoPrecomp<Bls12_381, BlstMSMEngine>,
-		proof: &Vec<(GMultiProof, GCellBlock)>,
-		commitments: &Vec<u8>,
-		cols: usize, // Number of columns in the original grid
-	) -> Result<bool, subxt::Error> {
-		let points =
-			domain_points(cols).map_err(|_| subxt::Error::Other("Failed to generate domain points".to_string()))?;
-		for ((eval, proof), cellblock) in proof.iter() {
-			let evals_flat = eval
-				.into_iter()
-				.map(|e| ArkScalar::from_bytes(&e.to_big_endian()))
-				.collect::<Result<Vec<_>, _>>()
-				.map_err(|_| subxt::Error::Other("Failed to convert evals to ArkScalar".to_string()))?;
-			let evals_grid = evals_flat
-				.chunks_exact((cellblock.end_x - cellblock.start_x) as usize)
-				.collect::<Vec<_>>();
-
-			let proofs =
-				Proof::from_bytes(&proof.0).map_err(|_| subxt::Error::Other("Failed to parse proof".to_string()))?;
-
-			let commits = commitments
-				.chunks_exact(48)
-				.skip(cellblock.start_y as usize)
-				.take((cellblock.end_y - cellblock.start_y) as usize)
-				.map(|c| Commitment::from_bytes(c.try_into().unwrap()))
-				.collect::<Result<Vec<_>, _>>()
-				.map_err(|_| subxt::Error::Other("Failed to extract Commitments".to_string()))?;
-
-			let verified = pmp
-				.verify(
-					&mut Transcript::new(b"avail-mp"),
-					&commits[..],
-					&points[(cellblock.start_x as usize)..(cellblock.end_x as usize)],
-					&evals_grid,
-					&proofs,
-				)
-				.map_err(|e| subxt::Error::Other(format!("Failed to verify proof {:?}", e)))?;
-			if !verified {
-				return Ok(false);
-			}
-		}
-
-		Ok(true)
 	}
 
 	pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, subxt::Error> {
