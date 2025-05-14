@@ -11,6 +11,8 @@ exclude = [
     "build_sdk.sh",
     "install_dependencies.sh",
     "justfile",
+    "scripts/*",
+    "changelog",
 ]
 
 [lib]
