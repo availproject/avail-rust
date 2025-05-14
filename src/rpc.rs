@@ -5,7 +5,7 @@ use crate::{
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
 };
 use avail_core::data_proof::ProofResponse;
-use poly_multiproof::{method1::M1NoPrecomp, msm::blst::BlstMSMEngine};
+use ::kate::pmp::{method1::M1NoPrecomp, msm::blst::BlstMSMEngine};
 use serde::{Deserialize, Serialize};
 use subxt::{
 	backend::legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
@@ -184,7 +184,7 @@ pub mod kate {
 	use ::kate::couscous::multiproof_params;
 
 	use kate_recovery::data::GCellBlock;
-	use poly_multiproof::ark_bls12_381::Bls12_381;
+	use ::kate::pmp::ark_bls12_381::Bls12_381;
 
 	use subxt::backend::rpc::RpcClient;
 

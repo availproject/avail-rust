@@ -32,7 +32,7 @@ pub use client::{Client, ClientMode, ClientOptions};
 pub use config::*;
 pub use hex;
 pub use kate_recovery;
-pub use poly_multiproof::{
+pub use kate::pmp::{
 	ark_bls12_381::Bls12_381,
 	method1::{M1NoPrecomp, Proof},
 	msm::blst::BlstMSMEngine,
