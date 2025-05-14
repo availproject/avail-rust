@@ -154,4 +154,14 @@ pub mod no_subxt {
 		pub commitment: Vec<u8>,
 		pub data_root: H256,
 	}
+
+	#[derive(Debug, Clone)]
+	#[repr(u8)]
+	pub enum DigestItem {
+		PreRuntime([u8; 4usize], Vec<u8>) = 6,
+		Consensus([u8; 4usize], Vec<u8>) = 4,
+		Seal([u8; 4usize], Vec<u8>) = 5,
+		Other(Vec<u8>) = 0,
+		RuntimeEnvironmentUpdated = 8,
+	}
 }

@@ -24,6 +24,7 @@ pub use api_dev_custom as avail;
 pub use avail::runtime_types::sp_arithmetic::per_things::Perbill; */
 
 pub use bounded_collections::BoundedVec;
+pub use primitive_types::H256;
 pub use primitives::{
 	block::{DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
 	kate::{Cell, GDataProof, GRow},
@@ -51,6 +52,8 @@ pub mod ext {
 }
 
 pub mod prelude {
+	pub use super::*;
+
 	pub use super::config::*;
 	pub use super::constants::*;
 	pub use super::ext::*;
@@ -58,10 +61,6 @@ pub mod prelude {
 	pub use super::transaction_options::*;
 	pub use primitive_types::{H256, U256};
 	pub use subxt_signer::{sr25519::Keypair, SecretUri};
-
-	pub use super::avail;
-	#[cfg(feature = "subxt_metadata")]
-	pub use super::subxt_avail;
 
 	pub use super::{
 		client::Client, error::ClientError, error::RpcError, BlockState, BoundedVec, ReceiptMethod,
