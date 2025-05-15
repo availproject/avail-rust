@@ -7,7 +7,7 @@
 use avail_rust::prelude::*;
 
 pub async fn run() -> Result<(), ClientError> {
-	let client = Client::new(LOCAL_ENDPOINT).await?;
+	let client = Client::new(TURING_ENDPOINT).await?;
 
 	// Account Balance
 	let account_id = AccountId::from_str("5DUhCbe3dcrGEFkUn7fjSvd1DpCqUfg6X9tMmKCwLpSfHKCS")?;

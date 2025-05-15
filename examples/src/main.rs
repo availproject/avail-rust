@@ -40,10 +40,10 @@ pub type ReturnResult = anyhow::Result<()>;
 #[tokio::main]
 async fn main() -> ReturnResult {
 	Client::enable_logging();
-	// account::run().await?;
+	account::run().await?;
 	// transaction_submission::run().await?;
 	// parallel_transaction_submissions::run().await?;
-	batch::run().await?;
+	// batch::run().await?;
 
 	Ok(())
 }

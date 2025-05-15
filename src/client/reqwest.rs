@@ -59,8 +59,8 @@ impl ReqwestClient {
 	pub fn new(endpoint: &str) -> Self {
 		let client = Arc::new(reqwest::Client::new());
 		let (tx, rx) = tokio::sync::mpsc::channel(1024);
-		let end = String::from(endpoint);
-		_ = spawn(async move { ReqwestClient::task(client, end, rx).await });
+		let endpoint = String::from(endpoint);
+		_ = spawn(async move { ReqwestClient::task(client, endpoint, rx).await });
 
 		let id = Arc::new(Mutex::new(0));
 		Self { tx, id }
@@ -122,11 +122,10 @@ impl RpcClientT for ReqwestClient {
 				let err = ResponseError("Failed to send request".into());
 				return Err(subxt_rpcs::Error::Client(Box::new(err)));
 			}
-
 			let response = match rx.recv().await {
 				Some(x) => x,
 				None => {
-					let err = ResponseError("Failed to send receive message".into());
+					let err = ResponseError("Failed to receive message".into());
 					return Err(subxt_rpcs::Error::Client(Box::new(err)));
 				},
 			};
