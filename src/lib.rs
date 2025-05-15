@@ -5,11 +5,12 @@ pub mod api_dev_custom;
 mod from_substrate;
 
 pub mod block;
+pub mod block_client;
 pub mod client;
 pub mod config;
 pub mod constants;
 pub mod error;
-pub mod events;
+pub mod event_client;
 pub mod extensions;
 pub mod platform;
 pub mod primitives;

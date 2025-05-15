@@ -68,7 +68,7 @@ impl Utility {
 		avail::utility::tx::Batch { calls }.to_submittable(self.0.clone())
 	}
 
-	pub fn batch_call(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
+	pub fn batch_all(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
 		avail::utility::tx::BatchAll { calls }.to_submittable(self.0.clone())
 	}
 

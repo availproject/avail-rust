@@ -1,6 +1,6 @@
 use super::platform::sleep;
 use crate::primitives::config::TransactionLocation;
-use crate::primitives::rpc::substrate::BlockDetails;
+use crate::primitives::rpc::substrate::SignedBlock;
 use crate::primitives::{AccountId, BlockId};
 use crate::{
 	api_dev_custom::TransactionCallLike,
@@ -132,16 +132,14 @@ impl TransactionReceipt {
 }
 
 /// TODO
-pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Result<Arc<BlockDetails>, RpcError> {
+pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Result<Arc<SignedBlock>, RpcError> {
 	if let Ok(cache) = client.cache.lock() {
 		if let Some(block) = cache.chain_blocks_cache.find(block_id.hash) {
 			return Ok(block);
 		}
 	}
 
-	dbg!(2.1);
 	let block = client.block(block_id.hash).await?;
-	dbg!(2.2);
 	let Some(block) = block else {
 		let err = std::format!("{} not found", block_id.hash);
 		return Err(err.into());

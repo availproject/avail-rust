@@ -3,10 +3,9 @@ use crate::primitives::config::TransactionLocation;
 
 use super::AvailHeader;
 use primitive_types::H256;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use subxt_core::config::substrate::BlakeTwo256;
 use subxt_core::config::Hasher;
-use subxt_rpcs::methods::legacy::Bytes;
 use subxt_rpcs::RpcClient;
 use subxt_rpcs::{
 	methods::legacy::{RuntimeVersion, SystemHealth},
@@ -53,7 +52,7 @@ pub struct SyncState {
 
 /// The response from `chain_getBlock`
 #[derive(Debug, Clone, Deserialize)]
-pub struct BlockDetails {
+pub struct SignedBlock {
 	/// The block itself.
 	pub block: Block,
 	/// Block justification.
@@ -65,8 +64,8 @@ pub struct BlockDetails {
 pub struct Block {
 	/// The block header.
 	pub header: super::AvailHeader,
-	/// The accompanying extrinsics.
-	pub extrinsics: Vec<Bytes>,
+	#[serde(deserialize_with = "somenuts")]
+	pub extrinsics: Vec<Vec<u8>>,
 }
 
 impl Block {
@@ -78,6 +77,21 @@ impl Block {
 		}
 
 		None
+	}
+}
+
+fn somenuts<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let buf = Vec::<String>::deserialize(deserializer)?;
+	let result: Result<Vec<Vec<u8>>, _> = buf
+		.into_iter()
+		.map(|x| hex::decode(x.trim_start_matches("0x")))
+		.collect();
+	match result {
+		Ok(res) => Ok(res),
+		Err(err) => Err(serde::de::Error::custom(err)),
 	}
 }
 
@@ -201,9 +215,9 @@ pub async fn system_version(client: &RpcClient) -> Result<String, subxt_rpcs::Er
 	Ok(value)
 }
 
-pub async fn chain_get_block(client: &RpcClient, at: Option<H256>) -> Result<Option<BlockDetails>, subxt_rpcs::Error> {
+pub async fn chain_get_block(client: &RpcClient, at: Option<H256>) -> Result<Option<SignedBlock>, subxt_rpcs::Error> {
 	let params = rpc_params![at];
-	let res: Option<BlockDetails> = client.request("chain_getBlock", params).await?;
+	let res: Option<SignedBlock> = client.request("chain_getBlock", params).await?;
 	let Some(value) = res else { return Ok(None) };
 	Ok(Some(value))
 }

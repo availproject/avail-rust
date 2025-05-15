@@ -2,4 +2,5 @@ pub mod block;
 pub mod kate;
 pub mod substrate;
 
-use super::AvailHeader;
+pub use super::AvailHeader;
+pub use substrate::{Block, BlockJustification, SignedBlock};

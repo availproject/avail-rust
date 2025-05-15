@@ -1,4 +1,3 @@
-use codec::Decode;
 use primitive_types::H256;
 use subxt_core::events::Phase;
 
@@ -40,29 +39,12 @@ impl TryFrom<&Event> for RuntimeEvent {
 	}
 }
 
-impl TryFrom<&Vec<u8>> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
-		value.as_slice().try_into()
-	}
-}
-
-impl TryFrom<&[u8]> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let mut slice = value;
-		RuntimeEvent::decode(&mut slice)
-	}
-}
-
 #[derive(Clone)]
-pub struct EventsClient {
+pub struct EventClient {
 	client: Client,
 }
 
-impl EventsClient {
+impl EventClient {
 	pub fn new(client: Client) -> Self {
 		Self { client }
 	}
@@ -79,7 +61,7 @@ impl EventsClient {
 			return Ok(Vec::new());
 		};
 
-		let mut result: Vec<Event> = Vec::with_capacity(10);
+		let mut result: Vec<Event> = Vec::with_capacity(5);
 		let raw_events = Events::<AvailConfig>::decode_from(event_bytes, self.client.metadata());
 		for raw in raw_events.iter() {
 			let Ok(raw) = raw else { todo!() };

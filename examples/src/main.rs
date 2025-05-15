@@ -1,4 +1,6 @@
 mod account;
+mod batch;
+mod parallel_transaction_submissions;
 mod transaction_submission;
 // mod batch;
 // mod block;
@@ -39,7 +41,9 @@ pub type ReturnResult = anyhow::Result<()>;
 async fn main() -> ReturnResult {
 	Client::enable_logging();
 	// account::run().await?;
-	transaction_submission::run().await?;
+	// transaction_submission::run().await?;
+	// parallel_transaction_submissions::run().await?;
+	batch::run().await?;
 
 	Ok(())
 }

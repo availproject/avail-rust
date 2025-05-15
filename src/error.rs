@@ -71,6 +71,12 @@ impl From<String> for ClientError {
 	}
 }
 
+impl From<&str> for ClientError {
+	fn from(value: &str) -> Self {
+		Self::Custom(String::from(value))
+	}
+}
+
 #[cfg(feature = "subxt")]
 impl From<subxt::Error> for ClientError {
 	fn from(value: subxt::Error) -> Self {

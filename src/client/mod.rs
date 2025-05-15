@@ -3,9 +3,9 @@ pub mod reqwest;
 pub mod rpc;
 
 use crate::avail;
-use crate::events::EventsClient;
+use crate::event_client::EventClient;
 use crate::primitives;
-use crate::primitives::rpc::substrate::BlockDetails;
+use crate::primitives::rpc::substrate::SignedBlock;
 use crate::primitives::AccountId;
 use crate::primitives::BlockId;
 use crate::{
@@ -86,11 +86,11 @@ impl Client {
 	}
 
 	// (RPC) Block
-	pub async fn block(&self, at: H256) -> Result<Option<BlockDetails>, RpcError> {
+	pub async fn block(&self, at: H256) -> Result<Option<SignedBlock>, RpcError> {
 		self.rpc_chain_get_block(Some(at)).await
 	}
 
-	pub async fn best_block(&self) -> Result<BlockDetails, RpcError> {
+	pub async fn best_block(&self) -> Result<SignedBlock, RpcError> {
 		let block = self.block(self.best_block_hash().await?).await?;
 		let Some(block) = block else {
 			return Err("Best block not found.".into());
@@ -98,7 +98,7 @@ impl Client {
 		Ok(block)
 	}
 
-	pub async fn finalized_block(&self) -> Result<BlockDetails, RpcError> {
+	pub async fn finalized_block(&self) -> Result<SignedBlock, RpcError> {
 		let block = self.block(self.finalized_block_hash().await?).await?;
 		let Some(block) = block else {
 			return Err("Finalized block not found.".into());
@@ -277,8 +277,8 @@ impl Client {
 		Ok(value)
 	}
 
-	pub fn events_client(&self) -> EventsClient {
-		EventsClient::new(self.clone())
+	pub fn events_client(&self) -> EventClient {
+		EventClient::new(self.clone())
 	}
 }
 
@@ -459,7 +459,7 @@ impl Client {
 
 #[derive(Clone, Default)]
 pub struct CachedChainBlocks {
-	blocks: [Option<(H256, Arc<BlockDetails>)>; MAX_CHAIN_BLOCKS],
+	blocks: [Option<(H256, Arc<SignedBlock>)>; MAX_CHAIN_BLOCKS],
 	ptr: usize,
 }
 
@@ -468,7 +468,7 @@ impl CachedChainBlocks {
 		Self::default()
 	}
 
-	pub fn find(&self, block_hash: H256) -> Option<Arc<BlockDetails>> {
+	pub fn find(&self, block_hash: H256) -> Option<Arc<SignedBlock>> {
 		for (hash, block) in self.blocks.iter().flatten() {
 			if *hash == block_hash {
 				return Some(block.clone());
@@ -478,7 +478,7 @@ impl CachedChainBlocks {
 		None
 	}
 
-	pub fn push(&mut self, value: (H256, Arc<BlockDetails>)) {
+	pub fn push(&mut self, value: (H256, Arc<SignedBlock>)) {
 		self.blocks[self.ptr] = Some(value);
 		self.ptr += 1;
 		if self.ptr >= MAX_CHAIN_BLOCKS {

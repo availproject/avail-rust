@@ -1,7 +1,7 @@
 use crate::primitives::kate::{BlockLength, ProofResponse};
 use crate::primitives::rpc;
 use crate::primitives::rpc::substrate::{
-	BlockDetails, NodeRole, PeerInfo, RpcMethods, SessionKeys, SyncState, SystemProperties,
+	SignedBlock, NodeRole, PeerInfo, RpcMethods, SessionKeys, SyncState, SystemProperties,
 };
 use crate::{client::Client, error::RpcError, AvailHeader, Cell, GDataProof, GRow};
 use primitive_types::H256;
@@ -91,7 +91,7 @@ impl Client {
 		Ok(rpc::substrate::system_version(&self.rpc_client).await?)
 	}
 
-	pub async fn rpc_chain_get_block(&self, at: Option<H256>) -> Result<Option<BlockDetails>, RpcError> {
+	pub async fn rpc_chain_get_block(&self, at: Option<H256>) -> Result<Option<SignedBlock>, RpcError> {
 		Ok(rpc::substrate::chain_get_block(&self.rpc_client, at).await?)
 	}
 
