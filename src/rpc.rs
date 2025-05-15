@@ -119,13 +119,16 @@ pub mod system {
 pub mod chain {
 	use super::*;
 
-	pub async fn get_block(client: &Client, at: Option<H256>) -> Result<ABlockDetailsRPC, subxt::Error> {
+	pub async fn get_block(client: &Client, at: Option<H256>) -> Result<Option<ABlockDetailsRPC>, subxt::Error> {
 		let params = rpc_params![at];
 		let value = client.rpc_client.request("chain_getBlock", params).await?;
 		Ok(value)
 	}
 
-	pub async fn get_block_hash(client: &Client, block_number: Option<BlockNumber>) -> Result<H256, subxt::Error> {
+	pub async fn get_block_hash(
+		client: &Client,
+		block_number: Option<BlockNumber>,
+	) -> Result<Option<H256>, subxt::Error> {
 		let params = rpc_params![block_number];
 		let value = client.rpc_client.request("chain_getBlockHash", params).await?;
 		Ok(value)
@@ -137,7 +140,7 @@ pub mod chain {
 		Ok(value)
 	}
 
-	pub async fn get_header(client: &Client, at: Option<H256>) -> Result<AvailHeader, subxt::Error> {
+	pub async fn get_header(client: &Client, at: Option<H256>) -> Result<Option<AvailHeader>, subxt::Error> {
 		let params = rpc_params![at];
 		let value = client.rpc_client.request("chain_getHeader", params).await?;
 		Ok(value)
