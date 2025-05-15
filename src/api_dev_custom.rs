@@ -12,6 +12,11 @@ pub trait TxDispatchIndex {
 	const DISPATCH_INDEX: (u8, u8);
 }
 
+pub trait EventEmittedIndex {
+	// Pallet ID, Event ID
+	const EMITTED_INDEX: (u8, u8);
+}
+
 pub trait TransactionCallLike {
 	fn to_call(&self) -> TransactionCall;
 }
@@ -61,9 +66,116 @@ impl Decode for RuntimeCall {
 	}
 }
 
+#[derive(Debug, Clone)]
+#[repr(u8)]
+pub enum RuntimeEvent {
+	DataAvailability(data_availability::events::Event) = data_availability::PALLET_ID,
+	System(system::events::Event) = system::PALLET_ID,
+}
+impl Encode for RuntimeEvent {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+		variant.encode_to(dest);
+		match self {
+			Self::DataAvailability(x) => x.encode_to(dest),
+			Self::System(x) => x.encode_to(dest),
+		}
+	}
+}
+impl Decode for RuntimeEvent {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let variant = u8::decode(input)?;
+		match variant {
+			data_availability::PALLET_ID => Ok(Self::DataAvailability(Decode::decode(input)?)),
+			system::PALLET_ID => Ok(Self::System(Decode::decode(input)?)),
+			_ => Err("Failed to decode Runtime Event. Unknown variant".into()),
+		}
+	}
+}
+
 pub mod data_availability {
 	use super::*;
 	pub const PALLET_ID: u8 = 29;
+
+	pub mod events {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		#[repr(u8)]
+		pub enum Event {
+			ApplicationKeyCreated(ApplicationKeyCreated) = ApplicationKeyCreated::EMITTED_INDEX.1,
+			DataSubmitted(DataSubmitted) = DataSubmitted::EMITTED_INDEX.1,
+		}
+		impl Encode for Event {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				variant.encode_to(dest);
+				match self {
+					Self::ApplicationKeyCreated(x) => x.encode_to(dest),
+					Self::DataSubmitted(x) => x.encode_to(dest),
+				}
+			}
+		}
+		impl Decode for Event {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					val if val == ApplicationKeyCreated::EMITTED_INDEX.1 => {
+						Ok(Self::ApplicationKeyCreated(Decode::decode(input)?))
+					},
+					val if val == DataSubmitted::EMITTED_INDEX.1 => Ok(Self::DataSubmitted(Decode::decode(input)?)),
+					_ => Err("Failed to decode DataAvailability Event. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ApplicationKeyCreated {
+			pub key: Vec<u8>,
+			pub owner: AccountId,
+			pub id: u32,
+		}
+		impl Encode for ApplicationKeyCreated {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.key.encode_to(dest);
+				self.owner.encode_to(dest);
+				Compact(self.id).encode_to(dest);
+			}
+		}
+		impl Decode for ApplicationKeyCreated {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let key = Decode::decode(input)?;
+				let owner = Decode::decode(input)?;
+				let id: Compact<u32> = Decode::decode(input)?;
+				Ok(Self { key, owner, id: id.0 })
+			}
+		}
+		impl EventEmittedIndex for ApplicationKeyCreated {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct DataSubmitted {
+			pub who: AccountId,
+			pub data_hash: H256,
+		}
+		impl Encode for DataSubmitted {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.data_hash.encode_to(dest);
+			}
+		}
+		impl Decode for DataSubmitted {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let data_hash = Decode::decode(input)?;
+				Ok(Self { who, data_hash })
+			}
+		}
+		impl EventEmittedIndex for DataSubmitted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+	}
 
 	pub mod tx {
 		use super::*;
@@ -1336,6 +1448,8 @@ pub mod system {
 	pub const PALLET_ID: u8 = 0;
 
 	pub mod types {
+		use crate::from_substrate::{DispatchClass, Weight};
+
 		use super::*;
 		#[derive(Debug, Clone, DecodeAsType, EncodeAsType)]
 		pub struct AccountInfo {
@@ -1347,11 +1461,11 @@ pub mod system {
 		}
 		impl Encode for AccountInfo {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.nonce.encode());
-				dest.write(&self.consumers.encode());
-				dest.write(&self.providers.encode());
-				dest.write(&self.sufficients.encode());
-				dest.write(&self.data.encode());
+				self.nonce.encode_to(dest);
+				self.consumers.encode_to(dest);
+				self.providers.encode_to(dest);
+				self.sufficients.encode_to(dest);
+				self.data.encode_to(dest);
 			}
 		}
 		impl Decode for AccountInfo {
@@ -1370,6 +1484,280 @@ pub mod system {
 				})
 			}
 		}
+
+		#[derive(Debug, Clone)]
+		pub struct DispatchInfo {
+			/// Weight of this transaction.
+			pub weight: Weight,
+			/// Class of this transaction.
+			pub class: DispatchClass,
+			/// Does this transaction pay fees.
+			pub pays_fee: Pays,
+			/// Does this transaction have custom fees.
+			pub fee_modifier: DispatchFeeModifier,
+		}
+		impl Encode for DispatchInfo {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.weight.encode_to(dest);
+				self.class.encode_to(dest);
+				self.pays_fee.encode_to(dest);
+				self.fee_modifier.encode_to(dest);
+			}
+		}
+		impl Decode for DispatchInfo {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let weight = Decode::decode(input)?;
+				let class = Decode::decode(input)?;
+				let pays_fee = Decode::decode(input)?;
+				let fee_modifier = Decode::decode(input)?;
+				Ok(Self {
+					weight,
+					class,
+					pays_fee,
+					fee_modifier,
+				})
+			}
+		}
+
+		#[derive(Debug, Clone, Copy)]
+		#[repr(u8)]
+		pub enum Pays {
+			/// Transactor will pay related fees.
+			Yes = 0,
+			/// Transactor will NOT pay related fees.
+			No = 1,
+		}
+		impl Encode for Pays {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = *self as u8;
+				variant.encode_to(dest);
+			}
+		}
+		impl Decode for Pays {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::Yes),
+					1 => Ok(Self::No),
+					_ => Err("Failed to decode Pays. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct DispatchFeeModifier {
+			pub weight_maximum_fee: Option<u128>,
+			pub weight_fee_divider: Option<u32>,
+			pub weight_fee_multiplier: Option<u32>,
+		}
+		impl Encode for DispatchFeeModifier {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.weight_maximum_fee.encode_to(dest);
+				self.weight_fee_divider.encode_to(dest);
+				self.weight_fee_multiplier.encode_to(dest);
+			}
+		}
+		impl Decode for DispatchFeeModifier {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let weight_maximum_fee = Decode::decode(input)?;
+				let weight_fee_divider = Decode::decode(input)?;
+				let weight_fee_multiplier = Decode::decode(input)?;
+				Ok(Self {
+					weight_maximum_fee,
+					weight_fee_divider,
+					weight_fee_multiplier,
+				})
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		#[repr(u8)]
+		pub enum DispatchError {
+			Other = 0,
+			/// Failed to lookup some data.
+			CannotLookup = 1,
+			/// A bad origin.
+			BadOrigin = 2,
+			/// A custom error in a module.
+			Module(ModuleError) = 3,
+			/// At least one consumer is remaining so the account cannot be destroyed.
+			ConsumerRemaining = 4,
+			/// There are no providers so the account cannot be created.
+			NoProviders = 5,
+			/// There are too many consumers so the account cannot be created.
+			TooManyConsumers = 6,
+			/// An error to do with tokens.
+			Token(TokenError) = 7,
+			/// An arithmetic error.
+			Arithmetic(ArithmeticError) = 8,
+			/// The number of transactional layers has been reached, or we are not in a transactional layer.
+			Transactional(TransactionalError) = 9,
+			/// Resources exhausted, e.g. attempt to read/write data which is too large to manipulate.
+			Exhausted = 10,
+			/// The state is corrupt; this is generally not going to fix itself.
+			Corruption = 11,
+			/// Some resource (e.g. a preimage) is unavailable right now. This might fix itself later.
+			Unavailable = 12,
+			/// Root origin is not allowed.
+			RootNotAllowed = 13,
+		}
+		impl Encode for DispatchError {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				variant.encode_to(dest);
+				match self {
+					Self::Module(x) => x.encode_to(dest),
+					Self::Token(x) => x.encode_to(dest),
+					Self::Arithmetic(x) => x.encode_to(dest),
+					Self::Transactional(x) => x.encode_to(dest),
+					_ => (),
+				}
+			}
+		}
+		impl Decode for DispatchError {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::Other),
+					1 => Ok(Self::CannotLookup),
+					2 => Ok(Self::BadOrigin),
+					3 => Ok(Self::Module(ModuleError::decode(input)?)),
+					4 => Ok(Self::ConsumerRemaining),
+					5 => Ok(Self::NoProviders),
+					6 => Ok(Self::TooManyConsumers),
+					7 => Ok(Self::Token(TokenError::decode(input)?)),
+					8 => Ok(Self::Arithmetic(ArithmeticError::decode(input)?)),
+					9 => Ok(Self::Transactional(TransactionalError::decode(input)?)),
+					10 => Ok(Self::Exhausted),
+					11 => Ok(Self::Corruption),
+					12 => Ok(Self::Unavailable),
+					13 => Ok(Self::RootNotAllowed),
+					_ => Err("Failed to decode Runtime Call. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ModuleError {
+			/// Module index, matching the metadata module index.
+			pub index: u8,
+			/// Module specific error value.
+			pub error: [u8; 4],
+		}
+		impl Encode for ModuleError {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.index.encode_to(dest);
+				self.error.encode_to(dest);
+			}
+		}
+		impl Decode for ModuleError {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let index = Decode::decode(input)?;
+				let error = Decode::decode(input)?;
+				Ok(Self { index, error })
+			}
+		}
+
+		#[derive(Debug, Clone, Copy)]
+		#[repr(u8)]
+		pub enum TokenError {
+			/// Funds are unavailable.
+			FundsUnavailable = 0,
+			/// Some part of the balance gives the only provider reference to the account and thus cannot
+			/// be (re)moved.
+			OnlyProvider = 1,
+			/// Account cannot exist with the funds that would be given.
+			BelowMinimum = 2,
+			/// Account cannot be created.
+			CannotCreate = 3,
+			/// The asset in question is unknown.
+			UnknownAsset = 4,
+			/// Funds exist but are frozen.
+			Frozen = 5,
+			/// Operation is not supported by the asset.
+			Unsupported = 6,
+			/// Account cannot be created for a held balance.
+			CannotCreateHold = 7,
+			/// Withdrawal would cause unwanted loss of account.
+			NotExpendable = 8,
+			/// Account cannot receive the assets.
+			Blocked = 9,
+		}
+		impl Encode for TokenError {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = *self as u8;
+				variant.encode_to(dest);
+			}
+		}
+		impl Decode for TokenError {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::FundsUnavailable),
+					1 => Ok(Self::OnlyProvider),
+					2 => Ok(Self::BelowMinimum),
+					3 => Ok(Self::CannotCreate),
+					4 => Ok(Self::UnknownAsset),
+					5 => Ok(Self::Frozen),
+					6 => Ok(Self::Unsupported),
+					7 => Ok(Self::CannotCreateHold),
+					8 => Ok(Self::NotExpendable),
+					9 => Ok(Self::Blocked),
+					_ => Err("Failed to decode TokenError. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone, Copy)]
+		#[repr(u8)]
+		pub enum ArithmeticError {
+			/// Underflow.
+			Underflow = 0,
+			/// Overflow.
+			Overflow = 1,
+			/// Division by zero.
+			DivisionByZero = 2,
+		}
+		impl Encode for ArithmeticError {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = *self as u8;
+				variant.encode_to(dest);
+			}
+		}
+		impl Decode for ArithmeticError {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::Underflow),
+					1 => Ok(Self::Overflow),
+					2 => Ok(Self::DivisionByZero),
+					_ => Err("Failed to decode ArithmeticError. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone, Copy)]
+		#[repr(u8)]
+		pub enum TransactionalError {
+			LimitReached = 0,
+			NoLayer = 1,
+		}
+		impl Encode for TransactionalError {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = *self as u8;
+				variant.encode_to(dest);
+			}
+		}
+		impl Decode for TransactionalError {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::LimitReached),
+					1 => Ok(Self::NoLayer),
+					_ => Err("Failed to decode TransactionalError. Unknown variant".into()),
+				}
+			}
+		}
 	}
 
 	pub mod storage {
@@ -1384,6 +1772,83 @@ pub mod system {
 				Default::default(),
 			);
 			address.unvalidated()
+		}
+	}
+
+	pub mod events {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		#[repr(u8)]
+		pub enum Event {
+			ExtrinsicSuccess(ExtrinsicSuccess) = ExtrinsicSuccess::EMITTED_INDEX.1,
+			ExtrinsicFailed(ExtrinsicFailed) = ExtrinsicFailed::EMITTED_INDEX.1,
+		}
+		impl Encode for Event {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				variant.encode_to(dest);
+				match self {
+					Self::ExtrinsicSuccess(x) => x.encode_to(dest),
+					Self::ExtrinsicFailed(x) => x.encode_to(dest),
+				}
+			}
+		}
+		impl Decode for Event {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					val if val == ExtrinsicSuccess::EMITTED_INDEX.1 => {
+						Ok(Self::ExtrinsicSuccess(Decode::decode(input)?))
+					},
+					val if val == ExtrinsicFailed::EMITTED_INDEX.1 => Ok(Self::ExtrinsicFailed(Decode::decode(input)?)),
+					_ => Err("Failed to decode System Event. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ExtrinsicSuccess {
+			pub dispatch_info: super::types::DispatchInfo,
+		}
+		impl Encode for ExtrinsicSuccess {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.dispatch_info.encode_to(dest);
+			}
+		}
+		impl Decode for ExtrinsicSuccess {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let dispatch_info = Decode::decode(input)?;
+				Ok(Self { dispatch_info })
+			}
+		}
+		impl EventEmittedIndex for ExtrinsicSuccess {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ExtrinsicFailed {
+			pub dispatch_error: super::types::DispatchError,
+			pub dispatch_info: super::types::DispatchInfo,
+		}
+		impl Encode for ExtrinsicFailed {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.dispatch_error.encode_to(dest);
+				self.dispatch_info.encode_to(dest);
+			}
+		}
+		impl Decode for ExtrinsicFailed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let dispatch_error = Decode::decode(input)?;
+				let dispatch_info = Decode::decode(input)?;
+				Ok(Self {
+					dispatch_error,
+					dispatch_info,
+				})
+			}
+		}
+		impl EventEmittedIndex for ExtrinsicFailed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 	}
 

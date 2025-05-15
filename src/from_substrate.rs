@@ -72,13 +72,14 @@ pub struct RuntimeDispatchInfo {
 	pub partial_fee: u128,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Decode)]
+#[derive(Clone, Debug, Copy, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[repr(u8)]
 pub enum DispatchClass {
 	/// A normal dispatch.
-	Normal,
+	Normal = 0,
 	/// An operational dispatch.
-	Operational,
+	Operational = 1,
 	/// A mandatory dispatch. These kinds of dispatch are always included regardless of their
 	/// weight, therefore it is critical that they are separately validated to ensure that a
 	/// malicious validator cannot craft a valid but impossibly heavy block. Usually this just
@@ -92,7 +93,24 @@ pub enum DispatchClass {
 	/// initialization is sufficiently heavy to mean that those inherents do not fit into the
 	/// block. Essentially, we assume that in these exceptional circumstances, it is better to
 	/// allow an overweight block to be created than to not allow any block at all to be created.
-	Mandatory,
+	Mandatory = 2,
+}
+impl Encode for DispatchClass {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		let variant: u8 = *self as u8;
+		variant.encode_to(dest);
+	}
+}
+impl Decode for DispatchClass {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let variant = u8::decode(input)?;
+		match variant {
+			0 => Ok(Self::Normal),
+			1 => Ok(Self::Operational),
+			2 => Ok(Self::Mandatory),
+			_ => Err("Failed to decode DispatchClass. Unknown variant".into()),
+		}
+	}
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Encode, Decode)]

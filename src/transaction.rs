@@ -80,14 +80,14 @@ impl SubmittedTransaction {
 		}
 	}
 
-	pub async fn receipt(&self, method: ReceiptMethod) -> Result<Option<TransactionReceipt>, RpcError> {
+	pub async fn receipt(&self, use_best_block: bool) -> Result<Option<TransactionReceipt>, RpcError> {
 		Utils::transaction_receipt(
 			self.client.clone(),
 			self.tx_hash,
 			self.options.nonce,
 			&self.account_id,
 			&self.options.mortality,
-			&method,
+			use_best_block,
 		)
 		.await
 	}
@@ -98,11 +98,12 @@ impl SubmittedTransaction {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[repr(u8)]
 pub enum BlockState {
-	Included,
-	Finalized,
-	Discarded,
-	DoesNotExist,
+	Included = 0,
+	Finalized = 1,
+	Discarded = 2,
+	DoesNotExist = 3,
 }
 
 #[derive(Clone)]
@@ -138,7 +139,9 @@ pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Res
 		}
 	}
 
+	dbg!(2.1);
 	let block = client.block(block_id.hash).await?;
+	dbg!(2.2);
 	let Some(block) = block else {
 		let err = std::format!("{} not found", block_id.hash);
 		return Err(err.into());
@@ -163,9 +166,8 @@ impl Utils {
 		nonce: u32,
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
-		method: &ReceiptMethod,
+		use_best_block: bool,
 	) -> Result<Option<TransactionReceipt>, RpcError> {
-		let ReceiptMethod::Default { use_best_block } = *method;
 		let Some(block_id) =
 			Self::find_block_id_via_nonce(&client, nonce, account_id, mortality, use_best_block).await?
 		else {

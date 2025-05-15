@@ -9,6 +9,7 @@ pub mod client;
 pub mod config;
 pub mod constants;
 pub mod error;
+pub mod events;
 pub mod extensions;
 pub mod platform;
 pub mod primitives;
@@ -59,6 +60,7 @@ pub mod prelude {
 	pub use super::ext::*;
 	pub use super::extensions::*;
 	pub use super::transaction_options::*;
+	pub use avail::{RuntimeCall, RuntimeEvent};
 	pub use primitive_types::{H256, U256};
 	pub use primitives::AccountId;
 	pub use subxt_signer::{sr25519::Keypair, SecretUri};

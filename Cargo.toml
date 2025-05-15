@@ -37,6 +37,8 @@ scale-decode = { version = "0.16.0", default-features = false }
 scale-encode = { version = "0.10.0", default-features = false }
 
 frame-metadata = {  version = "20.0.0", default-features = false }
+frame-decode = { version = "0.7.1", default-features = false }
+
 subxt-core = { version = "0.41.0", default-features = false }
 subxt-signer = { version = "0.41.0", default-features = false, features = ["sr25519", "subxt"] }
 subxt-rpcs = { version = "0.41.0", default-features = false }

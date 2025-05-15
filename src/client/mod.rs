@@ -3,6 +3,7 @@ pub mod reqwest;
 pub mod rpc;
 
 use crate::avail;
+use crate::events::EventsClient;
 use crate::primitives;
 use crate::primitives::rpc::substrate::BlockDetails;
 use crate::primitives::AccountId;
@@ -275,6 +276,10 @@ impl Client {
 		let value = SubmittedTransaction::new(self.clone(), tx_hash, account_id, refined_options, tx_additional);
 		Ok(value)
 	}
+
+	pub fn events_client(&self) -> EventsClient {
+		EventsClient::new(self.clone())
+	}
 }
 
 #[cfg(feature = "subxt")]
@@ -412,7 +417,8 @@ impl Client {
 	{
 		let metadata = self.metadata();
 		let key = subxt_core::storage::get_address_bytes(address, &metadata)?;
-		if let Some(data) = self.rpc_state_get_storage(key, Some(at)).await? {
+		let key = std::format!("0x{}", hex::encode(key));
+		if let Some(data) = self.rpc_state_get_storage(&key, Some(at)).await? {
 			let val = subxt_core::storage::decode_value(&mut &*data, address, &metadata)?;
 			Ok(Some(val))
 		} else {

@@ -6,6 +6,7 @@ use primitive_types::H256;
 use serde::Deserialize;
 use subxt_core::config::substrate::BlakeTwo256;
 use subxt_core::config::Hasher;
+use subxt_rpcs::methods::legacy::Bytes;
 use subxt_rpcs::RpcClient;
 use subxt_rpcs::{
 	methods::legacy::{RuntimeVersion, SystemHealth},
@@ -65,7 +66,7 @@ pub struct Block {
 	/// The block header.
 	pub header: super::AvailHeader,
 	/// The accompanying extrinsics.
-	pub extrinsics: Vec<Vec<u8>>,
+	pub extrinsics: Vec<Bytes>,
 }
 
 impl Block {
@@ -248,12 +249,7 @@ pub async fn state_call(
 	Ok(value)
 }
 
-pub async fn state_get_storage(
-	client: &RpcClient,
-	key: Vec<u8>,
-	at: Option<H256>,
-) -> Result<Option<Vec<u8>>, RpcError> {
-	let key = hex::encode(key);
+pub async fn state_get_storage(client: &RpcClient, key: &str, at: Option<H256>) -> Result<Option<Vec<u8>>, RpcError> {
 	let params = rpc_params![key, at];
 	let value: Option<String> = client.request("state_getStorage", params).await?;
 	let Some(value) = value else { return Ok(None) };

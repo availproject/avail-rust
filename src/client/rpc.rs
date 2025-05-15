@@ -127,7 +127,7 @@ impl Client {
 		Ok(rpc::substrate::state_get_metadata(&self.rpc_client, at).await?)
 	}
 
-	pub async fn rpc_state_get_storage(&self, key: Vec<u8>, at: Option<H256>) -> Result<Option<Vec<u8>>, RpcError> {
+	pub async fn rpc_state_get_storage(&self, key: &str, at: Option<H256>) -> Result<Option<Vec<u8>>, RpcError> {
 		Ok(rpc::substrate::state_get_storage(&self.rpc_client, key, at).await?)
 	}
 
