@@ -156,11 +156,12 @@ impl Client {
 	}
 
 	// Nonce
-	pub async fn nonce(&self, address: &str) -> Result<u32, RpcError> {
-		self.rpc_system_account_next_index(address).await
+	pub async fn nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
+		self.rpc_system_account_next_index(&std::format!("{}", account_id))
+			.await
 	}
 
-	pub async fn nonce_state(&self, account_id: &AccountId, block_hash: H256) -> Result<u32, RpcError> {
+	pub async fn block_nonce(&self, account_id: &AccountId, block_hash: H256) -> Result<u32, RpcError> {
 		self.account_info(account_id, block_hash).await.map(|x| x.nonce)
 	}
 

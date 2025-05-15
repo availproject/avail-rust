@@ -55,11 +55,19 @@ pub enum ClientError {
 	Subxt(subxt::Error) = 0,
 	#[error("Rpc error. {0}")]
 	RpcError(RpcError) = 1,
+	#[error("Custom error. {0}")]
+	Custom(String) = 2,
 }
 
 impl From<RpcError> for ClientError {
 	fn from(value: RpcError) -> Self {
 		Self::RpcError(value)
+	}
+}
+
+impl From<String> for ClientError {
+	fn from(value: String) -> Self {
+		Self::Custom(value)
 	}
 }
 

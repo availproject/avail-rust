@@ -1,16 +1,9 @@
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use subxt_core::config::{
-	substrate::{BlakeTwo256, Digest},
-	Hasher, Header,
-};
+use subxt_core::config::{substrate::BlakeTwo256, Hasher, Header};
 
-#[cfg(feature = "subxt_metadata")]
-pub use with_subxt_metadata::{HeaderExtension, *};
-
-#[cfg(not(feature = "subxt_metadata"))]
-pub use no_subxt::HeaderExtension;
+pub use subxt_core::config::substrate::{Digest, DigestItem};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 #[serde(rename_all = "camelCase")]
@@ -64,7 +57,7 @@ where
 	Ok(u32::from_str_radix(without_prefix, 16).unwrap())
 }
 
-#[cfg(feature = "subxt_metadata")]
+/* #[cfg(feature = "subxt_metadata")]
 pub mod with_subxt_metadata {
 	use super::*;
 	pub use crate::subxt_avail::runtime_types::{
@@ -72,7 +65,6 @@ pub mod with_subxt_metadata {
 		sp_runtime::generic::digest::{Digest as ApiDigest, DigestItem as ApiDigestItem},
 	};
 	use core::marker::PhantomData;
-	pub use subxt_core::config::substrate::DigestItem;
 
 	impl<B, H> From<AvailHeader> for ApiHeader<B, H>
 	where
@@ -110,58 +102,45 @@ pub mod with_subxt_metadata {
 		}
 	}
 }
+	*/
 
-pub mod no_subxt {
-	pub use super::*;
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[repr(u8)]
+pub enum HeaderExtension {
+	V3(V3HeaderExtension) = 2,
+}
 
-	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-	#[repr(u8)]
-	pub enum HeaderExtension {
-		V3(V3HeaderExtension) = 2,
-	}
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct V3HeaderExtension {
+	pub app_lookup: CompactDataLookup,
+	pub commitment: KateCommitment,
+}
 
-	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-	#[serde(rename_all = "camelCase")]
-	pub struct V3HeaderExtension {
-		pub app_lookup: CompactDataLookup,
-		pub commitment: KateCommitment,
-	}
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct CompactDataLookup {
+	#[codec(compact)]
+	pub size: u32,
+	pub index: Vec<DataLookupItem>,
+}
 
-	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-	#[serde(rename_all = "camelCase")]
-	pub struct CompactDataLookup {
-		#[codec(compact)]
-		pub size: u32,
-		pub index: Vec<DataLookupItem>,
-	}
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct DataLookupItem {
+	#[codec(compact)]
+	pub app_id: u32,
+	#[codec(compact)]
+	pub start: u32,
+}
 
-	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-	#[serde(rename_all = "camelCase")]
-	pub struct DataLookupItem {
-		#[codec(compact)]
-		pub app_id: u32,
-		#[codec(compact)]
-		pub start: u32,
-	}
-
-	#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-	#[serde(rename_all = "camelCase")]
-	pub struct KateCommitment {
-		#[codec(compact)]
-		pub rows: u16,
-		#[codec(compact)]
-		pub cols: u16,
-		pub commitment: Vec<u8>,
-		pub data_root: H256,
-	}
-
-	#[derive(Debug, Clone)]
-	#[repr(u8)]
-	pub enum DigestItem {
-		PreRuntime([u8; 4usize], Vec<u8>) = 6,
-		Consensus([u8; 4usize], Vec<u8>) = 4,
-		Seal([u8; 4usize], Vec<u8>) = 5,
-		Other(Vec<u8>) = 0,
-		RuntimeEnvironmentUpdated = 8,
-	}
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct KateCommitment {
+	#[codec(compact)]
+	pub rows: u16,
+	#[codec(compact)]
+	pub cols: u16,
+	pub commitment: Vec<u8>,
+	pub data_root: H256,
 }

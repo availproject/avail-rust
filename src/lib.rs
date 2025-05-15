@@ -26,9 +26,8 @@ pub use avail::runtime_types::sp_arithmetic::per_things::Perbill; */
 pub use bounded_collections::BoundedVec;
 pub use primitive_types::H256;
 pub use primitives::{
-	block::{DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder},
 	kate::{Cell, GDataProof, GRow},
-	AvailHeader, DecodedTransaction,
+	AvailHeader, DecodedTransaction, DefaultExtrinsicParams,
 };
 pub use transaction::{
 	BlockState, ReceiptMethod, SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction,
@@ -55,11 +54,13 @@ pub mod prelude {
 	pub use super::*;
 
 	pub use super::config::*;
+	pub use super::constants::dev_accounts::*;
 	pub use super::constants::*;
 	pub use super::ext::*;
 	pub use super::extensions::*;
 	pub use super::transaction_options::*;
 	pub use primitive_types::{H256, U256};
+	pub use primitives::AccountId;
 	pub use subxt_signer::{sr25519::Keypair, SecretUri};
 
 	pub use super::{

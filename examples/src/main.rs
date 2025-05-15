@@ -1,7 +1,4 @@
 mod account;
-mod account_balance;
-mod account_creation;
-mod account_nonce;
 mod batch;
 mod block;
 mod block_data_submission_all;
@@ -21,7 +18,7 @@ mod block_transaction_by_index_static;
 mod block_transaction_by_signer;
 mod block_transaction_by_signer_static;
 mod custom_rpc_connection;
-mod data_submission;
+// mod data_submission;
 mod http_rpc_connection;
 mod indexer;
 mod proxy;
@@ -41,11 +38,12 @@ pub type ReturnResult = anyhow::Result<()>;
 #[tokio::main]
 async fn main() -> ReturnResult {
 	Client::enable_logging();
+	account::run().await?;
 
 	// account::run().await?;
 	// batch::run().await?;
 	// block::run().await?;
-	data_submission::run().await?;
+	//data_submission::run().await?;
 	// proxy::run().await?;
 	// rpc::run().await?;
 	// storage::run().await?;

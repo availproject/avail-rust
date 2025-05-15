@@ -38,7 +38,7 @@ pub mod subxt_types {
 
 /// A struct representing the signed extra and additional parameters required
 /// to construct a transaction for a avail node.
-pub type AvailExtrinsicParams<T> = crate::primitives::block::extrinsics_params::DefaultExtrinsicParams<T>;
+pub type AvailExtrinsicParams<T> = crate::primitives::DefaultExtrinsicParams<T>;
 
 #[derive(Clone, Debug, Default)]
 pub struct AvailConfig;

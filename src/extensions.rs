@@ -66,6 +66,7 @@ impl SecretUriExt for SecretUri {
 
 pub trait KeypairExt {
 	fn from_str(value: &str) -> Result<Keypair, String>;
+	fn account_id(&self) -> AccountId;
 }
 
 impl KeypairExt for Keypair {
@@ -73,5 +74,9 @@ impl KeypairExt for Keypair {
 		let secret_uri = SecretUri::from_str(value).map_err(|e| e.to_string())?;
 		let keypair = Keypair::from_uri(&secret_uri).map_err(|e| e.to_string())?;
 		Ok(keypair)
+	}
+
+	fn account_id(&self) -> AccountId {
+		self.public_key().to_account_id()
 	}
 }
