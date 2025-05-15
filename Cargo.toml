@@ -28,7 +28,6 @@ avail-core = {  git = "https://github.com/availproject/avail-core", default-feat
 kate = {  git = "https://github.com/availproject/avail-core", default-features = false, branch="mmp-integration", features=["serde"]}
 hex = { version = "0.4" }
 base58 = { version = "0.2.0" }
-poly-multiproof = { git = "https://github.com/availproject/poly-multiproof", ref="494468b86ac8e16dca21d465d921990c578eaad3", default-features = false, features = ['ark-bls12-381', "blst"]}
 sp-core = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12", default-features = false }
 bounded-collections = { version = "0.2.0", features = ["serde"] }
 primitive-types = { version = "0.13.1", default-features = false }
