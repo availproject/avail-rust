@@ -226,7 +226,8 @@ pub mod kate {
 		at: Option<H256>,
 		cells: Vec<Cell>,
 	) -> Result<(Vec<(GMultiProof, GCellBlock)>, Vec<u8>), subxt::Error> {
-		let header = chain::get_header(client, at).await?;
+		let header = chain::get_header(client, at).await?
+			.ok_or_else(|| subxt::Error::Other("Header not found".into()))?;
 
 		let Some((_, _, _, commitment)) = extract_kate(&header.extension) else {
 			return Err(subxt::Error::Other(
