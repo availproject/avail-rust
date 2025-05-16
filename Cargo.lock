@@ -890,7 +890,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 [[package]]
 name = "avail-core"
 version = "0.6.2"
-source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#23b54ac58bded13dba66bc26f66544ad003b3661"
+source = "git+https://github.com/availproject/avail-core?rev=5e11ad8a8c57712b9ce5b46da8b9cc9192a4cb56#5e11ad8a8c57712b9ce5b46da8b9cc9192a4cb56"
 dependencies = [
  "binary-merkle-tree 13.0.0",
  "blake2b_simd",
@@ -4704,7 +4704,7 @@ dependencies = [
 [[package]]
 name = "kate"
 version = "0.9.2"
-source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#23b54ac58bded13dba66bc26f66544ad003b3661"
+source = "git+https://github.com/availproject/avail-core?rev=5e11ad8a8c57712b9ce5b46da8b9cc9192a4cb56#5e11ad8a8c57712b9ce5b46da8b9cc9192a4cb56"
 dependencies = [
  "avail-core",
  "derive_more 0.99.20",
@@ -4724,7 +4724,7 @@ dependencies = [
 [[package]]
 name = "kate-recovery"
 version = "0.10.0"
-source = "git+https://github.com/availproject/avail-core?branch=mmp-integration#23b54ac58bded13dba66bc26f66544ad003b3661"
+source = "git+https://github.com/availproject/avail-core?rev=5e11ad8a8c57712b9ce5b46da8b9cc9192a4cb56#5e11ad8a8c57712b9ce5b46da8b9cc9192a4cb56"
 dependencies = [
  "avail-core",
  "derive_more 0.99.20",
