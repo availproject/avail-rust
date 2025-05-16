@@ -34,14 +34,13 @@ mod transaction_submission;
 // mod turbo_da;
 // mod validator;
 
-use avail_rust::prelude::Client;
-pub type ReturnResult = anyhow::Result<()>;
+use avail_rust::prelude::{Client, ClientError};
 
 #[tokio::main]
-async fn main() -> ReturnResult {
+async fn main() -> Result<(), ClientError> {
 	Client::enable_logging();
-	account::run().await?;
-	// transaction_submission::run().await?;
+	// account::run().await?;
+	transaction_submission::run().await?;
 	// parallel_transaction_submissions::run().await?;
 	// batch::run().await?;
 

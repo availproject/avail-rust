@@ -1,6 +1,9 @@
+//! This example showcases the following actions:
+//! - Submitting multiple transactions at the same time
+//!
+
 use avail_rust::prelude::*;
-use std::time::Duration;
-use tokio::{task::JoinHandle, time::sleep};
+use tokio::task::JoinHandle;
 
 pub async fn run() -> Result<(), ClientError> {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
@@ -8,8 +11,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	for signer in [alice(), bob(), charlie(), dave()] {
 		let s = client.clone();
-		let t = tokio::spawn(async move { task(s, signer).await });
-		futures.push(t);
+		futures.push(tokio::spawn(async move { task(s, signer).await }));
 	}
 
 	for fut in futures {
@@ -20,30 +22,23 @@ pub async fn run() -> Result<(), ClientError> {
 }
 
 async fn task(client: Client, account: Keypair) -> Result<(), ClientError> {
+	// Transaction Submission
 	let message = String::from("It works").as_bytes().to_vec();
 	let tx = client.tx().data_availability().submit_data(message);
 	let st = tx.sign_and_submit(&account, Options::new()).await?;
-	'outer: loop {
-		let Some(receipt) = st.receipt(false).await? else {
-			return Err("Transaction got dropped. This should never happen in a local network.".into());
-		};
 
-		loop {
-			let block_state: BlockState = receipt.block_state().await?;
-			match block_state {
-				BlockState::Included => (),
-				BlockState::Finalized => {
-					return Ok(());
-				},
-				BlockState::Discarded => {
-					break 'outer;
-				},
-				BlockState::DoesNotExist => {
-					return Err("Block got dropped. This should never happen in a local network.".into());
-				},
-			};
-			sleep(Duration::from_secs(5)).await;
-		}
+	// Fetching Transaction Receipt
+	let Some(receipt) = st.receipt(false).await? else {
+		return Err("Transaction got dropped. This should never happen in a local network.".into());
+	};
+
+	// Fetching Block State
+	let block_state = receipt.block_state().await?;
+	match block_state {
+		BlockState::Included => println!("Block is included but not finalized"),
+		BlockState::Finalized => println!("Block is finalized"),
+		BlockState::Discarded => println!("Block is discarded"),
+		BlockState::DoesNotExist => println!("Block does not exist"),
 	}
 
 	Ok(())

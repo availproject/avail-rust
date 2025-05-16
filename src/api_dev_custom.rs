@@ -102,6 +102,7 @@ impl TryFrom<&Vec<u8>> for RuntimeCall {
 pub enum RuntimeEvent {
 	System(system::events::Event) = system::PALLET_ID,
 	Utility(utility::events::Event) = utility::PALLET_ID,
+	Balances(balances::events::Event) = balances::PALLET_ID,
 	DataAvailability(data_availability::events::Event) = data_availability::PALLET_ID,
 }
 impl RuntimeEvent {
@@ -113,11 +114,12 @@ impl RuntimeEvent {
 		match self {
 			Self::System(call) => unsafe { *(call as *const _ as *const u8) },
 			Self::Utility(call) => unsafe { *(call as *const _ as *const u8) },
+			Self::Balances(call) => unsafe { *(call as *const _ as *const u8) },
 			Self::DataAvailability(call) => unsafe { *(call as *const _ as *const u8) },
 		}
 	}
 }
-impl Encode for RuntimeEvent {
+/* impl Encode for RuntimeEvent {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
 		variant.encode_to(dest);
@@ -127,13 +129,14 @@ impl Encode for RuntimeEvent {
 			Self::DataAvailability(x) => x.encode_to(dest),
 		}
 	}
-}
+} */
 impl Decode for RuntimeEvent {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let variant = u8::decode(input)?;
 		match variant {
 			system::PALLET_ID => Ok(Self::System(Decode::decode(input)?)),
 			utility::PALLET_ID => Ok(Self::Utility(Decode::decode(input)?)),
+			balances::PALLET_ID => Ok(Self::Balances(Decode::decode(input)?)),
 			data_availability::PALLET_ID => Ok(Self::DataAvailability(Decode::decode(input)?)),
 			_ => Err("Failed to decode Runtime Event. Unknown variant".into()),
 		}
@@ -168,7 +171,7 @@ pub mod data_availability {
 			ApplicationKeyCreated { key: Vec<u8>, owner: AccountId, id: u32 } = 0,
 			DataSubmitted { who: AccountId, data_hash: H256 } = 1,
 		}
-		impl Encode for Event {
+		/* 		impl Encode for Event {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
 				variant.encode_to(dest);
@@ -184,7 +187,7 @@ pub mod data_availability {
 					},
 				}
 			}
-		}
+		} */
 		impl Decode for Event {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let variant = u8::decode(input)?;
@@ -312,6 +315,252 @@ pub mod balances {
 					frozen,
 					flags,
 				})
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		#[repr(u8)]
+		pub enum BalanceStatus {
+			/// Funds are free, as corresponding to `free` item in Balances.
+			Free = 0,
+			/// Funds are reserved, as corresponding to `reserved` item in Balances.
+			Reserved = 1,
+		}
+		impl Encode for BalanceStatus {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				variant.encode_to(dest);
+			}
+		}
+		impl Decode for BalanceStatus {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(BalanceStatus::Free),
+					1 => Ok(BalanceStatus::Reserved),
+					_ => Err("Failed to decode BalanceStatus Call. Unknown variant".into()),
+				}
+			}
+		}
+	}
+
+	pub mod events {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		#[repr(u8)]
+		pub enum Event {
+			/// An account was created with some free balance.
+			Endowed { account: AccountId, free_balance: u128 } = 0,
+			/// An account was removed whose balance was non-zero but below ExistentialDeposit,
+			/// resulting in an outright loss.
+			DustLost { account: AccountId, amount: u128 } = 1,
+			/// Transfer succeeded.
+			Transfer {
+				from: AccountId,
+				to: AccountId,
+				amount: u128,
+			} = 2,
+			/// A balance was set by root.
+			BalanceSet { who: AccountId, free: u128 } = 3,
+			/// Some balance was reserved (moved from free to reserved).
+			Reserved { who: AccountId, amount: u128 } = 4,
+			/// Some balance was unreserved (moved from reserved to free).
+			Unreserved { who: AccountId, amount: u128 } = 5,
+			/// Some balance was moved from the reserve of the first account to the second account.
+			/// Final argument indicates the destination balance type.
+			ReserveRepatriated {
+				from: AccountId,
+				to: AccountId,
+				amount: u128,
+				destination_status: super::types::BalanceStatus,
+			} = 6,
+			/// Some amount was deposited (e.g. for transaction fees).
+			Deposit { who: AccountId, amount: u128 } = 7,
+			/// Some amount was withdrawn from the account (e.g. for transaction fees).
+			Withdraw { who: AccountId, amount: u128 } = 8,
+			/// Some amount was removed from the account (e.g. for misbehavior).
+			Slashed { who: AccountId, amount: u128 } = 9,
+			/// Some amount was minted into an account.
+			Minted { who: AccountId, amount: u128 } = 10,
+			/// Some amount was burned from an account.
+			Burned { who: AccountId, amount: u128 } = 11,
+			/// Some amount was suspended from an account (it can be restored later).
+			Suspended { who: AccountId, amount: u128 } = 12,
+			/// Some amount was restored into an account.
+			Restored { who: AccountId, amount: u128 } = 13,
+			/// An account was upgraded.
+			Upgraded { who: AccountId } = 14,
+			/// Total issuance was increased by `amount`, creating a credit to be balanced.
+			Issued { amount: u128 } = 15,
+			/// Total issuance was decreased by `amount`, creating a debt to be balanced.
+			Rescinded { amount: u128 } = 16,
+			/// Some balance was locked.
+			Locked { who: AccountId, amount: u128 } = 17,
+			/// Some balance was unlocked.
+			Unlocked { who: AccountId, amount: u128 } = 18,
+			/// Some balance was frozen.
+			Frozen { who: AccountId, amount: u128 } = 19,
+			/// Some balance was thawed.
+			Thawed { who: AccountId, amount: u128 } = 20,
+			/// The `TotalIssuance` was forcefully changed.
+			TotalIssuanceForced { old: u128, new: u128 } = 21,
+		}
+		/* 		impl Encode for Event {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
+				variant.encode_to(dest);
+				match self {
+					Self::Endowed { account, free_balance } => {
+						account.encode_to(dest);
+						free_balance.encode_to(dest);
+					},
+					Self::DustLost { account, amount } => {
+						account.encode_to(dest);
+						amount.encode_to(dest);
+					},
+					Self::Transfer { from, to, amount } => {
+						from.encode_to(dest);
+						to.encode_to(dest);
+						amount.encode_to(dest);
+					},
+					Self::BalanceSet { who, free } => {
+						who.encode_to(dest);
+						free.encode_to(dest);
+					},
+					Self::Reserved { who, amount } => {
+						who.encode_to(dest);
+						amount.encode_to(dest);
+					},
+					Self::Unreserved { who, amount } => {
+						who.encode_to(dest);
+						amount.encode_to(dest);
+					},
+					Self::ReserveRepatriated {
+						from,
+						to,
+						amount,
+						destination_status,
+					} => {
+						from.encode_to(dest);
+						to.encode_to(dest);
+						amount.encode_to(dest);
+						destination_status.encode_to(dest);
+					},
+					Self::Deposit { who, amount } => {
+						who.encode_to(dest);
+						amount.encode_to(dest);
+					},
+					Self::Withdraw { who, amount } => {
+						who.encode_to(dest);
+						amount.encode_to(dest);
+					},
+					Self::Slashed { who, amount } => {
+						who.encode_to(dest);
+						amount.encode_to(dest);
+					},
+					Self::Minted { who, amount } => {
+						who.encode_to(dest);
+						amount.encode_to(dest);
+					},
+					_ => (),
+				}
+			}
+		} */
+		impl Decode for Event {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::Endowed {
+						account: Decode::decode(input)?,
+						free_balance: Decode::decode(input)?,
+					}),
+					1 => Ok(Self::DustLost {
+						account: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					2 => Ok(Self::Transfer {
+						from: Decode::decode(input)?,
+						to: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					3 => Ok(Self::BalanceSet {
+						who: Decode::decode(input)?,
+						free: Decode::decode(input)?,
+					}),
+					4 => Ok(Self::Reserved {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					5 => Ok(Self::Unreserved {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					6 => Ok(Self::ReserveRepatriated {
+						from: Decode::decode(input)?,
+						to: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+						destination_status: Decode::decode(input)?,
+					}),
+					7 => Ok(Self::Deposit {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					8 => Ok(Self::Withdraw {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					9 => Ok(Self::Slashed {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					10 => Ok(Self::Minted {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					11 => Ok(Self::Burned {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					12 => Ok(Self::Suspended {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					13 => Ok(Self::Restored {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					14 => Ok(Self::Upgraded {
+						who: Decode::decode(input)?,
+					}),
+					15 => Ok(Self::Issued {
+						amount: Decode::decode(input)?,
+					}),
+					16 => Ok(Self::Rescinded {
+						amount: Decode::decode(input)?,
+					}),
+					17 => Ok(Self::Locked {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					18 => Ok(Self::Unlocked {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					19 => Ok(Self::Frozen {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					20 => Ok(Self::Thawed {
+						who: Decode::decode(input)?,
+						amount: Decode::decode(input)?,
+					}),
+					21 => Ok(Self::TotalIssuanceForced {
+						old: Decode::decode(input)?,
+						new: Decode::decode(input)?,
+					}),
+					_ => Err("Failed to decode Balances Event. Unknown variant".into()),
+				}
 			}
 		}
 	}
@@ -450,7 +699,7 @@ pub mod utility {
 				result: Result<(), super::system::types::DispatchError>,
 			} = 5,
 		}
-		impl Encode for Event {
+		/* 		impl Encode for Event {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
 				variant.encode_to(dest);
@@ -468,22 +717,22 @@ pub mod utility {
 					_ => (),
 				}
 			}
-		}
+		} */
 		impl Decode for Event {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let variant = u8::decode(input)?;
 				match variant {
-					val if val == 0 => Ok(Self::BatchInterrupted {
+					0 => Ok(Self::BatchInterrupted {
 						index: Decode::decode(input)?,
 						error: Decode::decode(input)?,
 					}),
-					val if val == 1 => Ok(Self::BatchCompleted),
-					val if val == 2 => Ok(Self::BatchCompletedWithErrors),
-					val if val == 3 => Ok(Self::ItemCompleted),
-					val if val == 4 => Ok(Self::ItemFailed {
+					1 => Ok(Self::BatchCompleted),
+					2 => Ok(Self::BatchCompletedWithErrors),
+					3 => Ok(Self::ItemCompleted),
+					4 => Ok(Self::ItemFailed {
 						error: Decode::decode(input)?,
 					}),
-					val if val == 5 => Ok(Self::DispatchedAs {
+					5 => Ok(Self::DispatchedAs {
 						result: Decode::decode(input)?,
 					}),
 					_ => Err("Failed to decode System Event. Unknown variant".into()),
@@ -1884,7 +2133,7 @@ pub mod system {
 				dispatch_info: super::types::DispatchInfo,
 			} = 1,
 		}
-		impl Encode for Event {
+		/* 		impl Encode for Event {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
 				variant.encode_to(dest);
@@ -1899,15 +2148,15 @@ pub mod system {
 					},
 				}
 			}
-		}
+		} */
 		impl Decode for Event {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let variant = u8::decode(input)?;
 				match variant {
-					val if val == 0 => Ok(Self::ExtrinsicSuccess {
+					0 => Ok(Self::ExtrinsicSuccess {
 						dispatch_info: Decode::decode(input)?,
 					}),
-					val if val == 1 => Ok(Self::ExtrinsicFailed {
+					1 => Ok(Self::ExtrinsicFailed {
 						dispatch_error: Decode::decode(input)?,
 						dispatch_info: Decode::decode(input)?,
 					}),

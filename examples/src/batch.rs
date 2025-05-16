@@ -24,7 +24,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// Fetching and displaying Transaction Events
 	let (tx_index, block_hash) = (receipt.tx_location.index, receipt.block_id.hash);
-	let events_client = client.events_client();
+	let events_client = client.event_client();
 	let events = events_client.transaction_events(tx_index, block_hash).await?;
 	for event in events {
 		println!(

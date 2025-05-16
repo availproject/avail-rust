@@ -1,8 +1,11 @@
 pub mod foreign;
-pub mod reqwest;
 pub mod rpc;
 
+#[cfg(feature = "reqwest")]
+pub mod reqwest;
+
 use crate::avail;
+use crate::block_client::BlockClient;
 use crate::event_client::EventClient;
 use crate::primitives;
 use crate::primitives::rpc::substrate::SignedBlock;
@@ -49,6 +52,7 @@ pub struct Client {
 }
 
 impl Client {
+	#[cfg(feature = "reqwest")]
 	pub async fn new(endpoint: &str) -> Result<Client, RpcError> {
 		let rpc_client = reqwest::ReqwestClient::new(endpoint);
 		let rpc_client = RpcClient::new(rpc_client);
@@ -277,8 +281,12 @@ impl Client {
 		Ok(value)
 	}
 
-	pub fn events_client(&self) -> EventClient {
+	pub fn event_client(&self) -> EventClient {
 		EventClient::new(self.clone())
+	}
+
+	pub fn block_client(&self) -> BlockClient {
+		BlockClient::new(self.clone())
 	}
 }
 

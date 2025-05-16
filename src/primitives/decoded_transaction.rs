@@ -2,12 +2,10 @@ use super::transaction::{TransactionSigned, EXTRINSIC_FORMAT_VERSION};
 use codec::{Compact, Decode, Encode, Error, Input};
 use serde::{Deserialize, Serialize};
 
+#[cfg(not(feature = "subxt_metadata"))]
+use crate::avail::{RuntimeCall, RuntimeEvent};
 #[cfg(feature = "subxt_metadata")]
 use crate::subxt_avail::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
-#[cfg(not(feature = "subxt_metadata"))]
-pub type RuntimeCall = crate::avail::RuntimeCall;
-#[cfg(not(feature = "subxt_metadata"))]
-pub type RuntimeEvent = Vec<u8>;
 
 #[derive(Clone)]
 pub struct DecodedTransaction {
@@ -20,53 +18,10 @@ pub struct DecodedTransaction {
 }
 
 impl DecodedTransaction {
-	/* 	fn encode_vec_compatible(inner: &[u8]) -> Vec<u8> {
-		let compact_len = codec::Compact::<u32>(inner.len() as u32);
-
-		// Allocate the output buffer with the correct length
-		let mut output = Vec::with_capacity(compact_len.size_hint() + inner.len());
-
-		compact_len.encode_to(&mut output);
-		output.extend(inner);
-
-		output
-	} */
-
 	pub fn app_id(&self) -> Option<u32> {
 		self.signature.as_ref().map(|s| s.tx_extra.app_id)
 	}
 }
-
-/* impl Encode for DecodedTransaction {
-	fn encode(&self) -> Vec<u8> {
-		let mut tmp = Vec::with_capacity(size_of::<Self>());
-
-		// 1 byte version id.
-		match self.signature.as_ref() {
-			Some(s) => {
-				tmp.push(EXTRINSIC_FORMAT_VERSION | 0b1000_0000);
-				s.encode_to(&mut tmp);
-			},
-			None => {
-				tmp.push(EXTRINSIC_FORMAT_VERSION & 0b0111_1111);
-			},
-		}
-		self.function.encode_to(&mut tmp);
-		Self::encode_vec_compatible(&tmp)
-	}
-}
-
-impl EncodeLike for DecodedTransaction {} */
-
-/* impl Serialize for DecodedTransaction {
-	fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-	where
-		S: ::serde::Serializer,
-	{
-		let encoded = self.encode();
-		impl_serde::serialize::serialize(&encoded, s)
-	}
-} */
 
 impl Decode for DecodedTransaction {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
@@ -110,8 +65,8 @@ impl<'a> Deserialize<'a> for DecodedTransaction {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
-pub struct UncheckedEvent {
+#[derive(Debug, Clone, Decode)]
+pub struct DecodedEvent {
 	pub phase: RuntimePhase,
 	pub event: RuntimeEvent,
 }

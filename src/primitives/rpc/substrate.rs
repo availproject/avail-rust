@@ -64,7 +64,7 @@ pub struct SignedBlock {
 pub struct Block {
 	/// The block header.
 	pub header: super::AvailHeader,
-	#[serde(deserialize_with = "somenuts")]
+	#[serde(deserialize_with = "from_string_to_vec")]
 	pub extrinsics: Vec<Vec<u8>>,
 }
 
@@ -80,7 +80,7 @@ impl Block {
 	}
 }
 
-fn somenuts<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
+fn from_string_to_vec<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
 where
 	D: Deserializer<'de>,
 {
