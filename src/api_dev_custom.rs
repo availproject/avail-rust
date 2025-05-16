@@ -104,6 +104,8 @@ pub enum RuntimeEvent {
 	Utility(utility::events::Event) = utility::PALLET_ID,
 	Balances(balances::events::Event) = balances::PALLET_ID,
 	DataAvailability(data_availability::events::Event) = data_availability::PALLET_ID,
+	Multisig(multisig::events::Event) = multisig::PALLET_ID,
+	Proxy(multisig::events::Event) = proxy::PALLET_ID,
 }
 impl RuntimeEvent {
 	pub fn pallet_index(&self) -> u8 {
@@ -116,6 +118,8 @@ impl RuntimeEvent {
 			Self::Utility(call) => unsafe { *(call as *const _ as *const u8) },
 			Self::Balances(call) => unsafe { *(call as *const _ as *const u8) },
 			Self::DataAvailability(call) => unsafe { *(call as *const _ as *const u8) },
+			Self::Multisig(call) => unsafe { *(call as *const _ as *const u8) },
+			Self::Proxy(call) => unsafe { *(call as *const _ as *const u8) },
 		}
 	}
 }
@@ -138,6 +142,8 @@ impl Decode for RuntimeEvent {
 			utility::PALLET_ID => Ok(Self::Utility(Decode::decode(input)?)),
 			balances::PALLET_ID => Ok(Self::Balances(Decode::decode(input)?)),
 			data_availability::PALLET_ID => Ok(Self::DataAvailability(Decode::decode(input)?)),
+			multisig::PALLET_ID => Ok(Self::Multisig(Decode::decode(input)?)),
+			proxy::PALLET_ID => Ok(Self::Proxy(Decode::decode(input)?)),
 			_ => Err("Failed to decode Runtime Event. Unknown variant".into()),
 		}
 	}
@@ -872,6 +878,81 @@ pub mod proxy {
 		}
 	}
 
+	pub mod events {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		#[repr(u8)]
+		pub enum Event {
+			/// A proxy was executed correctly, with the given.
+			ProxyExecuted {
+				result: Result<(), super::system::types::DispatchError>,
+			} = 0,
+			/// A pure account has been created by new proxy with given
+			/// disambiguation index and proxy type.
+			PureCreated {
+				pure: AccountId,
+				who: AccountId,
+				proxy_type: super::types::ProxyType,
+				disambiguation_index: u16,
+			} = 1,
+			/// An announcement was placed to make a call in the future.
+			Announced {
+				real: AccountId,
+				proxy: AccountId,
+				call_hash: H256,
+			} = 2,
+			/// A proxy was added.
+			ProxyAdded {
+				delegator: AccountId,
+				delegatee: AccountId,
+				proxy_type: super::types::ProxyType,
+				delay: u32,
+			} = 3,
+			/// A proxy was removed.
+			ProxyRemoved {
+				delegator: AccountId,
+				delegatee: AccountId,
+				proxy_type: super::types::ProxyType,
+				delay: u32,
+			} = 4,
+		}
+		impl Decode for Event {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::ProxyExecuted {
+						result: Decode::decode(input)?,
+					}),
+					1 => Ok(Self::PureCreated {
+						pure: Decode::decode(input)?,
+						who: Decode::decode(input)?,
+						proxy_type: Decode::decode(input)?,
+						disambiguation_index: Decode::decode(input)?,
+					}),
+					2 => Ok(Self::Announced {
+						real: Decode::decode(input)?,
+						proxy: Decode::decode(input)?,
+						call_hash: Decode::decode(input)?,
+					}),
+					3 => Ok(Self::ProxyAdded {
+						delegator: Decode::decode(input)?,
+						delegatee: Decode::decode(input)?,
+						proxy_type: Decode::decode(input)?,
+						delay: Decode::decode(input)?,
+					}),
+					4 => Ok(Self::ProxyRemoved {
+						delegator: Decode::decode(input)?,
+						delegatee: Decode::decode(input)?,
+						proxy_type: Decode::decode(input)?,
+						delay: Decode::decode(input)?,
+					}),
+					_ => Err("Failed to decode Multisig Event. Unknown variant".into()),
+				}
+			}
+		}
+	}
+
 	pub mod tx {
 		use super::*;
 
@@ -1103,6 +1184,75 @@ pub mod multisig {
 				let height = Decode::decode(input)?;
 				let index = Decode::decode(input)?;
 				Ok(Self { height, index })
+			}
+		}
+	}
+
+	pub mod events {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		#[repr(u8)]
+		pub enum Event {
+			/// A new multisig operation has begun.
+			NewMultisig {
+				approving: AccountId,
+				multisig: AccountId,
+				call_hash: H256,
+			} = 0,
+			/// A multisig operation has been approved by someone.
+			MultisigApproval {
+				approving: AccountId,
+				timepoint: super::types::Timepoint,
+				multisig: AccountId,
+				call_hash: H256,
+			} = 1,
+			/// A multisig operation has been executed.
+			MultisigExecuted {
+				approving: AccountId,
+				timepoint: super::types::Timepoint,
+				multisig: AccountId,
+				call_hash: H256,
+				result: Result<(), super::system::types::DispatchError>,
+			} = 2,
+			/// A multisig operation has been cancelled.
+			MultisigCancelled {
+				cancelling: AccountId,
+				timepoint: super::types::Timepoint,
+				multisig: AccountId,
+				call_hash: H256,
+			} = 3,
+		}
+		impl Decode for Event {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::NewMultisig {
+						approving: Decode::decode(input)?,
+						multisig: Decode::decode(input)?,
+						call_hash: Decode::decode(input)?,
+					}),
+					1 => Ok(Self::MultisigApproval {
+						approving: Decode::decode(input)?,
+						timepoint: Decode::decode(input)?,
+						multisig: Decode::decode(input)?,
+						call_hash: Decode::decode(input)?,
+					}),
+					2 => Ok(Self::MultisigExecuted {
+						approving: Decode::decode(input)?,
+						timepoint: Decode::decode(input)?,
+						multisig: Decode::decode(input)?,
+						call_hash: Decode::decode(input)?,
+						result: Decode::decode(input)?,
+					}),
+					3 => Ok(Self::MultisigCancelled {
+						cancelling: Decode::decode(input)?,
+						timepoint: Decode::decode(input)?,
+						multisig: Decode::decode(input)?,
+						call_hash: Decode::decode(input)?,
+					}),
+					_ => Err("Failed to decode Multisig Event. Unknown variant".into()),
+				}
 			}
 		}
 	}
