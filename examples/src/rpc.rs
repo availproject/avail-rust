@@ -291,7 +291,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	// kate_query_rows
 	let rows = vec![0u32];
-	let value = rpc::kate::query_rows(&sdk.client, rows, block_hash).await?;
+	let value = rpc::kate::query_rows(&sdk.client.rpc_client, rows, block_hash).await?;
 	dbg!(value);
 	/*	Output
 	[

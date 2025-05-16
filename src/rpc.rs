@@ -1,9 +1,11 @@
 use crate::{
 	avail::runtime_types::{da_runtime::primitives::SessionKeys, frame_system::limits::BlockLength},
 	from_substrate::{NodeRole, PeerInfo, SyncState},
+	primitives::kate::GMultiProof,
 	utils, ABlockDetailsRPC, AvailHeader, BlockNumber, Cell, Client, GDataProof, GRow, H256,
 };
 use avail_core::data_proof::ProofResponse;
+use ::kate::pmp::{method1::M1NoPrecomp, msm::blst::BlstMSMEngine};
 use serde::{Deserialize, Serialize};
 use subxt::{
 	backend::legacy::rpc_methods::{Bytes, RuntimeVersion, SystemHealth},
@@ -182,6 +184,15 @@ pub mod state {
 }
 
 pub mod kate {
+	use ::kate::couscous::multiproof_params;
+
+	use kate_recovery::data::GCellBlock;
+	use ::kate::pmp::ark_bls12_381::Bls12_381;
+
+	use subxt::backend::rpc::RpcClient;
+
+	use crate::utils::extract_kate;
+
 	use super::*;
 
 	pub async fn block_length(client: &Client, at: Option<H256>) -> Result<BlockLength, subxt::Error> {
@@ -210,9 +221,33 @@ pub mod kate {
 		Ok(value)
 	}
 
-	pub async fn query_rows(client: &Client, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, subxt::Error> {
+	pub async fn query_multi_proof(
+		client: &Client,
+		at: Option<H256>,
+		cells: Vec<Cell>,
+	) -> Result<(Vec<(GMultiProof, GCellBlock)>, Vec<u8>), subxt::Error> {
+		let header = chain::get_header(client, at).await?
+			.ok_or_else(|| subxt::Error::Other("Header not found".into()))?;
+
+		let Some((_, _, _, commitment)) = extract_kate(&header.extension) else {
+			return Err(subxt::Error::Other(
+				"Skipping block without header extension".to_string(),
+			));
+		};
+
+		let params = rpc_params![cells.to_vec(), at];
+		let proofs: Vec<(GMultiProof, GCellBlock)> = client.rpc_client.request("kate_queryMultiProof", params).await?;
+
+		Ok((proofs, commitment))
+	}
+
+	pub async fn generate_pmp() -> M1NoPrecomp<Bls12_381, BlstMSMEngine> {
+		multiproof_params()
+	}
+
+	pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, subxt::Error> {
 		let params = rpc_params![rows, at];
-		let value = client.rpc_client.request("kate_queryRows", params).await?;
+		let value = client.request("kate_queryRows", params).await?;
 		Ok(value)
 	}
 }

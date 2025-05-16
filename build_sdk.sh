@@ -12,4 +12,3 @@ cargo check --target wasm32-unknown-unknown --no-default-features --features "wa
 cd ./examples
 cargo check
 cargo check --no-default-features
-
