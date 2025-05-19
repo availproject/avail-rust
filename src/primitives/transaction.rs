@@ -185,6 +185,23 @@ impl<'a> Transaction<'a> {
 	}
 }
 
+impl<'a> TryFrom<&Vec<u8>> for Transaction<'a> {
+	type Error = codec::Error;
+
+	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_slice())
+	}
+}
+
+impl<'a> TryFrom<&[u8]> for Transaction<'a> {
+	type Error = codec::Error;
+
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let mut value = value;
+		Self::decode(&mut value)
+	}
+}
+
 impl<'a> Decode for Transaction<'a> {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		// This is a little more complicated than usual since the binary format must be compatible

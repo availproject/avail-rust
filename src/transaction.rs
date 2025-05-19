@@ -91,10 +91,6 @@ impl SubmittedTransaction {
 		)
 		.await
 	}
-
-	pub async fn transaction_overview(&self) -> Result<(), RpcError> {
-		unimplemented!()
-	}
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -133,10 +129,8 @@ impl TransactionReceipt {
 
 /// TODO
 pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Result<Arc<SignedBlock>, RpcError> {
-	if let Ok(cache) = client.cache.lock() {
-		if let Some(block) = cache.chain_blocks_cache.find(block_id.hash) {
-			return Ok(block);
-		}
+	if let Some(block) = client.cache_client().find_signed_block(block_id.hash) {
+		return Ok(block);
 	}
 
 	let block = client.block(block_id.hash).await?;
@@ -145,12 +139,10 @@ pub async fn get_new_or_cached_block(client: &Client, block_id: &BlockId) -> Res
 		return Err(err.into());
 	};
 	let block = Arc::new(block);
-	if let Ok(mut cache) = client.cache.lock() {
-		if let Some(block) = cache.chain_blocks_cache.find(block_id.hash) {
-			return Ok(block);
-		}
-		cache.chain_blocks_cache.push((block_id.hash, block.clone()));
+	if let Some(block) = client.cache_client().find_signed_block(block_id.hash) {
+		return Ok(block);
 	}
+	client.cache_client().push_signed_block((block_id.hash, block.clone()));
 
 	Ok(block)
 }

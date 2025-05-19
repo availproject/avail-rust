@@ -15,12 +15,7 @@ pub async fn run() -> Result<(), ClientError> {
 	};
 
 	let block_state = receipt.block_state().await?;
-	match block_state {
-		BlockState::Included => println!("Block is included but not finalized"),
-		BlockState::Finalized => println!("Block is finalized"),
-		BlockState::Discarded => println!("Block is discarded"),
-		BlockState::DoesNotExist => println!("Block does not exist"),
-	}
+	println!("Block State: {:?}", block_state);
 
 	// Fetching and displaying Transaction Events
 	let (tx_index, block_hash) = (receipt.tx_location.index, receipt.block_id.hash);

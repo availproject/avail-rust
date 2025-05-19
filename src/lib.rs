@@ -4,12 +4,10 @@ pub mod api_dev_custom;
 
 mod from_substrate;
 
-pub mod block_client;
 pub mod client;
 pub mod config;
 pub mod constants;
 pub mod error;
-pub mod event_client;
 pub mod extensions;
 pub mod platform;
 pub mod primitives;
@@ -62,7 +60,11 @@ pub mod prelude {
 	pub use super::transaction_options::*;
 	pub use avail::{RuntimeCall, RuntimeEvent};
 	pub use primitive_types::{H256, U256};
-	pub use primitives::AccountId;
+	pub use primitives::{
+		decoded_transaction::{DecodedTransaction, OpaqueTransaction},
+		transaction::Transaction,
+		AccountId,
+	};
 	pub use subxt_signer::{sr25519::Keypair, SecretUri};
 
 	pub use super::{

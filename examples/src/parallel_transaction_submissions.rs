@@ -34,12 +34,7 @@ async fn task(client: Client, account: Keypair) -> Result<(), ClientError> {
 
 	// Fetching Block State
 	let block_state = receipt.block_state().await?;
-	match block_state {
-		BlockState::Included => println!("Block is included but not finalized"),
-		BlockState::Finalized => println!("Block is finalized"),
-		BlockState::Discarded => println!("Block is discarded"),
-		BlockState::DoesNotExist => println!("Block does not exist"),
-	}
+	println!("Block State: {:?}", block_state);
 
 	Ok(())
 }

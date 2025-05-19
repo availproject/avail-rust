@@ -1,54 +1,43 @@
+pub mod block_client;
+pub mod cache_client;
+pub mod event_client;
 pub mod foreign;
+pub mod online_client;
 pub mod rpc;
 
 #[cfg(feature = "reqwest")]
 pub mod reqwest;
 
-use crate::avail;
-use crate::block_client::BlockClient;
-use crate::event_client::EventClient;
-use crate::primitives;
-use crate::primitives::rpc::substrate::SignedBlock;
-use crate::primitives::AccountId;
-use crate::primitives::BlockId;
+use std::sync::Arc;
+
+use crate::{avail, primitives};
 use crate::{
 	error::RpcError, transaction::SubmittedTransaction, transaction_options::Options, transactions::Transactions,
 	AvailHeader, BlockState,
 };
 use avail::balances::types::AccountData;
 use avail::system::types::AccountInfo;
+use block_client::BlockClient;
+use cache_client::CacheClient;
+use event_client::EventClient;
 use log::info;
+use online_client::OnlineClientT;
 use primitive_types::H256;
-use std::{fmt::Debug, sync::Arc};
+use primitives::{rpc::substrate::SignedBlock, AccountId, BlockId};
 use subxt_rpcs::RpcClient;
 use subxt_signer::sr25519::Keypair;
 
 #[cfg(feature = "subxt")]
-use crate::config::{ABlocksClient, AConstantsClient, AOnlineClient, AStorageClient};
-#[cfg(not(feature = "subxt"))]
-use codec::Decode;
-
-type SharedCache = Arc<std::sync::Mutex<Cache>>;
-
-const MAX_CHAIN_BLOCKS: usize = 3;
-
-#[cfg(not(feature = "subxt"))]
-#[derive(Clone)]
-pub struct ClientState {
-	pub genesis_hash: H256,
-	pub spec_version: u32,
-	pub tx_version: u32,
-	pub metadata: subxt_core::Metadata,
-}
+use crate::config::{ABlocksClient, AConstantsClient, AStorageClient};
 
 #[derive(Clone)]
 pub struct Client {
-	#[cfg(feature = "subxt")]
-	pub online_client: AOnlineClient,
-	pub rpc_client: RpcClient,
-	pub cache: SharedCache,
 	#[cfg(not(feature = "subxt"))]
-	pub state: ClientState,
+	online_client: online_client::OnlineClient,
+	#[cfg(feature = "subxt")]
+	online_client: crate::config::AOnlineClient,
+	pub rpc_client: RpcClient,
+	cache_client: CacheClient,
 }
 
 impl Client {
@@ -57,7 +46,36 @@ impl Client {
 		let rpc_client = reqwest::ReqwestClient::new(endpoint);
 		let rpc_client = RpcClient::new(rpc_client);
 
-		Self::new_custom(rpc_client).await
+		#[cfg(not(feature = "subxt"))]
+		let online_client = online_client::SimpleOnlineClient::new(&rpc_client).await?;
+		#[cfg(feature = "subxt")]
+		let online_client = crate::config::AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
+
+		Self::new_custom(rpc_client, online_client.into()).await
+	}
+
+	#[cfg(not(feature = "subxt"))]
+	pub async fn new_custom(
+		rpc_client: RpcClient,
+		online_client: online_client::OnlineClient,
+	) -> Result<Client, RpcError> {
+		Ok(Self {
+			online_client,
+			rpc_client,
+			cache_client: CacheClient::new(),
+		})
+	}
+
+	#[cfg(feature = "subxt")]
+	pub async fn new_custom(
+		rpc_client: RpcClient,
+		online_client: crate::config::AOnlineClient,
+	) -> Result<Client, RpcError> {
+		Ok(Self {
+			online_client,
+			rpc_client,
+			cache: SharedCache::default(),
+		})
 	}
 
 	pub fn tx(&self) -> Transactions {
@@ -91,7 +109,17 @@ impl Client {
 
 	// (RPC) Block
 	pub async fn block(&self, at: H256) -> Result<Option<SignedBlock>, RpcError> {
-		self.rpc_chain_get_block(Some(at)).await
+		if let Some(block) = self.cache_client.find_signed_block(at) {
+			return Ok(Some(block.as_ref().clone()));
+		}
+
+		let block = self.rpc_chain_get_block(Some(at)).await?;
+		if let Some(block) = block {
+			self.cache_client.push_signed_block((at, Arc::new(block.clone())));
+			Ok(Some(block))
+		} else {
+			Ok(None)
+		}
 	}
 
 	pub async fn best_block(&self) -> Result<SignedBlock, RpcError> {
@@ -268,9 +296,9 @@ impl Client {
 
 		let tx_extra = primitives::TransactionExtra::from(&refined_options);
 		let tx_additional = primitives::TransactionAdditional {
-			spec_version: self.spec_version(),
-			tx_version: self.transaction_version(),
-			genesis_hash: self.genesis_hash(),
+			spec_version: self.online_client.spec_version(),
+			tx_version: self.online_client.transaction_version(),
+			genesis_hash: self.online_client.genesis_hash(),
 			fork_hash: refined_options.mortality.block_hash,
 		};
 
@@ -281,6 +309,7 @@ impl Client {
 		Ok(value)
 	}
 
+	// Mini Clients
 	pub fn event_client(&self) -> EventClient {
 		EventClient::new(self.clone())
 	}
@@ -288,51 +317,40 @@ impl Client {
 	pub fn block_client(&self) -> BlockClient {
 		BlockClient::new(self.clone())
 	}
+
+	pub fn cache_client(&self) -> CacheClient {
+		self.cache_client.clone()
+	}
+
+	#[cfg(not(feature = "subxt"))]
+	pub fn online_client(&self) -> online_client::OnlineClient {
+		self.online_client.clone()
+	}
+
+	#[cfg(feature = "subxt")]
+	pub fn online_client(&self) -> crate::config::AOnlineClient {
+		self.online_client.clone()
+	}
+
+	// Subxt
+	#[cfg(feature = "subxt")]
+	pub fn subxt_blocks_client(&self) -> ABlocksClient {
+		self.online_client.blocks()
+	}
+
+	#[cfg(feature = "subxt")]
+	pub fn subxt_storage_client(&self) -> AStorageClient {
+		self.online_client.storage()
+	}
+
+	#[cfg(feature = "subxt")]
+	pub fn subxt_constants_client(&self) -> AConstantsClient {
+		self.online_client.constants()
+	}
 }
 
 #[cfg(feature = "subxt")]
 impl Client {
-	pub async fn new_custom(rpc_client: RpcClient) -> Result<Client, RpcError> {
-		// Cloning RpcClient is cheaper and doesn't create a new connection
-		let online_client = AOnlineClient::from_rpc_client(rpc_client.clone())
-			.await
-			.map_err(|e| e.to_string())?;
-
-		Ok(Self {
-			online_client,
-			rpc_client,
-			cache: SharedCache::default(),
-		})
-	}
-
-	pub fn metadata(&self) -> subxt_core::Metadata {
-		self.online_client.metadata()
-	}
-
-	pub fn genesis_hash(&self) -> H256 {
-		self.online_client.genesis_hash()
-	}
-
-	pub fn spec_version(&self) -> u32 {
-		self.online_client.runtime_version().spec_version
-	}
-
-	pub fn transaction_version(&self) -> u32 {
-		self.online_client.runtime_version().transaction_version
-	}
-
-	pub fn subxt_blocks(&self) -> ABlocksClient {
-		self.online_client.blocks()
-	}
-
-	pub fn subxt_storage(&self) -> AStorageClient {
-		self.online_client.storage()
-	}
-
-	pub fn subxt_constants(&self) -> AConstantsClient {
-		self.online_client.constants()
-	}
-
 	// Storage
 	pub async fn storage_fetch<'address, Addr>(
 		&self,
@@ -373,47 +391,6 @@ impl Client {
 
 #[cfg(not(feature = "subxt"))]
 impl Client {
-	pub async fn new_custom(rpc_client: RpcClient) -> Result<Client, RpcError> {
-		use crate::primitives::rpc::substrate;
-		let finalized_hash = substrate::chain_get_finalized_head(&rpc_client).await?;
-		let rpc_metadata = substrate::state_get_metadata(&rpc_client, Some(finalized_hash)).await?;
-		let genesis_hash = substrate::chainspec_v1_genesishash(&rpc_client).await?;
-		let runtime_version = substrate::state_get_runtime_version(&rpc_client, Some(finalized_hash)).await?;
-
-		let frame_metadata =
-			frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).map_err(|e| e.to_string())?;
-		let metadata = subxt_core::Metadata::try_from(frame_metadata).map_err(|e| e.to_string())?;
-
-		let state = ClientState {
-			genesis_hash,
-			spec_version: runtime_version.spec_version,
-			tx_version: runtime_version.transaction_version,
-			metadata,
-		};
-
-		Ok(Self {
-			rpc_client,
-			cache: SharedCache::default(),
-			state,
-		})
-	}
-
-	pub fn metadata(&self) -> subxt_core::Metadata {
-		self.state.metadata.clone()
-	}
-
-	pub fn genesis_hash(&self) -> H256 {
-		self.state.genesis_hash
-	}
-
-	pub fn spec_version(&self) -> u32 {
-		self.state.spec_version
-	}
-
-	pub fn transaction_version(&self) -> u32 {
-		self.state.tx_version
-	}
-
 	// Storage
 	pub async fn storage_fetch<'address, Addr>(
 		&self,
@@ -423,7 +400,7 @@ impl Client {
 	where
 		Addr: subxt_core::storage::address::Address<IsFetchable = subxt_core::utils::Yes> + 'address,
 	{
-		let metadata = self.metadata();
+		let metadata = self.online_client.metadata();
 		let key = subxt_core::storage::get_address_bytes(address, &metadata)?;
 		let key = std::format!("0x{}", hex::encode(key));
 		if let Some(data) = self.rpc_state_get_storage(&key, Some(at)).await? {
@@ -448,7 +425,7 @@ impl Client {
 		if let Some(data) = self.storage_fetch(address, at).await? {
 			Ok(data)
 		} else {
-			let metadata = self.metadata();
+			let metadata = self.online_client.metadata();
 			let val = subxt_core::storage::default_value(address, &metadata)?;
 			Ok(val)
 		}
@@ -459,49 +436,8 @@ impl Client {
 	where
 		Addr: subxt_core::constants::address::Address,
 	{
-		let metadata = self.metadata();
+		let metadata = self.online_client.metadata();
 		let val = subxt_core::constants::get(address, &metadata)?;
 		Ok(val)
-	}
-}
-
-#[derive(Clone, Default)]
-pub struct CachedChainBlocks {
-	blocks: [Option<(H256, Arc<SignedBlock>)>; MAX_CHAIN_BLOCKS],
-	ptr: usize,
-}
-
-impl CachedChainBlocks {
-	pub fn new() -> Self {
-		Self::default()
-	}
-
-	pub fn find(&self, block_hash: H256) -> Option<Arc<SignedBlock>> {
-		for (hash, block) in self.blocks.iter().flatten() {
-			if *hash == block_hash {
-				return Some(block.clone());
-			}
-		}
-
-		None
-	}
-
-	pub fn push(&mut self, value: (H256, Arc<SignedBlock>)) {
-		self.blocks[self.ptr] = Some(value);
-		self.ptr += 1;
-		if self.ptr >= MAX_CHAIN_BLOCKS {
-			self.ptr = 0;
-		}
-	}
-}
-
-#[derive(Default)]
-pub struct Cache {
-	pub chain_blocks_cache: CachedChainBlocks,
-}
-
-impl Debug for Cache {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.debug_struct("Cache").field("last_fetched_block", &"").finish()
 	}
 }
