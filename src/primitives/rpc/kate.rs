@@ -1,7 +1,6 @@
 use crate::primitives::kate::{BlockLength, Cell, GCellBlock, GDataProof, GMultiProof, GRow, ProofResponse};
 use primitive_types::H256;
-use subxt_rpcs::rpc_params;
-use subxt_rpcs::RpcClient;
+use subxt_rpcs::{rpc_params, RpcClient};
 
 pub async fn kate_block_length(client: &RpcClient, at: Option<H256>) -> Result<BlockLength, subxt_rpcs::Error> {
 	let params = rpc_params![at];

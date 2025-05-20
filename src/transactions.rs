@@ -1,5 +1,9 @@
-use crate::primitives::AccountId;
-use crate::{avail, client::Client, primitives::TransactionCall, SubmittableTransaction, SubmittableTransactionLike};
+use crate::{
+	avail,
+	client::Client,
+	primitives::{AccountId, TransactionCall},
+	SubmittableTransaction, SubmittableTransactionLike,
+};
 use primitive_types::H256;
 pub struct Transactions(pub(crate) Client);
 impl Transactions {

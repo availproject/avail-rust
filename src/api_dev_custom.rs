@@ -1,11 +1,12 @@
 use crate::primitives::{AccountId, MultiAddress, TransactionCall};
-use codec::Compact;
-use codec::{Decode, Encode};
+use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use scale_decode::DecodeAsType;
 use scale_encode::EncodeAsType;
-use subxt_core::storage::address::{StaticAddress, StaticStorageKey};
-use subxt_core::utils::Yes;
+use subxt_core::{
+	storage::address::{StaticAddress, StaticStorageKey},
+	utils::Yes,
+};
 
 pub trait TxDispatchIndex {
 	// Pallet ID, Call ID

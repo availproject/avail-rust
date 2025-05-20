@@ -1,9 +1,7 @@
-use crate::error::RpcError;
-use crate::primitives::rpc::substrate;
+use crate::{error::RpcError, primitives::rpc::substrate};
 use codec::Decode;
 use primitive_types::H256;
-use std::sync::Arc;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 use subxt_core::Metadata;
 use subxt_rpcs::RpcClient;
 

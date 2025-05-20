@@ -51,13 +51,14 @@ pub mod ext {
 }
 
 pub mod prelude {
-	pub use super::config::*;
-	pub use super::constants::dev_accounts::*;
-	pub use super::constants::*;
-	pub use super::ext;
-	pub use super::extensions::*;
-	pub use super::transaction_options::*;
-	pub use super::*;
+	pub use super::{
+		config::*,
+		constants::{dev_accounts::*, *},
+		ext,
+		extensions::*,
+		transaction_options::*,
+		*,
+	};
 	pub use avail::{RuntimeCall, RuntimeEvent};
 	pub use primitive_types::{H256, U256};
 	pub use primitives::{
@@ -68,7 +69,9 @@ pub mod prelude {
 	pub use subxt_signer::{sr25519::Keypair, SecretUri};
 
 	pub use super::{
-		client::Client, error::ClientError, error::RpcError, BlockState, BoundedVec, ReceiptMethod,
-		SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction, TransactionReceipt,
+		client::Client,
+		error::{ClientError, RpcError},
+		BlockState, BoundedVec, ReceiptMethod, SubmittableTransaction, SubmittableTransactionLike,
+		SubmittedTransaction, TransactionReceipt,
 	};
 }

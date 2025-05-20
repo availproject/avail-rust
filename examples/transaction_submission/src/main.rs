@@ -12,7 +12,6 @@ use avail_rust::prelude::*;
 async fn main() -> Result<(), ClientError> {
 	Client::enable_logging();
 	let client = Client::new(LOCAL_ENDPOINT).await?;
-
 	let signer = alice();
 
 	// Transaction Creation

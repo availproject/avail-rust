@@ -40,13 +40,15 @@ impl BlockClient {
 }
 
 pub mod block_data {
-	use crate::primitives::config::TransactionLocation;
-	use crate::primitives::rpc::block::block_data as rpc_block_data;
-	use crate::primitives::{BlockId, DispatchIndex, EmittedIndex, HashIndex};
 	use crate::{
 		client::Client,
 		error::RpcError,
-		primitives::decoded_transaction::{DecodedEvent, RuntimePhase},
+		primitives::{
+			config::TransactionLocation,
+			decoded_transaction::{DecodedEvent, RuntimePhase},
+			rpc::block::block_data as rpc_block_data,
+			BlockId, DispatchIndex, EmittedIndex, HashIndex,
+		},
 		DecodedTransaction,
 	};
 	use codec::Decode;
@@ -163,10 +165,11 @@ pub mod block_data {
 }
 
 pub mod block_overview {
-	use crate::client::Client;
-	use crate::error::RpcError;
-	use crate::primitives::rpc::block::block_overview as rpc_block_overview;
-	use crate::primitives::HashIndex;
+	use crate::{
+		client::Client,
+		error::RpcError,
+		primitives::{rpc::block::block_overview as rpc_block_overview, HashIndex},
+	};
 
 	#[derive(Clone)]
 	pub struct BlockBuilder {

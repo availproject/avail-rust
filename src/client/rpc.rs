@@ -1,9 +1,13 @@
-use crate::primitives::kate::{BlockLength, ProofResponse};
-use crate::primitives::rpc;
-use crate::primitives::rpc::substrate::{
-	SignedBlock, NodeRole, PeerInfo, RpcMethods, SessionKeys, SyncState, SystemProperties,
+use crate::{
+	client::Client,
+	error::RpcError,
+	primitives::{
+		kate::{BlockLength, ProofResponse},
+		rpc,
+		rpc::substrate::{NodeRole, PeerInfo, RpcMethods, SessionKeys, SignedBlock, SyncState, SystemProperties},
+	},
+	AvailHeader, Cell, GDataProof, GRow,
 };
-use crate::{client::Client, error::RpcError, AvailHeader, Cell, GDataProof, GRow};
 use primitive_types::H256;
 use subxt_rpcs::methods::legacy::{RuntimeVersion, SystemHealth};
 

@@ -1,5 +1,8 @@
-use crate::primitives::{AccountId, Era, TransactionExtra};
-use crate::{client::Client, error::RpcError};
+use crate::{
+	client::Client,
+	error::RpcError,
+	primitives::{AccountId, Era, TransactionExtra},
+};
 use primitive_types::H256;
 use subxt_core::config::Header;
 

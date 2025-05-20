@@ -1,11 +1,9 @@
-use crate::primitives::config::TransactionLocation;
-use crate::primitives::decoded_transaction::RuntimePhase;
-use crate::primitives::{BlockId, DispatchIndex, EmittedIndex, HashIndex};
+use crate::primitives::{
+	config::TransactionLocation, decoded_transaction::RuntimePhase, BlockId, DispatchIndex, EmittedIndex, HashIndex,
+};
 use primitive_types::H256;
-use serde::Deserialize;
-use serde::Serialize;
-use subxt_rpcs::rpc_params;
-use subxt_rpcs::RpcClient;
+use serde::{Deserialize, Serialize};
+use subxt_rpcs::{rpc_params, RpcClient};
 
 pub mod block_data {
 	pub use super::*;

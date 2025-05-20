@@ -11,13 +11,11 @@ pub mod reqwest;
 
 use std::sync::Arc;
 
-use crate::{avail, primitives};
 use crate::{
-	error::RpcError, transaction::SubmittedTransaction, transaction_options::Options, transactions::Transactions,
-	AvailHeader, BlockState,
+	avail, error::RpcError, primitives, transaction::SubmittedTransaction, transaction_options::Options,
+	transactions::Transactions, AvailHeader, BlockState,
 };
-use avail::balances::types::AccountData;
-use avail::system::types::AccountInfo;
+use avail::{balances::types::AccountData, system::types::AccountInfo};
 use block_client::BlockClient;
 use cache_client::CacheClient;
 use event_client::EventClient;

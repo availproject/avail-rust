@@ -1,15 +1,12 @@
-use crate::error::RpcError;
-use crate::primitives::config::TransactionLocation;
+use crate::{error::RpcError, primitives::config::TransactionLocation};
 
 use super::AvailHeader;
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer};
-use subxt_core::config::substrate::BlakeTwo256;
-use subxt_core::config::Hasher;
-use subxt_rpcs::RpcClient;
+use subxt_core::config::{substrate::BlakeTwo256, Hasher};
 use subxt_rpcs::{
 	methods::legacy::{RuntimeVersion, SystemHealth},
-	rpc_params,
+	rpc_params, RpcClient,
 };
 
 /// Network Peer information
@@ -102,8 +99,7 @@ pub type ConsensusEngineId = [u8; 4];
 /// The encoded justification specific to a consensus engine.
 pub type EncodedJustification = Vec<u8>;
 
-use std::array::TryFromSliceError;
-use std::str::FromStr;
+use std::{array::TryFromSliceError, str::FromStr};
 
 #[derive(Debug, Clone)]
 pub struct SessionKeys {

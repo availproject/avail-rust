@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "account-examples"
+name = "account-example"
 version = "0.0.0"
 dependencies = [
  "avail-rust",
