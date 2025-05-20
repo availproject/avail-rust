@@ -17,7 +17,7 @@ pub async fn run() -> Result<(), ClientError> {
 
 	let header = chain::get_header(&sdk.client, Some(res.block_hash.clone())).await?;
 
-	let (rows, cols) = match header.extension {
+	let (rows, cols) = match header.unwrap().extension {
 		HeaderExtension::V3(ext) => (ext.commitment.rows, ext.commitment.cols),
 	};
 
