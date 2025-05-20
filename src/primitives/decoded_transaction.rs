@@ -17,6 +17,16 @@ pub struct OpaqueTransaction {
 	pub call: Vec<u8>,
 }
 
+impl OpaqueTransaction {
+	pub fn pallet_index(&self) -> u8 {
+		self.call[0]
+	}
+
+	pub fn call_index(&self) -> u8 {
+		self.call[1]
+	}
+}
+
 impl TryFrom<Vec<u8>> for OpaqueTransaction {
 	type Error = codec::Error;
 
@@ -90,6 +100,14 @@ pub struct DecodedTransaction {
 impl DecodedTransaction {
 	pub fn app_id(&self) -> Option<u32> {
 		self.signature.as_ref().map(|s| s.tx_extra.app_id)
+	}
+
+	pub fn pallet_index(&self) -> u8 {
+		self.call.pallet_index()
+	}
+
+	pub fn call_index(&self) -> u8 {
+		self.call.call_index()
 	}
 }
 

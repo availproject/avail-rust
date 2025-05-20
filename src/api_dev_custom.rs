@@ -54,6 +54,7 @@ impl RuntimeCall {
 		}
 	}
 }
+
 impl Encode for RuntimeCall {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
@@ -68,6 +69,7 @@ impl Encode for RuntimeCall {
 		}
 	}
 }
+
 impl Decode for RuntimeCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let variant = u8::decode(input)?;
@@ -82,6 +84,7 @@ impl Decode for RuntimeCall {
 		}
 	}
 }
+
 impl TryFrom<&[u8]> for RuntimeCall {
 	type Error = codec::Error;
 

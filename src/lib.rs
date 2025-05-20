@@ -64,7 +64,7 @@ pub mod prelude {
 	pub use primitives::{
 		decoded_transaction::{DecodedTransaction, OpaqueTransaction},
 		transaction::Transaction,
-		AccountId,
+		AccountId, MultiAddress,
 	};
 	pub use subxt_signer::{sr25519::Keypair, SecretUri};
 
