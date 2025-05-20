@@ -57,7 +57,7 @@ impl StorageClient {
 	}
 
 	#[cfg(feature = "subxt")]
-	pub async fn iter<Addr>(
+	pub fn iter<Addr>(
 		&self,
 		address: Addr,
 		at: H256,

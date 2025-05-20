@@ -1,0 +1,11 @@
+[workspace]
+
+[package]
+name = "full-metadata-example"
+edition = "2021"
+default-run = "full-metadata-example"
+
+
+[dependencies]
+avail-rust = { path = "./../../.", default-features = false, features = ["native", "reqwest", "subxt_metadata" ] }
+tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }

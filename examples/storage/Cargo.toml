@@ -1,0 +1,9 @@
+[workspace]
+
+[package]
+name = "storage-example"
+edition = "2021"
+
+[dependencies]
+avail-rust = { path = "./../../.", default-features = false, features = ["native", "reqwest", "subxt" ] }
+tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }

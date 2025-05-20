@@ -2,7 +2,9 @@ use avail::RuntimeCall;
 use avail_rust::prelude::*;
 use std::time::Duration;
 
-pub async fn run() -> Result<(), ClientError> {
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
+	Client::enable_logging();
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let c = client.clone();

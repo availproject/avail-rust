@@ -3,10 +3,11 @@
 //! - Fetching Account Nonce
 //! - Fetching Account Info (contains account balance and nonce)
 //!
-
 use avail_rust::prelude::*;
 
-pub async fn run() -> Result<(), ClientError> {
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
+	Client::enable_logging();
 	let client = Client::new(TURING_ENDPOINT).await?;
 
 	// Account Balance

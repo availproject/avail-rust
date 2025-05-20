@@ -1,7 +1,9 @@
 use avail_rust::prelude::*;
 use subxt_avail::runtime_types::bounded_collections::bounded_vec::BoundedVec;
 
-pub async fn run() -> Result<(), ClientError> {
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
+	Client::enable_logging();
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let data = BoundedVec(vec![0, 1, 2]);

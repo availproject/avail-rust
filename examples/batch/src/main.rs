@@ -1,7 +1,9 @@
 use avail::utility::events::Event as UtilityEvent;
 use avail_rust::prelude::*;
 
-pub async fn run() -> Result<(), ClientError> {
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
+	Client::enable_logging();
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let balances = client.tx().balances();

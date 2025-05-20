@@ -5,10 +5,12 @@
 use avail_rust::prelude::*;
 use tokio::task::JoinHandle;
 
-pub async fn run() -> Result<(), ClientError> {
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
+	Client::enable_logging();
 	let client = Client::new(LOCAL_ENDPOINT).await?;
-	let mut futures: Vec<JoinHandle<Result<(), ClientError>>> = Vec::new();
 
+	let mut futures: Vec<JoinHandle<Result<(), ClientError>>> = Vec::new();
 	for signer in [alice(), bob(), charlie(), dave()] {
 		let s = client.clone();
 		futures.push(tokio::spawn(async move { task(s, signer).await }));
