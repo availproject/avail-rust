@@ -4,6 +4,7 @@ pub mod event_client;
 pub mod foreign;
 pub mod online_client;
 pub mod rpc;
+pub mod storage_client;
 
 #[cfg(feature = "reqwest")]
 pub mod reqwest;
@@ -24,6 +25,7 @@ use log::info;
 use online_client::OnlineClientT;
 use primitive_types::H256;
 use primitives::{rpc::substrate::SignedBlock, AccountId, BlockId};
+use storage_client::StorageClient;
 use subxt_rpcs::RpcClient;
 use subxt_signer::sr25519::Keypair;
 
@@ -74,7 +76,7 @@ impl Client {
 		Ok(Self {
 			online_client,
 			rpc_client,
-			cache: SharedCache::default(),
+			cache_client: CacheClient::new(),
 		})
 	}
 
@@ -222,19 +224,22 @@ impl Client {
 	// Account Info (nonce, balance, ...)
 	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
 		let address = avail::system::storage::account(account_id);
-		self.storage_fetch_or_default(&address, at).await
+		let storage = self.storage_client();
+		storage.fetch_or_default(&address, at).await
 	}
 
 	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
 		let at = self.best_block_hash().await?;
 		let address = avail::system::storage::account(account_id);
-		self.storage_fetch_or_default(&address, at).await
+		let storage = self.storage_client();
+		storage.fetch_or_default(&address, at).await
 	}
 
 	pub async fn finalized_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
 		let at = self.finalized_block_hash().await?;
 		let address = avail::system::storage::account(account_id);
-		self.storage_fetch_or_default(&address, at).await
+		let storage = self.storage_client();
+		storage.fetch_or_default(&address, at).await
 	}
 
 	// Block State
@@ -322,6 +327,10 @@ impl Client {
 		self.cache_client.clone()
 	}
 
+	pub fn storage_client(&self) -> StorageClient {
+		StorageClient::new(self.clone())
+	}
+
 	#[cfg(not(feature = "subxt"))]
 	pub fn online_client(&self) -> online_client::OnlineClient {
 		self.online_client.clone()
@@ -346,98 +355,5 @@ impl Client {
 	#[cfg(feature = "subxt")]
 	pub fn subxt_constants_client(&self) -> AConstantsClient {
 		self.online_client.constants()
-	}
-}
-
-#[cfg(feature = "subxt")]
-impl Client {
-	// Storage
-	pub async fn storage_fetch<'address, Addr>(
-		&self,
-		address: &Addr,
-		at: H256,
-	) -> Result<Option<Addr::Target>, RpcError>
-	where
-		Addr: subxt_core::storage::address::Address<IsFetchable = subxt_core::utils::Yes> + 'address,
-	{
-		let storage = self.subxt_storage().at(at);
-		return Ok(storage.fetch(address).await?);
-	}
-
-	pub async fn storage_fetch_or_default<'address, Addr>(
-		&self,
-		address: &Addr,
-		at: H256,
-	) -> Result<Addr::Target, RpcError>
-	where
-		Addr: subxt_core::storage::address::Address<
-				IsFetchable = subxt_core::utils::Yes,
-				IsDefaultable = subxt_core::utils::Yes,
-			> + 'address,
-	{
-		let storage = self.subxt_storage().at(at);
-		return Ok(storage.fetch_or_default(address).await?);
-	}
-
-	// constants
-	pub async fn constants_at<'address, Addr>(&self, address: &Addr) -> Result<Addr::Target, RpcError>
-	where
-		Addr: subxt_core::constants::address::Address,
-	{
-		let val = self.subxt_constants().at(address)?;
-		Ok(val)
-	}
-}
-
-#[cfg(not(feature = "subxt"))]
-impl Client {
-	// Storage
-	pub async fn storage_fetch<'address, Addr>(
-		&self,
-		address: &Addr,
-		at: H256,
-	) -> Result<Option<Addr::Target>, RpcError>
-	where
-		Addr: subxt_core::storage::address::Address<IsFetchable = subxt_core::utils::Yes> + 'address,
-	{
-		let metadata = self.online_client.metadata();
-		let key = subxt_core::storage::get_address_bytes(address, &metadata)?;
-		let key = std::format!("0x{}", hex::encode(key));
-		if let Some(data) = self.rpc_state_get_storage(&key, Some(at)).await? {
-			let val = subxt_core::storage::decode_value(&mut &*data, address, &metadata)?;
-			Ok(Some(val))
-		} else {
-			Ok(None)
-		}
-	}
-
-	pub async fn storage_fetch_or_default<'address, Addr>(
-		&self,
-		address: &Addr,
-		at: H256,
-	) -> Result<Addr::Target, RpcError>
-	where
-		Addr: subxt_core::storage::address::Address<
-				IsFetchable = subxt_core::utils::Yes,
-				IsDefaultable = subxt_core::utils::Yes,
-			> + 'address,
-	{
-		if let Some(data) = self.storage_fetch(address, at).await? {
-			Ok(data)
-		} else {
-			let metadata = self.online_client.metadata();
-			let val = subxt_core::storage::default_value(address, &metadata)?;
-			Ok(val)
-		}
-	}
-
-	// constants
-	pub async fn constants_at<'address, Addr>(&self, address: &Addr) -> Result<Addr::Target, RpcError>
-	where
-		Addr: subxt_core::constants::address::Address,
-	{
-		let metadata = self.online_client.metadata();
-		let val = subxt_core::constants::get(address, &metadata)?;
-		Ok(val)
 	}
 }

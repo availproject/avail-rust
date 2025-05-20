@@ -1,12 +1,6 @@
+use crate::{api_dev_custom::RuntimeEvent, client::Client, config::AvailConfig, error::RpcError};
 use primitive_types::H256;
 use subxt_core::events::Phase;
-
-use crate::{
-	api_dev_custom::RuntimeEvent,
-	client::{online_client::OnlineClientT, Client},
-	config::AvailConfig,
-	error::RpcError,
-};
 
 pub const EVENTS_STORAGE_ADDRESS: &str = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
 

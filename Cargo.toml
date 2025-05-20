@@ -30,6 +30,7 @@ bounded-collections = { version = "0.2.0", default-features = false, features = 
 primitive-types = { version = "0.13.1", default-features = false }
 log = { version = "0.4.22", default-features = false }
 env_logger = { version = "0.11.5", default-features = false, features = ["humantime", "auto-color" ] }
+futures = { version = "0.3.31", default-features = false }
 
 # Scale
 scale-info = { version = "2.11.6", default-features = false, features = ["bit-vec"] }

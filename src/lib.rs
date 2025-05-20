@@ -20,10 +20,11 @@ pub use api_dev::api as subxt_avail;
 pub use api_dev_custom as avail;
 
 pub use bounded_collections::BoundedVec;
+pub use client::Client;
 pub use primitive_types::H256;
 pub use primitives::{
 	kate::{Cell, GDataProof, GRow},
-	AvailHeader, DecodedTransaction, DefaultExtrinsicParams,
+	AvailHeader, DecodedTransaction, DefaultExtrinsicParams, TransactionCall,
 };
 pub use transaction::{
 	BlockState, ReceiptMethod, SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction,
@@ -50,14 +51,13 @@ pub mod ext {
 }
 
 pub mod prelude {
-	pub use super::*;
-
 	pub use super::config::*;
 	pub use super::constants::dev_accounts::*;
 	pub use super::constants::*;
 	pub use super::ext;
 	pub use super::extensions::*;
 	pub use super::transaction_options::*;
+	pub use super::*;
 	pub use avail::{RuntimeCall, RuntimeEvent};
 	pub use primitive_types::{H256, U256};
 	pub use primitives::{
@@ -69,6 +69,6 @@ pub mod prelude {
 
 	pub use super::{
 		client::Client, error::ClientError, error::RpcError, BlockState, BoundedVec, ReceiptMethod,
-		SubmittableTransaction, SubmittedTransaction, TransactionReceipt,
+		SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction, TransactionReceipt,
 	};
 }

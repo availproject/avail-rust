@@ -283,6 +283,7 @@ dependencies = [
  "bounded-collections",
  "env_logger",
  "frame-metadata 20.0.0",
+ "futures",
  "hex",
  "impl-serde",
  "log",

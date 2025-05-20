@@ -17,6 +17,14 @@ pub struct OpaqueTransaction {
 	pub call: Vec<u8>,
 }
 
+impl TryFrom<Vec<u8>> for OpaqueTransaction {
+	type Error = codec::Error;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_slice())
+	}
+}
+
 impl TryFrom<&Vec<u8>> for OpaqueTransaction {
 	type Error = codec::Error;
 

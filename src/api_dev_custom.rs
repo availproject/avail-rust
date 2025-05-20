@@ -97,6 +97,14 @@ impl TryFrom<&Vec<u8>> for RuntimeCall {
 	}
 }
 
+impl TryFrom<Vec<u8>> for RuntimeCall {
+	type Error = codec::Error;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_slice())
+	}
+}
+
 #[derive(Debug, Clone)]
 #[repr(u8)]
 pub enum RuntimeEvent {
@@ -2256,6 +2264,12 @@ pub mod system {
 
 	pub mod storage {
 		use super::*;
+
+		pub fn account_iter() -> StaticAddress<(), super::system::types::AccountInfo, (), Yes, Yes> {
+			let address = StaticAddress::new_static("System", "Account", (), Default::default());
+			address.unvalidated()
+		}
+
 		pub fn account(
 			account_id: &AccountId,
 		) -> StaticAddress<StaticStorageKey<AccountId>, super::system::types::AccountInfo, Yes, Yes, ()> {
