@@ -1,0 +1,49 @@
+[package]
+name = "avail-rust-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = {  workspace = true }
+codec = { workspace = true  }
+impl-serde = { workspace = true }
+hex = { workspace = true, default-features = false }
+bounded-collections = { workspace = true }
+primitive-types = { workspace = true }
+thiserror = { workspace = true }
+
+# Scale
+scale-info = { workspace = true }
+scale-decode = { workspace = true }
+scale-encode = { workspace = true }
+
+# Subxt
+subxt-core = { workspace = true }
+subxt-signer = {workspace = true }
+subxt-rpcs = { workspace = true }
+
+# Enabled with Subxt
+subxt = { workspace = true, optional = true }
+
+[features]
+default = []
+subxt_metadata = []
+subxt = [
+	"dep:subxt",
+]
+native = [
+	"subxt?/native",
+	"subxt-core/std",
+	"subxt-signer/std",
+	"subxt-rpcs/native",
+]
+wasm = [
+	"subxt?/web",
+	"subxt-signer/web",
+	"subxt-rpcs/web",
+]

@@ -21,7 +21,7 @@ book-publish:
     git commit -m 'Book Deployed'
     git pf
 fmt:
-    cargo +nightly fmt &&  cd ./examples && cargo +nightly fmt
+    cargo +nightly fmt
 lint:
     cargo clippy
 lint-fix:

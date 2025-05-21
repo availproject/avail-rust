@@ -37,5 +37,5 @@ subxt codegen --crate "::subxt_core" --version 14 \
 | sed -En "s/pub struct DataLookupItem/#\[serde\(rename_all = \"camelCase\"\)\] \0/p" \
 | sed -En "s/pub struct BlockLength\b/#\[serde\(rename_all = \"camelCase\"\)\] \0/p" \
 | sed -E '1i \#\[allow(clippy::all)]' \
-| rustfmt --edition=2021 --emit=stdout > ./src/api_dev.rs
-echo "🎁 Avail-SubXt API generated in './src/api_dev.rs'"
+| rustfmt --edition=2021 --emit=stdout > ./core/src/chain_types_generated.rs
+echo "🎁 Avail-SubXt API generated in './core/src/chain_types_generated.rs'"

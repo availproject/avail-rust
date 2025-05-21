@@ -1,24 +1,16 @@
 [workspace]
+members = [
+	"core",
+	"client",
+]
+resolver = "2"
 
-[package]
-name = "avail-rust"
+[workspace.package]
 edition = "2021"
 version = "0.2.0"
 license = "ISC"
 
-exclude = [
-    "build_api.sh",
-    "build_sdk.sh",
-    "install_dependencies.sh",
-    "justfile",
-    "scripts/*",
-    "changelog",
-]
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[dependencies]
+[workspace.dependencies]
 tokio = { version = "1.45.0", default-features = false, features = ["sync", "time", "rt"] }
 serde = { version = "1.0.195", default-features = false, features = ["derive" ] }
 serde_json = { version = "1.0.124", default-features = false, features = ["raw_value"] }
@@ -46,32 +38,11 @@ subxt-rpcs = { version = "0.41.0", default-features = false }
 thiserror = { version = "2.0.12", default-features = false }
 
 # Enabled with reqwest
-reqwest = { version = "0.12.15", default-features = false, features = ["json", "default-tls"], optional = true }
+reqwest = { version = "0.12.15", default-features = false, features = ["json", "default-tls"] }
 
 # Enabled with Subxt
-subxt = { version = "0.41.0", default-features = false, optional = true  }
+subxt = { version = "0.41.0", default-features = false }
 
 # Enabled with Wasm
-wasm-bindgen-futures = { version =  "0.4.50", optional = true  }
-wasmtimer = { version = "0.4.1", optional = true }
-
-[features]
-default = [ "native", "reqwest" ]
-subxt_metadata = []
-reqwest = ["dep:reqwest"]
-subxt = [
-	"dep:subxt",
-]
-native = [
-	"subxt?/native",
-	"subxt-core/std",
-	"subxt-signer/std",
-	"subxt-rpcs/native",
-]
-wasm = [
-	"subxt?/web",
-	"subxt-signer/web",
-	"subxt-rpcs/web",
-	"wasmtimer",
-	"wasm-bindgen-futures",
-]
+wasm-bindgen-futures = { version =  "0.4.50" }
+wasmtimer = { version = "0.4.1" }

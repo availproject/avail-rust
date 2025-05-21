@@ -1,0 +1,52 @@
+[package]
+name = "avail-rust-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+impl-serde = { workspace = true }
+hex = { workspace = true, default-features = false }
+bounded-collections = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+frame-metadata = { workspace = true }
+
+# Logging
+log = { workspace = true }
+env_logger = { workspace = true }
+
+# Scale
+scale-info = { workspace = true }
+thiserror = { workspace = true }
+
+# Enabled with Wasm
+wasm-bindgen-futures = { workspace = true, optional = true  }
+wasmtimer = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+
+core = { package = "avail-rust-core", path = "./../core", default-features = false }
+
+[features]
+default = [ "native", "reqwest" ]
+reqwest = [
+	"dep:reqwest"
+]
+subxt_metadata = [
+	"core/subxt_metadata"
+]
+subxt = [
+	"core/subxt"
+]
+native = [
+	"core/native"
+]
+wasm = [
+	"core/wasm",
+	"wasmtimer",
+	"wasm-bindgen-futures",
+]
