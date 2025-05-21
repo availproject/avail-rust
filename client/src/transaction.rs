@@ -240,37 +240,37 @@ impl Utils {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
 		let mut next_block_height = mortality.block_height + 1;
-		let mut next_block_hash = H256::zero();
+		let mut tmp_block_hash = H256::zero();
 		let mut block_id = client.best_block_id().await?;
 
 		info!(target: "lib", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, block_id.height, mortality_ends_height);
 		while mortality_ends_height >= next_block_height {
-			if next_block_hash == block_id.hash || next_block_height > block_id.height {
+			if tmp_block_hash == block_id.hash || next_block_height > block_id.height {
 				sleep(Duration::from_secs(3)).await;
 				block_id = client.best_block_id().await?;
 				continue;
 			}
 
 			if next_block_height == (block_id.height + 1) {
-				next_block_hash = block_id.hash;
-				let state_nonce = client.block_nonce(account_id, next_block_hash).await?;
+				let state_nonce = client.block_nonce(account_id, block_id.hash).await?;
 				if state_nonce > nonce {
-					info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
-					return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
+					info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, block_id.height, block_id.hash, state_nonce);
+					return Ok(Some(block_id));
 				}
-				info!(target: "lib", "Account ({}, {}). At block ({}, {:?})found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+				info!(target: "lib", "Account ({}, {}). At block ({}, {:?})found nonce: {}", nonce, account_id, block_id.height, block_id.hash, state_nonce);
+				tmp_block_hash = block_id.hash;
 			} else {
 				let Some(hash) = client.block_hash(next_block_height).await? else {
 					return Err(std::format!("Block hash not found. Height: {}", next_block_height).into());
 				};
 
-				next_block_hash = hash;
-				let state_nonce = client.block_nonce(account_id, next_block_hash).await?;
+				tmp_block_hash = hash;
+				let state_nonce = client.block_nonce(account_id, tmp_block_hash).await?;
 				if state_nonce > nonce {
-					info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
-					return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
+					info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, tmp_block_hash, state_nonce);
+					return Ok(Some(BlockId::from((tmp_block_hash, next_block_height))));
 				}
-				info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
+				info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, tmp_block_hash, state_nonce);
 				next_block_height += 1;
 			}
 		}
