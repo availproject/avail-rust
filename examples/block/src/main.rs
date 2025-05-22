@@ -1,11 +1,11 @@
 use avail::data_availability::events::Event;
 use avail::data_availability::tx::Call;
-use avail_rust::ext::subxt_core::config::Header;
-use avail_rust::prelude::*;
+use avail_rust_client::ext::subxt_core::config::Header;
+use avail_rust_client::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	Client::enable_logging();
+	Client::enable_tracing(false);
 	let client = Client::new(TURING_ENDPOINT).await?;
 	let blocks = client.block_client();
 

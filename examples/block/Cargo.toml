@@ -5,5 +5,5 @@ name = "block-example"
 edition = "2021"
 
 [dependencies]
-avail-rust = { path = "./../../.", default-features = false, features = ["native", "reqwest" ] }
+avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "tracing"] }
 tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }

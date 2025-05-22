@@ -2,12 +2,12 @@
 //! - Submitting multiple transactions at the same time
 //!
 
-use avail_rust::prelude::*;
+use avail_rust_client::prelude::*;
 use tokio::task::JoinHandle;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	Client::enable_logging();
+	Client::enable_tracing(false);
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let mut futures: Vec<JoinHandle<Result<(), ClientError>>> = Vec::new();

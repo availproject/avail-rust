@@ -1,10 +1,10 @@
-use avail_rust::prelude::*;
+use avail_rust_client::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	Client::enable_logging();
+	Client::enable_tracing(false);
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 	let signer = alice();
 

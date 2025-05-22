@@ -11,8 +11,9 @@ use core::{
 	transaction::{TransactionAdditional, TransactionCall},
 	AccountId, BlockId, H256,
 };
-use log::info;
 use std::{sync::Arc, time::Duration};
+#[cfg(feature = "tracing")]
+use tracing::info;
 
 pub trait SubmittableTransactionLike {
 	fn to_submittable(&self, client: Client) -> SubmittableTransaction;
@@ -205,6 +206,7 @@ impl Utils {
 		let mut next_block_height = mortality.block_height + 1;
 		let mut block_height = client.finalized_block_height().await?;
 
+		#[cfg(feature = "tracing")]
 		info!(target: "lib", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, block_height, mortality_ends_height);
 		while mortality_ends_height >= next_block_height {
 			if next_block_height > block_height {
@@ -219,10 +221,12 @@ impl Utils {
 
 			let state_nonce = client.block_nonce(account_id, next_block_hash).await?;
 			if state_nonce > nonce {
+				#[cfg(feature = "tracing")]
 				info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 				return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
 			}
 
+			#[cfg(feature = "tracing")]
 			info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, next_block_hash, state_nonce);
 			next_block_height += 1;
 		}
@@ -243,6 +247,7 @@ impl Utils {
 		let mut tmp_block_hash = H256::zero();
 		let mut block_id = client.best_block_id().await?;
 
+		#[cfg(feature = "tracing")]
 		info!(target: "lib", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, block_id.height, mortality_ends_height);
 		while mortality_ends_height >= next_block_height {
 			if tmp_block_hash == block_id.hash || next_block_height > block_id.height {
@@ -254,9 +259,11 @@ impl Utils {
 			if next_block_height == (block_id.height + 1) {
 				let state_nonce = client.block_nonce(account_id, block_id.hash).await?;
 				if state_nonce > nonce {
+					#[cfg(feature = "tracing")]
 					info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, block_id.height, block_id.hash, state_nonce);
 					return Ok(Some(block_id));
 				}
+				#[cfg(feature = "tracing")]
 				info!(target: "lib", "Account ({}, {}). At block ({}, {:?})found nonce: {}", nonce, account_id, block_id.height, block_id.hash, state_nonce);
 				tmp_block_hash = block_id.hash;
 			} else {
@@ -267,9 +274,11 @@ impl Utils {
 				tmp_block_hash = hash;
 				let state_nonce = client.block_nonce(account_id, tmp_block_hash).await?;
 				if state_nonce > nonce {
+					#[cfg(feature = "tracing")]
 					info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done.", nonce, account_id, next_block_height, tmp_block_hash, state_nonce);
 					return Ok(Some(BlockId::from((tmp_block_hash, next_block_height))));
 				}
+				#[cfg(feature = "tracing")]
 				info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}", nonce, account_id, next_block_height, tmp_block_hash, state_nonce);
 				next_block_height += 1;
 			}

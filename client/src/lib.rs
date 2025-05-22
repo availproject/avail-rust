@@ -41,7 +41,10 @@ pub mod prelude {
 		*,
 	};
 	pub use avail::{RuntimeCall, RuntimeEvent};
+	#[cfg(feature = "subxt_metadata")]
+	pub use core::avail_generated;
 	pub use core::{
+		avail,
 		decoded_transaction::{DecodedTransaction, OpaqueTransaction},
 		transaction::Transaction,
 		AccountId, MultiAddress,

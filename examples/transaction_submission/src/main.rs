@@ -6,11 +6,11 @@
 //! - Fetching and displaying Transaction Events
 //!
 
-use avail_rust::prelude::*;
+use avail_rust_client::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	Client::enable_logging();
+	Client::enable_tracing(false);
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 	let signer = alice();
 

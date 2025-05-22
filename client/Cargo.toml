@@ -17,8 +17,8 @@ serde_json = { workspace = true }
 frame-metadata = { workspace = true }
 
 # Logging
-log = { workspace = true }
-env_logger = { workspace = true }
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, features = ["fmt", "json"], optional = true  }
 
 # Scale
 scale-info = { workspace = true }
@@ -32,7 +32,11 @@ reqwest = { workspace = true, optional = true }
 core = { package = "avail-rust-core", path = "./../core", default-features = false }
 
 [features]
-default = [ "native", "reqwest" ]
+default = [ "native", "reqwest", "tracing" ]
+tracing = [
+	"dep:tracing",
+	"tracing-subscriber"
+]
 reqwest = [
 	"dep:reqwest"
 ]

@@ -19,7 +19,6 @@ use block_client::BlockClient;
 use cache_client::CacheClient;
 use core::{rpc::substrate::BlockWithJustifications, AccountId, AvailHeader, BlockId, H256};
 use event_client::EventClient;
-use log::info;
 use online_client::OnlineClientT;
 use storage_client::StorageClient;
 
@@ -78,8 +77,17 @@ impl Client {
 		Transactions(self.clone())
 	}
 
-	pub fn enable_logging() {
-		env_logger::builder().init();
+	#[cfg(feature = "tracing")]
+	pub fn enable_tracing(enable_json_format: bool) {
+		use tracing_subscriber::util::SubscriberInitExt;
+
+		let builder = tracing_subscriber::fmt::SubscriberBuilder::default();
+		if enable_json_format {
+			let builder = builder.json();
+			builder.finish().init();
+		} else {
+			builder.finish().init();
+		}
 	}
 
 	// Header
@@ -260,9 +268,10 @@ impl Client {
 		let encoded = tx.encode();
 		let tx_hash = self.rpc_author_submit_extrinsic(&encoded).await?;
 
+		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signed {
 			if let core::MultiAddress::Id(account_id) = &signed.address {
-				info!(target: "lib", "Transaction submitted. Tx Hash: {:?}, Address: {}, Nonce: {}, App Id: {}", tx_hash, account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
+				tracing::info!(target: "lib", "Transaction submitted. Tx Hash: {:?}, Address: {}, Nonce: {}, App Id: {}", tx_hash, account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
 			}
 		}
 

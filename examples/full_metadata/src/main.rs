@@ -1,13 +1,13 @@
-use avail_rust::prelude::*;
-use subxt_avail::runtime_types::bounded_collections::bounded_vec::BoundedVec;
+use avail_generated::runtime_types::bounded_collections::bounded_vec::BoundedVec;
+use avail_rust_client::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	Client::enable_logging();
+	Client::enable_tracing(false);
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let data = BoundedVec(vec![0, 1, 2]);
-	let payload = subxt_avail::tx().data_availability().submit_data(data);
+	let payload = avail_generated::tx().data_availability().submit_data(data);
 	let options = Options::new().app_id(2);
 
 	// Payload can be converted to SubmittableTransaction
@@ -20,8 +20,9 @@ async fn main() -> Result<(), ClientError> {
 	);
 
 	// Payload can be converted to Transaction Call
-	let tx_call = payload.to_transaction_call(&client)?;
-	let st = tx_call.sign_and_submit(&client, &alice(), options).await?;
+	let call = payload.to_transaction_call(&client)?;
+	let tx = SubmittableTransaction::new(client, call);
+	let st = tx.sign_and_submit(&alice(), options).await?;
 	let receipt = st.receipt(false).await?.expect("");
 	println!(
 		"Block Hash: {:?}, Block Height: {:?}",
