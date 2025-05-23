@@ -1,8 +1,8 @@
 use crate::{
-	client::Client,
+	clients::Client,
 	subxt_core::{self, storage::address::Address, utils::Yes},
 };
-use core::H256;
+use client_core::H256;
 
 #[cfg(feature = "subxt")]
 use crate::subxt::backend::StreamOfResults;
@@ -73,7 +73,11 @@ impl StorageClient {
 		storage.iter(address)
 	}
 
-	pub async fn fetch<'address, Addr>(&self, address: &Addr, at: H256) -> Result<Option<Addr::Target>, core::Error>
+	pub async fn fetch<'address, Addr>(
+		&self,
+		address: &Addr,
+		at: H256,
+	) -> Result<Option<Addr::Target>, client_core::Error>
 	where
 		Addr: Address<IsFetchable = Yes> + 'address,
 	{
@@ -97,7 +101,11 @@ impl StorageClient {
 		}
 	}
 
-	pub async fn fetch_or_default<'address, Addr>(&self, address: &Addr, at: H256) -> Result<Addr::Target, core::Error>
+	pub async fn fetch_or_default<'address, Addr>(
+		&self,
+		address: &Addr,
+		at: H256,
+	) -> Result<Addr::Target, client_core::Error>
 	where
 		Addr: Address<IsFetchable = Yes, IsDefaultable = Yes> + 'address,
 	{
@@ -120,7 +128,7 @@ impl StorageClient {
 	}
 
 	// constants
-	pub async fn constants_at<'address, Addr>(&self, address: &Addr) -> Result<Addr::Target, core::Error>
+	pub async fn constants_at<'address, Addr>(&self, address: &Addr) -> Result<Addr::Target, client_core::Error>
 	where
 		Addr: subxt_core::constants::address::Address,
 	{

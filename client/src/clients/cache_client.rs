@@ -1,4 +1,4 @@
-use core::{rpc::substrate::BlockWithJustifications, H256};
+use client_core::{rpc::substrate::BlockWithJustifications, H256};
 use std::{
 	fmt::Debug,
 	sync::{Arc, RwLock},

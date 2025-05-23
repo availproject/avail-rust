@@ -1,5 +1,5 @@
-use crate::client::Client;
-use core::{rpc, HashIndex, H256};
+use super::Client;
+use client_core::{rpc, HashIndex, H256};
 
 #[derive(Clone)]
 pub struct BlockClient {
@@ -11,15 +11,15 @@ impl BlockClient {
 		Self { client }
 	}
 
-	pub async fn block(&self, at: H256) -> Result<Option<rpc::Block>, core::Error> {
+	pub async fn block(&self, at: H256) -> Result<Option<rpc::Block>, client_core::Error> {
 		self.client.block(at).await.map(|b| b.map(|x| x.block))
 	}
 
-	pub async fn best_block(&self) -> Result<rpc::Block, core::Error> {
+	pub async fn best_block(&self) -> Result<rpc::Block, client_core::Error> {
 		self.client.best_block().await.map(|b| b.block)
 	}
 
-	pub async fn finalized_block(&self) -> Result<rpc::Block, core::Error> {
+	pub async fn finalized_block(&self) -> Result<rpc::Block, client_core::Error> {
 		self.client
 			.finalized_block()
 			.await
@@ -36,8 +36,8 @@ impl BlockClient {
 }
 
 pub mod block_data {
-	use crate::{client::Client, codec::Decode};
-	use core::{
+	use crate::{clients::Client, codec::Decode};
+	use client_core::{
 		config::TransactionLocation,
 		decoded_transaction::{DecodedEvent, RuntimePhase},
 		rpc::block::block_data as rpc_block_data,
@@ -81,7 +81,7 @@ pub mod block_data {
 			self
 		}
 
-		pub async fn build(&self, client: &Client) -> Result<Block, core::Error> {
+		pub async fn build(&self, client: &Client) -> Result<Block, client_core::Error> {
 			let response = client.rpc_block_data(self.params.clone()).await.map(|x| x.value)?;
 			let calls = response
 				.calls
@@ -156,8 +156,8 @@ pub mod block_data {
 }
 
 pub mod block_overview {
-	use crate::client::Client;
-	use core::{rpc::block::block_overview as rpc_block_overview, HashIndex};
+	use crate::clients::Client;
+	use client_core::{rpc::block::block_overview as rpc_block_overview, HashIndex};
 
 	#[derive(Clone)]
 	pub struct BlockBuilder {
@@ -206,7 +206,7 @@ pub mod block_overview {
 			self
 		}
 
-		pub async fn build(&self, client: &Client) -> Result<rpc_block_overview::Block, core::Error> {
+		pub async fn build(&self, client: &Client) -> Result<rpc_block_overview::Block, client_core::Error> {
 			client.rpc_block_overview(self.params.clone()).await.map(|x| x.value)
 		}
 	}

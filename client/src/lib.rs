@@ -1,4 +1,4 @@
-pub mod client;
+pub mod clients;
 pub mod config;
 pub mod constants;
 pub mod error;
@@ -9,23 +9,22 @@ pub mod transaction_options;
 pub mod transactions;
 
 pub use bounded_collections::BoundedVec;
-pub use client::Client;
+pub use clients::Client;
 pub use transaction::{
 	BlockState, ReceiptMethod, SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction,
 	TransactionReceipt,
 };
 
 #[cfg(feature = "subxt")]
-use core::ext::subxt;
-use core::{
+use client_core::ext::subxt;
+use client_core::{
 	avail,
 	ext::{codec, primitive_types, subxt_core, subxt_rpcs, subxt_signer},
 };
 
 // External
 pub mod ext {
-	pub use core;
-	pub use core::ext::*;
+	pub use client_core::{self, ext::*};
 
 	#[cfg(feature = "reqwest")]
 	pub use reqwest;
@@ -41,9 +40,9 @@ pub mod prelude {
 		*,
 	};
 	pub use avail::{RuntimeCall, RuntimeEvent};
-	#[cfg(feature = "subxt_metadata")]
-	pub use core::avail_generated;
-	pub use core::{
+	#[cfg(feature = "generated_metadata")]
+	pub use client_core::avail_generated;
+	pub use client_core::{
 		avail,
 		decoded_transaction::{DecodedTransaction, OpaqueTransaction},
 		transaction::Transaction,
@@ -53,7 +52,7 @@ pub mod prelude {
 	pub use subxt_signer::{sr25519::Keypair, SecretUri};
 
 	pub use super::{
-		client::Client, error::ClientError, BlockState, BoundedVec, ReceiptMethod, SubmittableTransaction,
+		clients::Client, error::ClientError, BlockState, BoundedVec, ReceiptMethod, SubmittableTransaction,
 		SubmittableTransactionLike, SubmittedTransaction, TransactionReceipt,
 	};
 }

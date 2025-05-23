@@ -3,12 +3,12 @@
 pub enum ClientError {
 	#[cfg(feature = "subxt")]
 	Subxt(crate::subxt::Error) = 0,
-	Core(core::Error) = 1,
+	Core(client_core::Error) = 1,
 	Custom(String) = 2,
 }
 
-impl From<core::Error> for ClientError {
-	fn from(value: core::Error) -> Self {
+impl From<client_core::Error> for ClientError {
+	fn from(value: client_core::Error) -> Self {
 		Self::Core(value)
 	}
 }

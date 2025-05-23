@@ -1,5 +1,5 @@
 pub mod chain_types;
-#[cfg(feature = "subxt_metadata")]
+#[cfg(feature = "generated_metadata")]
 pub mod chain_types_generated;
 pub mod config;
 pub mod decoded_transaction;
@@ -24,7 +24,7 @@ pub use primitive_types::H256;
 pub use transaction::{Era, Transaction, TransactionAdditional, TransactionCall, TransactionExtra, TransactionPayload};
 
 pub use chain_types as avail;
-#[cfg(feature = "subxt_metadata")]
+#[cfg(feature = "generated_metadata")]
 pub use chain_types_generated::api as avail_generated;
 
 pub mod ext {

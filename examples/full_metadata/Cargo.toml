@@ -7,5 +7,5 @@ default-run = "full-metadata-example"
 
 
 [dependencies]
-avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "subxt_metadata", "tracing" ] }
+avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "generated_metadata", "tracing" ] }
 tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }

@@ -1,12 +1,12 @@
 use crate::subxt_signer::{sr25519::Keypair, SecretUri};
-use core::{AccountId, H256};
+use client_core::{AccountId, H256};
 
-#[cfg(feature = "subxt_metadata")]
+#[cfg(feature = "generated_metadata")]
 use crate::subxt_core::tx::payload::DefaultPayload;
-#[cfg(feature = "subxt_metadata")]
+#[cfg(feature = "generated_metadata")]
 use crate::{Client, SubmittableTransaction};
-#[cfg(feature = "subxt_metadata")]
-use core::TransactionCall;
+#[cfg(feature = "generated_metadata")]
+use client_core::TransactionCall;
 
 pub trait H256Ext {
 	fn from_str(s: &str) -> Result<H256, String>;
@@ -87,13 +87,13 @@ impl KeypairExt for Keypair {
 	}
 }
 
-#[cfg(feature = "subxt_metadata")]
+#[cfg(feature = "generated_metadata")]
 pub trait DefaultPayloadExt {
 	fn to_transaction_call(&self, client: &Client) -> Result<TransactionCall, String>;
 	fn to_submittable_transaction(&self, client: Client) -> Result<SubmittableTransaction, String>;
 }
 
-#[cfg(feature = "subxt_metadata")]
+#[cfg(feature = "generated_metadata")]
 impl<CallData: crate::codec::Encode> DefaultPayloadExt for DefaultPayload<CallData> {
 	fn to_transaction_call(&self, client: &Client) -> Result<TransactionCall, String> {
 		let pallet_name = self.pallet_name();

@@ -1,5 +1,5 @@
-use crate::{client::Client, subxt_core::config::Header};
-use core::{AccountId, Era, TransactionExtra, H256};
+use crate::{subxt_core::config::Header, Client};
+use client_core::{AccountId, Era, TransactionExtra, H256};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Options {
@@ -34,7 +34,7 @@ impl Options {
 		self
 	}
 
-	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<RefinedOptions, core::Error> {
+	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<RefinedOptions, client_core::Error> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {
@@ -97,7 +97,7 @@ impl RefinedMortality {
 		}
 	}
 
-	pub async fn from_period(client: &Client, period: u64) -> Result<Self, core::Error> {
+	pub async fn from_period(client: &Client, period: u64) -> Result<Self, client_core::Error> {
 		let header = client.finalized_block_header().await?;
 		let (block_hash, block_height) = (header.hash(), header.number());
 		Ok(Self {

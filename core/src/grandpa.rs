@@ -1,10 +1,10 @@
 use codec::{Codec, Decode};
 use serde::{Serialize, Serializer};
 
-#[cfg(feature = "subxt_metadata")]
+#[cfg(feature = "generated_metadata")]
 use crate::avail_generated::runtime_types::sp_consensus_grandpa::app::Public;
 
-#[cfg(not(feature = "subxt_metadata"))]
+#[cfg(not(feature = "generated_metadata"))]
 pub type Public = [u8; 32];
 
 #[derive(Decode)]
@@ -15,13 +15,13 @@ impl Serialize for AuthorityId {
 	where
 		S: Serializer,
 	{
-		#[cfg(feature = "subxt_metadata")]
+		#[cfg(feature = "generated_metadata")]
 		{
 			let raw = hex::encode(self.0 .0 .0);
 			serializer.serialize_str(&raw)
 		}
 
-		#[cfg(not(feature = "subxt_metadata"))]
+		#[cfg(not(feature = "generated_metadata"))]
 		{
 			let raw = hex::encode(self.0);
 			serializer.serialize_str(&raw)

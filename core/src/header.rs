@@ -60,14 +60,14 @@ where
 	}
 }
 
-/* #[cfg(feature = "subxt_metadata")]
+/* #[cfg(feature = "generated_metadata")]
 pub mod with_subxt_metadata {
 	use super::*;
 	pub use crate::subxt_avail::runtime_types::{
 		avail_core::header::{extension::HeaderExtension, Header as ApiHeader},
 		sp_runtime::generic::digest::{Digest as ApiDigest, DigestItem as ApiDigestItem},
 	};
-	use core::marker::PhantomData;
+	use client_core::marker::PhantomData;
 
 	impl<B, H> From<AvailHeader> for ApiHeader<B, H>
 	where

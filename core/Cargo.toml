@@ -32,7 +32,7 @@ subxt = { workspace = true, optional = true }
 
 [features]
 default = []
-subxt_metadata = []
+generated_metadata = []
 subxt = [
 	"dep:subxt",
 ]

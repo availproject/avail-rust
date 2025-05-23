@@ -2,9 +2,9 @@ use super::transaction::{AlreadyEncoded, TransactionSigned, EXTRINSIC_FORMAT_VER
 use codec::{Compact, Decode, Encode, Error, Input};
 use serde::{Deserialize, Serialize};
 
-#[cfg(not(feature = "subxt_metadata"))]
+#[cfg(not(feature = "generated_metadata"))]
 use crate::avail::{RuntimeCall, RuntimeEvent};
-#[cfg(feature = "subxt_metadata")]
+#[cfg(feature = "generated_metadata")]
 use crate::avail_generated::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
 
 #[derive(Clone)]
@@ -102,12 +102,12 @@ impl DecodedTransaction {
 		self.signature.as_ref().map(|s| s.tx_extra.app_id)
 	}
 
-	#[cfg(not(feature = "subxt_metadata"))]
+	#[cfg(not(feature = "generated_metadata"))]
 	pub fn pallet_index(&self) -> u8 {
 		self.call.pallet_index()
 	}
 
-	#[cfg(not(feature = "subxt_metadata"))]
+	#[cfg(not(feature = "generated_metadata"))]
 	pub fn call_index(&self) -> u8 {
 		self.call.call_index()
 	}

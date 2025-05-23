@@ -29,7 +29,7 @@ wasm-bindgen-futures = { workspace = true, optional = true  }
 wasmtimer = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 
-core = { package = "avail-rust-core", path = "./../core", default-features = false }
+client-core = { package = "avail-rust-core", path = "./../core", default-features = false }
 
 [features]
 default = [ "native", "reqwest", "tracing" ]
@@ -40,17 +40,17 @@ tracing = [
 reqwest = [
 	"dep:reqwest"
 ]
-subxt_metadata = [
-	"core/subxt_metadata"
+generated_metadata = [
+	"client-core/generated_metadata"
 ]
 subxt = [
-	"core/subxt"
+	"client-core/subxt"
 ]
 native = [
-	"core/native"
+	"client-core/native"
 ]
 wasm = [
-	"core/wasm",
+	"client-core/wasm",
 	"wasmtimer",
 	"wasm-bindgen-futures",
 ]
