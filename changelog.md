@@ -1,3 +1,6 @@
+# v0.1.11 Release
+- Added Multiproof RPC
+
 # v0.1.10 Release
 - Updated metadata
 
