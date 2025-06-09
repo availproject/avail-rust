@@ -92,7 +92,7 @@ impl StorageClient {
 			let metadata = self.client.online_client().metadata();
 			let key = subxt_core::storage::get_address_bytes(address, &metadata)?;
 			let key = std::format!("0x{}", hex::encode(key));
-			if let Some(data) = self.client.rpc_state_get_storage(&key, Some(at)).await? {
+			if let Some(data) = self.client.rpc_api().state_get_storage(&key, Some(at)).await? {
 				let val = subxt_core::storage::decode_value(&mut &*data, address, &metadata)?;
 				Ok(Some(val))
 			} else {

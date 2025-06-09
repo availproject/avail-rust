@@ -39,7 +39,12 @@ impl Options {
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {
 			Some(x) => x,
-			None => client.rpc_system_account_next_index(&account_id.to_string()).await?,
+			None => {
+				client
+					.rpc_api()
+					.system_account_next_index(&account_id.to_string())
+					.await?
+			},
 		};
 		let mortality = self.mortality.unwrap_or_else(|| MortalityOption::Period(32));
 		let mortality = match mortality {

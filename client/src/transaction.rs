@@ -285,16 +285,16 @@ impl Utils {
 	}
 }
 
+#[cfg(feature = "tracing")]
 fn trace_new_block(nonce: u32, state_nonce: u32, account_id: &AccountId, block_id: BlockId, search_done: bool) {
-	#[cfg(not(feature = "tracing"))]
-	return;
-
-	#[cfg(feature = "tracing")]
-	{
-		if search_done {
-			info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done", nonce, account_id, block_id.height, block_id.hash, state_nonce);
-		} else {
-			info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}.", nonce, account_id, block_id.height, block_id.hash, state_nonce);
-		}
+	if search_done {
+		info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done", nonce, account_id, block_id.height, block_id.hash, state_nonce);
+	} else {
+		info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}.", nonce, account_id, block_id.height, block_id.hash, state_nonce);
 	}
+}
+
+#[cfg(not(feature = "tracing"))]
+fn trace_new_block(_nonce: u32, _state_nonce: u32, _account_id: &AccountId, _block_id: BlockId, _search_done: bool) {
+	return;
 }

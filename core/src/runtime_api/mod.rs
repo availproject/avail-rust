@@ -3,9 +3,21 @@ use crate::{
 	error::Error,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
 };
-use codec::Decode;
 use primitive_types::H256;
 use subxt_rpcs::RpcClient;
+
+pub async fn call_raw<T: codec::Decode>(
+	client: &RpcClient,
+	method: &str,
+	data: &[u8],
+	at: Option<H256>,
+) -> Result<T, Error> {
+	let result: String = substrate::state_call(client, method, data, at).await?;
+	let result = hex::decode(result.trim_start_matches("0x")).map_err(|e| e.to_string())?;
+	let result = T::decode(&mut result.as_slice()).map_err(|e| e.to_string())?;
+
+	Ok(result)
+}
 
 pub async fn api_transaction_payment_query_info(
 	client: &RpcClient,
@@ -16,11 +28,7 @@ pub async fn api_transaction_payment_query_info(
 	let bytes = len.to_ne_bytes();
 	extrinsic.extend_from_slice(&bytes);
 
-	let result = substrate::state_call(client, "TransactionPaymentApi_query_info", &extrinsic, at).await?;
-	let result = hex::decode(result.trim_start_matches("0x")).map_err(|e| e.to_string())?;
-	let result = RuntimeDispatchInfo::decode(&mut result.as_slice()).map_err(|e| e.to_string())?;
-
-	Ok(result)
+	call_raw(client, "TransactionPaymentApi_query_info", &extrinsic, at).await
 }
 
 pub async fn api_transaction_payment_query_fee_details(
@@ -32,11 +40,7 @@ pub async fn api_transaction_payment_query_fee_details(
 	let bytes = len.to_ne_bytes();
 	extrinsic.extend_from_slice(&bytes);
 
-	let result = substrate::state_call(client, "TransactionPaymentApi_query_fee_details", &extrinsic, at).await?;
-	let result = hex::decode(result.trim_start_matches("0x")).map_err(|e| e.to_string())?;
-	let result = FeeDetails::decode(&mut result.as_slice()).map_err(|e| e.to_string())?;
-
-	Ok(result)
+	call_raw(client, "TransactionPaymentApi_query_fee_details", &extrinsic, at).await
 }
 
 pub async fn api_transaction_payment_query_call_info(
@@ -48,11 +52,7 @@ pub async fn api_transaction_payment_query_call_info(
 	let bytes = len.to_ne_bytes();
 	call.extend_from_slice(&bytes);
 
-	let result = substrate::state_call(client, "TransactionPaymentCallApi_query_call_info", &call, at).await?;
-	let result = hex::decode(result.trim_start_matches("0x")).map_err(|e| e.to_string())?;
-	let result = RuntimeDispatchInfo::decode(&mut result.as_slice()).map_err(|e| e.to_string())?;
-
-	Ok(result)
+	call_raw(client, "TransactionPaymentCallApi_query_call_info", &call, at).await
 }
 
 pub async fn api_transaction_payment_query_call_fee_details(
@@ -64,9 +64,5 @@ pub async fn api_transaction_payment_query_call_fee_details(
 	let bytes = len.to_ne_bytes();
 	call.extend_from_slice(&bytes);
 
-	let result = substrate::state_call(client, "TransactionPaymentCallApi_query_call_fee_details", &call, at).await?;
-	let result = hex::decode(result.trim_start_matches("0x")).map_err(|e| e.to_string())?;
-	let result = FeeDetails::decode(&mut result.as_slice()).map_err(|e| e.to_string())?;
-
-	Ok(result)
+	call_raw(client, "TransactionPaymentCallApi_query_call_fee_details", &call, at).await
 }

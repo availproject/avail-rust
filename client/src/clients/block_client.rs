@@ -82,7 +82,11 @@ pub mod block_data {
 		}
 
 		pub async fn build(&self, client: &Client) -> Result<Block, client_core::Error> {
-			let response = client.rpc_block_data(self.params.clone()).await.map(|x| x.value)?;
+			let response = client
+				.rpc_api()
+				.block_data(self.params.clone())
+				.await
+				.map(|x| x.value)?;
 			let calls = response
 				.calls
 				.map(|list| list.into_iter().map(CallData::from).collect());
@@ -207,7 +211,11 @@ pub mod block_overview {
 		}
 
 		pub async fn build(&self, client: &Client) -> Result<rpc_block_overview::Block, client_core::Error> {
-			client.rpc_block_overview(self.params.clone()).await.map(|x| x.value)
+			client
+				.rpc_api()
+				.block_overview(self.params.clone())
+				.await
+				.map(|x| x.value)
 		}
 	}
 }

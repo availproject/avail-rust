@@ -4,10 +4,8 @@ use super::{
 };
 use crate::{
 	avail,
-	subxt_rpcs::{
-		methods::legacy::{RuntimeVersion, SystemHealth},
-		RpcClient,
-	},
+	clients::{rpc_api::RpcAPI, runtime_api::RuntimeApi},
+	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
 	transaction::SubmittedTransaction,
 	transaction_options::Options,
@@ -15,16 +13,7 @@ use crate::{
 	BlockState,
 };
 use avail::{balances::types::AccountData, system::types::AccountInfo};
-use client_core::{
-	rpc,
-	rpc::{
-		kate::{BlockLength, Cell, GDataProof, GRow, ProofResponse},
-		substrate::{
-			BlockWithJustifications, NodeRole, PeerInfo, RpcMethods, SessionKeys, SyncState, SystemProperties,
-		},
-	},
-	AccountId, AvailHeader, BlockId, H256,
-};
+use client_core::{rpc::substrate::BlockWithJustifications, AccountId, AvailHeader, BlockId, H256};
 use std::sync::Arc;
 
 #[cfg(feature = "subxt")]
@@ -101,7 +90,7 @@ impl Client {
 
 	// Header
 	pub async fn header(&self, at: H256) -> Result<Option<AvailHeader>, client_core::Error> {
-		self.rpc_chain_get_header(Some(at)).await
+		self.rpc_api().chain_get_header(Some(at)).await
 	}
 
 	pub async fn best_block_header(&self) -> Result<AvailHeader, client_core::Error> {
@@ -126,7 +115,7 @@ impl Client {
 			return Ok(Some(block.as_ref().clone()));
 		}
 
-		let block = self.rpc_chain_get_block(Some(at)).await?;
+		let block = self.rpc_api().chain_get_block(Some(at)).await?;
 		if let Some(block) = block {
 			self.cache_client.push_signed_block((at, Arc::new(block.clone())));
 			Ok(Some(block))
@@ -153,11 +142,11 @@ impl Client {
 
 	// Block Hash
 	pub async fn block_hash(&self, block_height: u32) -> Result<Option<H256>, client_core::Error> {
-		self.rpc_chain_get_block_hash(Some(block_height)).await
+		self.rpc_api().chain_get_block_hash(Some(block_height)).await
 	}
 
 	pub async fn best_block_hash(&self) -> Result<H256, client_core::Error> {
-		let hash = self.rpc_chain_get_block_hash(None).await?;
+		let hash = self.rpc_api().chain_get_block_hash(None).await?;
 		let Some(hash) = hash else {
 			return Err("Best block hash not found.".into());
 		};
@@ -165,12 +154,12 @@ impl Client {
 	}
 
 	pub async fn finalized_block_hash(&self) -> Result<H256, client_core::Error> {
-		self.rpc_chain_get_finalized_head().await
+		self.rpc_api().chain_get_finalized_head().await
 	}
 
 	// Block Height
 	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, client_core::Error> {
-		let header = self.rpc_chain_get_header(Some(block_hash)).await?;
+		let header = self.rpc_api().chain_get_header(Some(block_hash)).await?;
 		Ok(header.map(|x| x.number))
 	}
 
@@ -203,7 +192,8 @@ impl Client {
 
 	// Nonce
 	pub async fn nonce(&self, account_id: &AccountId) -> Result<u32, client_core::Error> {
-		self.rpc_system_account_next_index(&std::format!("{}", account_id))
+		self.rpc_api()
+			.system_account_next_index(&std::format!("{}", account_id))
 			.await
 	}
 
@@ -278,7 +268,7 @@ impl Client {
 	// Sign and submit
 	pub async fn sign_and_submit<'a>(&self, tx: &client_core::Transaction<'a>) -> Result<H256, client_core::Error> {
 		let encoded = tx.encode();
-		let tx_hash = self.rpc_author_submit_extrinsic(&encoded).await?;
+		let tx_hash = self.rpc_api().author_submit_extrinsic(&encoded).await?;
 
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signed {
@@ -374,152 +364,11 @@ impl Client {
 }
 
 impl Client {
-	pub async fn rpc_block_overview(
-		&self,
-		params: rpc::block::block_overview::Params,
-	) -> Result<rpc::block::block_overview::Response, client_core::Error> {
-		Ok(rpc::block::block_overview(&self.rpc_client, params).await?)
+	pub fn runtime_api(&self) -> RuntimeApi {
+		RuntimeApi::new(self.clone())
 	}
 
-	pub async fn rpc_block_data(
-		&self,
-		params: rpc::block::block_data::Params,
-	) -> Result<rpc::block::block_data::Response, client_core::Error> {
-		Ok(rpc::block::block_data(&self.rpc_client, params).await?)
-	}
-
-	pub async fn rpc_system_account_next_index(&self, address: &str) -> Result<u32, client_core::Error> {
-		Ok(rpc::substrate::system_account_next_index(&self.rpc_client, address).await?)
-	}
-
-	pub async fn rpc_system_chain(&self) -> Result<String, client_core::Error> {
-		Ok(rpc::substrate::system_chain(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_chain_type(&self) -> Result<String, client_core::Error> {
-		Ok(rpc::substrate::system_chain_type(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_health(&self) -> Result<SystemHealth, client_core::Error> {
-		Ok(rpc::substrate::system_health(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_local_listen_addresses(&self) -> Result<Vec<String>, client_core::Error> {
-		Ok(rpc::substrate::system_local_listen_addresses(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_local_peer_id(&self) -> Result<String, client_core::Error> {
-		Ok(rpc::substrate::system_local_peer_id(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_name(&self) -> Result<String, client_core::Error> {
-		Ok(rpc::substrate::system_name(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_node_roles(&self) -> Result<Vec<NodeRole>, client_core::Error> {
-		Ok(rpc::substrate::system_node_roles(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_peers(&self) -> Result<Vec<PeerInfo>, client_core::Error> {
-		Ok(rpc::substrate::system_peers(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_properties(&self) -> Result<SystemProperties, client_core::Error> {
-		Ok(rpc::substrate::system_properties(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_sync_state(&self) -> Result<SyncState, client_core::Error> {
-		Ok(rpc::substrate::system_sync_state(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_system_version(&self) -> Result<String, client_core::Error> {
-		Ok(rpc::substrate::system_version(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_chain_get_block(
-		&self,
-		at: Option<H256>,
-	) -> Result<Option<BlockWithJustifications>, client_core::Error> {
-		Ok(rpc::substrate::chain_get_block(&self.rpc_client, at).await?)
-	}
-
-	pub async fn rpc_chain_get_block_hash(
-		&self,
-		block_height: Option<u32>,
-	) -> Result<Option<H256>, client_core::Error> {
-		Ok(rpc::substrate::chain_get_block_hash(&self.rpc_client, block_height).await?)
-	}
-
-	pub async fn rpc_chain_get_finalized_head(&self) -> Result<H256, client_core::Error> {
-		Ok(rpc::substrate::chain_get_finalized_head(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_chain_get_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, client_core::Error> {
-		Ok(rpc::substrate::chain_get_header(&self.rpc_client, at).await?)
-	}
-
-	pub async fn rpc_author_rotate_keys(&self) -> Result<SessionKeys, client_core::Error> {
-		Ok(rpc::substrate::author_rotate_keys(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_author_submit_extrinsic(&self, extrinsic: &[u8]) -> Result<H256, client_core::Error> {
-		Ok(rpc::substrate::author_submit_extrinsic(&self.rpc_client, extrinsic).await?)
-	}
-
-	pub async fn rpc_state_get_runtime_version(&self, at: Option<H256>) -> Result<RuntimeVersion, client_core::Error> {
-		Ok(rpc::substrate::state_get_runtime_version(&self.rpc_client, at).await?)
-	}
-
-	pub async fn rpc_state_call(
-		&self,
-		method: &str,
-		data: &[u8],
-		at: Option<H256>,
-	) -> Result<String, client_core::Error> {
-		Ok(rpc::substrate::state_call(&self.rpc_client, method, data, at).await?)
-	}
-
-	pub async fn rpc_state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, client_core::Error> {
-		Ok(rpc::substrate::state_get_metadata(&self.rpc_client, at).await?)
-	}
-
-	pub async fn rpc_state_get_storage(
-		&self,
-		key: &str,
-		at: Option<H256>,
-	) -> Result<Option<Vec<u8>>, client_core::Error> {
-		Ok(rpc::substrate::state_get_storage(&self.rpc_client, key, at).await?)
-	}
-
-	pub async fn rpc_rpc_methods(&self) -> Result<RpcMethods, client_core::Error> {
-		Ok(rpc::substrate::rpc_methods(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_chainspec_v1_genesishash(&self) -> Result<H256, client_core::Error> {
-		Ok(rpc::substrate::chainspec_v1_genesishash(&self.rpc_client).await?)
-	}
-
-	pub async fn rpc_kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, client_core::Error> {
-		Ok(rpc::kate::kate_block_length(&self.rpc_client, at).await?)
-	}
-
-	pub async fn rpc_kate_query_data_proof(
-		&self,
-		transaction_index: u32,
-		at: Option<H256>,
-	) -> Result<ProofResponse, client_core::Error> {
-		Ok(rpc::kate::kate_query_data_proof(&self.rpc_client, transaction_index, at).await?)
-	}
-
-	pub async fn rpc_kate_query_proof(
-		&self,
-		cells: Vec<Cell>,
-		at: Option<H256>,
-	) -> Result<Vec<GDataProof>, client_core::Error> {
-		Ok(rpc::kate::kate_query_proof(&self.rpc_client, cells, at).await?)
-	}
-
-	pub async fn rpc_kate_query_rows(&self, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, client_core::Error> {
-		Ok(rpc::kate::kate_query_rows(&self.rpc_client, rows, at).await?)
+	pub fn rpc_api(&self) -> RpcAPI {
+		RpcAPI::new(self.clone())
 	}
 }

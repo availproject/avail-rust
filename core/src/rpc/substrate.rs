@@ -5,6 +5,7 @@ use primitive_types::H256;
 use serde::{Deserialize, Deserializer};
 use subxt_core::config::{substrate::BlakeTwo256, Hasher};
 use subxt_rpcs::{
+	client::RpcParams,
 	methods::legacy::{RuntimeVersion, SystemHealth},
 	rpc_params, RpcClient,
 };
@@ -136,6 +137,15 @@ impl TryFrom<&[u8]> for SessionKeys {
 #[derive(Default, Deserialize)]
 pub struct RpcMethods {
 	pub methods: Vec<String>,
+}
+
+pub async fn call_raw<T: serde::de::DeserializeOwned>(
+	client: &RpcClient,
+	method: &str,
+	params: RpcParams,
+) -> Result<T, subxt_rpcs::Error> {
+	let value = client.request(method, params).await?;
+	Ok(value)
 }
 
 pub async fn system_account_next_index(client: &RpcClient, address: &str) -> Result<u32, subxt_rpcs::Error> {

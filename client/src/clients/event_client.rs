@@ -53,7 +53,8 @@ impl EventClient {
 
 		let entries = self
 			.client
-			.rpc_state_get_storage(EVENTS_STORAGE_ADDRESS, Some(at))
+			.rpc_api()
+			.state_get_storage(EVENTS_STORAGE_ADDRESS, Some(at))
 			.await?;
 		let Some(event_bytes) = entries else {
 			return Ok(Vec::new());
@@ -85,7 +86,8 @@ impl EventClient {
 
 		let entries = self
 			.client
-			.rpc_state_get_storage(EVENTS_STORAGE_ADDRESS, Some(at))
+			.rpc_api()
+			.state_get_storage(EVENTS_STORAGE_ADDRESS, Some(at))
 			.await?;
 		let Some(event_bytes) = entries else {
 			return Ok(Vec::new());
