@@ -60,7 +60,7 @@ pub struct BlockWithJustifications {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Block {
 	/// The block header.
-	pub header: super::AvailHeader,
+	pub header: AvailHeader,
 	#[serde(deserialize_with = "from_string_to_vec")]
 	pub extrinsics: Vec<Vec<u8>>,
 }

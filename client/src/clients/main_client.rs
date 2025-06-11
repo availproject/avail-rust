@@ -5,6 +5,7 @@ use super::{
 use crate::{
 	avail,
 	clients::{rpc_api::RpcAPI, runtime_api::RuntimeApi},
+	subscription,
 	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
 	transaction::SubmittedTransaction,
@@ -375,12 +376,39 @@ impl Client {
 	}
 
 	// Subscription
-	pub fn subscribe_block_header(
+	pub fn subscription_block_header(
 		&self,
 		block_height: u32,
 		poll_rate: Duration,
 		use_best_block: bool,
-	) -> crate::utils::HeaderSubscription {
-		crate::utils::HeaderSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
+	) -> subscription::HeaderSubscription {
+		subscription::HeaderSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
+	}
+
+	pub fn subscription_block(
+		&self,
+		block_height: u32,
+		poll_rate: Duration,
+		use_best_block: bool,
+	) -> subscription::BlockSubscription {
+		subscription::BlockSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
+	}
+
+	pub fn subscription_block_height(
+		&self,
+		block_height: u32,
+		poll_rate: Duration,
+		use_best_block: bool,
+	) -> subscription::BlockHeightSubscription {
+		subscription::BlockHeightSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
+	}
+
+	pub fn subscription_justification(
+		&self,
+		block_height: u32,
+		poll_rate: Duration,
+		use_best_block: bool,
+	) -> subscription::JustificationSubscription {
+		subscription::JustificationSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
 	}
 }

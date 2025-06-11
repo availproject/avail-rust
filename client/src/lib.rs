@@ -4,10 +4,10 @@ pub mod constants;
 pub mod error;
 pub mod extensions;
 pub mod platform;
+pub mod subscription;
 pub mod transaction;
 pub mod transaction_options;
 pub mod transactions;
-pub mod utils;
 
 pub use bounded_collections::{self, BoundedVec};
 pub use clients::Client;
