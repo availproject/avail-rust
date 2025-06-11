@@ -31,13 +31,9 @@ pub use avail_rust_core::avail_generated;
 
 // Exporting types from ext libraries
 pub use avail_rust_core::{
-	avail,
-	decoded_transaction::{DecodedTransaction, OpaqueTransaction},
-	header::{CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension},
-	transaction::{
-		Transaction, TransactionAdditional, TransactionCall, TransactionExtra, TransactionPayload, TransactionSigned,
-	},
-	AccountId, AvailHeader, MultiAddress,
+	avail, AccountId, AvailHeader, CompactDataLookup, DecodedTransaction, HeaderExtension, KateCommitment,
+	MultiAddress, OpaqueTransaction, Transaction, TransactionAdditional, TransactionCall, TransactionExtra,
+	TransactionPayload, TransactionSigned, V3HeaderExtension,
 };
 pub use primitive_types::{H256, U256};
 pub use subxt_signer::{sr25519::Keypair, SecretUri};

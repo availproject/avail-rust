@@ -16,12 +16,14 @@ pub use config::{
 	AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockId, DispatchIndex, EmittedIndex,
 	HashIndex, MultiAddress, MultiSignature,
 };
-pub use decoded_transaction::DecodedTransaction;
+pub use decoded_transaction::{DecodedTransaction, OpaqueTransaction};
 pub use error::Error;
 pub use extrinsics_params::DefaultExtrinsicParams;
-pub use header::AvailHeader;
-pub use primitive_types::H256;
-pub use transaction::{Era, Transaction, TransactionAdditional, TransactionCall, TransactionExtra, TransactionPayload};
+pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
+pub use primitive_types::{H256, U256};
+pub use transaction::{
+	Era, Transaction, TransactionAdditional, TransactionCall, TransactionExtra, TransactionPayload, TransactionSigned,
+};
 
 pub use chain_types as avail;
 #[cfg(feature = "generated_metadata")]
