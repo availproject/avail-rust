@@ -1,6 +1,7 @@
 use super::{AccountId, MultiAddress, MultiSignature};
 use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use subxt_core::config::{substrate::BlakeTwo256, Hasher};
 use subxt_signer::sr25519::Keypair;
@@ -234,5 +235,25 @@ impl<'a> Decode for Transaction<'a> {
 			signed,
 			call: Cow::Owned(call),
 		})
+	}
+}
+
+impl<'a> Serialize for Transaction<'a> {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		let bytes = self.encode();
+		impl_serde::serialize::serialize(&bytes, serializer)
+	}
+}
+
+impl<'a, 'b> Deserialize<'a> for Transaction<'b> {
+	fn deserialize<D>(de: D) -> Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'a>,
+	{
+		let r = impl_serde::serialize::deserialize(de)?;
+		Decode::decode(&mut &r[..]).map_err(|e| serde::de::Error::custom(format!("Decode error: {}", e)))
 	}
 }

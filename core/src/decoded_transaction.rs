@@ -87,6 +87,46 @@ impl Decode for OpaqueTransaction {
 	}
 }
 
+impl Encode for OpaqueTransaction {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		let mut encoded_tx_inner = Vec::new();
+		if let Some(signed) = &self.signature {
+			0x84u8.encode_to(&mut encoded_tx_inner);
+			signed.address.encode_to(&mut encoded_tx_inner);
+			signed.signature.encode_to(&mut encoded_tx_inner);
+			signed.tx_extra.encode_to(&mut encoded_tx_inner);
+		} else {
+			0x4u8.encode_to(&mut encoded_tx_inner);
+		}
+
+		encoded_tx_inner.extend(&self.call);
+		let mut encoded_tx = Compact(encoded_tx_inner.len() as u32).encode();
+		encoded_tx.append(&mut encoded_tx_inner);
+
+		dest.write(&encoded_tx)
+	}
+}
+
+impl Serialize for OpaqueTransaction {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		let bytes = self.encode();
+		impl_serde::serialize::serialize(&bytes, serializer)
+	}
+}
+
+impl<'a> Deserialize<'a> for OpaqueTransaction {
+	fn deserialize<D>(de: D) -> Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'a>,
+	{
+		let r = impl_serde::serialize::deserialize(de)?;
+		Decode::decode(&mut &r[..]).map_err(|e| serde::de::Error::custom(format!("Decode error: {}", e)))
+	}
+}
+
 #[derive(Clone)]
 pub struct DecodedTransaction {
 	/// The signature, address, number of extrinsics have come before from
@@ -162,6 +202,36 @@ impl Decode for DecodedTransaction {
 	}
 }
 
+impl Encode for DecodedTransaction {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		let mut encoded_tx_inner = Vec::new();
+		if let Some(signed) = &self.signature {
+			0x84u8.encode_to(&mut encoded_tx_inner);
+			signed.address.encode_to(&mut encoded_tx_inner);
+			signed.signature.encode_to(&mut encoded_tx_inner);
+			signed.tx_extra.encode_to(&mut encoded_tx_inner);
+		} else {
+			0x4u8.encode_to(&mut encoded_tx_inner);
+		}
+
+		self.call.encode_to(&mut encoded_tx_inner);
+		let mut encoded_tx = Compact(encoded_tx_inner.len() as u32).encode();
+		encoded_tx.append(&mut encoded_tx_inner);
+
+		dest.write(&encoded_tx)
+	}
+}
+
+impl Serialize for DecodedTransaction {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		let bytes = self.encode();
+		impl_serde::serialize::serialize(&bytes, serializer)
+	}
+}
+
 impl<'a> Deserialize<'a> for DecodedTransaction {
 	fn deserialize<D>(de: D) -> Result<Self, D::Error>
 	where
@@ -187,4 +257,110 @@ pub enum RuntimePhase {
 	Finalization,
 	/// Initializing the block.
 	Initialization,
+}
+
+#[cfg(test)]
+pub mod test {
+	use std::borrow::Cow;
+
+	use codec::Encode;
+	use subxt_core::utils::AccountId32;
+	use subxt_core::utils::Era;
+
+	use crate::avail::data_availability::tx::SubmitData;
+	use crate::decoded_transaction::OpaqueTransaction;
+	use crate::transaction::TransactionSigned;
+	use crate::DecodedTransaction;
+	use crate::Transaction;
+	use crate::{chain_types::TransactionCallLike, TransactionExtra};
+	use crate::{MultiAddress, MultiSignature};
+
+	#[test]
+	fn test_encoding_decoding() {
+		let call = SubmitData { data: vec![0, 1, 2, 3] }.to_call();
+
+		let account_id = AccountId32([1u8; 32]);
+		let signature = [1u8; 64];
+		let signed = TransactionSigned {
+			address: MultiAddress::Id(account_id),
+			signature: MultiSignature::Sr25519(signature),
+			tx_extra: TransactionExtra {
+				era: Era::Mortal { period: 4, phase: 2 },
+				nonce: 1,
+				tip: 2u128,
+				app_id: 3,
+			},
+		};
+
+		let tx = Transaction {
+			signed: Some(signed.clone()),
+			call: Cow::Owned(call.clone()),
+		};
+
+		let encoded_tx = tx.encode();
+
+		// Opaque Transaction
+		let opaque = OpaqueTransaction::try_from(&encoded_tx).unwrap();
+		let opaque_encoded = opaque.encode();
+
+		assert_eq!(encoded_tx, opaque_encoded);
+
+		// Decoded Transaction
+		let decoded = DecodedTransaction::try_from(&encoded_tx).unwrap();
+		let decoded_encoded = decoded.encode();
+
+		assert_eq!(encoded_tx, decoded_encoded);
+	}
+
+	#[test]
+	fn test_serialize_deserialize() {
+		let call = SubmitData { data: vec![0, 1, 2, 3] }.to_call();
+
+		let account_id = AccountId32([1u8; 32]);
+		let signature = [1u8; 64];
+		let signed = TransactionSigned {
+			address: MultiAddress::Id(account_id),
+			signature: MultiSignature::Sr25519(signature),
+			tx_extra: TransactionExtra {
+				era: Era::Mortal { period: 4, phase: 2 },
+				nonce: 1,
+				tip: 2u128,
+				app_id: 3,
+			},
+		};
+
+		let tx = Transaction {
+			signed: Some(signed.clone()),
+			call: Cow::Owned(call.clone()),
+		};
+
+		let encoded_tx = tx.encode();
+		let expected_serialized = std::format!("0x{}", hex::encode(&encoded_tx));
+
+		// Transaction Serialized
+		let serialized = serde_json::to_string(&tx).unwrap();
+		assert_eq!(serialized.trim_matches('"'), expected_serialized);
+
+		// Transaction Deserialized
+		let tx_deserialized: Transaction = serde_json::from_str(&serialized).unwrap();
+		assert_eq!(encoded_tx, tx_deserialized.encode());
+
+		// Opaque Serialized
+		let opaque = OpaqueTransaction::try_from(&encoded_tx).unwrap();
+		let serialized = serde_json::to_string(&opaque).unwrap();
+		assert_eq!(serialized.trim_matches('"'), expected_serialized);
+
+		// Opaque Deserialized
+		let opaque_deserialized: OpaqueTransaction = serde_json::from_str(&serialized).unwrap();
+		assert_eq!(encoded_tx, opaque_deserialized.encode());
+
+		// Decoded Serialized
+		let decoded = DecodedTransaction::try_from(&encoded_tx).unwrap();
+		let serialized = serde_json::to_string(&decoded).unwrap();
+		assert_eq!(serialized.trim_matches('"'), expected_serialized);
+
+		// Decoded Deserialized
+		let decoded_deserialized: DecodedTransaction = serde_json::from_str(&serialized).unwrap();
+		assert_eq!(encoded_tx, decoded_deserialized.encode());
+	}
 }
