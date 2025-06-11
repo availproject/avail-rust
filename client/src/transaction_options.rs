@@ -34,7 +34,11 @@ impl Options {
 		self
 	}
 
-	pub async fn build(self, client: &Client, account_id: &AccountId) -> Result<RefinedOptions, avail_rust_core::Error> {
+	pub async fn build(
+		self,
+		client: &Client,
+		account_id: &AccountId,
+	) -> Result<RefinedOptions, avail_rust_core::Error> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {

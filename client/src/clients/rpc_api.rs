@@ -101,7 +101,10 @@ impl RpcAPI {
 		Ok(rpc::substrate::chain_get_block(&self.client.rpc_client, at).await?)
 	}
 
-	pub async fn chain_get_block_hash(&self, block_height: Option<u32>) -> Result<Option<H256>, avail_rust_core::Error> {
+	pub async fn chain_get_block_hash(
+		&self,
+		block_height: Option<u32>,
+	) -> Result<Option<H256>, avail_rust_core::Error> {
 		Ok(rpc::substrate::chain_get_block_hash(&self.client.rpc_client, block_height).await?)
 	}
 
@@ -125,7 +128,12 @@ impl RpcAPI {
 		Ok(rpc::substrate::state_get_runtime_version(&self.client.rpc_client, at).await?)
 	}
 
-	pub async fn state_call(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<String, avail_rust_core::Error> {
+	pub async fn state_call(
+		&self,
+		method: &str,
+		data: &[u8],
+		at: Option<H256>,
+	) -> Result<String, avail_rust_core::Error> {
 		Ok(rpc::substrate::state_call(&self.client.rpc_client, method, data, at).await?)
 	}
 
@@ -133,7 +141,11 @@ impl RpcAPI {
 		Ok(rpc::substrate::state_get_metadata(&self.client.rpc_client, at).await?)
 	}
 
-	pub async fn state_get_storage(&self, key: &str, at: Option<H256>) -> Result<Option<Vec<u8>>, avail_rust_core::Error> {
+	pub async fn state_get_storage(
+		&self,
+		key: &str,
+		at: Option<H256>,
+	) -> Result<Option<Vec<u8>>, avail_rust_core::Error> {
 		Ok(rpc::substrate::state_get_storage(&self.client.rpc_client, key, at).await?)
 	}
 
