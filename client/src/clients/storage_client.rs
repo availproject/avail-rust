@@ -2,7 +2,7 @@ use crate::{
 	clients::Client,
 	subxt_core::{self, storage::address::Address, utils::Yes},
 };
-use client_core::H256;
+use avail_rust_core::H256;
 
 #[cfg(feature = "subxt")]
 use crate::subxt::backend::StreamOfResults;
@@ -77,7 +77,7 @@ impl StorageClient {
 		&self,
 		address: &Addr,
 		at: H256,
-	) -> Result<Option<Addr::Target>, client_core::Error>
+	) -> Result<Option<Addr::Target>, avail_rust_core::Error>
 	where
 		Addr: Address<IsFetchable = Yes> + 'address,
 	{
@@ -105,7 +105,7 @@ impl StorageClient {
 		&self,
 		address: &Addr,
 		at: H256,
-	) -> Result<Addr::Target, client_core::Error>
+	) -> Result<Addr::Target, avail_rust_core::Error>
 	where
 		Addr: Address<IsFetchable = Yes, IsDefaultable = Yes> + 'address,
 	{
@@ -128,7 +128,7 @@ impl StorageClient {
 	}
 
 	// constants
-	pub async fn constants_at<'address, Addr>(&self, address: &Addr) -> Result<Addr::Target, client_core::Error>
+	pub async fn constants_at<'address, Addr>(&self, address: &Addr) -> Result<Addr::Target, avail_rust_core::Error>
 	where
 		Addr: subxt_core::constants::address::Address,
 	{

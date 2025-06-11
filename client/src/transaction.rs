@@ -4,7 +4,7 @@ use crate::{
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 	Client,
 };
-use client_core::{
+use avail_rust_core::{
 	avail::TransactionCallLike,
 	config::TransactionLocation,
 	rpc::substrate::BlockWithJustifications,
@@ -43,7 +43,7 @@ impl SubmittableTransaction {
 		&self,
 		signer: &Keypair,
 		options: Options,
-	) -> Result<SubmittedTransaction, client_core::Error> {
+	) -> Result<SubmittedTransaction, avail_rust_core::Error> {
 		self.client.sign_and_submit_call(signer, &self.call, options).await
 	}
 }
@@ -85,7 +85,7 @@ impl SubmittedTransaction {
 		}
 	}
 
-	pub async fn receipt(&self, use_best_block: bool) -> Result<Option<TransactionReceipt>, client_core::Error> {
+	pub async fn receipt(&self, use_best_block: bool) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
 		Utils::transaction_receipt(
 			self.client.clone(),
 			self.tx_hash,
@@ -123,7 +123,7 @@ impl TransactionReceipt {
 		}
 	}
 
-	pub async fn block_state(&self) -> Result<BlockState, client_core::Error> {
+	pub async fn block_state(&self) -> Result<BlockState, avail_rust_core::Error> {
 		self.client.block_state(self.block_id).await
 	}
 
@@ -136,7 +136,7 @@ impl TransactionReceipt {
 pub async fn get_new_or_cached_block(
 	client: &Client,
 	block_id: &BlockId,
-) -> Result<Arc<BlockWithJustifications>, client_core::Error> {
+) -> Result<Arc<BlockWithJustifications>, avail_rust_core::Error> {
 	if let Some(block) = client.cache_client().find_signed_block(block_id.hash) {
 		return Ok(block);
 	}
@@ -165,7 +165,7 @@ impl Utils {
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
 		use_best_block: bool,
-	) -> Result<Option<TransactionReceipt>, client_core::Error> {
+	) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
 		let Some(block_id) =
 			Self::find_block_id_via_nonce(&client, nonce, account_id, mortality, use_best_block).await?
 		else {
@@ -187,7 +187,7 @@ impl Utils {
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
 		use_best_block: bool,
-	) -> Result<Option<BlockId>, client_core::Error> {
+	) -> Result<Option<BlockId>, avail_rust_core::Error> {
 		match use_best_block {
 			true => Self::find_best_block_block_id_via_nonce(client, nonce, account_id, mortality).await,
 			false => Self::find_finalized_block_block_id_via_nonce(client, nonce, account_id, mortality).await,
@@ -200,7 +200,7 @@ impl Utils {
 		nonce: u32,
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
-	) -> Result<Option<BlockId>, client_core::Error> {
+	) -> Result<Option<BlockId>, avail_rust_core::Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
 		let mut next_block_height = mortality.block_height + 1;
@@ -240,7 +240,7 @@ impl Utils {
 		nonce: u32,
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
-	) -> Result<Option<BlockId>, client_core::Error> {
+	) -> Result<Option<BlockId>, avail_rust_core::Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 		let mut current_block_id = BlockId::from((mortality.block_hash, mortality.block_height));
 		let mut new_block_id = client.best_block_id().await?;

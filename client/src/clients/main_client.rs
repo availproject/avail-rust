@@ -13,7 +13,7 @@ use crate::{
 	BlockState,
 };
 use avail::{balances::types::AccountData, system::types::AccountInfo};
-use client_core::{rpc::substrate::BlockWithJustifications, AccountId, AvailHeader, BlockId, H256};
+use avail_rust_core::{rpc::substrate::BlockWithJustifications, AccountId, AvailHeader, BlockId, H256};
 use std::{sync::Arc, time::Duration};
 
 #[cfg(feature = "subxt")]
@@ -31,7 +31,7 @@ pub struct Client {
 
 impl Client {
 	#[cfg(feature = "reqwest")]
-	pub async fn new(endpoint: &str) -> Result<Client, client_core::Error> {
+	pub async fn new(endpoint: &str) -> Result<Client, avail_rust_core::Error> {
 		let rpc_client = super::reqwest_client::ReqwestClient::new(endpoint);
 		let rpc_client = RpcClient::new(rpc_client);
 
@@ -47,7 +47,7 @@ impl Client {
 	pub async fn new_custom(
 		rpc_client: RpcClient,
 		online_client: super::online_client::OnlineClient,
-	) -> Result<Client, client_core::Error> {
+	) -> Result<Client, avail_rust_core::Error> {
 		Ok(Self {
 			online_client,
 			rpc_client,
@@ -59,7 +59,7 @@ impl Client {
 	pub async fn new_custom(
 		rpc_client: RpcClient,
 		online_client: crate::config::AOnlineClient,
-	) -> Result<Client, client_core::Error> {
+	) -> Result<Client, avail_rust_core::Error> {
 		Ok(Self {
 			online_client,
 			rpc_client,
@@ -89,11 +89,11 @@ impl Client {
 	}
 
 	// Header
-	pub async fn block_header(&self, at: H256) -> Result<Option<AvailHeader>, client_core::Error> {
+	pub async fn block_header(&self, at: H256) -> Result<Option<AvailHeader>, avail_rust_core::Error> {
 		self.rpc_api().chain_get_header(Some(at)).await
 	}
 
-	pub async fn best_block_header(&self) -> Result<AvailHeader, client_core::Error> {
+	pub async fn best_block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
 		let header = self.block_header(self.best_block_hash().await?).await?;
 		let Some(header) = header else {
 			return Err("Best block header not found.".into());
@@ -101,7 +101,7 @@ impl Client {
 		Ok(header)
 	}
 
-	pub async fn finalized_block_header(&self) -> Result<AvailHeader, client_core::Error> {
+	pub async fn finalized_block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
 		let header = self.block_header(self.finalized_block_hash().await?).await?;
 		let Some(header) = header else {
 			return Err("Finalized block header not found.".into());
@@ -110,7 +110,7 @@ impl Client {
 	}
 
 	// (RPC) Block
-	pub async fn block(&self, at: H256) -> Result<Option<BlockWithJustifications>, client_core::Error> {
+	pub async fn block(&self, at: H256) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
 		if let Some(block) = self.cache_client.find_signed_block(at) {
 			return Ok(Some(block.as_ref().clone()));
 		}
@@ -124,7 +124,7 @@ impl Client {
 		}
 	}
 
-	pub async fn best_block(&self) -> Result<BlockWithJustifications, client_core::Error> {
+	pub async fn best_block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
 		let block = self.block(self.best_block_hash().await?).await?;
 		let Some(block) = block else {
 			return Err("Best block not found.".into());
@@ -132,7 +132,7 @@ impl Client {
 		Ok(block)
 	}
 
-	pub async fn finalized_block(&self) -> Result<BlockWithJustifications, client_core::Error> {
+	pub async fn finalized_block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
 		let block = self.block(self.finalized_block_hash().await?).await?;
 		let Some(block) = block else {
 			return Err("Finalized block not found.".into());
@@ -141,11 +141,11 @@ impl Client {
 	}
 
 	// Block Hash
-	pub async fn block_hash(&self, block_height: u32) -> Result<Option<H256>, client_core::Error> {
+	pub async fn block_hash(&self, block_height: u32) -> Result<Option<H256>, avail_rust_core::Error> {
 		self.rpc_api().chain_get_block_hash(Some(block_height)).await
 	}
 
-	pub async fn best_block_hash(&self) -> Result<H256, client_core::Error> {
+	pub async fn best_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
 		let hash = self.rpc_api().chain_get_block_hash(None).await?;
 		let Some(hash) = hash else {
 			return Err("Best block hash not found.".into());
@@ -153,26 +153,26 @@ impl Client {
 		Ok(hash)
 	}
 
-	pub async fn finalized_block_hash(&self) -> Result<H256, client_core::Error> {
+	pub async fn finalized_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
 		self.rpc_api().chain_get_finalized_head().await
 	}
 
 	// Block Height
-	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, client_core::Error> {
+	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, avail_rust_core::Error> {
 		let header = self.rpc_api().chain_get_header(Some(block_hash)).await?;
 		Ok(header.map(|x| x.number))
 	}
 
-	pub async fn best_block_height(&self) -> Result<u32, client_core::Error> {
+	pub async fn best_block_height(&self) -> Result<u32, avail_rust_core::Error> {
 		self.best_block_header().await.map(|x| x.number)
 	}
 
-	pub async fn finalized_block_height(&self) -> Result<u32, client_core::Error> {
+	pub async fn finalized_block_height(&self) -> Result<u32, avail_rust_core::Error> {
 		self.finalized_block_header().await.map(|x| x.number)
 	}
 
 	// Block Id
-	pub async fn best_block_id(&self) -> Result<BlockId, client_core::Error> {
+	pub async fn best_block_id(&self) -> Result<BlockId, avail_rust_core::Error> {
 		let hash = self.best_block_hash().await?;
 		let height = self.block_height(hash).await?;
 		let Some(height) = height else {
@@ -181,7 +181,7 @@ impl Client {
 		Ok(BlockId::from((hash, height)))
 	}
 
-	pub async fn finalized_block_id(&self) -> Result<BlockId, client_core::Error> {
+	pub async fn finalized_block_id(&self) -> Result<BlockId, avail_rust_core::Error> {
 		let hash = self.finalized_block_hash().await?;
 		let height = self.block_height(hash).await?;
 		let Some(height) = height else {
@@ -191,45 +191,45 @@ impl Client {
 	}
 
 	// Nonce
-	pub async fn nonce(&self, account_id: &AccountId) -> Result<u32, client_core::Error> {
+	pub async fn nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
 		self.rpc_api()
 			.system_account_next_index(&std::format!("{}", account_id))
 			.await
 	}
 
-	pub async fn block_nonce(&self, account_id: &AccountId, block_hash: H256) -> Result<u32, client_core::Error> {
+	pub async fn block_nonce(&self, account_id: &AccountId, block_hash: H256) -> Result<u32, avail_rust_core::Error> {
 		self.account_info(account_id, block_hash).await.map(|x| x.nonce)
 	}
 
-	pub async fn best_block_nonce(&self, account_id: &AccountId) -> Result<u32, client_core::Error> {
+	pub async fn best_block_nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
 		self.best_block_account_info(account_id).await.map(|v| v.nonce)
 	}
 
-	pub async fn finalized_block_nonce(&self, account_id: &AccountId) -> Result<u32, client_core::Error> {
+	pub async fn finalized_block_nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
 		self.finalized_block_account_info(account_id).await.map(|v| v.nonce)
 	}
 
 	// Balance
-	pub async fn balance(&self, account_id: &AccountId, at: H256) -> Result<AccountData, client_core::Error> {
+	pub async fn balance(&self, account_id: &AccountId, at: H256) -> Result<AccountData, avail_rust_core::Error> {
 		self.account_info(account_id, at).await.map(|x| x.data)
 	}
 
-	pub async fn best_block_balance(&self, account_id: &AccountId) -> Result<AccountData, client_core::Error> {
+	pub async fn best_block_balance(&self, account_id: &AccountId) -> Result<AccountData, avail_rust_core::Error> {
 		self.best_block_account_info(account_id).await.map(|x| x.data)
 	}
 
-	pub async fn finalized_block_balance(&self, account_id: &AccountId) -> Result<AccountData, client_core::Error> {
+	pub async fn finalized_block_balance(&self, account_id: &AccountId) -> Result<AccountData, avail_rust_core::Error> {
 		self.finalized_block_account_info(account_id).await.map(|x| x.data)
 	}
 
 	// Account Info (nonce, balance, ...)
-	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, client_core::Error> {
+	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, avail_rust_core::Error> {
 		let address = avail::system::storage::account(account_id);
 		let storage = self.storage_client();
 		storage.fetch_or_default(&address, at).await
 	}
 
-	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, client_core::Error> {
+	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, avail_rust_core::Error> {
 		let at = self.best_block_hash().await?;
 		let address = avail::system::storage::account(account_id);
 		let storage = self.storage_client();
@@ -239,7 +239,7 @@ impl Client {
 	pub async fn finalized_block_account_info(
 		&self,
 		account_id: &AccountId,
-	) -> Result<AccountInfo, client_core::Error> {
+	) -> Result<AccountInfo, avail_rust_core::Error> {
 		let at = self.finalized_block_hash().await?;
 		let address = avail::system::storage::account(account_id);
 		let storage = self.storage_client();
@@ -247,7 +247,7 @@ impl Client {
 	}
 
 	// Block State
-	pub async fn block_state(&self, block_id: BlockId) -> Result<BlockState, client_core::Error> {
+	pub async fn block_state(&self, block_id: BlockId) -> Result<BlockState, avail_rust_core::Error> {
 		let real_block_hash = self.block_hash(block_id.height).await?;
 		let Some(real_block_hash) = real_block_hash else {
 			return Ok(BlockState::DoesNotExist);
@@ -266,13 +266,16 @@ impl Client {
 	}
 
 	// Sign and submit
-	pub async fn sign_and_submit<'a>(&self, tx: &client_core::Transaction<'a>) -> Result<H256, client_core::Error> {
+	pub async fn sign_and_submit<'a>(
+		&self,
+		tx: &avail_rust_core::Transaction<'a>,
+	) -> Result<H256, avail_rust_core::Error> {
 		let encoded = tx.encode();
 		let tx_hash = self.rpc_api().author_submit_extrinsic(&encoded).await?;
 
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signed {
-			if let client_core::MultiAddress::Id(account_id) = &signed.address {
+			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
 				tracing::info!(target: "lib", "Transaction submitted. Tx Hash: {:?}, Address: {}, Nonce: {}, App Id: {}", tx_hash, account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
 			}
 		}
@@ -283,9 +286,9 @@ impl Client {
 	pub async fn sign_and_submit_payload<'a>(
 		&self,
 		signer: &Keypair,
-		tx_payload: client_core::TransactionPayload<'a>,
-	) -> Result<H256, client_core::Error> {
-		use client_core::Transaction;
+		tx_payload: avail_rust_core::TransactionPayload<'a>,
+	) -> Result<H256, avail_rust_core::Error> {
+		use avail_rust_core::Transaction;
 
 		let account_id = signer.public_key().to_account_id();
 		let signature = tx_payload.sign(signer);
@@ -298,21 +301,21 @@ impl Client {
 	pub async fn sign_and_submit_call(
 		&self,
 		signer: &Keypair,
-		tx_call: &client_core::TransactionCall,
+		tx_call: &avail_rust_core::TransactionCall,
 		options: Options,
-	) -> Result<SubmittedTransaction, client_core::Error> {
+	) -> Result<SubmittedTransaction, avail_rust_core::Error> {
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(self, &account_id).await?;
 
-		let tx_extra = client_core::TransactionExtra::from(&refined_options);
-		let tx_additional = client_core::TransactionAdditional {
+		let tx_extra = avail_rust_core::TransactionExtra::from(&refined_options);
+		let tx_additional = avail_rust_core::TransactionAdditional {
 			spec_version: self.online_client.spec_version(),
 			tx_version: self.online_client.transaction_version(),
 			genesis_hash: self.online_client.genesis_hash(),
 			fork_hash: refined_options.mortality.block_hash,
 		};
 
-		let tx_payload = client_core::TransactionPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
+		let tx_payload = avail_rust_core::TransactionPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
 		let tx_hash = self.sign_and_submit_payload(signer, tx_payload).await?;
 
 		let value = SubmittedTransaction::new(self.clone(), tx_hash, account_id, refined_options, tx_additional);
@@ -378,6 +381,6 @@ impl Client {
 		poll_rate: Duration,
 		use_best_block: bool,
 	) -> crate::utils::HeaderSubscription {
-		crate::utils::HeaderSubscription::new(Arc::new(self.clone()), block_height, poll_rate)
+		crate::utils::HeaderSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
 	}
 }

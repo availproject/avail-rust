@@ -1,12 +1,12 @@
 use crate::subxt_signer::{sr25519::Keypair, SecretUri};
-use client_core::{AccountId, H256};
+use avail_rust_core::{AccountId, H256};
 
 #[cfg(feature = "generated_metadata")]
 use crate::subxt_core::tx::payload::DefaultPayload;
 #[cfg(feature = "generated_metadata")]
 use crate::{Client, SubmittableTransaction};
 #[cfg(feature = "generated_metadata")]
-use client_core::TransactionCall;
+use avail_rust_core::TransactionCall;
 
 pub trait H256Ext {
 	fn from_str(s: &str) -> Result<H256, String>;

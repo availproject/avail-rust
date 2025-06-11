@@ -1,4 +1,4 @@
-use client_core::AvailHeader;
+use avail_rust_core::AvailHeader;
 use futures::{Stream, StreamExt};
 use std::{future::Future, pin::Pin, sync::Arc, time::Duration};
 
@@ -9,7 +9,8 @@ pub struct HeaderSubscription {
 	next_block_height: u32,
 	poll_rate: Duration,
 	use_best_block: bool,
-	pending: Option<Pin<Box<dyn Future<Output = Result<Option<AvailHeader>, client_core::Error>> + Send + 'static>>>,
+	pending:
+		Option<Pin<Box<dyn Future<Output = Result<Option<AvailHeader>, avail_rust_core::Error>> + Send + 'static>>>,
 }
 
 impl HeaderSubscription {

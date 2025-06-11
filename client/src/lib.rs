@@ -17,15 +17,15 @@ pub use transaction::{
 };
 
 #[cfg(feature = "subxt")]
-use client_core::ext::subxt;
-use client_core::{
+use avail_rust_core::ext::subxt;
+use avail_rust_core::{
 	avail,
 	ext::{codec, primitive_types, subxt_core, subxt_rpcs, subxt_signer},
 };
 
 // External
 pub mod ext {
-	pub use client_core::{self, ext::*};
+	pub use avail_rust_core::{self, ext::*};
 
 	#[cfg(feature = "reqwest")]
 	pub use reqwest;
@@ -42,8 +42,8 @@ pub mod prelude {
 	};
 	pub use avail::{RuntimeCall, RuntimeEvent};
 	#[cfg(feature = "generated_metadata")]
-	pub use client_core::avail_generated;
-	pub use client_core::{
+	pub use avail_rust_core::avail_generated;
+	pub use avail_rust_core::{
 		avail,
 		decoded_transaction::{DecodedTransaction, OpaqueTransaction},
 		transaction::Transaction,

@@ -1,5 +1,5 @@
 use crate::{Client, SubmittableTransaction, SubmittableTransactionLike};
-use client_core::{avail, AccountId, TransactionCall, H256};
+use avail_rust_core::{avail, AccountId, TransactionCall, H256};
 
 pub struct Transactions(pub(crate) Client);
 impl Transactions {

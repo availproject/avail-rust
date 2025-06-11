@@ -1,5 +1,5 @@
 use crate::{clients::Client, config::AvailConfig, subxt_core::events::Phase};
-use client_core::{avail::RuntimeEvent, H256};
+use avail_rust_core::{avail::RuntimeEvent, H256};
 
 pub const EVENTS_STORAGE_ADDRESS: &str = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
 
@@ -48,7 +48,7 @@ impl EventClient {
 	}
 
 	// Block Events
-	pub async fn block_events(&self, at: H256) -> Result<Vec<Event>, client_core::Error> {
+	pub async fn block_events(&self, at: H256) -> Result<Vec<Event>, avail_rust_core::Error> {
 		use crate::subxt_core::events::Events;
 
 		let entries = self
@@ -81,7 +81,7 @@ impl EventClient {
 	}
 
 	// Transaction Events
-	pub async fn transaction_events(&self, tx_index: u32, at: H256) -> Result<Vec<Event>, client_core::Error> {
+	pub async fn transaction_events(&self, tx_index: u32, at: H256) -> Result<Vec<Event>, avail_rust_core::Error> {
 		use crate::subxt_core::events::{Events, Phase};
 
 		let entries = self

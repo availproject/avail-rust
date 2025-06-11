@@ -36,25 +36,25 @@ pub mod subxt_types {
 
 /// A struct representing the signed extra and additional parameters required
 /// to construct a transaction for a avail node.
-pub type AvailExtrinsicParams<T> = client_core::DefaultExtrinsicParams<T>;
+pub type AvailExtrinsicParams<T> = avail_rust_core::DefaultExtrinsicParams<T>;
 
 #[derive(Clone, Debug, Default)]
 pub struct AvailConfig;
 
 impl crate::subxt_core::Config for AvailConfig {
-	type AccountId = client_core::AccountId;
-	type Address = client_core::MultiAddress;
+	type AccountId = avail_rust_core::AccountId;
+	type Address = avail_rust_core::MultiAddress;
 	type ExtrinsicParams = AvailExtrinsicParams<Self>;
-	type Hash = client_core::BlockHash;
-	type Hasher = client_core::BlakeTwo256;
-	type Header = client_core::AvailHeader;
-	type Signature = client_core::MultiSignature;
+	type Hash = avail_rust_core::BlockHash;
+	type Hasher = avail_rust_core::BlakeTwo256;
+	type Header = avail_rust_core::AvailHeader;
+	type Signature = avail_rust_core::MultiSignature;
 	type AssetId = u32;
 }
 
 #[cfg(not(feature = "subxt"))]
 impl RpcConfig for AvailConfig {
-	type Header = client_core::AvailHeader;
-	type Hash = client_core::BlockHash;
-	type AccountId = client_core::AccountId;
+	type Header = avail_rust_core::AvailHeader;
+	type Hash = avail_rust_core::BlockHash;
+	type AccountId = avail_rust_core::AccountId;
 }
