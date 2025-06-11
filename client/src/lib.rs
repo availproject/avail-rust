@@ -22,6 +22,7 @@ pub use transaction::{
 };
 pub use transaction_options::{MortalityOption, Options, RefinedMortality, RefinedOptions};
 
+pub use avail_rust_core;
 #[cfg(feature = "subxt")]
 pub use avail_rust_core::ext::subxt;
 pub use avail_rust_core::ext::{codec, primitive_types, scale_info, subxt_core, subxt_rpcs, subxt_signer};
