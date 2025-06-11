@@ -14,7 +14,7 @@ use crate::{
 };
 use avail::{balances::types::AccountData, system::types::AccountInfo};
 use client_core::{rpc::substrate::BlockWithJustifications, AccountId, AvailHeader, BlockId, H256};
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 #[cfg(feature = "subxt")]
 use crate::config::{ABlocksClient, AConstantsClient, AStorageClient};
@@ -89,12 +89,12 @@ impl Client {
 	}
 
 	// Header
-	pub async fn header(&self, at: H256) -> Result<Option<AvailHeader>, client_core::Error> {
+	pub async fn block_header(&self, at: H256) -> Result<Option<AvailHeader>, client_core::Error> {
 		self.rpc_api().chain_get_header(Some(at)).await
 	}
 
 	pub async fn best_block_header(&self) -> Result<AvailHeader, client_core::Error> {
-		let header = self.header(self.best_block_hash().await?).await?;
+		let header = self.block_header(self.best_block_hash().await?).await?;
 		let Some(header) = header else {
 			return Err("Best block header not found.".into());
 		};
@@ -102,7 +102,7 @@ impl Client {
 	}
 
 	pub async fn finalized_block_header(&self) -> Result<AvailHeader, client_core::Error> {
-		let header = self.header(self.finalized_block_hash().await?).await?;
+		let header = self.block_header(self.finalized_block_hash().await?).await?;
 		let Some(header) = header else {
 			return Err("Finalized block header not found.".into());
 		};
@@ -361,14 +361,23 @@ impl Client {
 	pub fn subxt_constants_client(&self) -> AConstantsClient {
 		self.online_client.constants()
 	}
-}
 
-impl Client {
+	// Api
 	pub fn runtime_api(&self) -> RuntimeApi {
 		RuntimeApi::new(self.clone())
 	}
 
 	pub fn rpc_api(&self) -> RpcAPI {
 		RpcAPI::new(self.clone())
+	}
+
+	// Subscription
+	pub fn subscribe_block_header(
+		&self,
+		block_height: u32,
+		poll_rate: Duration,
+		use_best_block: bool,
+	) -> crate::utils::HeaderSubscription {
+		crate::utils::HeaderSubscription::new(Arc::new(self.clone()), block_height, poll_rate)
 	}
 }

@@ -232,6 +232,7 @@ dependencies = [
  "avail-rust-core",
  "bounded-collections",
  "frame-metadata 20.0.0",
+ "futures",
  "hex",
  "impl-serde",
  "reqwest",

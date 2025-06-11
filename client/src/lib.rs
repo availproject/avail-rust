@@ -7,6 +7,7 @@ pub mod platform;
 pub mod transaction;
 pub mod transaction_options;
 pub mod transactions;
+pub mod utils;
 
 pub use bounded_collections::BoundedVec;
 pub use clients::Client;
