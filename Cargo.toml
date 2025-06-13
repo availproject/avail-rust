@@ -37,9 +37,9 @@ hyper = { version = "1.6.0", default-features = false, features = ["http1", "cli
 hyper-util = { version = "0.1.0", default-features = false }
 http-body-util = { version = "0.1.3", default-features = false  }
 
-avail-core = {  git = "https://github.com/availproject/avail-core", default-features = false, tag="core-node-8", features = ["serde"] }
-kate = {  git = "https://github.com/availproject/avail-core", default-features = false, tag="core-node-8", features=["serde"]}
-kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false,  tag="core-node-8", features=["serde"] }
+avail-core = {  git = "https://github.com/availproject/avail-core", default-features = false, tag="core-node-10", features = ["serde"] }
+kate = {  git = "https://github.com/availproject/avail-core", default-features = false, tag="core-node-10", features=["serde"]}
+kate-recovery = {  git = "https://github.com/availproject/avail-core", default-features = false,  tag="core-node-10", features=["serde"] }
 
 [features]
 default = [ "native" ]
