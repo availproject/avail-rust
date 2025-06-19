@@ -1,4 +1,4 @@
-use super::rpc::substrate;
+use super::rpc;
 use crate::{
 	error::Error,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
@@ -12,7 +12,7 @@ pub async fn call_raw<T: codec::Decode>(
 	data: &[u8],
 	at: Option<H256>,
 ) -> Result<T, Error> {
-	let result: String = substrate::state_call(client, method, data, at).await?;
+	let result: String = rpc::state::call(client, method, data, at).await?;
 	let result = hex::decode(result.trim_start_matches("0x")).map_err(|e| e.to_string())?;
 	let result = T::decode(&mut result.as_slice()).map_err(|e| e.to_string())?;
 

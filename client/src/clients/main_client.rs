@@ -14,8 +14,8 @@ use crate::{
 	BlockState,
 };
 use avail::{balances::types::AccountData, system::types::AccountInfo};
-use avail_rust_core::{rpc::substrate::BlockWithJustifications, AccountId, AvailHeader, BlockId, H256};
-use std::{sync::Arc, time::Duration};
+use avail_rust_core::{rpc::BlockWithJustifications, AccountId, AvailHeader, BlockId, H256};
+use std::sync::Arc;
 
 #[cfg(feature = "subxt")]
 use crate::config::{ABlocksClient, AConstantsClient, AStorageClient};

@@ -1,4 +1,4 @@
-use avail_rust_core::{rpc::substrate::BlockWithJustifications, H256};
+use avail_rust_core::{rpc::BlockWithJustifications, H256};
 use std::{
 	fmt::Debug,
 	sync::{Arc, RwLock},

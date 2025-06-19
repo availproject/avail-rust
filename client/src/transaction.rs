@@ -7,7 +7,7 @@ use crate::{
 use avail_rust_core::{
 	avail::TransactionCallLike,
 	config::TransactionLocation,
-	rpc::substrate::BlockWithJustifications,
+	rpc::BlockWithJustifications,
 	transaction::{TransactionAdditional, TransactionCall},
 	AccountId, BlockId, H256,
 };

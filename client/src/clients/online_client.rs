@@ -1,5 +1,5 @@
 use crate::{subxt_core::Metadata, subxt_rpcs::RpcClient};
-use avail_rust_core::{ext::codec::Decode, rpc::substrate, H256};
+use avail_rust_core::{ext::codec::Decode, rpc, H256};
 use std::sync::{Arc, RwLock};
 
 #[cfg(feature = "subxt")]
@@ -97,10 +97,10 @@ pub struct SimpleOnlineClientInner {
 
 impl SimpleOnlineClient {
 	pub async fn new(rpc_client: &RpcClient) -> Result<Self, avail_rust_core::Error> {
-		let finalized_hash = substrate::chain_get_finalized_head(&rpc_client).await?;
-		let rpc_metadata = substrate::state_get_metadata(&rpc_client, Some(finalized_hash)).await?;
-		let genesis_hash = substrate::chainspec_v1_genesishash(&rpc_client).await?;
-		let runtime_version = substrate::state_get_runtime_version(&rpc_client, Some(finalized_hash)).await?;
+		let finalized_hash = rpc::chain::get_finalized_head(&rpc_client).await?;
+		let rpc_metadata = rpc::state::get_metadata(&rpc_client, Some(finalized_hash)).await?;
+		let genesis_hash = rpc::chainspec::v1_genesishash(&rpc_client).await?;
+		let runtime_version = rpc::state::get_runtime_version(&rpc_client, Some(finalized_hash)).await?;
 
 		let frame_metadata =
 			frame_metadata::RuntimeMetadataPrefixed::decode(&mut rpc_metadata.as_slice()).map_err(|e| e.to_string())?;

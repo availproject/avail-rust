@@ -122,13 +122,13 @@ pub struct GCellBlock {
 	pub end_y: u32,
 }
 
-pub async fn kate_block_length(client: &RpcClient, at: Option<H256>) -> Result<BlockLength, subxt_rpcs::Error> {
+pub async fn block_length(client: &RpcClient, at: Option<H256>) -> Result<BlockLength, subxt_rpcs::Error> {
 	let params = rpc_params![at];
 	let value = client.request("kate_blockLength", params).await?;
 	Ok(value)
 }
 
-pub async fn kate_query_data_proof(
+pub async fn query_data_proof(
 	client: &RpcClient,
 	transaction_index: u32,
 	at: Option<H256>,
@@ -138,7 +138,7 @@ pub async fn kate_query_data_proof(
 	Ok(value)
 }
 
-pub async fn kate_query_proof(
+pub async fn query_proof(
 	client: &RpcClient,
 	cells: Vec<Cell>,
 	at: Option<H256>,
@@ -148,11 +148,7 @@ pub async fn kate_query_proof(
 	Ok(value)
 }
 
-pub async fn kate_query_rows(
-	client: &RpcClient,
-	rows: Vec<u32>,
-	at: Option<H256>,
-) -> Result<Vec<GRow>, subxt_rpcs::Error> {
+pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, subxt_rpcs::Error> {
 	let params = rpc_params![rows, at];
 	let value = client.request("kate_queryRows", params).await?;
 	Ok(value)
