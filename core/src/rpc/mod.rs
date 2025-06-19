@@ -1,4 +1,5 @@
 pub mod block;
+pub mod grandpa;
 pub mod kate;
 pub mod substrate;
 

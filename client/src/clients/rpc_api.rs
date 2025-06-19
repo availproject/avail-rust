@@ -1,8 +1,12 @@
 use avail_rust_core::{
-	ext::subxt_rpcs::{
-		client::RpcParams,
-		methods::legacy::{RuntimeVersion, SystemHealth},
+	ext::{
+		codec::Decode,
+		subxt_rpcs::{
+			client::RpcParams,
+			methods::legacy::{RuntimeVersion, SystemHealth},
+		},
 	},
+	grandpa::GrandpaJustification,
 	rpc::{
 		self,
 		kate::{BlockLength, Cell, GDataProof, GRow, ProofResponse},
@@ -179,5 +183,16 @@ impl RpcAPI {
 
 	pub async fn kate_query_rows(&self, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, avail_rust_core::Error> {
 		Ok(rpc::kate::kate_query_rows(&self.client.rpc_client, rows, at).await?)
+	}
+
+	pub async fn grandpa_block_justification(
+		&self,
+		at: u32,
+	) -> Result<Option<GrandpaJustification>, avail_rust_core::Error> {
+		let result = rpc::grandpa::grandpa_block_justification(&self.client.rpc_client, at).await?;
+		let Some(result) = result else { return Ok(None) };
+
+		let justification = GrandpaJustification::decode(&mut result.as_slice()).map_err(|e| e.to_string())?;
+		Ok(Some(justification))
 	}
 }

@@ -1,13 +1,15 @@
 use codec::{Codec, Decode};
+use primitive_types::H256;
 use serde::{Serialize, Serializer};
 
 #[cfg(feature = "generated_metadata")]
 use crate::avail_generated::runtime_types::sp_consensus_grandpa::app::Public;
+use crate::AvailHeader;
 
 #[cfg(not(feature = "generated_metadata"))]
 pub type Public = [u8; 32];
 
-#[derive(Decode)]
+#[derive(Debug, Clone, Decode)]
 pub struct AuthorityId(pub Public);
 
 impl Serialize for AuthorityId {
@@ -49,4 +51,42 @@ pub enum ConsensusLog<N: Codec> {
 	OnDisabled(AuthorityIndex) = 3,
 	Pause(N) = 4,
 	Resume(N) = 5,
+}
+
+#[derive(Debug, Clone, Copy, Decode)]
+pub struct Signature(pub [u8; 64usize]);
+
+#[derive(Debug, Clone, codec::Decode)]
+pub struct Precommit {
+	/// The target block's hash.
+	pub target_hash: H256,
+	/// The target block's number
+	pub target_number: u32,
+}
+
+#[derive(Debug, Clone, codec::Decode)]
+pub struct SignedPrecommit {
+	/// The precommit message which has been signed.
+	pub precommit: Precommit,
+	/// The signature on the message.
+	pub signature: Signature,
+	/// The Id of the signer.
+	pub id: AuthorityId,
+}
+
+#[derive(Debug, Clone, codec::Decode)]
+pub struct Commit {
+	/// The target block's hash.
+	pub target_hash: H256,
+	/// The target block's number.
+	pub target_number: u32,
+	/// Precommits for target block or any block after it that justify this commit.
+	pub precommits: Vec<SignedPrecommit>,
+}
+
+#[derive(Debug, Clone, codec::Decode)]
+pub struct GrandpaJustification {
+	pub round: u64,
+	pub commit: Commit,
+	pub votes_ancestries: Vec<AvailHeader>,
 }
