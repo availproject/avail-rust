@@ -24,6 +24,10 @@ impl AvailHeader {
 			HeaderExtension::V3(ext) => ext.commitment.data_root,
 		}
 	}
+
+	pub fn hash(&self) -> H256 {
+		BlakeTwo256::hash_of(self)
+	}
 }
 
 impl Header for AvailHeader {
@@ -35,7 +39,7 @@ impl Header for AvailHeader {
 	}
 
 	fn hash(&self) -> <Self::Hasher as Hasher>::Output {
-		Self::Hasher::hash_of(self)
+		self.hash()
 	}
 }
 

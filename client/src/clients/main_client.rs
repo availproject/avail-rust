@@ -5,7 +5,7 @@ use super::{
 use crate::{
 	avail,
 	clients::{rpc_api::RpcAPI, runtime_api::RuntimeApi},
-	subscription,
+	subscription::{self, Subscriber},
 	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
 	transaction::SubmittedTransaction,
@@ -36,6 +36,10 @@ impl Client {
 		let rpc_client = super::reqwest_client::ReqwestClient::new(endpoint);
 		let rpc_client = RpcClient::new(rpc_client);
 
+		Self::new_rpc_client(rpc_client).await
+	}
+
+	pub async fn new_rpc_client(rpc_client: RpcClient) -> Result<Client, avail_rust_core::Error> {
 		#[cfg(not(feature = "subxt"))]
 		let online_client = super::online_client::SimpleOnlineClient::new(&rpc_client).await?;
 		#[cfg(feature = "subxt")]
@@ -376,39 +380,22 @@ impl Client {
 	}
 
 	// Subscription
-	pub fn subscription_block_header(
-		&self,
-		block_height: u32,
-		poll_rate: Duration,
-		use_best_block: bool,
-	) -> subscription::HeaderSubscription {
-		subscription::HeaderSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
+	pub fn subscription_block_header(&self, sub: Subscriber) -> subscription::HeaderSubscription {
+		subscription::HeaderSubscription::new(self.clone(), sub)
 	}
 
-	pub fn subscription_block(
-		&self,
-		block_height: u32,
-		poll_rate: Duration,
-		use_best_block: bool,
-	) -> subscription::BlockSubscription {
-		subscription::BlockSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
+	pub fn subscription_block(&self, sub: Subscriber) -> subscription::BlockSubscription {
+		subscription::BlockSubscription::new(self.clone(), sub)
 	}
 
-	pub fn subscription_block_height(
-		&self,
-		block_height: u32,
-		poll_rate: Duration,
-		use_best_block: bool,
-	) -> subscription::BlockHeightSubscription {
-		subscription::BlockHeightSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
+	pub fn subscription_justifications(&self, sub: Subscriber) -> subscription::JustificationsSubscription {
+		subscription::JustificationsSubscription::new(self.clone(), sub)
 	}
 
-	pub fn subscription_justification(
+	pub fn subscription_grandpa_justification(
 		&self,
-		block_height: u32,
-		poll_rate: Duration,
-		use_best_block: bool,
-	) -> subscription::JustificationSubscription {
-		subscription::JustificationSubscription::new(Arc::new(self.clone()), block_height, poll_rate, use_best_block)
+		sub: Subscriber,
+	) -> subscription::GrandpaJustificationsSubscription {
+		subscription::GrandpaJustificationsSubscription::new(self.clone(), sub)
 	}
 }

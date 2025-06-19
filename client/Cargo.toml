@@ -32,6 +32,9 @@ reqwest = { workspace = true, optional = true }
 
 avail-rust-core = { path = "./../core", default-features = false }
 
+[dev-dependencies]
+tokio = { workspace = true, features = ["sync", "time", "rt", "macros"] }
+
 [features]
 default = [ "native", "reqwest", "tracing" ]
 tracing = [

@@ -62,7 +62,7 @@ impl ReqwestClient {
 		let client = Arc::new(reqwest::Client::new());
 		let (tx, rx) = tokio::sync::mpsc::channel(1024);
 		let endpoint = String::from(endpoint);
-		_ = spawn(async move { ReqwestClient::task(client, endpoint, rx).await });
+		_ = spawn(async move { Self::task(client, endpoint, rx).await });
 
 		let id = Arc::new(Mutex::new(0));
 		Self { tx, id }
@@ -136,6 +136,8 @@ impl RpcClientT for ReqwestClient {
 				Err(err) => return Err(subxt_rpcs::Error::Client(Box::new(err))),
 			};
 
+			// dbg!(response.to_string());
+
 			if let Some(Some(response_id)) = response.get("id").map(|x| x.as_u64()) {
 				if request_id != response_id {
 					let err = ResponseError("Not Pending Request".into());
@@ -173,5 +175,158 @@ impl RpcClientT for ReqwestClient {
 
 			Err(subxt_rpcs::Error::User(error))
 		})
+	}
+}
+
+#[cfg(test)]
+pub mod testable {
+	use std::collections::HashMap;
+
+	use avail_rust_core::{
+		ext::subxt_rpcs::methods::legacy::RuntimeVersion, header::Digest, AvailHeader, CompactDataLookup,
+		HeaderExtension, KateCommitment, V3HeaderExtension, H256,
+	};
+
+	use super::*;
+
+	impl ReqwestClient {
+		pub fn new_mocked(return_values: Arc<Mutex<ReturnValues>>) -> Self {
+			let id = Arc::new(Mutex::new(0));
+			let cloned_id = id.clone();
+			let (tx, rx) = tokio::sync::mpsc::channel(1024);
+			_ = spawn(async move { Self::task_mocked(return_values, cloned_id, rx).await });
+
+			Self { tx, id }
+		}
+
+		async fn task_mocked(
+			return_values: Arc<Mutex<ReturnValues>>,
+			id: Arc<Mutex<u64>>,
+			mut rx: Receiver<ChannelMessage>,
+		) {
+			while let Some((body, tx_response)) = rx.recv().await {
+				dbg!(&body);
+				let response_value = {
+					let mut lock = return_values.lock().expect("qed");
+					let id = *id.lock().unwrap() - 1;
+					let method = body["method"].as_str().unwrap();
+
+					if method == "chain_getFinalizedHead" {
+						let v = lock.chain_get_finalized_head.read();
+						let ok = OkResponse { id, result: v };
+						Box::new(serde_json::to_value(ok).unwrap())
+					} else if method == "state_getMetadata" {
+						let v = lock.state_get_metadata.read();
+						let ok = OkResponse { id, result: v };
+						Box::new(serde_json::to_value(ok).unwrap())
+					} else if method == "chainSpec_v1_genesisHash" {
+						let v = lock.chain_spec_v1_genesis_hash.read();
+						let ok = OkResponse { id, result: v };
+						Box::new(serde_json::to_value(ok).unwrap())
+					} else if method == "state_getRuntimeVersion" {
+						let v = lock.state_get_runtime_version.read();
+						let ok = OkResponse { id, result: v };
+						Box::new(serde_json::to_value(ok).unwrap())
+					} else if method == "chain_getHeader" {
+						let v = lock.chain_get_header.read();
+						let ok = OkResponse { id, result: v };
+						Box::new(serde_json::to_value(ok).unwrap())
+					} else if method == "chain_getBlockHash" {
+						let v = lock.chain_get_block_hash.read();
+						let ok = OkResponse { id, result: v };
+						Box::new(serde_json::to_value(ok).unwrap())
+					} else {
+						todo!()
+					}
+				};
+				tx_response.send(Ok(response_value)).await.unwrap();
+			}
+		}
+	}
+
+	#[derive(Clone)]
+	pub enum ReturnValue<V: Clone + Serialize + Send> {
+		RepeatSingleValue(V),
+		MultiValues { values: Vec<V> },
+	}
+
+	impl<V: Clone + Serialize + Send> ReturnValue<V> {
+		pub fn new_single(value: V) -> Self {
+			Self::RepeatSingleValue(value)
+		}
+
+		pub fn read(&mut self) -> V {
+			match self {
+				ReturnValue::RepeatSingleValue(x) => x.clone(),
+				ReturnValue::MultiValues { values } => values.remove(0),
+			}
+		}
+	}
+
+	#[derive(Clone)]
+	pub struct ReturnValues {
+		pub chain_get_finalized_head: ReturnValue<H256>,
+		pub state_get_metadata: ReturnValue<String>,
+		pub chain_spec_v1_genesis_hash: ReturnValue<H256>,
+		pub state_get_runtime_version: ReturnValue<RuntimeVersion>,
+		pub chain_get_header: ReturnValue<AvailHeader>,
+		pub chain_get_block_hash: ReturnValue<H256>,
+	}
+
+	impl ReturnValues {
+		pub fn new() -> Self {
+			let runtime_metadata = include_str!("./test_runtime_metadata.txt").to_string();
+			let runtime_version = RuntimeVersion {
+				spec_version: 0,
+				transaction_version: 0,
+				other: HashMap::new(),
+			};
+			let extension = V3HeaderExtension {
+				app_lookup: CompactDataLookup {
+					size: 0,
+					index: Vec::new(),
+				},
+				commitment: KateCommitment {
+					rows: 0,
+					cols: 0,
+					commitment: Vec::new(),
+					data_root: H256::default(),
+				},
+			};
+			let avail_header = AvailHeader {
+				parent_hash: H256::default(),
+				number: 0,
+				state_root: H256::default(),
+				extrinsics_root: H256::default(),
+				digest: Digest::default(),
+				extension: HeaderExtension::V3(extension),
+			};
+			Self {
+				chain_get_finalized_head: ReturnValue::RepeatSingleValue(H256::default()),
+				state_get_metadata: ReturnValue::RepeatSingleValue(runtime_metadata),
+				chain_spec_v1_genesis_hash: ReturnValue::RepeatSingleValue(H256::default()),
+				state_get_runtime_version: ReturnValue::RepeatSingleValue(runtime_version),
+				chain_get_header: ReturnValue::RepeatSingleValue(avail_header),
+				chain_get_block_hash: ReturnValue::RepeatSingleValue(H256::default()),
+			}
+		}
+
+		pub fn new_block(&mut self, height: u32, hash: H256) {
+			self.chain_get_block_hash = ReturnValue::RepeatSingleValue(hash);
+			let mut header = self.chain_get_header.read();
+			header.number = height;
+			self.chain_get_header = ReturnValue::RepeatSingleValue(header);
+		}
+
+		pub fn lock_new_block(this: &Arc<Mutex<Self>>, height: u32, hash: H256) {
+			let mut t = this.lock().unwrap();
+			t.new_block(height, hash);
+		}
+	}
+
+	#[derive(Clone, Serialize)]
+	struct OkResponse<V: Clone + Serialize + Send> {
+		id: u64,
+		result: V,
 	}
 }
