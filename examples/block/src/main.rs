@@ -1,21 +1,18 @@
-use avail_rust_client::prelude::*;
-use avail_rust_client::subscription::Subscriber;
+use avail_rust_client::{avail_rust_core::rpc::system::Filter, prelude::*};
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
 	Client::enable_tracing(false);
-	let client = Client::new(TURING_ENDPOINT).await?;
+	let client = Client::new(LOCAL_ENDPOINT).await?;
 
-	let mut header_sub = client.subscription_justifications(Subscriber::new_best_block(1000, 0));
-	let mut i = 0;
-	while let Ok((sub, block)) = header_sub.next().await {
-		println!("Found justification on block {}", block.0);
+	let hash = H256::from_str("0x78d4b201ec022555a81b8e9a070c8c0177ca6f5142d2ab1b178c3342bb6c0f7b").unwrap();
 
-		i += 1;
-		if i > 3 {
-			break;
-		}
-	}
-
+	let filter = Filter::Only(vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
+	let a = client
+		.rpc_api()
+		.system_fetch_events_v1(Some(filter), false, false, hash)
+		.await
+		.unwrap();
+	dbg!(a);
 	Ok(())
 }
