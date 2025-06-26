@@ -1,5 +1,9 @@
 use crate::{clients::Client, subxt_core::events::Phase};
-use avail_rust_core::{avail::RuntimeEvent, H256};
+use avail_rust_core::{
+	avail::RuntimeEvent,
+	rpc::{self, system::fetch_events_v1_types},
+	H256,
+};
 
 pub const EVENTS_STORAGE_ADDRESS: &str = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
 
@@ -47,84 +51,31 @@ impl EventClient {
 		Self { client }
 	}
 
-	// Block Events
-	pub async fn block_events(&self, at: H256) -> Result<Vec<Event>, avail_rust_core::Error> {
-		// Waiting for the new RPCs to be merged
-		unimplemented!()
-		/* 		use crate::subxt_core::events::Events;
+	pub async fn transaction_events(
+		&self,
+		tx_id: u32,
+		enable_encoding: bool,
+		enable_decoding: bool,
+		at: H256,
+	) -> Result<Option<fetch_events_v1_types::GroupedRuntimeEvents>, avail_rust_core::Error> {
+		use fetch_events_v1_types::{Filter, Params};
+		let params = Params::new()
+			.with_encoding(enable_encoding)
+			.with_decoding(enable_decoding)
+			.with_filter(Filter::Only(vec![tx_id]));
 
-		let entries = self
-			.client
-			.rpc_api()
-			.state_get_storage(EVENTS_STORAGE_ADDRESS, Some(at))
-			.await?;
-		let Some(event_bytes) = entries else {
-			return Ok(Vec::new());
-		};
-
-		let mut result: Vec<Event> = Vec::with_capacity(5);
-		let raw_events = Events::<AvailConfig>::decode_from(event_bytes, self.client.online_client().metadata());
-		for raw in raw_events.iter() {
-			let Ok(raw) = raw else { todo!() };
-			let mut bytes: Vec<u8> = Vec::with_capacity(raw.field_bytes().len() + 2);
-			bytes.push(raw.pallet_index());
-			bytes.push(raw.variant_index());
-			bytes.append(&mut raw.field_bytes().to_vec());
-
-			let value = Event {
-				phase: raw.phase(),
-				bytes,
-				topics: raw.topics().to_vec(),
-			};
-			result.push(value);
+		let mut result = rpc::system::fetch_events_v1(&self.client.rpc_client, params, at).await?;
+		if result.len() == 0 {
+			return Ok(None);
 		}
-
-		Ok(result) */
+		Ok(Some(result.remove(0)))
 	}
 
-	// Transaction Events
-	pub async fn transaction_events(&self, tx_index: u32, at: H256) -> Result<Vec<Event>, avail_rust_core::Error> {
-		// Waiting for the new RPCs to be merged
-		unimplemented!()
-		/* 		use crate::subxt_core::events::{Events, Phase};
-
-		let entries = self
-			.client
-			.rpc_api()
-			.state_get_storage(EVENTS_STORAGE_ADDRESS, Some(at))
-			.await?;
-		let Some(event_bytes) = entries else {
-			return Ok(Vec::new());
-		};
-
-		let mut result: Vec<Event> = Vec::with_capacity(10);
-		let raw_events = Events::<AvailConfig>::decode_from(event_bytes, self.client.online_client().metadata());
-		for raw in raw_events.iter() {
-			let Ok(raw) = raw else { todo!() };
-			match raw.phase() {
-				Phase::ApplyExtrinsic(x) => {
-					if tx_index > x {
-						continue;
-					}
-					if tx_index < x {
-						break;
-					}
-				},
-				_ => continue,
-			};
-			let mut bytes: Vec<u8> = Vec::with_capacity(raw.field_bytes().len() + 2);
-			bytes.push(raw.pallet_index());
-			bytes.push(raw.variant_index());
-			bytes.append(&mut raw.field_bytes().to_vec());
-
-			let value = Event {
-				phase: raw.phase(),
-				bytes,
-				topics: raw.topics().to_vec(),
-			};
-			result.push(value);
-		}
-
-		Ok(result) */
+	pub async fn block_events(
+		&self,
+		params: fetch_events_v1_types::Params,
+		at: H256,
+	) -> Result<fetch_events_v1_types::Output, avail_rust_core::Error> {
+		Ok(rpc::system::fetch_events_v1(&self.client.rpc_client, params, at).await?)
 	}
 }

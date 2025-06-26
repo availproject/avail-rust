@@ -2,7 +2,7 @@
 
 [package]
 name = "parallel-transaction-submission-example"
-edition = "2021"
+edition = "2024"
 
 
 [dependencies]

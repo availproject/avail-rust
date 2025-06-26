@@ -12,7 +12,7 @@ use avail_rust_core::{
 		author::SessionKeys,
 		kate::{BlockLength, Cell, GDataProof, GRow, ProofResponse},
 		rpc_methods::RpcMethods,
-		system::{FetchEventsV1Params, FetchEventsV1Result, NodeRole, PeerInfo, SyncState, SystemProperties},
+		system::{fetch_events_v1_types, NodeRole, PeerInfo, SyncState, SystemProperties},
 		BlockWithJustifications,
 	},
 	AvailHeader, H256,
@@ -200,16 +200,9 @@ impl RpcAPI {
 
 	pub async fn system_fetch_events_v1(
 		&self,
-		filter: Option<avail_rust_core::rpc::system::Filter>,
-		enable_encoding: bool,
-		enable_decoding: bool,
+		params: fetch_events_v1_types::Params,
 		at: H256,
-	) -> Result<FetchEventsV1Result, avail_rust_core::Error> {
-		let params = FetchEventsV1Params {
-			filter,
-			enable_encoding: Some(enable_encoding),
-			enable_decoding: Some(enable_decoding),
-		};
+	) -> Result<fetch_events_v1_types::Output, avail_rust_core::Error> {
 		Ok(rpc::system::fetch_events_v1(&self.client.rpc_client, params, at).await?)
 	}
 }

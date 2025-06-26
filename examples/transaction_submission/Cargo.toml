@@ -2,7 +2,7 @@
 
 [package]
 name = "transaction-submission-example"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "tracing"] }
