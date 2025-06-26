@@ -1,0 +1,9 @@
+[workspace]
+
+[package]
+name = "block-indexing-example"
+edition = "2021"
+
+[dependencies]
+avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "tracing"] }
+tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
