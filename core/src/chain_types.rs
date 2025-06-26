@@ -210,13 +210,13 @@ pub mod data_availability {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let variant = u8::decode(input)?;
 				match variant {
-					val if val == 0 => {
+					0 => {
 						let key = Decode::decode(input)?;
 						let owner = Decode::decode(input)?;
 						let id: Compact<u32> = Decode::decode(input)?;
 						Ok(Self::ApplicationKeyCreated { key, owner, id: id.0 })
 					},
-					val if val == 1 => Ok(Self::DataSubmitted {
+					1 => Ok(Self::DataSubmitted {
 						who: Decode::decode(input)?,
 						data_hash: Decode::decode(input)?,
 					}),

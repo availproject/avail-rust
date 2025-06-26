@@ -123,7 +123,7 @@ impl RpcAPI {
 	}
 
 	pub async fn author_rotate_keys(&self) -> Result<SessionKeys, avail_rust_core::Error> {
-		Ok(rpc::author::rotate_keys(&self.client.rpc_client).await?)
+		rpc::author::rotate_keys(&self.client.rpc_client).await
 	}
 
 	pub async fn author_submit_extrinsic(&self, extrinsic: &[u8]) -> Result<H256, avail_rust_core::Error> {
@@ -144,7 +144,7 @@ impl RpcAPI {
 	}
 
 	pub async fn state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, avail_rust_core::Error> {
-		Ok(rpc::state::get_metadata(&self.client.rpc_client, at).await?)
+		rpc::state::get_metadata(&self.client.rpc_client, at).await
 	}
 
 	pub async fn state_get_storage(
@@ -152,7 +152,7 @@ impl RpcAPI {
 		key: &str,
 		at: Option<H256>,
 	) -> Result<Option<Vec<u8>>, avail_rust_core::Error> {
-		Ok(rpc::state::get_storage(&self.client.rpc_client, key, at).await?)
+		rpc::state::get_storage(&self.client.rpc_client, key, at).await
 	}
 
 	pub async fn rpc_methods(&self) -> Result<RpcMethods, avail_rust_core::Error> {
@@ -160,7 +160,7 @@ impl RpcAPI {
 	}
 
 	pub async fn chainspec_v1_genesishash(&self) -> Result<H256, avail_rust_core::Error> {
-		Ok(rpc::chainspec::v1_genesishash(&self.client.rpc_client).await?)
+		rpc::chainspec::v1_genesishash(&self.client.rpc_client).await
 	}
 
 	pub async fn kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, avail_rust_core::Error> {

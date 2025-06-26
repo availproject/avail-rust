@@ -50,7 +50,7 @@ impl Options {
 					.await?
 			},
 		};
-		let mortality = self.mortality.unwrap_or_else(|| MortalityOption::Period(32));
+		let mortality = self.mortality.unwrap_or(MortalityOption::Period(32));
 		let mortality = match mortality {
 			MortalityOption::Period(period) => RefinedMortality::from_period(client, period).await?,
 			MortalityOption::Full(mortality) => mortality,
