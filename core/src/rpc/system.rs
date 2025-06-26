@@ -124,13 +124,22 @@ pub async fn fetch_events_v1(
 	Ok(value)
 }
 
+pub async fn fetch_extrinsics_v1(
+	client: &RpcClient,
+	params: fetch_extrinsics_v1_types::Params,
+) -> Result<fetch_extrinsics_v1_types::Output, subxt_rpcs::Error> {
+	let params = rpc_params![params];
+	let value = client.request("system_fetchExtrinsicsV1", params).await?;
+	Ok(value)
+}
+
 pub mod fetch_events_v1_types {
 	pub use super::*;
 
 	pub type FetchEventsV1Params = Params;
 	pub type Output = Vec<GroupedRuntimeEvents>;
 
-	#[derive(Clone, Debug, Serialize, Deserialize)]
+	#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 	pub struct Params {
 		pub filter: Option<Filter>,
 		pub enable_encoding: Option<bool>,
@@ -138,27 +147,12 @@ pub mod fetch_events_v1_types {
 	}
 
 	impl Params {
-		pub fn new() -> Self {
+		pub fn new(filter: Option<Filter>, enable_encoding: Option<bool>, enable_decoding: Option<bool>) -> Self {
 			Self {
-				filter: None,
-				enable_encoding: None,
-				enable_decoding: None,
+				filter,
+				enable_encoding,
+				enable_decoding,
 			}
-		}
-
-		pub fn with_encoding(mut self, value: bool) -> Self {
-			self.enable_encoding = Some(value);
-			self
-		}
-
-		pub fn with_decoding(mut self, value: bool) -> Self {
-			self.enable_decoding = Some(value);
-			self
-		}
-
-		pub fn with_filter(mut self, value: Filter) -> Self {
-			self.filter = Some(value);
-			self
 		}
 	}
 
@@ -190,5 +184,110 @@ pub mod fetch_events_v1_types {
 		pub emitted_index: (u8, u8),
 		pub encoded: Option<String>,
 		pub decoded: Option<String>,
+	}
+}
+
+pub mod fetch_extrinsics_v1_types {
+	use super::*;
+	use crate::HashIndex;
+
+	pub type Output = Vec<ExtrinsicInformation>;
+	pub type FetchExtrinsicsV1Params = Params;
+
+	#[derive(Clone, Serialize, Deserialize)]
+	pub struct Params {
+		pub block_id: HashIndex,
+		pub filter: Option<Filter>,
+		pub encode_selector: Option<EncodeSelector>,
+	}
+
+	impl Params {
+		pub fn new(block_id: HashIndex, filter: Option<Filter>, selector: Option<EncodeSelector>) -> Self {
+			Self {
+				block_id,
+				filter,
+				encode_selector: selector,
+			}
+		}
+	}
+
+	#[derive(Default, Clone, Serialize, Deserialize)]
+	pub struct Filter {
+		pub transaction: Option<TransactionFilter>,
+		pub signature: Option<SignatureFilter>,
+	}
+
+	impl Filter {
+		pub fn new(tx: Option<TransactionFilter>, sig: Option<SignatureFilter>) -> Self {
+			Self {
+				transaction: tx,
+				signature: sig,
+			}
+		}
+	}
+
+	#[derive(Clone, Serialize, Deserialize)]
+	#[repr(u8)]
+	pub enum EncodeSelector {
+		None = 0,
+		Call = 1,
+		Extrinsic = 2,
+	}
+
+	#[derive(Debug, Clone, Serialize, Deserialize)]
+	pub struct ExtrinsicInformation {
+		// Hex string encoded
+		pub encoded: Option<String>,
+		pub tx_hash: H256,
+		pub tx_index: u32,
+		pub pallet_id: u8,
+		pub call_id: u8,
+		pub signature: Option<TransactionSignature>,
+	}
+
+	#[derive(Clone, Serialize, Deserialize)]
+	pub enum TransactionFilter {
+		All,
+		TxHash(Vec<H256>),
+		TxIndex(Vec<u32>),
+		Pallet(Vec<u8>),
+		PalletCall(Vec<(u8, u8)>),
+	}
+
+	impl TransactionFilter {
+		pub fn new() -> Self {
+			Self::default()
+		}
+	}
+
+	impl Default for TransactionFilter {
+		fn default() -> Self {
+			Self::All
+		}
+	}
+
+	#[derive(Default, Clone, Serialize, Deserialize)]
+	pub struct SignatureFilter {
+		pub ss58_address: Option<String>,
+		pub app_id: Option<u32>,
+		pub nonce: Option<u32>,
+	}
+
+	impl SignatureFilter {
+		pub fn new(ss58_address: Option<String>, app_id: Option<u32>, nonce: Option<u32>) -> Self {
+			Self {
+				ss58_address,
+				app_id,
+				nonce,
+			}
+		}
+	}
+
+	#[derive(Debug, Clone, Serialize, Deserialize)]
+	pub struct TransactionSignature {
+		pub ss58_address: Option<String>,
+		pub nonce: u32,
+		pub app_id: u32,
+		pub mortality: Option<(u64, u64)>,
 	}
 }

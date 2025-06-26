@@ -28,7 +28,7 @@ impl<T: TxDispatchIndex + Encode + Decode> TransactionCallLike for T {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[repr(u8)]
 pub enum RuntimeCall {
 	DataAvailability(data_availability::tx::Call) = data_availability::PALLET_ID,
@@ -229,7 +229,7 @@ pub mod data_availability {
 	pub mod tx {
 		use super::*;
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			CreateApplicationKey(CreateApplicationKey) = CreateApplicationKey::DISPATCH_INDEX.1,
@@ -258,7 +258,7 @@ pub mod data_availability {
 			}
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct CreateApplicationKey {
 			pub key: Vec<u8>,
 		}
@@ -277,7 +277,7 @@ pub mod data_availability {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SubmitData {
 			pub data: Vec<u8>,
 		}
@@ -586,7 +586,7 @@ pub mod balances {
 	pub mod tx {
 		use super::*;
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			TransferAllowDeath(TransferAllowDeath) = TransferAllowDeath::DISPATCH_INDEX.1,
@@ -620,7 +620,7 @@ pub mod balances {
 			}
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct TransferAllowDeath {
 			pub dest: MultiAddress,
 			pub amount: Compact<u128>,
@@ -642,7 +642,7 @@ pub mod balances {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct TransferKeepAlive {
 			pub dest: MultiAddress,
 			pub amount: Compact<u128>,
@@ -664,7 +664,7 @@ pub mod balances {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct TransferAll {
 			pub dest: MultiAddress,
 			pub keep_alive: bool,
@@ -762,7 +762,7 @@ pub mod utility {
 	pub mod tx {
 		use super::*;
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			Batch(Batch) = Batch::DISPATCH_INDEX.1,
@@ -792,7 +792,7 @@ pub mod utility {
 			}
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct Batch {
 			pub calls: Vec<TransactionCall>,
 		}
@@ -811,7 +811,7 @@ pub mod utility {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct BatchAll {
 			pub calls: Vec<TransactionCall>,
 		}
@@ -830,7 +830,7 @@ pub mod utility {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct ForceBatch {
 			pub calls: Vec<TransactionCall>,
 		}
@@ -968,7 +968,7 @@ pub mod proxy {
 	pub mod tx {
 		use super::*;
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			Proxy(Proxy) = Proxy::DISPATCH_INDEX.1,
@@ -1007,7 +1007,7 @@ pub mod proxy {
 			}
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct Proxy {
 			pub id: MultiAddress,
 			pub force_proxy_type: Option<super::types::ProxyType>,
@@ -1036,7 +1036,7 @@ pub mod proxy {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct AddProxy {
 			pub id: MultiAddress,
 			pub proxy_type: super::types::ProxyType,
@@ -1061,7 +1061,7 @@ pub mod proxy {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct RemoveProxy {
 			pub delegate: MultiAddress,
 			pub proxy_type: super::types::ProxyType,
@@ -1090,7 +1090,7 @@ pub mod proxy {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct RemoveProxies;
 		impl Encode for RemoveProxies {
 			fn encode_to<T: codec::Output + ?Sized>(&self, _dest: &mut T) {}
@@ -1104,7 +1104,7 @@ pub mod proxy {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct CreatePure {
 			pub proxy_type: super::types::ProxyType,
 			pub delay: u32,
@@ -1133,7 +1133,7 @@ pub mod proxy {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct KillPure {
 			pub spawner: MultiAddress,
 			pub proxy_type: super::types::ProxyType,
@@ -1272,7 +1272,7 @@ pub mod multisig {
 	pub mod tx {
 		use super::*;
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			AsMultiThreshold1(AsMultiThreshold1) = AsMultiThreshold1::DISPATCH_INDEX.1,
@@ -1307,7 +1307,7 @@ pub mod multisig {
 			}
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct AsMultiThreshold1 {
 			pub other_signatories: Vec<AccountId>,
 			pub call: TransactionCall,
@@ -1332,7 +1332,7 @@ pub mod multisig {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct AsMulti {
 			pub threshold: u16,
 			pub other_signatories: Vec<AccountId>,
@@ -1369,7 +1369,7 @@ pub mod multisig {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct ApproveAsMulti {
 			pub threshold: u16,
 			pub other_signatories: Vec<AccountId>,
@@ -1406,7 +1406,7 @@ pub mod multisig {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct CancelAsMulti {
 			pub threshold: u16,
 			pub other_signatories: Vec<AccountId>,
@@ -1557,7 +1557,7 @@ pub mod vector {
 	pub mod tx {
 		use super::*;
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct FulfillCall {
 			pub function_id: H256,
 			pub input: Vec<u8>,
@@ -1594,7 +1594,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct Execute {
 			pub slot: Compact<u64>,
 			pub addr_message: super::types::AddressedMessage,
@@ -1627,7 +1627,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SourceChainFroze {
 			pub source_chain_id: Compact<u32>,
 			pub frozen: bool,
@@ -1652,7 +1652,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SendMessage {
 			pub slot: Compact<u64>,
 			pub message: super::types::Message,
@@ -1685,7 +1685,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetPoseidonHash {
 			pub period: Compact<u64>,
 			pub poseidon_hash: Vec<u8>,
@@ -1707,7 +1707,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetBroadcaster {
 			pub broadcaster_domain: Compact<u32>,
 			pub broadcaster: H256,
@@ -1732,7 +1732,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetWhitelistedDomains {
 			pub value: Vec<u32>,
 		}
@@ -1751,7 +1751,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 6);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetConfiguration {
 			pub value: super::types::Configuration,
 		}
@@ -1770,7 +1770,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 7);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetFunctionIds {
 			pub value: Option<(H256, H256)>,
 		}
@@ -1789,7 +1789,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 8);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetStepVerificationKey {
 			pub value: Option<Vec<u8>>,
 		}
@@ -1808,7 +1808,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 9);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetRotateVerificationKey {
 			pub value: Option<Vec<u8>>,
 		}
@@ -1827,7 +1827,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 10);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetUpdater {
 			pub updater: H256,
 		}
@@ -1846,7 +1846,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 12);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct Fulfill {
 			pub proof: Vec<u8>,
 			pub public_values: Vec<u8>,
@@ -1868,7 +1868,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 13);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetSp1VerificationKey {
 			pub sp1_vk: H256,
 		}
@@ -1887,7 +1887,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 14);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetSyncCommitteeHash {
 			pub period: u64,
 			pub hash: H256,
@@ -1909,7 +1909,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 15);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct EnableMock {
 			pub value: bool,
 		}
@@ -1928,7 +1928,7 @@ pub mod vector {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 16);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct MockFulfill {
 			pub public_values: Vec<u8>,
 		}
@@ -2337,7 +2337,7 @@ pub mod system {
 	pub mod tx {
 		use super::*;
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		#[repr(u8)]
 		pub enum Call {
 			Remark(Remark) = Remark::DISPATCH_INDEX.1,
@@ -2374,7 +2374,7 @@ pub mod system {
 			}
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct Remark {
 			pub remark: Vec<u8>,
 		}
@@ -2393,7 +2393,7 @@ pub mod system {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetCode {
 			pub code: Vec<u8>,
 		}
@@ -2412,7 +2412,7 @@ pub mod system {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct SetCodeWithoutChecks {
 			pub code: Vec<u8>,
 		}
@@ -2431,7 +2431,7 @@ pub mod system {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
-		#[derive(Clone)]
+		#[derive(Debug, Clone)]
 		pub struct RemarkWithEvent {
 			pub remark: Vec<u8>,
 		}

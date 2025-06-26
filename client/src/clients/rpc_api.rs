@@ -1,4 +1,5 @@
 use avail_rust_core::{
+	AvailHeader, H256,
 	ext::{
 		codec::Decode,
 		subxt_rpcs::{
@@ -8,14 +9,12 @@ use avail_rust_core::{
 	},
 	grandpa::GrandpaJustification,
 	rpc::{
-		self,
+		self, BlockWithJustifications,
 		author::SessionKeys,
 		kate::{BlockLength, Cell, GDataProof, GRow, ProofResponse},
 		rpc_methods::RpcMethods,
-		system::{fetch_events_v1_types, NodeRole, PeerInfo, SyncState, SystemProperties},
-		BlockWithJustifications,
+		system::{NodeRole, PeerInfo, SyncState, SystemProperties, fetch_events_v1_types, fetch_extrinsics_v1_types},
 	},
-	AvailHeader, H256,
 };
 
 use crate::Client;
@@ -36,20 +35,6 @@ impl RpcAPI {
 		params: RpcParams,
 	) -> Result<T, avail_rust_core::Error> {
 		Ok(rpc::call_raw(&self.client.rpc_client, method, params).await?)
-	}
-
-	pub async fn block_overview(
-		&self,
-		params: rpc::block::block_overview::Params,
-	) -> Result<rpc::block::block_overview::Response, avail_rust_core::Error> {
-		Ok(rpc::block::block_overview(&self.client.rpc_client, params).await?)
-	}
-
-	pub async fn block_data(
-		&self,
-		params: rpc::block::block_data::Params,
-	) -> Result<rpc::block::block_data::Response, avail_rust_core::Error> {
-		Ok(rpc::block::block_data(&self.client.rpc_client, params).await?)
 	}
 
 	pub async fn system_account_next_index(&self, address: &str) -> Result<u32, avail_rust_core::Error> {
@@ -204,5 +189,12 @@ impl RpcAPI {
 		at: H256,
 	) -> Result<fetch_events_v1_types::Output, avail_rust_core::Error> {
 		Ok(rpc::system::fetch_events_v1(&self.client.rpc_client, params, at).await?)
+	}
+
+	pub async fn system_fetch_extrinsics_v1(
+		&self,
+		params: fetch_extrinsics_v1_types::Params,
+	) -> Result<fetch_extrinsics_v1_types::Output, avail_rust_core::Error> {
+		Ok(rpc::system::fetch_extrinsics_v1(&self.client.rpc_client, params).await?)
 	}
 }

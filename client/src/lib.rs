@@ -25,7 +25,7 @@ pub use transaction_options::{MortalityOption, Options, RefinedMortality, Refine
 #[cfg(feature = "subxt")]
 pub use avail_rust_core::ext::subxt;
 pub use avail_rust_core::{
-	self,
+	self, FetchEventsV1Params, FetchExtrinsicsV1Params,
 	ext::{codec, primitive_types, scale_info, subxt_core, subxt_rpcs, subxt_signer},
 };
 
@@ -34,12 +34,12 @@ pub use avail_rust_core::avail_generated;
 
 // Exporting types from ext libraries
 pub use avail_rust_core::{
-	avail, AccountId, AvailHeader, CompactDataLookup, DecodedTransaction, HeaderExtension, KateCommitment,
+	AccountId, AvailHeader, CompactDataLookup, DecodedTransaction, HashIndex, HeaderExtension, KateCommitment,
 	MultiAddress, OpaqueTransaction, Transaction, TransactionAdditional, TransactionCall, TransactionExtra,
-	TransactionPayload, TransactionSigned, V3HeaderExtension,
+	TransactionPayload, TransactionSigned, V3HeaderExtension, avail,
 };
 pub use primitive_types::{H256, U256};
-pub use subxt_signer::{sr25519::Keypair, SecretUri};
+pub use subxt_signer::{SecretUri, sr25519::Keypair};
 
 // External
 pub mod ext {

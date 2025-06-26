@@ -1,9 +1,5 @@
 use crate::{clients::Client, subxt_core::events::Phase};
-use avail_rust_core::{
-	avail::RuntimeEvent,
-	rpc::{self, system::fetch_events_v1_types},
-	H256,
-};
+use avail_rust_core::{H256, avail::RuntimeEvent, rpc::system::fetch_events_v1_types as Types};
 
 pub const EVENTS_STORAGE_ADDRESS: &str = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
 
@@ -57,25 +53,21 @@ impl EventClient {
 		enable_encoding: bool,
 		enable_decoding: bool,
 		at: H256,
-	) -> Result<Option<fetch_events_v1_types::GroupedRuntimeEvents>, avail_rust_core::Error> {
-		use fetch_events_v1_types::{Filter, Params};
-		let params = Params::new()
-			.with_encoding(enable_encoding)
-			.with_decoding(enable_decoding)
-			.with_filter(Filter::Only(vec![tx_id]));
+	) -> Result<Option<Types::GroupedRuntimeEvents>, avail_rust_core::Error> {
+		let params = Types::Params::new(
+			Some(Types::Filter::Only(vec![tx_id])),
+			Some(enable_encoding),
+			Some(enable_decoding),
+		);
 
-		let mut result = rpc::system::fetch_events_v1(&self.client.rpc_client, params, at).await?;
-		if result.len() == 0 {
+		let mut result = self.client.rpc_api().system_fetch_events_v1(params, at).await?;
+		if result.is_empty() {
 			return Ok(None);
 		}
 		Ok(Some(result.remove(0)))
 	}
 
-	pub async fn block_events(
-		&self,
-		params: fetch_events_v1_types::Params,
-		at: H256,
-	) -> Result<fetch_events_v1_types::Output, avail_rust_core::Error> {
-		Ok(rpc::system::fetch_events_v1(&self.client.rpc_client, params, at).await?)
+	pub async fn block_events(&self, params: Types::Params, at: H256) -> Result<Types::Output, avail_rust_core::Error> {
+		self.client.rpc_api().system_fetch_events_v1(params, at).await
 	}
 }
