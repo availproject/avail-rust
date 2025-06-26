@@ -21,7 +21,7 @@ book-publish:
     git commit -m 'Book Deployed'
     git pf
 fmt:
-    cargo +nightly fmt &&  cd ./examples && cargo +nightly fmt
+    cargo +nightly fmt
 lint:
     cargo clippy
 lint-fix:
@@ -29,7 +29,7 @@ lint-fix:
 doc:
     cargo doc --open
 test:
-    cd ./examples && RUST_LOG=info cargo run
+    cd ./examples && RUST_LOG=info ./run.sh
 podman:
     podman run -it --rm --network host docker.io/availj/avail:v2.2.5.1 --dev
 docker:

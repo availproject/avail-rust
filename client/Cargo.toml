@@ -1,0 +1,60 @@
+[package]
+name = "avail-rust-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+impl-serde = { workspace = true }
+hex = { workspace = true, default-features = false }
+bounded-collections = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+frame-metadata = { workspace = true }
+futures = { workspace = true }
+
+# Logging
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, features = ["fmt", "json"], optional = true  }
+
+# Scale
+scale-info = { workspace = true }
+thiserror = { workspace = true }
+
+# Enabled with Wasm
+wasm-bindgen-futures = { workspace = true, optional = true  }
+wasmtimer = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+
+avail-rust-core = { path = "./../core", default-features = false }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["sync", "time", "rt", "macros"] }
+
+[features]
+default = [ "native", "reqwest", "tracing" ]
+tracing = [
+	"dep:tracing",
+	"tracing-subscriber"
+]
+reqwest = [
+	"dep:reqwest"
+]
+generated_metadata = [
+	"avail-rust-core/generated_metadata"
+]
+subxt = [
+	"avail-rust-core/subxt"
+]
+native = [
+	"avail-rust-core/native"
+]
+wasm = [
+	"avail-rust-core/wasm",
+	"wasmtimer",
+	"wasm-bindgen-futures",
+]
