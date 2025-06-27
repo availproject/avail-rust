@@ -1,4 +1,4 @@
-use crate::subxt_signer::{sr25519::Keypair, SecretUri};
+use crate::subxt_signer::{SecretUri, sr25519::Keypair};
 use avail_rust_core::{AccountId, H256};
 
 #[cfg(feature = "generated_metadata")]

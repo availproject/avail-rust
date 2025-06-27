@@ -24,7 +24,7 @@ async fn transaction_pushing(client: Client) -> Result<(), ClientError> {
 	let tx = client.tx().data_availability().submit_data(message);
 	let count = 5;
 	for i in 0..count {
-		tx.sign_and_submit(&alice(), Options::new()).await?;
+		tx.sign_and_submit(&alice(), Options::new(None)).await?;
 		println!("Transaction submitted. {} done out of {}", i + 1, count);
 		if i < (count - 1) {
 			wait_for_new_block(&client).await?;

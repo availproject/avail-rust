@@ -1,7 +1,7 @@
 use crate::error::Error;
 use primitive_types::H256;
 use std::array::TryFromSliceError;
-use subxt_rpcs::{rpc_params, RpcClient};
+use subxt_rpcs::{RpcClient, rpc_params};
 
 #[derive(Debug, Clone)]
 pub struct SessionKeys {

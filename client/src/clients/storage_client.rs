@@ -5,11 +5,11 @@ use crate::{
 use avail_rust_core::H256;
 
 #[cfg(feature = "subxt")]
+use crate::subxt::Error;
+#[cfg(feature = "subxt")]
 use crate::subxt::backend::StreamOfResults;
 #[cfg(feature = "subxt")]
 use crate::subxt::storage::StorageKeyValuePair;
-#[cfg(feature = "subxt")]
-use crate::subxt::Error;
 #[cfg(feature = "subxt")]
 use std::future::Future;
 

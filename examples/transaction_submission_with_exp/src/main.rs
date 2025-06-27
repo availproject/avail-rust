@@ -13,9 +13,7 @@ async fn main() -> Result<(), ClientError> {
 
 	// Transaction Submission
 	// SubmittedTransaction -> Transaction Hash, and Transaction extra
-	let st = submittable_tx
-		.sign_and_submit(&signer, Options::new().app_id(2))
-		.await?;
+	let st = submittable_tx.sign_and_submit(&signer, Options::new(Some(2))).await?;
 	// At this point it is guaranteed that the transaction was successfully submitted.
 	// This does not mean that the transaction will be included in any block because:
 	// a) congestion could force the transaction to be dropped

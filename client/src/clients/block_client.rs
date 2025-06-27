@@ -1,6 +1,6 @@
 use super::Client;
 use avail_rust_core::{
-	FetchExtrinsicsV1Params, H256, HashIndex,
+	FetchExtrinsicsV1Params, H256, HashNumber,
 	rpc::{self, system::fetch_extrinsics_v1_types as Types},
 };
 
@@ -16,14 +16,14 @@ impl BlockClient {
 
 	pub async fn block_transaction(
 		&self,
-		block_id: HashIndex,
-		transaction_id: HashIndex,
+		block_id: HashNumber,
+		transaction_id: HashNumber,
 		sig_filter: Option<Types::SignatureFilter>,
 		selector: Option<Types::EncodeSelector>,
 	) -> Result<Option<Types::ExtrinsicInformation>, avail_rust_core::Error> {
 		let filter = match transaction_id {
-			HashIndex::Hash(item) => Types::TransactionFilter::TxHash(vec![item]),
-			HashIndex::Index(item) => Types::TransactionFilter::TxIndex(vec![item]),
+			HashNumber::Hash(item) => Types::TransactionFilter::TxHash(vec![item]),
+			HashNumber::Number(item) => Types::TransactionFilter::TxIndex(vec![item]),
 		};
 		let filter = Some(Types::Filter::new(Some(filter), sig_filter));
 		let params = FetchExtrinsicsV1Params::new(block_id, filter, selector);

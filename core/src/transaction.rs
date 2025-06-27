@@ -3,7 +3,7 @@ use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use subxt_core::config::{substrate::BlakeTwo256, Hasher};
+use subxt_core::config::{Hasher, substrate::BlakeTwo256};
 use subxt_signer::sr25519::Keypair;
 
 pub use subxt_core::utils::Era;

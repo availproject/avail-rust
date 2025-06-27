@@ -8,13 +8,13 @@ async fn main() -> Result<(), ClientError> {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let tx = client.tx().data_availability().submit_data(vec![0, 1, 2]);
-	let submitted = tx.sign_and_submit(&alice(), Options::new().app_id(2)).await?;
+	let submitted = tx.sign_and_submit(&alice(), Options::new(Some(2))).await?;
 	let receipt = submitted.receipt(true).await?.expect("Should be there");
 
-	rpc_block(client.clone(), receipt.block_id.hash).await?;
-	rpc_block_with_justifications(client.clone(), receipt.block_id.hash).await?;
-	block_transaction(client.clone(), receipt.block_id.hash, receipt.tx_location.hash).await?;
-	block_transactions(client.clone(), receipt.block_id.hash).await?;
+	rpc_block(client.clone(), receipt.block_loc.hash).await?;
+	rpc_block_with_justifications(client.clone(), receipt.block_loc.hash).await?;
+	block_transaction(client.clone(), receipt.block_loc.hash, receipt.tx_location.hash).await?;
+	block_transactions(client.clone(), receipt.block_loc.hash).await?;
 	Ok(())
 }
 
@@ -23,7 +23,7 @@ pub async fn block_transaction(client: Client, block_hash: H256, tx_hash: H256) 
 
 	let selector = Some(Types::EncodeSelector::Call);
 	let info = blocks
-		.block_transaction(HashIndex::Hash(block_hash), HashIndex::Hash(tx_hash), None, selector)
+		.block_transaction(HashNumber::Hash(block_hash), HashNumber::Hash(tx_hash), None, selector)
 		.await?
 		.expect("Should be there");
 
@@ -36,7 +36,7 @@ pub async fn block_transactions(client: Client, block_hash: H256) -> Result<(), 
 	let blocks = client.block_client();
 
 	let selector = Some(Types::EncodeSelector::Call);
-	let params = Types::Params::new(HashIndex::Hash(block_hash), None, selector);
+	let params = Types::Params::new(HashNumber::Hash(block_hash), None, selector);
 	let infos = blocks.block_transactions(params).await?;
 	for info in infos {
 		decode_transaction_03(&info)?;

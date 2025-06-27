@@ -1,7 +1,7 @@
 use avail_rust_core::{
+	Error, H256,
 	ext::codec,
 	from_substrate::{FeeDetails, RuntimeDispatchInfo},
-	Error, H256,
 };
 
 use crate::Client;

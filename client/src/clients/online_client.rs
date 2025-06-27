@@ -1,5 +1,5 @@
 use crate::{subxt_core::Metadata, subxt_rpcs::RpcClient};
-use avail_rust_core::{ext::codec::Decode, rpc, H256};
+use avail_rust_core::{H256, ext::codec::Decode, rpc};
 use std::sync::{Arc, RwLock};
 
 #[cfg(feature = "subxt")]

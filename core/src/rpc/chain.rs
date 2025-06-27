@@ -3,8 +3,8 @@ use crate::config::TransactionLocation;
 use super::AvailHeader;
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer};
-use subxt_core::config::{substrate::BlakeTwo256, Hasher};
-use subxt_rpcs::{rpc_params, RpcClient};
+use subxt_core::config::{Hasher, substrate::BlakeTwo256};
+use subxt_rpcs::{RpcClient, rpc_params};
 
 /// The response from `chain_getBlock`
 #[derive(Debug, Clone, Deserialize)]

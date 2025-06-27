@@ -19,7 +19,7 @@ async fn main() -> Result<(), ClientError> {
 
 	// Submit transaction
 	let tx = client.tx().data_availability().submit_data(vec![b'a']);
-	let submitted = tx.sign_and_submit(&alice(), Options::new().app_id(2)).await?;
+	let submitted = tx.sign_and_submit(&alice(), Options::new(Some(2))).await?;
 	let Some(receipt) = submitted.receipt(true).await? else {
 		return Err("Transaction was dropped".into());
 	};
@@ -27,7 +27,7 @@ async fn main() -> Result<(), ClientError> {
 	// Find transaction related event
 	let event_client = client.event_client();
 	let Some(grouped_events) = event_client
-		.transaction_events(receipt.tx_location.index, true, true, receipt.block_id.hash)
+		.transaction_events(receipt.tx_location.index, true, true, receipt.block_loc.hash)
 		.await?
 	else {
 		return Err("Failed to find events".into());
@@ -40,7 +40,7 @@ async fn main() -> Result<(), ClientError> {
 		.with_decoding(true)
 		.with_encoding(true)
 		.with_filter(Filter::All);
-	let block_grouped_events = event_client.block_events(params, receipt.block_id.hash).await?;
+	let block_grouped_events = event_client.block_events(params, receipt.block_loc.hash).await?;
 	for grouped_events in block_grouped_events {
 		print_event_details(&grouped_events)?;
 	}

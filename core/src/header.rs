@@ -1,7 +1,7 @@
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use subxt_core::config::{substrate::BlakeTwo256, Hasher, Header};
+use subxt_core::config::{Hasher, Header, substrate::BlakeTwo256};
 
 pub use subxt_core::config::substrate::{Digest, DigestItem};
 
