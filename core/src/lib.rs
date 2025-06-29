@@ -13,14 +13,15 @@ pub mod runtime_api;
 pub mod transaction;
 
 pub use config::{
-	AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockId, DispatchIndex, EmittedIndex,
-	HashIndex, MultiAddress, MultiSignature,
+	AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockLocation, DispatchIndex, EmittedIndex,
+	HashNumber, MultiAddress, MultiSignature,
 };
 pub use decoded_transaction::{DecodedTransaction, OpaqueTransaction};
 pub use error::Error;
 pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
 pub use primitive_types::{H256, U256};
+pub use rpc::{FetchEventsV1Params, FetchExtrinsicsV1Params};
 pub use transaction::{
 	Era, Transaction, TransactionAdditional, TransactionCall, TransactionExtra, TransactionPayload, TransactionSigned,
 };

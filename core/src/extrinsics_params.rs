@@ -7,7 +7,7 @@ use codec::{Compact, Encode};
 use scale_info::PortableRegistry;
 use subxt_core::{
 	client::ClientState,
-	config::{transaction_extensions, Config, ExtrinsicParams, ExtrinsicParamsEncoder, Header},
+	config::{Config, ExtrinsicParams, ExtrinsicParamsEncoder, Header, transaction_extensions},
 	error::ExtrinsicParamsError,
 };
 
@@ -22,7 +22,7 @@ impl<T: Config> transaction_extensions::Params<T> for CheckAppId {}
 
 impl ExtrinsicParamsEncoder for CheckAppId {
 	fn encode_value_to(&self, v: &mut Vec<u8>) {
-		Compact::<u32>(self.0 .0).encode_to(v);
+		Compact::<u32>(self.0.0).encode_to(v);
 	}
 
 	fn encode_implicit_to(&self, _: &mut Vec<u8>) {}

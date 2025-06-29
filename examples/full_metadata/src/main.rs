@@ -8,7 +8,7 @@ async fn main() -> Result<(), ClientError> {
 
 	let data = BoundedVec(vec![0, 1, 2]);
 	let payload = avail_generated::tx().data_availability().submit_data(data);
-	let options = Options::new().app_id(2);
+	let options = Options::new(Some(2));
 
 	// Payload can be converted to SubmittableTransaction
 	let st = payload.to_submittable_transaction(client.clone())?;
@@ -16,7 +16,7 @@ async fn main() -> Result<(), ClientError> {
 	let receipt = st.receipt(false).await?.expect("");
 	println!(
 		"Block Hash: {:?}, Block Height: {:?}",
-		receipt.block_id.hash, receipt.block_id.height
+		receipt.block_loc.hash, receipt.block_loc.height
 	);
 
 	// Payload can be converted to Transaction Call
@@ -26,7 +26,7 @@ async fn main() -> Result<(), ClientError> {
 	let receipt = st.receipt(false).await?.expect("");
 	println!(
 		"Block Hash: {:?}, Block Height: {:?}",
-		receipt.block_id.hash, receipt.block_id.height
+		receipt.block_loc.hash, receipt.block_loc.height
 	);
 
 	Ok(())
