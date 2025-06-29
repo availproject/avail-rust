@@ -264,16 +264,13 @@ pub mod test {
 	use std::borrow::Cow;
 
 	use codec::Encode;
-	use subxt_core::utils::AccountId32;
-	use subxt_core::utils::Era;
+	use subxt_core::utils::{AccountId32, Era};
 
-	use crate::avail::data_availability::tx::SubmitData;
-	use crate::decoded_transaction::OpaqueTransaction;
-	use crate::transaction::TransactionSigned;
-	use crate::DecodedTransaction;
-	use crate::Transaction;
-	use crate::{chain_types::TransactionCallLike, TransactionExtra};
-	use crate::{MultiAddress, MultiSignature};
+	use crate::{
+		avail::data_availability::tx::SubmitData, chain_types::TransactionCallLike,
+		decoded_transaction::OpaqueTransaction, transaction::TransactionSigned, DecodedTransaction, MultiAddress,
+		MultiSignature, Transaction, TransactionExtra,
+	};
 
 	#[test]
 	fn test_encoding_decoding() {

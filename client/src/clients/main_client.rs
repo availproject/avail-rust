@@ -271,6 +271,46 @@ impl Client {
 	}
 
 	// Sign and submit
+	pub fn sign<'a>(&self, tx: &avail_rust_core::Transaction<'a>) -> H256 {
+		tx.hash()
+	}
+
+	pub async fn sign_payload<'a>(
+		&self,
+		signer: &Keypair,
+		tx_payload: avail_rust_core::TransactionPayload<'a>,
+	) -> Result<(avail_rust_core::Transaction<'a>, H256), avail_rust_core::Error> {
+		use avail_rust_core::Transaction;
+
+		let account_id = signer.public_key().to_account_id();
+		let signature = tx_payload.sign(signer);
+		let tx = Transaction::new(account_id, signature, tx_payload);
+		let tx_hash = tx.hash();
+
+		Ok((tx, tx_hash))
+	}
+
+	pub async fn sign_call<'a>(
+		&self,
+		signer: &Keypair,
+		tx_call: &'a avail_rust_core::TransactionCall,
+		options: Options,
+	) -> Result<(avail_rust_core::Transaction<'a>, H256), avail_rust_core::Error> {
+		let account_id = signer.public_key().to_account_id();
+		let refined_options = options.build(self, &account_id).await?;
+
+		let tx_extra = avail_rust_core::TransactionExtra::from(&refined_options);
+		let tx_additional = avail_rust_core::TransactionAdditional {
+			spec_version: self.online_client.spec_version(),
+			tx_version: self.online_client.transaction_version(),
+			genesis_hash: self.online_client.genesis_hash(),
+			fork_hash: refined_options.mortality.block_hash,
+		};
+
+		let tx_payload = avail_rust_core::TransactionPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
+		self.sign_payload(signer, tx_payload).await
+	}
+
 	pub async fn sign_and_submit<'a>(
 		&self,
 		tx: &avail_rust_core::Transaction<'a>,
