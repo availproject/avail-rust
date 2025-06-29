@@ -186,8 +186,21 @@ pub mod data_availability {
 		#[derive(Debug, Clone)]
 		#[repr(u8)]
 		pub enum Event {
-			ApplicationKeyCreated { key: Vec<u8>, owner: AccountId, id: u32 } = 0,
-			DataSubmitted { who: AccountId, data_hash: H256 } = 1,
+			ApplicationKeyCreated {
+				key: Vec<u8>,
+				owner: AccountId,
+				id: u32,
+			} = 0,
+			DataSubmitted {
+				who: AccountId,
+				data_hash: H256,
+			} = 1,
+			SubmitBlobMetadataRequest {
+				who: AccountId,
+				blob_hash: H256,
+				size: u64,
+				commitments: Vec<u8>,
+			} = 2,
 		}
 		/* 		impl Encode for Event {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -234,6 +247,7 @@ pub mod data_availability {
 		pub enum Call {
 			CreateApplicationKey(CreateApplicationKey) = CreateApplicationKey::DISPATCH_INDEX.1,
 			SubmitData(SubmitData) = SubmitData::DISPATCH_INDEX.1,
+			SubmitBlobMetadata(SubmitBlobMetadata) = SubmitBlobMetadata::DISPATCH_INDEX.1,
 		}
 		impl Encode for Call {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -242,6 +256,7 @@ pub mod data_availability {
 				match self {
 					Self::CreateApplicationKey(x) => x.encode_to(dest),
 					Self::SubmitData(x) => x.encode_to(dest),
+					Self::SubmitBlobMetadata(x) => x.encode_to(dest),
 				}
 			}
 		}
@@ -253,6 +268,9 @@ pub mod data_availability {
 						Ok(Self::CreateApplicationKey(Decode::decode(input)?))
 					},
 					val if val == SubmitData::DISPATCH_INDEX.1 => Ok(Self::SubmitData(Decode::decode(input)?)),
+					val if val == SubmitBlobMetadata::DISPATCH_INDEX.1 => {
+						Ok(Self::SubmitBlobMetadata(Decode::decode(input)?))
+					},
 					_ => Err("Failed to decode DataAvailability Call. Unknown variant".into()),
 				}
 			}
@@ -294,6 +312,35 @@ pub mod data_availability {
 		}
 		impl TxDispatchIndex for SubmitData {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+
+		#[derive(Clone)]
+		pub struct SubmitBlobMetadata {
+			pub blob_hash: H256,
+			pub size: u64,
+			pub commitments: Vec<u8>,
+		}
+		impl Encode for SubmitBlobMetadata {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				dest.write(&self.blob_hash.encode());
+				dest.write(&self.size.encode());
+				dest.write(&self.commitments.encode());
+			}
+		}
+		impl Decode for SubmitBlobMetadata {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let blob_hash = Decode::decode(input)?;
+				let size = Decode::decode(input)?;
+				let commitments = Decode::decode(input)?;
+				Ok(Self {
+					blob_hash,
+					size,
+					commitments,
+				})
+			}
+		}
+		impl TxDispatchIndex for SubmitBlobMetadata {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 	}
 }
