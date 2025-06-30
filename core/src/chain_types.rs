@@ -340,7 +340,7 @@ pub mod data_availability {
 			}
 		}
 		impl TxDispatchIndex for SubmitBlobMetadata {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 	}
 }
