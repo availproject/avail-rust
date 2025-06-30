@@ -30,6 +30,8 @@ doc:
     cargo doc --open
 test:
     cd ./examples && RUST_LOG=info ./run.sh
+clean:
+    cd ./examples && ./clean.sh 
 podman:
     podman run -it --rm --network host docker.io/availj/avail:v2.2.5.1 --dev
 docker:
