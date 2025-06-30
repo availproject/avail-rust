@@ -32,6 +32,9 @@ pub use avail_rust_core::{
 #[cfg(feature = "generated_metadata")]
 pub use avail_rust_core::avail_generated;
 
+#[cfg(feature = "generated_metadata")]
+pub use extensions::DefaultPayloadExt;
+
 // Exporting types from ext libraries
 pub use avail_rust_core::{
 	AccountId, AvailHeader, CompactDataLookup, DecodedTransaction, HashNumber, HeaderExtension, KateCommitment,

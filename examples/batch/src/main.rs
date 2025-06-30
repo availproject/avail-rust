@@ -7,8 +7,12 @@ async fn main() -> Result<(), ClientError> {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let balances = client.tx().balances();
-	let c1 = balances.transfer_keep_alive(bob().account_id(), ONE_AVAIL).call;
-	let c2 = balances.transfer_keep_alive(dave().account_id(), ONE_AVAIL).call;
+	let c1 = balances
+		.transfer_keep_alive(bob().account_id(), constants::ONE_AVAIL)
+		.call;
+	let c2 = balances
+		.transfer_keep_alive(dave().account_id(), constants::ONE_AVAIL)
+		.call;
 
 	let tx = client.tx().utility().batch_all(vec![c1, c2]);
 	let st = tx.sign_and_submit(&alice(), Options::new(None)).await?;
@@ -20,16 +24,14 @@ async fn main() -> Result<(), ClientError> {
 	println!("Block State: {:?}", block_state);
 
 	// Fetching and displaying Transaction Events
-	let (tx_index, block_hash) = (receipt.tx_location.index, receipt.block_loc.hash);
-	let events_client = client.event_client();
-	let events = events_client.transaction_events(tx_index, block_hash).await?;
-	for event in events {
+	let event_group = receipt.tx_events().await?;
+	for event in event_group.events {
 		println!(
 			"Pallet Index: {}, Variant index: {}",
-			event.pallet_index(),
-			event.variant_index()
+			event.emitted_index.0, event.emitted_index.1,
 		);
-		let Ok(event) = RuntimeEvent::try_from(&event) else {
+		let encoded_event = hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
+		let Ok(event) = RuntimeEvent::try_from(&encoded_event) else {
 			continue;
 		};
 

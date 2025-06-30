@@ -13,7 +13,7 @@ async fn main() -> Result<(), ClientError> {
 
 	rpc_block(client.clone(), receipt.block_loc.hash).await?;
 	rpc_block_with_justifications(client.clone(), receipt.block_loc.hash).await?;
-	block_transaction(client.clone(), receipt.block_loc.hash, receipt.tx_location.hash).await?;
+	block_transaction(client.clone(), receipt.block_loc.hash, receipt.tx_loc.hash).await?;
 	block_transactions(client.clone(), receipt.block_loc.hash).await?;
 	Ok(())
 }

@@ -8,6 +8,30 @@ use subxt_core::{
 	utils::Yes,
 };
 
+pub trait TxEventEmittedIndex {
+	// Pallet ID, Variant ID
+	const EMITTED_INDEX: (u8, u8);
+}
+
+pub trait TransactionEventLike {
+	fn from_raw(raw: &[u8]) -> Option<Box<Self>>;
+}
+
+impl<T: TxEventEmittedIndex + Encode + Decode> TransactionEventLike for T {
+	fn from_raw(raw: &[u8]) -> Option<Box<T>> {
+		if raw.len() < 2 {
+			return None;
+		}
+
+		let (pallet_id, variant_id) = (raw[0], raw[1]);
+		if Self::EMITTED_INDEX.0 != pallet_id || Self::EMITTED_INDEX.1 != variant_id {
+			return None;
+		}
+
+		Self::decode(&mut &raw[2..]).ok().map(Box::new)
+	}
+}
+
 pub trait TxDispatchIndex {
 	// Pallet ID, Call ID
 	const DISPATCH_INDEX: (u8, u8);
@@ -20,11 +44,25 @@ pub trait EventEmittedIndex {
 
 pub trait TransactionCallLike {
 	fn to_call(&self) -> TransactionCall;
+	fn from_ext(raw: &[u8]) -> Option<Box<Self>>;
 }
 
 impl<T: TxDispatchIndex + Encode + Decode> TransactionCallLike for T {
 	fn to_call(&self) -> TransactionCall {
 		TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
+	}
+
+	fn from_ext(raw_ext: &[u8]) -> Option<Box<T>> {
+		if raw_ext.len() < 2 {
+			return None;
+		}
+
+		let (pallet_id, call_id) = (raw_ext[0], raw_ext[1]);
+		if Self::DISPATCH_INDEX.0 != pallet_id || Self::DISPATCH_INDEX.1 != call_id {
+			return None;
+		}
+
+		Self::decode(&mut &raw_ext[2..]).ok().map(Box::new)
 	}
 }
 

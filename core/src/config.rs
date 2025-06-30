@@ -63,6 +63,12 @@ impl From<(H256, u32)> for BlockLocation {
 	}
 }
 
+impl From<BlockLocation> for H256 {
+	fn from(value: BlockLocation) -> Self {
+		value.hash
+	}
+}
+
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct TransactionLocation {
 	pub hash: H256,
@@ -78,8 +84,26 @@ impl From<(H256, u32)> for TransactionLocation {
 	}
 }
 
+impl From<TransactionLocation> for H256 {
+	fn from(value: TransactionLocation) -> Self {
+		value.hash
+	}
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum HashNumber {
 	Hash(H256),
 	Number(u32),
+}
+
+impl From<BlockLocation> for HashNumber {
+	fn from(value: BlockLocation) -> Self {
+		Self::Hash(value.hash)
+	}
+}
+
+impl From<TransactionLocation> for HashNumber {
+	fn from(value: TransactionLocation) -> Self {
+		Self::Number(value.index)
+	}
 }

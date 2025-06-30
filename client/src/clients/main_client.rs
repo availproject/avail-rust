@@ -63,7 +63,6 @@ impl Client {
 		Ok(Self {
 			online_client,
 			rpc_client,
-			cache_client: CacheClient::new(),
 		})
 	}
 
