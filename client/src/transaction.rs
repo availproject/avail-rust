@@ -1,17 +1,16 @@
-use super::platform::sleep;
 use crate::{
 	Client,
+	subscription::{HeaderSubscription, Subscriber},
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockId, H256,
+	AccountId, BlockId, H256, HashIndex,
 	avail::TransactionCallLike,
 	config::TransactionLocation,
-	rpc::{BlockWithJustifications, system::fetch_events_v1_types::GroupedRuntimeEvents},
+	rpc::system::fetch_events_v1_types::GroupedRuntimeEvents,
 	transaction::{TransactionAdditional, TransactionCall},
 };
-use std::{sync::Arc, time::Duration};
 #[cfg(feature = "tracing")]
 use tracing::info;
 
@@ -146,29 +145,6 @@ impl TransactionReceipt {
 	}
 }
 
-/// TODO
-pub async fn get_new_or_cached_block(
-	client: &Client,
-	block_id: &BlockId,
-) -> Result<Arc<BlockWithJustifications>, avail_rust_core::Error> {
-	if let Some(block) = client.cache_client().find_signed_block(block_id.hash) {
-		return Ok(block);
-	}
-
-	let block = client.block(block_id.hash).await?;
-	let Some(block) = block else {
-		let err = std::format!("{} not found", block_id.hash);
-		return Err(err.into());
-	};
-	let block = Arc::new(block);
-	if let Some(block) = client.cache_client().find_signed_block(block_id.hash) {
-		return Ok(block);
-	}
-	client.cache_client().push_signed_block((block_id.hash, block.clone()));
-
-	Ok(block)
-}
-
 pub struct Utils;
 impl Utils {
 	/// TODO
@@ -180,16 +156,28 @@ impl Utils {
 		mortality: &RefinedMortality,
 		use_best_block: bool,
 	) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
+		use avail_rust_core::rpc::system::fetch_extrinsics_v1_types as Types;
 		let Some(block_id) =
 			Self::find_block_id_via_nonce(&client, nonce, account_id, mortality, use_best_block).await?
 		else {
 			return Ok(None);
 		};
 
-		let block = get_new_or_cached_block(&client, &block_id).await?;
-		let Some(tx_location) = block.block.has_transaction(tx_hash) else {
+		let sig_filter = Types::SignatureFilter::new(Some(std::format!("{}", account_id)), None, Some(nonce));
+		let block_client = client.block_client();
+		let tx = block_client
+			.block_transaction(
+				HashIndex::Hash(block_id.hash),
+				HashIndex::Hash(tx_hash),
+				Some(sig_filter),
+				None,
+			)
+			.await?;
+
+		let Some(tx) = tx else {
 			return Ok(None);
 		};
+		let tx_location = TransactionLocation::from((tx.tx_hash, tx.tx_index));
 
 		Ok(Some(TransactionReceipt::new(client, block_id, tx_location)))
 	}
@@ -202,97 +190,42 @@ impl Utils {
 		mortality: &RefinedMortality,
 		use_best_block: bool,
 	) -> Result<Option<BlockId>, avail_rust_core::Error> {
-		match use_best_block {
-			true => Self::find_best_block_block_id_via_nonce(client, nonce, account_id, mortality).await,
-			false => Self::find_finalized_block_block_id_via_nonce(client, nonce, account_id, mortality).await,
-		}
-	}
-
-	/// TODO
-	pub async fn find_finalized_block_block_id_via_nonce(
-		client: &Client,
-		nonce: u32,
-		account_id: &AccountId,
-		mortality: &RefinedMortality,
-	) -> Result<Option<BlockId>, avail_rust_core::Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
-
-		let mut next_block_height = mortality.block_height + 1;
-		let mut new_block_height = client.finalized_block_height().await?;
+		let sub = match use_best_block {
+			true => Subscriber::new_best_block(3_000, mortality.block_height),
+			false => Subscriber::new_finalized_block(3_000, mortality.block_height),
+		};
+		let mut sub = HeaderSubscription::new(client.clone(), sub);
+		let mut current_block_height = mortality.block_height;
 
 		#[cfg(feature = "tracing")]
-		info!(target: "lib", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, new_block_height, mortality_ends_height);
-		while mortality_ends_height >= next_block_height {
-			if next_block_height > new_block_height {
-				sleep(Duration::from_secs(3)).await;
-				new_block_height = client.finalized_block_height().await?;
-				continue;
-			}
-
-			let Some(next_block_hash) = client.block_hash(next_block_height).await? else {
-				return Err(std::format!("Block hash not found. Height: {}", next_block_height).into());
+		{
+			match use_best_block {
+				true => {
+					let id = client.best_block_id().await?;
+					info!(target: "lib", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, id.height, mortality_ends_height);
+				},
+				false => {
+					let id = client.finalized_block_id().await?;
+					info!(target: "lib", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, id.height, mortality_ends_height);
+				},
 			};
+		}
 
-			let block_id = BlockId::from((next_block_hash, next_block_height));
+		while mortality_ends_height >= current_block_height {
+			let next_header = sub.next().await?;
+			current_block_height = sub.current_block_height();
 
-			let state_nonce = client.block_nonce(account_id, next_block_hash).await?;
+			let Some(header) = next_header else { continue };
+			let block_id = BlockId::from((header.hash(), header.number));
+			let state_nonce = client.block_nonce(account_id, block_id.hash).await?;
+
 			if state_nonce > nonce {
 				trace_new_block(nonce, state_nonce, account_id, block_id, true);
-				return Ok(Some(BlockId::from((next_block_hash, next_block_height))));
+				return Ok(Some(block_id));
 			}
 
 			trace_new_block(nonce, state_nonce, account_id, block_id, false);
-			next_block_height += 1;
-		}
-
-		Ok(None)
-	}
-
-	/// TODO
-	pub async fn find_best_block_block_id_via_nonce(
-		client: &Client,
-		nonce: u32,
-		account_id: &AccountId,
-		mortality: &RefinedMortality,
-	) -> Result<Option<BlockId>, avail_rust_core::Error> {
-		let mortality_ends_height = mortality.block_height + mortality.period as u32;
-		let mut current_block_id = BlockId::from((mortality.block_hash, mortality.block_height));
-		let mut new_block_id = client.best_block_id().await?;
-
-		#[cfg(feature = "tracing")]
-		info!(target: "lib", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, new_block_id.height, mortality_ends_height);
-		while mortality_ends_height >= current_block_id.height {
-			if current_block_id.height > new_block_id.height || current_block_id.hash == new_block_id.hash {
-				sleep(Duration::from_secs(3)).await;
-				new_block_id = client.best_block_id().await?;
-				continue;
-			}
-
-			if new_block_id.height == current_block_id.height || new_block_id.height == (current_block_id.height + 1) {
-				let state_nonce = client.block_nonce(account_id, new_block_id.hash).await?;
-				if state_nonce > nonce {
-					trace_new_block(nonce, state_nonce, account_id, new_block_id, true);
-					return Ok(Some(new_block_id));
-				}
-				trace_new_block(nonce, state_nonce, account_id, new_block_id, false);
-				current_block_id = new_block_id;
-
-				continue;
-			}
-
-			current_block_id.height += 1;
-			let Some(hash) = client.block_hash(current_block_id.height).await? else {
-				return Err(std::format!("Block hash not found. Height: {}", current_block_id.height).into());
-			};
-			current_block_id.hash = hash;
-
-			let state_nonce = client.block_nonce(account_id, current_block_id.hash).await?;
-			if state_nonce > nonce {
-				trace_new_block(nonce, state_nonce, account_id, current_block_id, true);
-				return Ok(Some(current_block_id));
-			}
-
-			trace_new_block(nonce, state_nonce, account_id, current_block_id, false);
 		}
 
 		Ok(None)

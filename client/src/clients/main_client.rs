@@ -1,9 +1,8 @@
 use super::{
-	block_client::BlockClient, cache_client::CacheClient, event_client::EventClient, online_client::OnlineClientT,
-	storage_client::StorageClient,
+	block_client::BlockClient, event_client::EventClient, online_client::OnlineClientT, storage_client::StorageClient,
 };
 use crate::{
-	avail,
+	BlockState, avail,
 	clients::{rpc_api::RpcAPI, runtime_api::RuntimeApi},
 	subscription::{self, Subscriber},
 	subxt_rpcs::RpcClient,
@@ -11,11 +10,9 @@ use crate::{
 	transaction::SubmittedTransaction,
 	transaction_options::Options,
 	transactions::Transactions,
-	BlockState,
 };
 use avail::{balances::types::AccountData, system::types::AccountInfo};
-use avail_rust_core::{rpc::BlockWithJustifications, AccountId, AvailHeader, BlockId, H256};
-use std::sync::Arc;
+use avail_rust_core::{AccountId, AvailHeader, BlockId, H256, rpc::BlockWithJustifications};
 
 #[cfg(feature = "subxt")]
 use crate::config::{ABlocksClient, AConstantsClient, AStorageClient};
@@ -27,7 +24,6 @@ pub struct Client {
 	#[cfg(feature = "subxt")]
 	online_client: crate::config::AOnlineClient,
 	pub rpc_client: RpcClient,
-	cache_client: CacheClient,
 }
 
 impl Client {
@@ -56,7 +52,6 @@ impl Client {
 		Ok(Self {
 			online_client,
 			rpc_client,
-			cache_client: CacheClient::new(),
 		})
 	}
 
@@ -89,10 +84,6 @@ impl Client {
 		}
 	}
 
-	pub fn toggle_caching(&self, value: bool) {
-		self.cache_client.toggle_caching(value);
-	}
-
 	// Header
 	pub async fn block_header(&self, at: H256) -> Result<Option<AvailHeader>, avail_rust_core::Error> {
 		self.rpc_api().chain_get_header(Some(at)).await
@@ -116,13 +107,8 @@ impl Client {
 
 	// (RPC) Block
 	pub async fn block(&self, at: H256) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
-		if let Some(block) = self.cache_client.find_signed_block(at) {
-			return Ok(Some(block.as_ref().clone()));
-		}
-
 		let block = self.rpc_api().chain_get_block(Some(at)).await?;
 		if let Some(block) = block {
-			self.cache_client.push_signed_block((at, Arc::new(block.clone())));
 			Ok(Some(block))
 		} else {
 			Ok(None)
@@ -366,10 +352,6 @@ impl Client {
 
 	pub fn block_client(&self) -> BlockClient {
 		BlockClient::new(self.clone())
-	}
-
-	pub fn cache_client(&self) -> CacheClient {
-		self.cache_client.clone()
 	}
 
 	pub fn storage_client(&self) -> StorageClient {
