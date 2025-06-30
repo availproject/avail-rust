@@ -1,3 +1,8 @@
+//! This example showcases the following actions:
+//! - Fetching block and block extrinsics via block client
+//! - Decoding block extrinsics
+//!
+
 use avail::data_availability::tx::Call;
 use avail_rust_client::prelude::*;
 use avail_rust_core::rpc::system::fetch_extrinsics_v1_types as Types;

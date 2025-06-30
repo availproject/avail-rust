@@ -1,7 +1,7 @@
 [workspace]
 
 [package]
-name = "block-indexing-example"
+name = "subscriptions-example"
 edition = "2024"
 
 [dependencies]

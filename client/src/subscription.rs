@@ -114,6 +114,11 @@ impl Subscriber {
 	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
 		loop {
 			let best_block_hash = client.best_block_hash().await?;
+			if block_processed.contains(&best_block_hash) {
+				sleep(poll_rate).await;
+				continue;
+			}
+
 			let Some(best_block_height) = client.block_height(best_block_hash).await? else {
 				return Ok(None);
 			};

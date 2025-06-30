@@ -28,11 +28,14 @@ lint-fix:
     cargo clippy --fix
 doc:
     cargo doc --open
-test:
+examples:
     cd ./examples && RUST_LOG=info ./run.sh
-clean:
+examples-clean:
     cd ./examples && ./clean.sh 
+test:
+    cargo test
 podman:
     podman run -it --rm --network host docker.io/availj/avail:v2.2.5.1 --dev
 docker:
     docker run -it --rm --network host docker.io/availj/avail:v2.2.5.1 --dev
+    

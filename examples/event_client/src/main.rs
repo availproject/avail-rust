@@ -1,6 +1,6 @@
 //! This example showcases the following actions:
-//! - Fetching Transaction Events
-//! - Fetching Block Events
+//! - Fetching block and transaction events via event client
+//! - Decoding block and transaction events
 //!
 
 use avail_rust_client::{
@@ -24,30 +24,34 @@ async fn main() -> Result<(), ClientError> {
 		return Err("Transaction was dropped".into());
 	};
 
+	// Fetching transaction events directly via receipt
+	let event_group = receipt.tx_events().await?;
+	print_event_details(&event_group)?;
+
 	// Find transaction related event
 	let event_client = client.event_client();
-	let Some(grouped_events) = event_client
+	let Some(event_group) = event_client
 		.transaction_events(receipt.tx_loc.index, true, true, receipt.block_loc.hash)
 		.await?
 	else {
 		return Err("Failed to find events".into());
 	};
 
-	print_event_details(&grouped_events)?;
+	print_event_details(&event_group)?;
 
 	// Find block related events
 	let params = FetchEventsV1Params::new(Some(Filter::All), Some(true), Some(true));
-	let block_grouped_events = event_client.block_events(params, receipt.block_loc.hash).await?;
-	for grouped_events in block_grouped_events {
-		print_event_details(&grouped_events)?;
+	let block_event_group = event_client.block_events(params, receipt.block_loc.hash).await?;
+	for event_group in block_event_group {
+		print_event_details(&event_group)?;
 	}
 
 	Ok(())
 }
 
-fn print_event_details(grouped_events: &GroupedRuntimeEvents) -> Result<(), ClientError> {
-	println!("Phase: {:?}", grouped_events.phase);
-	for event in &grouped_events.events {
+fn print_event_details(event_group: &GroupedRuntimeEvents) -> Result<(), ClientError> {
+	println!("Phase: {:?}", event_group.phase);
+	for event in &event_group.events {
 		println!(
 			"Event pallet id: {}, Event event id: {}",
 			event.emitted_index.0, event.emitted_index.1

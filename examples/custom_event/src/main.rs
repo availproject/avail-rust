@@ -1,3 +1,8 @@
+//! This example showcases the following actions:
+//! - Creating custom event
+//! - Decoding custom event
+//!
+
 use avail_rust_client::{
 	avail::{TransactionEventLike, TxEventEmittedIndex},
 	prelude::*,

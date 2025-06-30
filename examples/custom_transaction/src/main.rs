@@ -1,3 +1,8 @@
+//! This example showcases the following actions:
+//! - Creating custom transaction and submitting it
+//! - Decoding custom transaction
+//!
+
 use avail_rust_client::{
 	avail::{TransactionCallLike, TxDispatchIndex},
 	avail_rust_core::rpc::system::fetch_extrinsics_v1_types::EncodeSelector,

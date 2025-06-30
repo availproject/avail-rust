@@ -1,3 +1,8 @@
+//! This example showcases the following actions:
+//! - Transaction creation and submission
+//! - It explains what is happening under the hood
+//!
+
 use avail_rust_client::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
