@@ -9,12 +9,12 @@ pub use subxt_types::*;
 pub mod subxt_types {
 	use super::AvailConfig;
 	use crate::subxt::{
+		OnlineClient,
 		blocks::{Block, BlocksClient, ExtrinsicDetails, ExtrinsicEvents, Extrinsics, FoundExtrinsic},
 		constants::ConstantsClient,
 		events::{EventDetails, Events, EventsClient},
 		storage::StorageClient,
 		tx::TxClient,
-		OnlineClient,
 	};
 
 	pub type AOnlineClient = OnlineClient<AvailConfig>;

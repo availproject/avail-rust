@@ -2,9 +2,9 @@ use codec::{Codec, Decode};
 use primitive_types::H256;
 use serde::{Serialize, Serializer};
 
+use crate::AvailHeader;
 #[cfg(feature = "generated_metadata")]
 use crate::avail_generated::runtime_types::sp_consensus_grandpa::app::Public;
-use crate::AvailHeader;
 
 #[cfg(not(feature = "generated_metadata"))]
 pub type Public = [u8; 32];
@@ -19,7 +19,7 @@ impl Serialize for AuthorityId {
 	{
 		#[cfg(feature = "generated_metadata")]
 		{
-			let raw = hex::encode(self.0 .0 .0);
+			let raw = hex::encode(self.0.0.0);
 			serializer.serialize_str(&raw)
 		}
 

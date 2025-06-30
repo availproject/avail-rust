@@ -49,12 +49,12 @@ pub type DispatchIndex = (u8, u8);
 pub type EmittedIndex = (u8, u8);
 
 #[derive(Debug, Clone, Copy, Deserialize)]
-pub struct BlockId {
+pub struct BlockLocation {
 	pub hash: H256,
 	pub height: u32,
 }
 
-impl From<(H256, u32)> for BlockId {
+impl From<(H256, u32)> for BlockLocation {
 	fn from(value: (H256, u32)) -> Self {
 		Self {
 			hash: value.0,
@@ -79,7 +79,7 @@ impl From<(H256, u32)> for TransactionLocation {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum HashIndex {
+pub enum HashNumber {
 	Hash(H256),
-	Index(u32),
+	Number(u32),
 }

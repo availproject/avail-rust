@@ -1,5 +1,4 @@
-use crate::platform::sleep;
-use crate::{AvailHeader, Client};
+use crate::{AvailHeader, Client, platform::sleep};
 use avail_rust_core::{
 	H256,
 	rpc::{BlockJustification, BlockWithJustifications},

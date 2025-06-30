@@ -13,8 +13,8 @@ pub mod runtime_api;
 pub mod transaction;
 
 pub use config::{
-	AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockId, DispatchIndex, EmittedIndex,
-	HashIndex, MultiAddress, MultiSignature,
+	AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockLocation, DispatchIndex, EmittedIndex,
+	HashNumber, MultiAddress, MultiSignature,
 };
 pub use decoded_transaction::{DecodedTransaction, OpaqueTransaction};
 pub use error::Error;

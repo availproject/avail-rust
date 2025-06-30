@@ -1,4 +1,4 @@
-use super::transaction::{AlreadyEncoded, TransactionSigned, EXTRINSIC_FORMAT_VERSION};
+use super::transaction::{AlreadyEncoded, EXTRINSIC_FORMAT_VERSION, TransactionSigned};
 use codec::{Compact, Decode, Encode, Error, Input};
 use serde::{Deserialize, Serialize};
 
@@ -267,9 +267,9 @@ pub mod test {
 	use subxt_core::utils::{AccountId32, Era};
 
 	use crate::{
+		DecodedTransaction, MultiAddress, MultiSignature, Transaction, TransactionExtra,
 		avail::data_availability::tx::SubmitData, chain_types::TransactionCallLike,
-		decoded_transaction::OpaqueTransaction, transaction::TransactionSigned, DecodedTransaction, MultiAddress,
-		MultiSignature, Transaction, TransactionExtra,
+		decoded_transaction::OpaqueTransaction, transaction::TransactionSigned,
 	};
 
 	#[test]

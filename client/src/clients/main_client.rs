@@ -12,7 +12,7 @@ use crate::{
 	transactions::Transactions,
 };
 use avail::{balances::types::AccountData, system::types::AccountInfo};
-use avail_rust_core::{AccountId, AvailHeader, BlockId, H256, rpc::BlockWithJustifications};
+use avail_rust_core::{AccountId, AvailHeader, BlockLocation, H256, rpc::BlockWithJustifications};
 
 #[cfg(feature = "subxt")]
 use crate::config::{ABlocksClient, AConstantsClient, AStorageClient};
@@ -163,22 +163,22 @@ impl Client {
 	}
 
 	// Block Id
-	pub async fn best_block_id(&self) -> Result<BlockId, avail_rust_core::Error> {
+	pub async fn best_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
 		let hash = self.best_block_hash().await?;
 		let height = self.block_height(hash).await?;
 		let Some(height) = height else {
 			return Err("Best block header not found.".into());
 		};
-		Ok(BlockId::from((hash, height)))
+		Ok(BlockLocation::from((hash, height)))
 	}
 
-	pub async fn finalized_block_id(&self) -> Result<BlockId, avail_rust_core::Error> {
+	pub async fn finalized_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
 		let hash = self.finalized_block_hash().await?;
 		let height = self.block_height(hash).await?;
 		let Some(height) = height else {
 			return Err("Finalized block header not found.".into());
 		};
-		Ok(BlockId::from((hash, height)))
+		Ok(BlockLocation::from((hash, height)))
 	}
 
 	// Nonce
@@ -238,18 +238,18 @@ impl Client {
 	}
 
 	// Block State
-	pub async fn block_state(&self, block_id: BlockId) -> Result<BlockState, avail_rust_core::Error> {
-		let real_block_hash = self.block_hash(block_id.height).await?;
+	pub async fn block_state(&self, block_loc: BlockLocation) -> Result<BlockState, avail_rust_core::Error> {
+		let real_block_hash = self.block_hash(block_loc.height).await?;
 		let Some(real_block_hash) = real_block_hash else {
 			return Ok(BlockState::DoesNotExist);
 		};
 
 		let finalized_block_height = self.finalized_block_height().await?;
-		if block_id.height > finalized_block_height {
+		if block_loc.height > finalized_block_height {
 			return Ok(BlockState::Included);
 		}
 
-		if block_id.hash != real_block_hash {
+		if block_loc.hash != real_block_hash {
 			return Ok(BlockState::Discarded);
 		}
 

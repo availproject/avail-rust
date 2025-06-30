@@ -34,7 +34,7 @@ pub use avail_rust_core::avail_generated;
 
 // Exporting types from ext libraries
 pub use avail_rust_core::{
-	AccountId, AvailHeader, CompactDataLookup, DecodedTransaction, HashIndex, HeaderExtension, KateCommitment,
+	AccountId, AvailHeader, CompactDataLookup, DecodedTransaction, HashNumber, HeaderExtension, KateCommitment,
 	MultiAddress, OpaqueTransaction, Transaction, TransactionAdditional, TransactionCall, TransactionExtra,
 	TransactionPayload, TransactionSigned, V3HeaderExtension, avail,
 };

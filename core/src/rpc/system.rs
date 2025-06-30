@@ -189,20 +189,20 @@ pub mod fetch_events_v1_types {
 
 pub mod fetch_extrinsics_v1_types {
 	use super::*;
-	use crate::HashIndex;
+	use crate::config::HashNumber;
 
 	pub type Output = Vec<ExtrinsicInformation>;
 	pub type FetchExtrinsicsV1Params = Params;
 
 	#[derive(Clone, Serialize, Deserialize)]
 	pub struct Params {
-		pub block_id: HashIndex,
+		pub block_id: HashNumber,
 		pub filter: Option<Filter>,
 		pub encode_selector: Option<EncodeSelector>,
 	}
 
 	impl Params {
-		pub fn new(block_id: HashIndex, filter: Option<Filter>, selector: Option<EncodeSelector>) -> Self {
+		pub fn new(block_id: HashNumber, filter: Option<Filter>, selector: Option<EncodeSelector>) -> Self {
 			Self {
 				block_id,
 				filter,

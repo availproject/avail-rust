@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use subxt_rpcs::{rpc_params, RpcClient};
+use subxt_rpcs::{RpcClient, rpc_params};
 
 #[derive(Default, Deserialize)]
 pub struct RpcMethods {
