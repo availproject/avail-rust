@@ -212,4 +212,12 @@ impl RpcAPI {
 		};
 		Ok(rpc::system::fetch_events_v1(&self.client.rpc_client, params, at).await?)
 	}
+
+	pub async fn blob_submit_blob(
+		&self,
+		metadata_signed_transaction: Vec<u8>,
+		blob: Vec<u8>,
+	) -> Result<(), avail_rust_core::Error> {
+		Ok(rpc::blob::submit_blob(&self.client.rpc_client, metadata_signed_transaction, blob).await?)
+	}
 }
