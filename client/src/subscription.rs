@@ -61,7 +61,7 @@ impl Subscriber {
 		block_processed: &mut Vec<H256>,
 	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
 		let block_height = *current_block_height;
-		let res = Self::fetch_best_block_height(client, block_height, &block_processed, poll_rate).await?;
+		let res = Self::fetch_best_block_height(client, block_height, block_processed, poll_rate).await?;
 		if let Some(res) = &res {
 			*current_block_height = res.0;
 			if res.0 > block_height {
