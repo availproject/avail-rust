@@ -51,7 +51,7 @@ impl SubmittableTransaction {
 		&self,
 		signer: &Keypair,
 		options: Options,
-	) -> Result<(avail_rust_core::Transaction, H256), avail_rust_core::Error> {
+	) -> Result<avail_rust_core::Transaction, avail_rust_core::Error> {
 		self.client.sign_call(signer, &self.call, options).await
 	}
 }

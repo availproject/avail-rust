@@ -271,23 +271,32 @@ impl Client {
 	}
 
 	// Sign and submit
-	pub fn sign<'a>(&self, tx: &avail_rust_core::Transaction<'a>) -> H256 {
-		tx.hash()
+	pub async fn submit<'a>(&self, tx: &avail_rust_core::Transaction<'a>) -> Result<H256, avail_rust_core::Error> {
+		let encoded = tx.encode();
+		let tx_hash = self.rpc_api().author_submit_extrinsic(&encoded).await?;
+
+		#[cfg(feature = "tracing")]
+		if let Some(signed) = &tx.signed {
+			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
+				tracing::info!(target: "lib", "Transaction submitted. Tx Hash: {:?}, Address: {}, Nonce: {}, App Id: {}", tx_hash, account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
+			}
+		}
+
+		Ok(tx_hash)
 	}
 
 	pub async fn sign_payload<'a>(
 		&self,
 		signer: &Keypair,
 		tx_payload: avail_rust_core::TransactionPayload<'a>,
-	) -> Result<(avail_rust_core::Transaction<'a>, H256), avail_rust_core::Error> {
+	) -> Result<avail_rust_core::Transaction<'a>, avail_rust_core::Error> {
 		use avail_rust_core::Transaction;
 
 		let account_id = signer.public_key().to_account_id();
 		let signature = tx_payload.sign(signer);
 		let tx = Transaction::new(account_id, signature, tx_payload);
-		let tx_hash = tx.hash();
 
-		Ok((tx, tx_hash))
+		Ok(tx)
 	}
 
 	pub async fn sign_call<'a>(
@@ -295,7 +304,7 @@ impl Client {
 		signer: &Keypair,
 		tx_call: &'a avail_rust_core::TransactionCall,
 		options: Options,
-	) -> Result<(avail_rust_core::Transaction<'a>, H256), avail_rust_core::Error> {
+	) -> Result<avail_rust_core::Transaction<'a>, avail_rust_core::Error> {
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(self, &account_id).await?;
 
@@ -311,23 +320,6 @@ impl Client {
 		self.sign_payload(signer, tx_payload).await
 	}
 
-	pub async fn sign_and_submit<'a>(
-		&self,
-		tx: &avail_rust_core::Transaction<'a>,
-	) -> Result<H256, avail_rust_core::Error> {
-		let encoded = tx.encode();
-		let tx_hash = self.rpc_api().author_submit_extrinsic(&encoded).await?;
-
-		#[cfg(feature = "tracing")]
-		if let Some(signed) = &tx.signed {
-			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
-				tracing::info!(target: "lib", "Transaction submitted. Tx Hash: {:?}, Address: {}, Nonce: {}, App Id: {}", tx_hash, account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
-			}
-		}
-
-		Ok(tx_hash)
-	}
-
 	pub async fn sign_and_submit_payload<'a>(
 		&self,
 		signer: &Keypair,
@@ -338,7 +330,7 @@ impl Client {
 		let account_id = signer.public_key().to_account_id();
 		let signature = tx_payload.sign(signer);
 		let tx = Transaction::new(account_id, signature, tx_payload);
-		let tx_hash = self.sign_and_submit(&tx).await?;
+		let tx_hash = self.submit(&tx).await?;
 
 		Ok(tx_hash)
 	}
