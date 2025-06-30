@@ -10,7 +10,8 @@ pub mod system;
 
 pub use super::AvailHeader;
 pub use chain::{Block, BlockJustification, BlockWithJustifications};
-use subxt_rpcs::{client::RpcParams, RpcClient};
+use subxt_rpcs::{RpcClient, client::RpcParams};
+pub use system::fetch_events_v1_types::FetchEventsV1Params;
 
 pub async fn call_raw<T: serde::de::DeserializeOwned>(
 	client: &RpcClient,

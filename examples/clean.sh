@@ -10,3 +10,4 @@ cd ./parallel_transaction_submission && rm -f Cargo.lock && rm -f -r ./target &&
 cd ./storage && rm -f Cargo.lock && rm -f -r ./target && cd ./../.
 cd ./transaction_submission && rm -f Cargo.lock && rm -f -r ./target && cd ./../.
 cd ./transaction_submission_with_exp && rm -f Cargo.lock && rm -f -r ./target && cd ./../.
+cd ./event-client && rm -f Cargo.lock && rm -f -r ./target && cd ./../.

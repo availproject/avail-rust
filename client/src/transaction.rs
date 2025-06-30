@@ -1,15 +1,15 @@
 use super::platform::sleep;
 use crate::{
+	Client,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
-	Client,
 };
 use avail_rust_core::{
+	AccountId, BlockId, H256,
 	avail::TransactionCallLike,
 	config::TransactionLocation,
-	rpc::BlockWithJustifications,
+	rpc::{BlockWithJustifications, system::fetch_events_v1_types::GroupedRuntimeEvents},
 	transaction::{TransactionAdditional, TransactionCall},
-	AccountId, BlockId, H256,
 };
 use std::{sync::Arc, time::Duration};
 #[cfg(feature = "tracing")]
@@ -34,9 +34,7 @@ pub struct SubmittableTransaction {
 
 impl SubmittableTransaction {
 	pub fn new(client: Client, call: TransactionCall) -> Self {
-		{
-			Self { client, call }
-		}
+		Self { client, call }
 	}
 
 	pub async fn sign_and_submit(
@@ -135,8 +133,16 @@ impl TransactionReceipt {
 		self.client.block_state(self.block_id).await
 	}
 
-	pub async fn tx_events(&self) -> Result<(), ()> {
-		unimplemented!()
+	pub async fn tx_events(&self) -> Result<GroupedRuntimeEvents, avail_rust_core::Error> {
+		let events_client = self.client.event_client();
+		let Some(grouped_events) = events_client
+			.transaction_events(self.tx_location.index, true, false, self.block_id.hash)
+			.await?
+		else {
+			return Err("Failed to to find events".into());
+		};
+
+		Ok(grouped_events)
 	}
 }
 

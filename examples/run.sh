@@ -11,3 +11,4 @@ cd ./parallel_transaction_submission && cargo run  && cd ./../.
 cd ./storage && cargo run  && cd ./../.
 cd ./transaction_submission && cargo run  && cd ./../.
 cd ./transaction_submission_with_exp && cargo run  && cd ./../.
+cd ./event-client && cargo run  && cd ./../.
