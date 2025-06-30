@@ -46,6 +46,14 @@ impl SubmittableTransaction {
 	) -> Result<SubmittedTransaction, avail_rust_core::Error> {
 		self.client.sign_and_submit_call(signer, &self.call, options).await
 	}
+
+	pub async fn sign(
+		&self,
+		signer: &Keypair,
+		options: Options,
+	) -> Result<(avail_rust_core::Transaction, H256), avail_rust_core::Error> {
+		self.client.sign_call(signer, &self.call, options).await
+	}
 }
 
 #[derive(Clone, Copy)]

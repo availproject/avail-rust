@@ -184,6 +184,11 @@ impl<'a> Transaction<'a> {
 
 		encoded_tx
 	}
+
+	pub fn hash(&self) -> H256 {
+		let encoded = self.encode();
+		BlakeTwo256::hash(&encoded)
+	}
 }
 
 impl<'a> TryFrom<&Vec<u8>> for Transaction<'a> {
