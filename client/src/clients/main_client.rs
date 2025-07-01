@@ -1,9 +1,8 @@
 use super::{
-	block_client::BlockClient, cache_client::CacheClient, event_client::EventClient, online_client::OnlineClientT,
-	storage_client::StorageClient,
+	block_client::BlockClient, event_client::EventClient, online_client::OnlineClientT, storage_client::StorageClient,
 };
 use crate::{
-	avail,
+	BlockState, avail,
 	clients::{rpc_api::RpcAPI, runtime_api::RuntimeApi},
 	subscription::{self, Subscriber},
 	subxt_rpcs::RpcClient,
@@ -11,11 +10,9 @@ use crate::{
 	transaction::SubmittedTransaction,
 	transaction_options::Options,
 	transactions::Transactions,
-	BlockState,
 };
 use avail::{balances::types::AccountData, system::types::AccountInfo};
-use avail_rust_core::{rpc::BlockWithJustifications, AccountId, AvailHeader, BlockId, H256};
-use std::sync::Arc;
+use avail_rust_core::{AccountId, AvailHeader, BlockLocation, H256, rpc::BlockWithJustifications};
 
 #[cfg(feature = "subxt")]
 use crate::config::{ABlocksClient, AConstantsClient, AStorageClient};
@@ -27,7 +24,6 @@ pub struct Client {
 	#[cfg(feature = "subxt")]
 	online_client: crate::config::AOnlineClient,
 	pub rpc_client: RpcClient,
-	cache_client: CacheClient,
 }
 
 impl Client {
@@ -56,7 +52,6 @@ impl Client {
 		Ok(Self {
 			online_client,
 			rpc_client,
-			cache_client: CacheClient::new(),
 		})
 	}
 
@@ -68,7 +63,6 @@ impl Client {
 		Ok(Self {
 			online_client,
 			rpc_client,
-			cache_client: CacheClient::new(),
 		})
 	}
 
@@ -87,10 +81,6 @@ impl Client {
 		} else {
 			builder.finish().init();
 		}
-	}
-
-	pub fn toggle_caching(&self, value: bool) {
-		self.cache_client.toggle_caching(value);
 	}
 
 	// Header
@@ -116,13 +106,8 @@ impl Client {
 
 	// (RPC) Block
 	pub async fn block(&self, at: H256) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
-		if let Some(block) = self.cache_client.find_signed_block(at) {
-			return Ok(Some(block.as_ref().clone()));
-		}
-
 		let block = self.rpc_api().chain_get_block(Some(at)).await?;
 		if let Some(block) = block {
-			self.cache_client.push_signed_block((at, Arc::new(block.clone())));
 			Ok(Some(block))
 		} else {
 			Ok(None)
@@ -177,22 +162,22 @@ impl Client {
 	}
 
 	// Block Id
-	pub async fn best_block_id(&self) -> Result<BlockId, avail_rust_core::Error> {
+	pub async fn best_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
 		let hash = self.best_block_hash().await?;
 		let height = self.block_height(hash).await?;
 		let Some(height) = height else {
 			return Err("Best block header not found.".into());
 		};
-		Ok(BlockId::from((hash, height)))
+		Ok(BlockLocation::from((hash, height)))
 	}
 
-	pub async fn finalized_block_id(&self) -> Result<BlockId, avail_rust_core::Error> {
+	pub async fn finalized_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
 		let hash = self.finalized_block_hash().await?;
 		let height = self.block_height(hash).await?;
 		let Some(height) = height else {
 			return Err("Finalized block header not found.".into());
 		};
-		Ok(BlockId::from((hash, height)))
+		Ok(BlockLocation::from((hash, height)))
 	}
 
 	// Nonce
@@ -252,18 +237,18 @@ impl Client {
 	}
 
 	// Block State
-	pub async fn block_state(&self, block_id: BlockId) -> Result<BlockState, avail_rust_core::Error> {
-		let real_block_hash = self.block_hash(block_id.height).await?;
+	pub async fn block_state(&self, block_loc: BlockLocation) -> Result<BlockState, avail_rust_core::Error> {
+		let real_block_hash = self.block_hash(block_loc.height).await?;
 		let Some(real_block_hash) = real_block_hash else {
 			return Ok(BlockState::DoesNotExist);
 		};
 
 		let finalized_block_height = self.finalized_block_height().await?;
-		if block_id.height > finalized_block_height {
+		if block_loc.height > finalized_block_height {
 			return Ok(BlockState::Included);
 		}
 
-		if block_id.hash != real_block_hash {
+		if block_loc.hash != real_block_hash {
 			return Ok(BlockState::Discarded);
 		}
 
@@ -366,10 +351,6 @@ impl Client {
 
 	pub fn block_client(&self) -> BlockClient {
 		BlockClient::new(self.clone())
-	}
-
-	pub fn cache_client(&self) -> CacheClient {
-		self.cache_client.clone()
 	}
 
 	pub fn storage_client(&self) -> StorageClient {

@@ -1,10 +1,8 @@
-use crate::{AvailHeader, Client};
+use crate::{AvailHeader, Client, platform::sleep};
 use avail_rust_core::{
-	rpc::{BlockJustification, BlockWithJustifications},
 	H256,
+	rpc::{BlockJustification, BlockWithJustifications},
 };
-// use futures::{Stream, StreamExt};
-// use std::{future::Future, pin::Pin, sync::Arc, task::Poll, time::Duration};
 use std::time::Duration;
 
 #[derive(Clone)]
@@ -54,6 +52,26 @@ impl Subscriber {
 		}
 	}
 
+	pub fn current_block_height(&self) -> u32 {
+		match self {
+			Subscriber::BestBlock {
+				poll_rate: _,
+				current_block_height,
+				block_processed: _,
+			} => *current_block_height,
+			Subscriber::FinalizedBlock {
+				poll_rate: _,
+				next_block_height,
+			} => {
+				if *next_block_height > 0 {
+					*next_block_height - 1
+				} else {
+					*next_block_height
+				}
+			},
+		}
+	}
+
 	async fn run_best_block(
 		client: Client,
 		poll_rate: Duration,
@@ -61,7 +79,7 @@ impl Subscriber {
 		block_processed: &mut Vec<H256>,
 	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
 		let block_height = *current_block_height;
-		let res = Self::fetch_best_block_height(client, block_height, &block_processed, poll_rate).await?;
+		let res = Self::fetch_best_block_height(client, block_height, block_processed, poll_rate).await?;
 		if let Some(res) = &res {
 			*current_block_height = res.0;
 			if res.0 > block_height {
@@ -96,6 +114,11 @@ impl Subscriber {
 	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
 		loop {
 			let best_block_hash = client.best_block_hash().await?;
+			if block_processed.contains(&best_block_hash) {
+				sleep(poll_rate).await;
+				continue;
+			}
+
 			let Some(best_block_height) = client.block_height(best_block_hash).await? else {
 				return Ok(None);
 			};
@@ -129,7 +152,7 @@ impl Subscriber {
 				return Ok(Some((best_block_height, best_block_hash)));
 			}
 
-			tokio::time::sleep(poll_rate).await;
+			sleep(poll_rate).await;
 			continue;
 		}
 	}
@@ -142,7 +165,7 @@ impl Subscriber {
 		loop {
 			let finalized_block_height = client.finalized_block_height().await?;
 			if target_block_height > finalized_block_height {
-				tokio::time::sleep(poll_rate).await;
+				sleep(poll_rate).await;
 				continue;
 			}
 
@@ -171,6 +194,10 @@ impl HeaderSubscription {
 
 		self.client.block_header(block_hash).await
 	}
+
+	pub fn current_block_height(&self) -> u32 {
+		self.sub.current_block_height()
+	}
 }
 
 #[derive(Clone)]
@@ -192,6 +219,10 @@ impl BlockSubscription {
 		};
 
 		self.client.block(block_hash).await
+	}
+
+	pub fn current_block_height(&self) -> u32 {
+		self.sub.current_block_height()
 	}
 }
 
@@ -224,6 +255,10 @@ impl JustificationsSubscription {
 
 			return Ok((justifications, block_position));
 		}
+	}
+
+	pub fn current_block_height(&self) -> u32 {
+		self.sub.current_block_height()
 	}
 }
 
@@ -263,305 +298,6 @@ impl GrandpaJustificationsSubscription {
 	}
 }
 
-/* pub struct GenericSubscription<T: 'static> {
-	client: Client,
-	kind: Option<TodoName>,
-	convert: Arc<dyn Fn(Client, Option<(u32, H256)>) -> T>,
-	pending: Option<Pin<Box<dyn Future<Output = (Result<T, avail_rust_core::Error>, TodoName)>>>>,
-}
-
-impl<T: 'static> GenericSubscription<T> {
-	pub fn new(client: Client, kind: TodoName, convert: Box<dyn Fn(Client, Option<(u32, H256)>) -> T>) -> Self {
-		Self {
-			client,
-			pending: None,
-			convert: convert.into(),
-			kind: Some(kind),
-		}
-	}
-
-	pub async fn next(&mut self) -> Option<Result<T, avail_rust_core::Error>> {
-		<Self as StreamExt>::next(self).await
-	}
-
-	async fn task(
-		client: Client,
-		mut kind: TodoName,
-		convert: Arc<dyn Fn(Client, Option<(u32, H256)>) -> T>,
-	) -> (Result<T, avail_rust_core::Error>, TodoName) {
-		let res = kind.run(client.clone()).await;
-		let ok = match res {
-			Ok(x) => x,
-			Err(err) => return (Err(err), kind),
-		};
-
-		(Ok(convert(client, ok)), kind)
-	}
-}
-
-impl<T: 'static> Stream for GenericSubscription<T> {
-	type Item = Result<T, avail_rust_core::Error>;
-
-	fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
-		let mut fut = match self.pending.take() {
-			Some(x) => x,
-			None => {
-				let kind = self.kind.take().expect("Value was set in the constructor");
-				let convert = self.convert.clone();
-				Box::pin(Self::task(self.client.clone(), kind, convert))
-			},
-		};
-
-		match fut.as_mut().poll(cx) {
-			Poll::Ready((value, kind)) => {
-				self.pending = None;
-				self.kind = Some(kind);
-				Poll::Ready(Some(value))
-			},
-			Poll::Pending => {
-				self.pending = Some(fut);
-				Poll::Pending
-			},
-		}
-	}
-} */
-
-/*
-pub struct HeaderSubscription {
-	client: Client,
-	kind: Option<TodoName>,
-	pending: Option<Pin<Box<dyn Future<Output = (HeaderSubscriptionOutput, TodoName)>>>>,
-}
-
-impl HeaderSubscription {
-	pub fn new(client: Client, kind: TodoName) -> Self {
-		Self {
-			client,
-			pending: None,
-			kind: Some(kind),
-		}
-	}
-
-	pub async fn next(&mut self) -> Option<HeaderSubscriptionOutput> {
-		<Self as StreamExt>::next(self).await
-	}
-
-	async fn task(client: Client, mut kind: TodoName) -> (HeaderSubscriptionOutput, TodoName) {
-		let res = kind.run(client.clone()).await;
-		let ok = match res {
-			Ok(x) => x,
-			Err(err) => return (Err(err), kind),
-		};
-		let Some((_block_height, block_hash)) = ok else {
-			return (Ok(None), kind);
-		};
-
-		let header = match client.block_header(block_hash).await {
-			Ok(x) => x,
-			Err(err) => return (Err(err), kind),
-		};
-
-		(Ok(header), kind)
-	}
-}
-
-pub type HeaderSubscriptionOutput = Result<Option<AvailHeader>, avail_rust_core::Error>;
-
-impl Stream for HeaderSubscription {
-	type Item = HeaderSubscriptionOutput;
-
-	fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
-		let mut fut = match self.pending.take() {
-			Some(x) => x,
-			None => {
-				let kind = self.kind.take().expect("Value was set in the constructor");
-				Box::pin(Self::task(self.client.clone(), kind))
-			},
-		};
-
-		match fut.as_mut().poll(cx) {
-			Poll::Ready((header, kind)) => {
-				self.pending = None;
-				self.kind = Some(kind);
-				Poll::Ready(Some(header))
-			},
-			Poll::Pending => {
-				self.pending = Some(fut);
-				Poll::Pending
-			},
-		}
-	}
-}
-
-pub type BlockSubscriptionOutput = Result<Option<BlockWithJustifications>, avail_rust_core::Error>;
-
-pub struct BlockSubscription {
-	client: Client,
-	kind: Option<TodoName>,
-	pending: Option<Pin<Box<dyn Future<Output = (BlockSubscriptionOutput, TodoName)>>>>,
-}
-
-impl BlockSubscription {
-	pub fn new(client: Client, kind: TodoName) -> Self {
-		Self {
-			client,
-			pending: None,
-			kind: Some(kind),
-		}
-	}
-
-	pub async fn next(&mut self) -> Option<BlockSubscriptionOutput> {
-		<Self as StreamExt>::next(self).await
-	}
-
-	async fn task(client: Client, mut kind: TodoName) -> (BlockSubscriptionOutput, TodoName) {
-		let res = kind.run(client.clone()).await;
-		let ok = match res {
-			Ok(x) => x,
-			Err(err) => return (Err(err), kind),
-		};
-		let Some((_block_height, block_hash)) = ok else {
-			return (Ok(None), kind);
-		};
-
-		let header = match client.block(block_hash).await {
-			Ok(x) => x,
-			Err(err) => return (Err(err), kind),
-		};
-
-		(Ok(header), kind)
-	}
-}
-
-impl Stream for BlockSubscription {
-	type Item = BlockSubscriptionOutput;
-
-	fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
-		let mut fut = match self.pending.take() {
-			Some(x) => x,
-			None => {
-				let kind = self.kind.take().expect("Value was set in the constructor");
-				Box::pin(Self::task(self.client.clone(), kind))
-			},
-		};
-
-		match fut.as_mut().poll(cx) {
-			Poll::Ready((block, kind)) => {
-				self.pending = None;
-				self.kind = Some(kind);
-				Poll::Ready(Some(block))
-			},
-			Poll::Pending => {
-				self.pending = Some(fut);
-				Poll::Pending
-			},
-		}
-	}
-} */
-
-/* #[derive(Clone)]
-pub struct JustificationSubscriptionEntry {
-	pub block_height: u32,
-	pub block_hash: H256,
-	pub justifications: Vec<BlockJustification>,
-}
-
-impl JustificationSubscriptionEntry {
-	pub fn new(block_height: u32, block_hash: H256, justifications: Vec<BlockJustification>) -> Self {
-		Self {
-			block_height,
-			block_hash,
-			justifications,
-		}
-	}
-}
-
-pub struct JustificationSubscription {
-	client: Arc<Client>,
-	next_block_height: u32,
-	poll_rate: Duration,
-	use_best_block: bool,
-	pending: Option<
-		Pin<Box<dyn Future<Output = Result<JustificationSubscriptionEntry, avail_rust_core::Error>> + Send + 'static>>,
-	>,
-}
-
-impl JustificationSubscription {
-	pub fn new(client: Arc<Client>, block_height: u32, poll_rate: Duration, use_best_block: bool) -> Self {
-		Self {
-			client,
-			pending: None,
-			poll_rate,
-			use_best_block,
-			next_block_height: block_height,
-		}
-	}
-
-	pub async fn next(&mut self) -> Option<JustificationSubscriptionEntry> {
-		<Self as StreamExt>::next(self).await
-	}
-}
-
-impl Stream for JustificationSubscription {
-	type Item = JustificationSubscriptionEntry;
-
-	fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
-		let mut fut = match self.pending.take() {
-			Some(x) => x,
-			None => {
-				let client = self.client.clone();
-				let mut next_block_height = self.next_block_height;
-				let poll_rate = self.poll_rate;
-				let use_best_block = self.use_best_block;
-				let task = async move {
-					loop {
-						let height = match use_best_block {
-							true => client.best_block_height().await?,
-							false => client.finalized_block_height().await?,
-						};
-						if next_block_height > height {
-							tokio::time::sleep(poll_rate).await;
-							continue;
-						}
-
-						let block_hash = client.block_hash(next_block_height).await?.unwrap();
-						let block = client.block(block_hash).await?.unwrap();
-						if block.justifications.is_none() {
-							next_block_height += 1;
-							continue;
-						}
-						return Ok(JustificationSubscriptionEntry::new(
-							next_block_height,
-							block_hash,
-							block.justifications.unwrap(),
-						));
-					}
-				};
-
-				Box::pin(task)
-			},
-		};
-
-		match fut.as_mut().poll(cx) {
-			Poll::Ready(Ok(entry)) => {
-				self.pending = None;
-				self.next_block_height = entry.block_height + 1;
-				Poll::Ready(Some(entry))
-			},
-			Poll::Ready(Err(_err)) => {
-				self.pending = None;
-				self.next_block_height += 1;
-				Poll::Ready(None)
-			},
-			Poll::Pending => {
-				self.pending = Some(fut);
-				Poll::Pending
-			},
-		}
-	}
-}
- */
-
 #[cfg(test)]
 pub mod test {
 	use std::{
@@ -569,13 +305,13 @@ pub mod test {
 		time::Duration,
 	};
 
-	use avail_rust_core::{ext::subxt_rpcs::RpcClient, H256};
+	use avail_rust_core::{H256, ext::subxt_rpcs::RpcClient};
 
 	use crate::{
-		clients::reqwest_client::{testable::*, ReqwestClient},
+		Client,
+		clients::reqwest_client::{ReqwestClient, testable::*},
 		constants,
 		subscription::Subscriber,
-		Client,
 	};
 
 	/* 	#[tokio::test]

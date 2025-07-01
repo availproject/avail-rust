@@ -3,7 +3,7 @@ use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
 use primitive_types::{H256, U256};
 use serde::{Deserialize, Serialize};
-use subxt_rpcs::{rpc_params, RpcClient};
+use subxt_rpcs::{RpcClient, rpc_params};
 
 /// Compatible with `kate::com::Cell`
 #[derive(Clone, Debug, Serialize, Deserialize, Encode, Decode)]

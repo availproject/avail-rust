@@ -1,6 +1,6 @@
 use crate::error::Error;
 use primitive_types::H256;
-use subxt_rpcs::{methods::legacy::RuntimeVersion, rpc_params, RpcClient};
+use subxt_rpcs::{RpcClient, methods::legacy::RuntimeVersion, rpc_params};
 
 pub async fn call(
 	client: &RpcClient,

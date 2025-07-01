@@ -1,5 +1,5 @@
-use crate::{subxt_core::config::Header, Client};
-use avail_rust_core::{AccountId, Era, TransactionExtra, H256};
+use crate::{Client, subxt_core::config::Header};
+use avail_rust_core::{AccountId, Era, H256, TransactionExtra};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Options {
@@ -10,8 +10,10 @@ pub struct Options {
 }
 
 impl Options {
-	pub fn new() -> Self {
-		Self::default()
+	pub fn new(app_id: Option<u32>) -> Self {
+		let mut s = Self::default();
+		s.app_id = app_id;
+		s
 	}
 
 	pub fn app_id(mut self, value: u32) -> Self {
@@ -50,7 +52,7 @@ impl Options {
 					.await?
 			},
 		};
-		let mortality = self.mortality.unwrap_or_else(|| MortalityOption::Period(32));
+		let mortality = self.mortality.unwrap_or(MortalityOption::Period(32));
 		let mortality = match mortality {
 			MortalityOption::Period(period) => RefinedMortality::from_period(client, period).await?,
 			MortalityOption::Full(mortality) => mortality,

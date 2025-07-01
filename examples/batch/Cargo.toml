@@ -2,8 +2,9 @@
 
 [package]
 name = "batch-example"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "tracing"] }
 tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
+hex = { version = "0.4.3"}

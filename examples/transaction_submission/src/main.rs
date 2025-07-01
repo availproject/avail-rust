@@ -18,9 +18,7 @@ async fn main() -> Result<(), ClientError> {
 	let submittable_tx = client.tx().data_availability().submit_data(vec![0, 1, 2, 3, 4, 5]);
 
 	// Transaction Submission
-	let submitted_tx = submittable_tx
-		.sign_and_submit(&signer, Options::new().app_id(2))
-		.await?;
+	let submitted_tx = submittable_tx.sign_and_submit(&signer, Options::new(Some(2))).await?;
 	println!(
 		"Tx Hash: {:?}, Account Address: {}, Used Options: {:?}, Used Additional: {:?}",
 		submitted_tx.tx_hash, submitted_tx.account_id, submitted_tx.options, submitted_tx.additional
@@ -33,7 +31,7 @@ async fn main() -> Result<(), ClientError> {
 	};
 	println!(
 		"Block Hash: {:?}, Block Height: {}, Tx Hash: {:?}, Tx Index: {}",
-		receipt.block_id.hash, receipt.block_id.height, receipt.tx_location.hash, receipt.tx_location.index
+		receipt.block_loc.hash, receipt.block_loc.height, receipt.tx_loc.hash, receipt.tx_loc.index
 	);
 
 	// Fetching Block State
@@ -46,16 +44,15 @@ async fn main() -> Result<(), ClientError> {
 	}
 
 	// Fetching and displaying Transaction Events
-	let (tx_index, block_hash) = (receipt.tx_location.index, receipt.block_id.hash);
-	let events_client = client.event_client();
-	let events = events_client.transaction_events(tx_index, block_hash).await?;
-	for event in events {
+	let event_group = receipt.tx_events().await?;
+	for event in event_group.events {
 		println!(
 			"Pallet Index: {}, Variant index: {}",
-			event.pallet_index(),
-			event.variant_index()
+			event.emitted_index.0, event.emitted_index.1,
 		);
-		if let Ok(event) = RuntimeEvent::try_from(&event) {
+
+		let encoded_event = hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
+		if let Ok(event) = RuntimeEvent::try_from(&encoded_event) {
 			dbg!(event);
 		}
 	}

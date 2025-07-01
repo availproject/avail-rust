@@ -3,7 +3,7 @@ use crate::{
 	subxt_rpcs::{self, RpcClientT, UserError},
 };
 use serde::Serialize;
-use serde_json::value::{to_raw_value, RawValue};
+use serde_json::value::{RawValue, to_raw_value};
 use std::{
 	borrow::Cow,
 	sync::{Arc, Mutex},
@@ -183,8 +183,8 @@ pub mod testable {
 	use std::collections::HashMap;
 
 	use avail_rust_core::{
-		ext::subxt_rpcs::methods::legacy::RuntimeVersion, header::Digest, AvailHeader, CompactDataLookup,
-		HeaderExtension, KateCommitment, V3HeaderExtension, H256,
+		AvailHeader, CompactDataLookup, H256, HeaderExtension, KateCommitment, V3HeaderExtension,
+		ext::subxt_rpcs::methods::legacy::RuntimeVersion, header::Digest,
 	};
 
 	use super::*;
