@@ -1,7 +1,7 @@
 build:
     ./build_sdk.sh
 check:
-    just build
+    cargo check && just fmt
 metadata-build:
     ./build_api.sh
 book-build:
