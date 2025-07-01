@@ -1,9 +1,11 @@
 //! This example showcases the following actions:
-//! - How to subscribe to new headers and blocks
+//! - How to subscribe to new headers, blocks and grandpa justifications
 //!
 
 use avail_rust_client::prelude::*;
-use avail_rust_client::subscription::{BlockSubscription, HeaderSubscription, Subscriber};
+use avail_rust_client::subscription::{
+	BlockSubscription, GrandpaJustificationsSubscription, HeaderSubscription, Subscriber,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
@@ -14,6 +16,8 @@ async fn main() -> Result<(), ClientError> {
 	showcase_block_subscription(&client).await?;
 	showcase_best_block_subscription(&client).await?;
 	showcase_historical_subscription(&client).await?;
+	showcase_grandpa_justifications_subscription(&client).await?;
+
 	Ok(())
 }
 
@@ -153,6 +157,24 @@ async fn showcase_best_block_subscription(client: &Client) -> Result<(), ClientE
 			break;
 		}
 	}
+
+	Ok(())
+}
+
+async fn showcase_grandpa_justifications_subscription(client: &Client) -> Result<(), ClientError> {
+	let mut sub = GrandpaJustificationsSubscription::new(client.clone(), 1000, 0);
+
+	let (justification, block_height) = sub.next().await?;
+	println!(
+		"Found grandpa justification at block: {}. Round: {}",
+		block_height, justification.round
+	);
+
+	let (justification, block_height) = sub.next().await?;
+	println!(
+		"Found grandpa justification at block: {}. Round: {}",
+		block_height, justification.round
+	);
 
 	Ok(())
 }

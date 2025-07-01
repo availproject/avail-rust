@@ -1,8 +1,5 @@
 use crate::{AvailHeader, Client, platform::sleep};
-use avail_rust_core::{
-	H256,
-	rpc::{BlockJustification, BlockWithJustifications},
-};
+use avail_rust_core::{H256, grandpa::GrandpaJustification, rpc::BlockWithJustifications};
 use std::time::Duration;
 
 #[derive(Clone)]
@@ -226,74 +223,60 @@ impl BlockSubscription {
 	}
 }
 
+// This one is a bit different.
 #[derive(Clone)]
-pub struct JustificationsSubscription {
+pub struct GrandpaJustificationsSubscription {
 	client: Client,
-	sub: Subscriber,
+	block_height: u32,
+	poll_rate: Duration,
+	stored_height: Option<u32>,
 }
 
-impl JustificationsSubscription {
-	pub fn new(client: Client, kind: Subscriber) -> Self {
-		Self { client, sub: kind }
+impl GrandpaJustificationsSubscription {
+	pub fn new(client: Client, poll_rate_ms: u64, block_height: u32) -> Self {
+		Self {
+			client,
+			block_height,
+			poll_rate: Duration::from_millis(poll_rate_ms),
+			stored_height: None,
+		}
 	}
 
-	pub async fn next(&mut self) -> Result<(Vec<BlockJustification>, (u32, H256)), avail_rust_core::Error> {
+	pub async fn next(&mut self) -> Result<(GrandpaJustification, u32), avail_rust_core::Error> {
 		loop {
-			let Some(block_position) = self.sub.run(self.client.clone()).await? else {
-				let err = "Cannot fetch block justifications as block is not available.".into();
-				return Err(err);
+			let stored_height = if let Some(height) = self.stored_height {
+				height
+			} else {
+				let height = self.client.finalized_block_height().await?;
+				self.stored_height = Some(height);
+				height
 			};
 
-			let Some(block) = self.client.block(block_position.1).await? else {
-				let err = "Cannot fetch block justifications as block is not available.".into();
-				return Err(err);
-			};
+			if self.block_height > stored_height {
+				let finalized_block_height = self.client.finalized_block_height().await?;
+				if self.block_height > finalized_block_height {
+					sleep(self.poll_rate).await;
+					continue;
+				}
+			}
 
-			let Some(justifications) = block.justifications else {
+			let height = self.block_height;
+			let grandpa_justification = self.client.rpc_api().grandpa_block_justification(height).await?;
+
+			self.block_height += 1;
+			let Some(justification) = grandpa_justification else {
 				continue;
 			};
 
-			return Ok((justifications, block_position));
+			return Ok((justification, height));
 		}
 	}
 
 	pub fn current_block_height(&self) -> u32 {
-		self.sub.current_block_height()
-	}
-}
-
-#[derive(Clone)]
-pub struct GrandpaJustificationsSubscription {
-	client: Client,
-	sub: Subscriber,
-}
-
-impl GrandpaJustificationsSubscription {
-	pub fn new(client: Client, kind: Subscriber) -> Self {
-		Self { client, sub: kind }
-	}
-
-	pub async fn next(&mut self) -> Result<(BlockJustification, (u32, H256)), avail_rust_core::Error> {
-		loop {
-			let Some(block_position) = self.sub.run(self.client.clone()).await? else {
-				let err = "Cannot fetch block justifications as block is not available.".into();
-				return Err(err);
-			};
-
-			let Some(block) = self.client.block(block_position.1).await? else {
-				let err = "Cannot fetch block justifications as block is not available.".into();
-				return Err(err);
-			};
-
-			let Some(justifications) = block.justifications else {
-				continue;
-			};
-
-			let Some(justification) = justifications.into_iter().find(|x| x.0.cmp(b"FRNK").is_eq()) else {
-				continue;
-			};
-
-			return Ok((justification, block_position));
+		if self.block_height > 0 {
+			self.block_height - 1
+		} else {
+			self.block_height
 		}
 	}
 }
