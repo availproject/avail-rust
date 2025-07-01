@@ -8,10 +8,12 @@ pub enum Subscriber {
 		poll_rate: Duration,
 		current_block_height: u32,
 		block_processed: Vec<H256>,
+		stored_height: Option<u32>,
 	},
 	FinalizedBlock {
 		poll_rate: Duration,
 		next_block_height: u32,
+		stored_height: Option<u32>,
 	},
 }
 
@@ -21,6 +23,7 @@ impl Subscriber {
 			poll_rate: Duration::from_millis(poll_rate_milli),
 			current_block_height: block_height,
 			block_processed: Vec::new(),
+			stored_height: None,
 		}
 	}
 
@@ -28,6 +31,7 @@ impl Subscriber {
 		Self::FinalizedBlock {
 			poll_rate: Duration::from_millis(poll_rate_milli),
 			next_block_height: block_height,
+			stored_height: None,
 		}
 	}
 
@@ -37,14 +41,17 @@ impl Subscriber {
 				poll_rate,
 				current_block_height,
 				block_processed,
+				stored_height,
 			} => {
-				return Self::run_best_block(client, *poll_rate, current_block_height, block_processed).await;
+				return Self::run_best_block(client, *poll_rate, current_block_height, block_processed, stored_height)
+					.await;
 			},
 			Subscriber::FinalizedBlock {
 				poll_rate,
 				next_block_height,
+				stored_height,
 			} => {
-				return Self::run_finalized(client, *poll_rate, next_block_height).await;
+				return Self::run_finalized(client, *poll_rate, next_block_height, stored_height).await;
 			},
 		}
 	}
@@ -55,10 +62,12 @@ impl Subscriber {
 				poll_rate: _,
 				current_block_height,
 				block_processed: _,
+				stored_height: _,
 			} => *current_block_height,
 			Subscriber::FinalizedBlock {
 				poll_rate: _,
 				next_block_height,
+				stored_height: _,
 			} => {
 				if *next_block_height > 0 {
 					*next_block_height - 1
@@ -74,9 +83,11 @@ impl Subscriber {
 		poll_rate: Duration,
 		current_block_height: &mut u32,
 		block_processed: &mut Vec<H256>,
+		stored_height: &mut Option<u32>,
 	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
 		let block_height = *current_block_height;
-		let res = Self::fetch_best_block_height(client, block_height, block_processed, poll_rate).await?;
+		let res =
+			Self::fetch_best_block_height(client, block_height, block_processed, poll_rate, stored_height).await?;
 		if let Some(res) = &res {
 			*current_block_height = res.0;
 			if res.0 > block_height {
@@ -95,20 +106,59 @@ impl Subscriber {
 		client: Client,
 		poll_rate: Duration,
 		next_block_height: &mut u32,
+		stored_height: &mut Option<u32>,
 	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
 		let block_height = *next_block_height;
-		let res = Self::fetch_finalized_block_height(client, block_height, poll_rate).await?;
+
+		if stored_height.is_none() {
+			let new_height = client.finalized_block_height().await?;
+			*stored_height = Some(new_height);
+		}
+
+		if stored_height.is_some_and(|stored_h| stored_h > block_height) {
+			let block_hash = client.block_hash(block_height).await?;
+			*next_block_height += 1;
+			return Ok(block_hash.map(|x| (block_height, x)));
+		}
+
+		let block_hash = loop {
+			let new_height = client.finalized_block_height().await?;
+			if block_height > new_height {
+				sleep(poll_rate).await;
+				continue;
+			}
+
+			break client.block_hash(block_height).await?;
+		};
+
 		*next_block_height += 1;
 
-		Ok(res.map(|x| (block_height, x)))
+		Ok(block_hash.map(|x| (block_height, x)))
 	}
 
-	pub async fn fetch_best_block_height(
+	async fn fetch_best_block_height(
 		client: Client,
 		current_block_height: u32,
 		block_processed: &[H256],
 		poll_rate: Duration,
+		stored_height: &mut Option<u32>,
 	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
+		if stored_height.is_none() {
+			let new_height = client.best_block_height().await?;
+			*stored_height = Some(new_height);
+		}
+
+		if stored_height.is_some_and(|stored_h| stored_h > current_block_height) {
+			let mut block_height = current_block_height;
+			if !block_processed.is_empty() {
+				block_height += 1;
+			}
+			let Some(block_hash) = client.block_hash(block_height).await? else {
+				return Ok(None);
+			};
+			return Ok(Some((block_height, block_hash)));
+		}
+
 		loop {
 			let best_block_hash = client.best_block_hash().await?;
 			if block_processed.contains(&best_block_hash) {
@@ -151,22 +201,6 @@ impl Subscriber {
 
 			sleep(poll_rate).await;
 			continue;
-		}
-	}
-
-	pub async fn fetch_finalized_block_height(
-		client: Client,
-		target_block_height: u32,
-		poll_rate: Duration,
-	) -> Result<Option<H256>, avail_rust_core::Error> {
-		loop {
-			let finalized_block_height = client.finalized_block_height().await?;
-			if target_block_height > finalized_block_height {
-				sleep(poll_rate).await;
-				continue;
-			}
-
-			return client.block_hash(target_block_height).await;
 		}
 	}
 }
@@ -244,8 +278,8 @@ impl GrandpaJustificationsSubscription {
 
 	pub async fn next(&mut self) -> Result<(GrandpaJustification, u32), avail_rust_core::Error> {
 		loop {
-			let stored_height = if let Some(height) = self.stored_height {
-				height
+			let stored_height = if let Some(height) = self.stored_height.as_ref() {
+				*height
 			} else {
 				let height = self.client.finalized_block_height().await?;
 				self.stored_height = Some(height);

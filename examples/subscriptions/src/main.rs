@@ -10,7 +10,7 @@ use avail_rust_client::subscription::{
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
 	Client::enable_tracing(false);
-	let client = Client::new(TURING_ENDPOINT).await?;
+	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	showcase_header_subscription(&client).await?;
 	showcase_block_subscription(&client).await?;
@@ -84,7 +84,7 @@ async fn showcase_block_subscription(client: &Client) -> Result<(), ClientError>
 }
 
 async fn showcase_historical_subscription(client: &Client) -> Result<(), ClientError> {
-	let historical_height = client.finalized_block_height().await? - 100;
+	let historical_height = client.finalized_block_height().await?.saturating_sub(100);
 	let sub = Subscriber::new_finalized_block(5000, historical_height);
 	let mut sub = BlockSubscription::new(client.clone(), sub);
 
