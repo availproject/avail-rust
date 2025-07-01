@@ -31,7 +31,7 @@ subxt-rpcs = { workspace = true }
 subxt = { workspace = true, optional = true }
 
 [features]
-default = []
+default = ["native"]
 generated_metadata = []
 subxt = [
 	"dep:subxt",
