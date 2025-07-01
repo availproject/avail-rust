@@ -401,14 +401,11 @@ impl Client {
 		subscription::BlockSubscription::new(self.clone(), sub)
 	}
 
-	pub fn subscription_justifications(&self, sub: Subscriber) -> subscription::JustificationsSubscription {
-		subscription::JustificationsSubscription::new(self.clone(), sub)
-	}
-
-	pub fn subscription_grandpa_justification(
+	pub fn subscription_grandpa_justifications(
 		&self,
-		sub: Subscriber,
+		block_height: u32,
+		poll_rate_ms: u64,
 	) -> subscription::GrandpaJustificationsSubscription {
-		subscription::GrandpaJustificationsSubscription::new(self.clone(), sub)
+		subscription::GrandpaJustificationsSubscription::new(self.clone(), poll_rate_ms, block_height)
 	}
 }
