@@ -107,3 +107,15 @@ impl From<TransactionLocation> for HashNumber {
 		Self::Number(value.index)
 	}
 }
+
+impl From<H256> for HashNumber {
+	fn from(value: H256) -> Self {
+		Self::Hash(value)
+	}
+}
+
+impl From<u32> for HashNumber {
+	fn from(value: u32) -> Self {
+		Self::Number(value)
+	}
+}
