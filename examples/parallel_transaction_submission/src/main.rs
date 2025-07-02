@@ -8,12 +8,10 @@ use tokio::task::JoinHandle;
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
 	Client::enable_tracing(false);
-	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let mut futures: Vec<JoinHandle<Result<(), ClientError>>> = Vec::new();
 	for signer in [alice(), bob(), charlie(), dave()] {
-		let s = client.clone();
-		futures.push(tokio::spawn(async move { task(s, signer).await }));
+		futures.push(tokio::spawn(async move { task(signer).await }));
 	}
 
 	for fut in futures {
@@ -23,7 +21,9 @@ async fn main() -> Result<(), ClientError> {
 	Ok(())
 }
 
-async fn task(client: Client, account: Keypair) -> Result<(), ClientError> {
+async fn task(account: Keypair) -> Result<(), ClientError> {
+	let client = Client::new(LOCAL_ENDPOINT).await?;
+
 	// Transaction Submission
 	let message = String::from("It works").as_bytes().to_vec();
 	let tx = client.tx().data_availability().submit_data(message);
