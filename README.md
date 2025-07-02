@@ -27,6 +27,20 @@ Here is the list of available `just` commands (`just -l`):
 - podman
 - test
 
+# Making sure that it builds for all targets
+
+Once you have implemented and tested your changes, run `cargo clean` and
+`just build`. This will clean all the existing build artifacts and build the
+library using different feature flag permutations.
+
+If `just` is not installed you can manually run `./build_sdk.sh` and it will do
+the same.
+
+## On New Node Release
+
+Run `just metadata-build` or manually run `./build_api.sh` for the generated
+metadata types to be regenerated.
+
 # Release Strategy
 
 This project uses [GitHub Flow](https://www.alexhyett.com/git-flow-github-flow/)
