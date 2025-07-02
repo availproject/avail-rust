@@ -9,7 +9,7 @@ can use any runtime you like. Your `Cargo.toml` file could look like this:
 
 ```toml
 [dependencies]
-avail-rust-client = { version = "0.2.0", default-features = false, features = ["native", "reqwest"] }
+avail-rust-client = { version = "0.2.1", default-features = false, features = ["native", "reqwest"] }
 tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
 ```
 
@@ -121,7 +121,7 @@ Example:
 
 ```toml
 [dependencies]
-avail-rust-client = { version = "0.2.0", default-features = false, features = ["native", "reqwest", "tracing"] }
+avail-rust-client = { version = "0.2.1", default-features = false, features = ["native", "reqwest", "tracing"] }
 tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
 ```
 
