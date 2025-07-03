@@ -2,7 +2,7 @@ use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use subxt_rpcs::{RpcClient, methods::legacy::SystemHealth, rpc_params};
 
-use crate::decoded_transaction::RuntimePhase;
+use crate::decoded_events::RuntimePhase;
 
 /// Network Peer information
 #[derive(Clone, Debug, PartialEq, Deserialize)]

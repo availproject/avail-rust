@@ -214,6 +214,14 @@ impl TryFrom<&Vec<u8>> for RuntimeEvent {
 	}
 }
 
+impl TryFrom<Vec<u8>> for RuntimeEvent {
+	type Error = codec::Error;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_slice())
+	}
+}
+
 pub mod data_availability {
 	use super::*;
 	pub const PALLET_ID: u8 = 29;

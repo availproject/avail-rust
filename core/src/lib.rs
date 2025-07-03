@@ -2,6 +2,7 @@ pub mod chain_types;
 #[cfg(feature = "generated_metadata")]
 pub mod chain_types_generated;
 pub mod config;
+pub mod decoded_events;
 pub mod decoded_transaction;
 pub mod error;
 pub mod extrinsics_params;

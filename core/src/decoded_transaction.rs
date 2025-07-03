@@ -3,9 +3,9 @@ use codec::{Compact, Decode, Encode, Error, Input};
 use serde::{Deserialize, Serialize};
 
 #[cfg(not(feature = "generated_metadata"))]
-use crate::avail::{RuntimeCall, RuntimeEvent};
+use crate::avail::RuntimeCall;
 #[cfg(feature = "generated_metadata")]
-use crate::avail_generated::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
+use crate::avail_generated::runtime_types::da_runtime::RuntimeCall;
 
 #[derive(Clone)]
 pub struct OpaqueTransaction {
@@ -240,23 +240,6 @@ impl<'a> Deserialize<'a> for DecodedTransaction {
 		let r = impl_serde::serialize::deserialize(de)?;
 		Decode::decode(&mut &r[..]).map_err(|e| serde::de::Error::custom(format!("Decode error: {}", e)))
 	}
-}
-
-#[derive(Debug, Clone, Decode)]
-pub struct DecodedEvent {
-	pub phase: RuntimePhase,
-	pub event: RuntimeEvent,
-}
-
-/// A phase of a block's execution.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
-pub enum RuntimePhase {
-	/// Applying an extrinsic.
-	ApplyExtrinsic(u32),
-	/// Finalizing the block.
-	Finalization,
-	/// Initializing the block.
-	Initialization,
 }
 
 #[cfg(test)]

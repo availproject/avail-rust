@@ -1,6 +1,7 @@
 //! This example showcases the following actions:
 //! - Fetching block and transaction events via event client
 //! - Decoding block and transaction events
+//! - Fetching and Decoding events from historical blocks
 //!
 
 use avail_rust_client::{
@@ -46,6 +47,9 @@ async fn main() -> Result<(), ClientError> {
 		print_event_details(&event_group)?;
 	}
 
+	// Fetching historical block events
+	historical_block_events(&client, receipt.block_loc.hash, receipt.tx_loc.index).await?;
+
 	Ok(())
 }
 
@@ -72,6 +76,25 @@ fn print_event_details(event_group: &GroupedRuntimeEvents) -> Result<(), ClientE
 			return Err("Failed to decode encoded event".into());
 		};
 		let Ok(runtime_event) = RuntimeEvent::try_from(&encoded) else {
+			println!("Could note decode the runtime event");
+			continue;
+		};
+		dbg!(runtime_event);
+	}
+
+	Ok(())
+}
+
+async fn historical_block_events(client: &Client, at: H256, tx_index: u32) -> Result<(), ClientError> {
+	use subxt_core::events::Phase;
+	let event_client = client.event_client();
+	let events = event_client.historical_block_events(at).await?;
+	for event in events {
+		match &event.phase {
+			Phase::ApplyExtrinsic(x) if *x == tx_index => (),
+			_ => continue,
+		}
+		let Ok(runtime_event) = RuntimeEvent::try_from(&event) else {
 			println!("Could note decode the runtime event");
 			continue;
 		};
