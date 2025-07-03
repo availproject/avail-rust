@@ -12,3 +12,4 @@ cd ./transaction_submission_with_exp && rm -f Cargo.lock && rm -f -r ./target &&
 cd ./event_client && rm -f Cargo.lock && rm -f -r ./target && cd ./../.
 cd ./block_client && rm -f Cargo.lock && rm -f -r ./target && cd ./../.
 cd ./custom_transaction && rm -f Cargo.lock && rm -f -r ./target && cd ./../.
+cd ./custom_rpc_client && rm -f Cargo.lock && rm -f -r ./target && cd ./../.

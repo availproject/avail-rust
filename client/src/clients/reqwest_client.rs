@@ -136,8 +136,6 @@ impl RpcClientT for ReqwestClient {
 				Err(err) => return Err(subxt_rpcs::Error::Client(Box::new(err))),
 			};
 
-			// dbg!(response.to_string());
-
 			if let Some(Some(response_id)) = response.get("id").map(|x| x.as_u64()) {
 				if request_id != response_id {
 					let err = ResponseError("Not Pending Request".into());
