@@ -261,6 +261,7 @@ dependencies = [
  "scale-info",
  "serde",
  "serde_json",
+ "sp-crypto-hashing",
  "subxt",
  "subxt-core",
  "subxt-rpcs",

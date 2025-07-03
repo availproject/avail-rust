@@ -3,6 +3,7 @@ pub mod chain_types;
 pub mod chain_types_generated;
 pub mod config;
 pub mod decoded_events;
+pub mod decoded_storage;
 pub mod decoded_transaction;
 pub mod error;
 pub mod extrinsics_params;
@@ -35,6 +36,7 @@ pub mod ext {
 	pub use codec;
 	pub use primitive_types;
 	pub use scale_info;
+	pub use sp_crypto_hashing;
 	#[cfg(feature = "subxt")]
 	pub use subxt;
 	pub use subxt_core;

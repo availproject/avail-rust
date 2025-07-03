@@ -37,11 +37,6 @@ pub trait TxDispatchIndex {
 	const DISPATCH_INDEX: (u8, u8);
 }
 
-pub trait EventEmittedIndex {
-	// Pallet ID, Event ID
-	const EMITTED_INDEX: (u8, u8);
-}
-
 pub trait TransactionCallLike {
 	fn to_call(&self) -> TransactionCall;
 	fn from_ext(raw: &[u8]) -> Option<Box<Self>>;
