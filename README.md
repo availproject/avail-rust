@@ -1,6 +1,6 @@
 # For Library Users
 
-**[Your documentation is in another castle.](https://github.com/availproject/avail-rust/blob/main/client/Cargo.toml)**
+**[Your documentation is in another castle.](https://github.com/availproject/avail-rust/blob/main/client/README.md)**
 
 # For Library Developers
 
