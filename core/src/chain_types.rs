@@ -272,6 +272,7 @@ pub mod data_availability {
 		pub enum Call {
 			CreateApplicationKey(CreateApplicationKey) = CreateApplicationKey::DISPATCH_INDEX.1,
 			SubmitData(SubmitData) = SubmitData::DISPATCH_INDEX.1,
+			SubmitDataWithCommitments(SubmitDataWithCommitments) = SubmitDataWithCommitments::DISPATCH_INDEX.1,
 		}
 		impl Encode for Call {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -280,6 +281,7 @@ pub mod data_availability {
 				match self {
 					Self::CreateApplicationKey(x) => x.encode_to(dest),
 					Self::SubmitData(x) => x.encode_to(dest),
+					Self::SubmitDataWithCommitments(x) => x.encode_to(dest),
 				}
 			}
 		}
@@ -332,6 +334,28 @@ pub mod data_availability {
 		}
 		impl TxDispatchIndex for SubmitData {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct SubmitDataWithCommitments {
+			pub data: Vec<u8>,
+			pub commitments: Vec<u8>,
+		}
+		impl Encode for SubmitDataWithCommitments {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				dest.write(&self.data.encode());
+				dest.write(&self.commitments.encode());
+			}
+		}
+		impl Decode for SubmitDataWithCommitments {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let data = Decode::decode(input)?;
+				let commitments = Decode::decode(input)?;
+				Ok(Self { data, commitments })
+			}
+		}
+		impl TxDispatchIndex for SubmitDataWithCommitments {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 	}
 }

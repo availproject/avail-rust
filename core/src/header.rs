@@ -22,6 +22,7 @@ impl AvailHeader {
 	pub fn data_root(&self) -> H256 {
 		match &self.extension {
 			HeaderExtension::V3(ext) => ext.commitment.data_root,
+			HeaderExtension::V4(ext) => ext.commitment.data_root,
 		}
 	}
 
@@ -115,6 +116,7 @@ pub mod with_subxt_metadata {
 #[repr(u8)]
 pub enum HeaderExtension {
 	V3(V3HeaderExtension) = 2,
+	V4(V4HeaderExtension) = 3,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
@@ -139,6 +141,22 @@ pub struct DataLookupItem {
 	pub app_id: u32,
 	#[codec(compact)]
 	pub start: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct V4HeaderExtension {
+	pub app_lookup: V4CompactDataLookup,
+	pub commitment: KateCommitment,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct V4CompactDataLookup {
+	#[codec(compact)]
+	pub size: u32,
+	pub index: Vec<DataLookupItem>,
+	pub rows_per_tx: Vec<u16>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
