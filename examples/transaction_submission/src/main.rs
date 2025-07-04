@@ -15,7 +15,10 @@ async fn main() -> Result<(), ClientError> {
 	let signer = alice();
 
 	// Transaction Creation
-	let submittable_tx = client.tx().data_availability().submit_data(vec![0, 1, 2, 3, 4, 5]);
+	// let submittable_tx = client.tx().data_availability().submit_data(vec![0, 1, 2, 3, 4, 5]);
+	let data = b"test".to_vec();
+	let commitments = hex::decode("b6907dd56f7ed12c09167e75c41ace9891d166c2af12648ef024d1fcd28c2b16abd66b86030f40ca007684ed164fa929").expect("we know its valid hex");
+	let submittable_tx = client.tx().data_availability().submit_data_with_commitments(data, commitments);
 
 	// Transaction Submission
 	let submitted_tx = submittable_tx.sign_and_submit(&signer, Options::new(Some(2))).await?;
