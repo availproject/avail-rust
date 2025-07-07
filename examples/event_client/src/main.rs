@@ -6,7 +6,7 @@
 
 use avail_rust_client::{
 	avail_rust_core::{
-		FetchEventsV1Params,
+		FetchEventsV1Options,
 		avail::RuntimeEvent,
 		rpc::system::fetch_events_v1_types::{Filter, GroupedRuntimeEvents},
 	},
@@ -41,8 +41,8 @@ async fn main() -> Result<(), ClientError> {
 	print_event_details(&event_group)?;
 
 	// Find block related events
-	let params = FetchEventsV1Params::new(Some(Filter::All), Some(true), Some(true));
-	let block_event_group = event_client.block_events(params, receipt.block_loc.hash).await?;
+	let params = FetchEventsV1Options::new(Some(Filter::All), Some(true), Some(true));
+	let block_event_group = event_client.block_events(receipt.block_loc.hash, Some(params)).await?;
 	for event_group in block_event_group {
 		print_event_details(&event_group)?;
 	}
