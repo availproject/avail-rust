@@ -180,7 +180,7 @@ impl<T: StorageMap> StorageMapIterator<T> {
 				.rpc_api()
 				.state_get_keys_paged(
 					Some(self.prefix.clone()),
-					3,
+					100,
 					self.last_key.clone(),
 					Some(self.block_hash),
 				)
@@ -276,7 +276,7 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 				.rpc_api()
 				.state_get_keys_paged(
 					Some(self.prefix.clone()),
-					3,
+					100,
 					self.last_key.clone(),
 					Some(self.block_hash),
 				)
