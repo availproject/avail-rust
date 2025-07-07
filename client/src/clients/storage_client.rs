@@ -13,41 +13,6 @@ use crate::subxt::storage::StorageKeyValuePair;
 #[cfg(feature = "subxt")]
 use std::future::Future;
 
-/* /// A stream of some item.
-pub struct StreamOf<T>(Pin<Box<dyn Stream<Item = T> + Send + 'static>>);
-
-impl<T> Stream for StreamOf<T> {
-	type Item = T;
-	fn poll_next(
-		mut self: std::pin::Pin<&mut Self>,
-		cx: &mut std::task::Context<'_>,
-	) -> std::task::Poll<Option<Self::Item>> {
-		self.0.poll_next_unpin(cx)
-	}
-}
-
-impl<T> std::fmt::Debug for StreamOf<T> {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.debug_tuple("StreamOf").field(&"<stream>").finish()
-	}
-}
-
-impl<T> StreamOf<T> {
-	/// Construct a new stream.
-	pub fn new(inner: Pin<Box<dyn Stream<Item = T> + Send + 'static>>) -> Self {
-		StreamOf(inner)
-	}
-
-	/// Returns the next item in the stream. This is just a wrapper around
-	/// [`StreamExt::next()`] so that you can avoid the extra import.
-	pub async fn next(&mut self) -> Option<T> {
-		StreamExt::next(self).await
-	}
-}
-
-/// A stream of [`Result<Item, Error>`].
-pub type StreamOfResults<T> = StreamOf<Result<T, Error>>; */
-
 #[derive(Clone)]
 pub struct StorageClient {
 	client: Client,

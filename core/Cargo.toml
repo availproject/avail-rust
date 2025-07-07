@@ -17,6 +17,7 @@ hex = { workspace = true, default-features = false }
 bounded-collections = { workspace = true }
 primitive-types = { workspace = true }
 thiserror = { workspace = true }
+sp-crypto-hashing = { workspace = true }
 
 # Scale
 scale-info = { workspace = true }

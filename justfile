@@ -22,16 +22,21 @@ book-publish:
     git pf
 fmt:
     cargo +nightly fmt
+    just examples-fmt
 lint:
     cargo clippy
 lint-fix:
     cargo clippy --fix
 doc:
     cargo doc --open
-examples:
-    cd ./examples && RUST_LOG=info ./run.sh
+examples-run:
+    RUST_LOG=info ./scripts/run.sh
 examples-clean:
-    cd ./examples && ./clean.sh 
+    ./scripts/clean.sh
+examples-fmt:
+    ./scripts/fmt.sh
+examples-check:
+    ./scripts/check.sh
 test:
     cargo test
 podman:

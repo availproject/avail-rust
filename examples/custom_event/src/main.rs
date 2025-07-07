@@ -3,17 +3,14 @@
 //! - Decoding custom event
 //!
 
-use avail_rust_client::{
-	avail::{TransactionEventLike, TxEventEmittedIndex},
-	prelude::*,
-};
+use avail_rust_client::prelude::*;
 
 #[derive(codec::Decode, codec::Encode, PartialEq, Eq)]
 pub struct CustomEvent {
 	pub who: AccountId,
 	pub data_hash: H256,
 }
-impl TxEventEmittedIndex for CustomEvent {
+impl HasEventEmittedIndex for CustomEvent {
 	const EMITTED_INDEX: (u8, u8) = (29, 1);
 }
 
