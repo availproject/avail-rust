@@ -1,5 +1,5 @@
 use avail_rust_core::{
-	AvailHeader, H256,
+	AvailHeader, H256, HashNumber,
 	ext::{
 		codec::Decode,
 		subxt_rpcs::{
@@ -188,16 +188,17 @@ impl RpcAPI {
 
 	pub async fn system_fetch_events_v1(
 		&self,
-		params: fetch_events_v1_types::Params,
 		at: H256,
+		options: Option<fetch_events_v1_types::Options>,
 	) -> Result<fetch_events_v1_types::Output, avail_rust_core::Error> {
-		Ok(rpc::system::fetch_events_v1(&self.client.rpc_client, params, at).await?)
+		Ok(rpc::system::fetch_events_v1(&self.client.rpc_client, at, options).await?)
 	}
 
 	pub async fn system_fetch_extrinsics_v1(
 		&self,
-		params: fetch_extrinsics_v1_types::Params,
+		block_id: HashNumber,
+		options: Option<fetch_extrinsics_v1_types::Options>,
 	) -> Result<fetch_extrinsics_v1_types::Output, avail_rust_core::Error> {
-		Ok(rpc::system::fetch_extrinsics_v1(&self.client.rpc_client, params).await?)
+		Ok(rpc::system::fetch_extrinsics_v1(&self.client.rpc_client, block_id, options).await?)
 	}
 }

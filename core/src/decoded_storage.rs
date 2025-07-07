@@ -1,4 +1,3 @@
-use crate::AccountId;
 use codec::{Decode, Encode};
 
 #[derive(Debug, Clone, Copy)]
@@ -188,7 +187,7 @@ pub trait StorageDoubleMap {
 	}
 }
 
-pub struct DataAvailabilityAppKeys;
+/* pub struct DataAvailabilityAppKeys;
 
 #[derive(Debug, Clone, codec::Decode)]
 pub struct AppKey {
@@ -236,3 +235,4 @@ pub struct ValidatorPrefs {
 	/// are accepting nominations.
 	pub blocked: bool,
 }
+ */

@@ -25,7 +25,7 @@ pub use transaction_options::{MortalityOption, Options, RefinedMortality, Refine
 #[cfg(feature = "subxt")]
 pub use avail_rust_core::ext::subxt;
 pub use avail_rust_core::{
-	self, FetchEventsV1Params, FetchExtrinsicsV1Params,
+	self, FetchEventsV1Options, FetchExtrinsicsV1Options,
 	ext::{codec, primitive_types, scale_info, subxt_core, subxt_rpcs, subxt_signer},
 };
 

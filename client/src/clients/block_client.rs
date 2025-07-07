@@ -1,6 +1,6 @@
 use super::Client;
 use avail_rust_core::{
-	FetchExtrinsicsV1Params, H256, HashNumber,
+	FetchExtrinsicsV1Options, H256, HashNumber,
 	rpc::{self, system::fetch_extrinsics_v1_types as Types},
 };
 
@@ -26,8 +26,12 @@ impl BlockClient {
 			HashNumber::Number(item) => Types::TransactionFilter::TxIndex(vec![item]),
 		};
 		let filter = Some(Types::Filter::new(Some(filter), sig_filter));
-		let params = FetchExtrinsicsV1Params::new(block_id, filter, selector);
-		let mut result = self.client.rpc_api().system_fetch_extrinsics_v1(params).await?;
+		let params = FetchExtrinsicsV1Options::new(filter, selector);
+		let mut result = self
+			.client
+			.rpc_api()
+			.system_fetch_extrinsics_v1(block_id, Some(params))
+			.await?;
 
 		if result.is_empty() {
 			return Ok(None);
@@ -36,8 +40,15 @@ impl BlockClient {
 		Ok(Some(result.remove(0)))
 	}
 
-	pub async fn block_transactions(&self, params: Types::Params) -> Result<Types::Output, avail_rust_core::Error> {
-		self.client.rpc_api().system_fetch_extrinsics_v1(params).await
+	pub async fn block_transactions(
+		&self,
+		block_id: HashNumber,
+		options: Option<Types::Options>,
+	) -> Result<Types::Output, avail_rust_core::Error> {
+		self.client
+			.rpc_api()
+			.system_fetch_extrinsics_v1(block_id, options)
+			.await
 	}
 
 	pub async fn rpc_block(&self, at: H256) -> Result<Option<rpc::Block>, avail_rust_core::Error> {

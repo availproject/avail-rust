@@ -65,13 +65,13 @@ impl EventClient {
 		enable_decoding: bool,
 		at: H256,
 	) -> Result<Option<Types::GroupedRuntimeEvents>, avail_rust_core::Error> {
-		let params = Types::Params::new(
+		let options = Types::Options::new(
 			Some(Types::Filter::Only(vec![tx_id])),
 			Some(enable_encoding),
 			Some(enable_decoding),
 		);
 
-		let mut result = self.client.rpc_api().system_fetch_events_v1(params, at).await?;
+		let mut result = self.client.rpc_api().system_fetch_events_v1(at, Some(options)).await?;
 		if result.is_empty() {
 			return Ok(None);
 		}
@@ -79,8 +79,12 @@ impl EventClient {
 	}
 
 	/// Function to fetch blocks events in a efficient manner.
-	pub async fn block_events(&self, params: Types::Params, at: H256) -> Result<Types::Output, avail_rust_core::Error> {
-		self.client.rpc_api().system_fetch_events_v1(params, at).await
+	pub async fn block_events(
+		&self,
+		at: H256,
+		options: Option<Types::Options>,
+	) -> Result<Types::Output, avail_rust_core::Error> {
+		self.client.rpc_api().system_fetch_events_v1(at, options).await
 	}
 
 	/// Use this function in case where `transaction_events` or `block_events` do not work.
