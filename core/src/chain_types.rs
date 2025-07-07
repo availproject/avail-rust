@@ -1,4 +1,4 @@
-use crate::{AccountId, MultiAddress, TransactionCall};
+use crate::{AccountId, HasTxDispatchIndex, MultiAddress, TransactionCall};
 use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use scale_decode::DecodeAsType;
@@ -7,59 +7,6 @@ use subxt_core::{
 	storage::address::{StaticAddress, StaticStorageKey},
 	utils::Yes,
 };
-
-pub trait TxEventEmittedIndex {
-	// Pallet ID, Variant ID
-	const EMITTED_INDEX: (u8, u8);
-}
-
-pub trait TransactionEventLike {
-	fn from_raw(raw: &[u8]) -> Option<Box<Self>>;
-}
-
-impl<T: TxEventEmittedIndex + Encode + Decode> TransactionEventLike for T {
-	fn from_raw(raw: &[u8]) -> Option<Box<T>> {
-		if raw.len() < 2 {
-			return None;
-		}
-
-		let (pallet_id, variant_id) = (raw[0], raw[1]);
-		if Self::EMITTED_INDEX.0 != pallet_id || Self::EMITTED_INDEX.1 != variant_id {
-			return None;
-		}
-
-		Self::decode(&mut &raw[2..]).ok().map(Box::new)
-	}
-}
-
-pub trait TxDispatchIndex {
-	// Pallet ID, Call ID
-	const DISPATCH_INDEX: (u8, u8);
-}
-
-pub trait TransactionCallLike {
-	fn to_call(&self) -> TransactionCall;
-	fn from_ext(raw: &[u8]) -> Option<Box<Self>>;
-}
-
-impl<T: TxDispatchIndex + Encode + Decode> TransactionCallLike for T {
-	fn to_call(&self) -> TransactionCall {
-		TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
-	}
-
-	fn from_ext(raw_ext: &[u8]) -> Option<Box<T>> {
-		if raw_ext.len() < 2 {
-			return None;
-		}
-
-		let (pallet_id, call_id) = (raw_ext[0], raw_ext[1]);
-		if Self::DISPATCH_INDEX.0 != pallet_id || Self::DISPATCH_INDEX.1 != call_id {
-			return None;
-		}
-
-		Self::decode(&mut &raw_ext[2..]).ok().map(Box::new)
-	}
-}
 
 #[derive(Debug, Clone)]
 #[repr(u8)]
@@ -314,7 +261,7 @@ pub mod data_availability {
 				Ok(Self { key })
 			}
 		}
-		impl TxDispatchIndex for CreateApplicationKey {
+		impl HasTxDispatchIndex for CreateApplicationKey {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
@@ -333,7 +280,7 @@ pub mod data_availability {
 				Ok(Self { data })
 			}
 		}
-		impl TxDispatchIndex for SubmitData {
+		impl HasTxDispatchIndex for SubmitData {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 	}
@@ -679,7 +626,7 @@ pub mod balances {
 				Ok(Self { dest, amount })
 			}
 		}
-		impl TxDispatchIndex for TransferAllowDeath {
+		impl HasTxDispatchIndex for TransferAllowDeath {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
@@ -701,7 +648,7 @@ pub mod balances {
 				Ok(Self { dest, amount })
 			}
 		}
-		impl TxDispatchIndex for TransferKeepAlive {
+		impl HasTxDispatchIndex for TransferKeepAlive {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
@@ -723,7 +670,7 @@ pub mod balances {
 				Ok(Self { dest, keep_alive })
 			}
 		}
-		impl TxDispatchIndex for TransferAll {
+		impl HasTxDispatchIndex for TransferAll {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 	}
@@ -848,7 +795,7 @@ pub mod utility {
 				Ok(Self { calls })
 			}
 		}
-		impl TxDispatchIndex for Batch {
+		impl HasTxDispatchIndex for Batch {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
@@ -867,7 +814,7 @@ pub mod utility {
 				Ok(Self { calls })
 			}
 		}
-		impl TxDispatchIndex for BatchAll {
+		impl HasTxDispatchIndex for BatchAll {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
@@ -886,7 +833,7 @@ pub mod utility {
 				Ok(Self { calls })
 			}
 		}
-		impl TxDispatchIndex for ForceBatch {
+		impl HasTxDispatchIndex for ForceBatch {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 	}
@@ -1073,7 +1020,7 @@ pub mod proxy {
 				})
 			}
 		}
-		impl TxDispatchIndex for Proxy {
+		impl HasTxDispatchIndex for Proxy {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
@@ -1098,7 +1045,7 @@ pub mod proxy {
 				Ok(Self { id, proxy_type, delay })
 			}
 		}
-		impl TxDispatchIndex for AddProxy {
+		impl HasTxDispatchIndex for AddProxy {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
@@ -1127,7 +1074,7 @@ pub mod proxy {
 				})
 			}
 		}
-		impl TxDispatchIndex for RemoveProxy {
+		impl HasTxDispatchIndex for RemoveProxy {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
@@ -1141,7 +1088,7 @@ pub mod proxy {
 				Ok(Self)
 			}
 		}
-		impl TxDispatchIndex for RemoveProxies {
+		impl HasTxDispatchIndex for RemoveProxies {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
@@ -1170,7 +1117,7 @@ pub mod proxy {
 				})
 			}
 		}
-		impl TxDispatchIndex for CreatePure {
+		impl HasTxDispatchIndex for CreatePure {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 
@@ -1207,7 +1154,7 @@ pub mod proxy {
 				})
 			}
 		}
-		impl TxDispatchIndex for KillPure {
+		impl HasTxDispatchIndex for KillPure {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 	}
@@ -1369,7 +1316,7 @@ pub mod multisig {
 				})
 			}
 		}
-		impl TxDispatchIndex for AsMultiThreshold1 {
+		impl HasTxDispatchIndex for AsMultiThreshold1 {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
@@ -1406,7 +1353,7 @@ pub mod multisig {
 				})
 			}
 		}
-		impl TxDispatchIndex for AsMulti {
+		impl HasTxDispatchIndex for AsMulti {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
@@ -1443,7 +1390,7 @@ pub mod multisig {
 				})
 			}
 		}
-		impl TxDispatchIndex for ApproveAsMulti {
+		impl HasTxDispatchIndex for ApproveAsMulti {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
@@ -1476,7 +1423,7 @@ pub mod multisig {
 				})
 			}
 		}
-		impl TxDispatchIndex for CancelAsMulti {
+		impl HasTxDispatchIndex for CancelAsMulti {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 	}
@@ -1631,7 +1578,7 @@ pub mod vector {
 				})
 			}
 		}
-		impl TxDispatchIndex for FulfillCall {
+		impl HasTxDispatchIndex for FulfillCall {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
@@ -1664,7 +1611,7 @@ pub mod vector {
 				})
 			}
 		}
-		impl TxDispatchIndex for Execute {
+		impl HasTxDispatchIndex for Execute {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
@@ -1689,7 +1636,7 @@ pub mod vector {
 				})
 			}
 		}
-		impl TxDispatchIndex for SourceChainFroze {
+		impl HasTxDispatchIndex for SourceChainFroze {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
@@ -1722,7 +1669,7 @@ pub mod vector {
 				})
 			}
 		}
-		impl TxDispatchIndex for SendMessage {
+		impl HasTxDispatchIndex for SendMessage {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
@@ -1744,7 +1691,7 @@ pub mod vector {
 				Ok(Self { period, poseidon_hash })
 			}
 		}
-		impl TxDispatchIndex for SetPoseidonHash {
+		impl HasTxDispatchIndex for SetPoseidonHash {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 
@@ -1769,7 +1716,7 @@ pub mod vector {
 				})
 			}
 		}
-		impl TxDispatchIndex for SetBroadcaster {
+		impl HasTxDispatchIndex for SetBroadcaster {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 
@@ -1788,7 +1735,7 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl TxDispatchIndex for SetWhitelistedDomains {
+		impl HasTxDispatchIndex for SetWhitelistedDomains {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 6);
 		}
 
@@ -1807,7 +1754,7 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl TxDispatchIndex for SetConfiguration {
+		impl HasTxDispatchIndex for SetConfiguration {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 7);
 		}
 
@@ -1826,7 +1773,7 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl TxDispatchIndex for SetFunctionIds {
+		impl HasTxDispatchIndex for SetFunctionIds {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 8);
 		}
 
@@ -1845,7 +1792,7 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl TxDispatchIndex for SetStepVerificationKey {
+		impl HasTxDispatchIndex for SetStepVerificationKey {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 9);
 		}
 
@@ -1864,7 +1811,7 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl TxDispatchIndex for SetRotateVerificationKey {
+		impl HasTxDispatchIndex for SetRotateVerificationKey {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 10);
 		}
 
@@ -1883,7 +1830,7 @@ pub mod vector {
 				Ok(Self { updater })
 			}
 		}
-		impl TxDispatchIndex for SetUpdater {
+		impl HasTxDispatchIndex for SetUpdater {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 12);
 		}
 
@@ -1905,7 +1852,7 @@ pub mod vector {
 				Ok(Self { proof, public_values })
 			}
 		}
-		impl TxDispatchIndex for Fulfill {
+		impl HasTxDispatchIndex for Fulfill {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 13);
 		}
 
@@ -1924,7 +1871,7 @@ pub mod vector {
 				Ok(Self { sp1_vk })
 			}
 		}
-		impl TxDispatchIndex for SetSp1VerificationKey {
+		impl HasTxDispatchIndex for SetSp1VerificationKey {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 14);
 		}
 
@@ -1946,7 +1893,7 @@ pub mod vector {
 				Ok(Self { period, hash })
 			}
 		}
-		impl TxDispatchIndex for SetSyncCommitteeHash {
+		impl HasTxDispatchIndex for SetSyncCommitteeHash {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 15);
 		}
 
@@ -1965,7 +1912,7 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl TxDispatchIndex for EnableMock {
+		impl HasTxDispatchIndex for EnableMock {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 16);
 		}
 
@@ -1984,7 +1931,7 @@ pub mod vector {
 				Ok(Self { public_values })
 			}
 		}
-		impl TxDispatchIndex for MockFulfill {
+		impl HasTxDispatchIndex for MockFulfill {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 17);
 		}
 	}
@@ -2430,7 +2377,7 @@ pub mod system {
 				Ok(Self { remark })
 			}
 		}
-		impl TxDispatchIndex for Remark {
+		impl HasTxDispatchIndex for Remark {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
@@ -2449,7 +2396,7 @@ pub mod system {
 				Ok(Self { code })
 			}
 		}
-		impl TxDispatchIndex for SetCode {
+		impl HasTxDispatchIndex for SetCode {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
@@ -2468,7 +2415,7 @@ pub mod system {
 				Ok(Self { code })
 			}
 		}
-		impl TxDispatchIndex for SetCodeWithoutChecks {
+		impl HasTxDispatchIndex for SetCodeWithoutChecks {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
@@ -2487,7 +2434,7 @@ pub mod system {
 				Ok(Self { remark })
 			}
 		}
-		impl TxDispatchIndex for RemarkWithEvent {
+		impl HasTxDispatchIndex for RemarkWithEvent {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 7);
 		}
 	}

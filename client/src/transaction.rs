@@ -5,8 +5,7 @@ use crate::{
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockLocation, H256, HashNumber,
-	avail::TransactionCallLike,
+	AccountId, BlockLocation, H256, HashNumber, TransactionCallLike,
 	config::TransactionLocation,
 	rpc::system::fetch_events_v1_types::GroupedRuntimeEvents,
 	transaction::{TransactionAdditional, TransactionCall},

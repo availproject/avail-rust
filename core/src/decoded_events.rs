@@ -1,7 +1,30 @@
+use crate::chain_types::RuntimeEvent;
 use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-use crate::chain_types::RuntimeEvent;
+pub trait HasEventEmittedIndex {
+	// Pallet ID, Variant ID
+	const EMITTED_INDEX: (u8, u8);
+}
+
+pub trait TransactionEventLike {
+	fn from_raw(raw: &[u8]) -> Option<Box<Self>>;
+}
+
+impl<T: HasEventEmittedIndex + Encode + Decode> TransactionEventLike for T {
+	fn from_raw(raw: &[u8]) -> Option<Box<T>> {
+		if raw.len() < 2 {
+			return None;
+		}
+
+		let (pallet_id, variant_id) = (raw[0], raw[1]);
+		if Self::EMITTED_INDEX.0 != pallet_id || Self::EMITTED_INDEX.1 != variant_id {
+			return None;
+		}
+
+		Self::decode(&mut &raw[2..]).ok().map(Box::new)
+	}
+}
 
 /// Contains only the event body. Phase and topics are not included here.
 #[derive(Debug, Clone)]

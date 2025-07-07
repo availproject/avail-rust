@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+cd ./examples
+
 cd ./account && rm -f Cargo.lock && rm -f -r ./target && cd ./../.
 cd ./batch && rm -f  Cargo.lock && rm -f -r ./target && cd ./../.
 cd ./subscriptions && rm -f Cargo.lock && rm -f -r ./target && cd ./../.

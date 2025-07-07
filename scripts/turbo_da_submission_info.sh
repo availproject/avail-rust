@@ -1,2 +1,0 @@
-curl --location --request GET '!MY-ENDPOINT!/v1/get_submission_info?submission_id=8b70f3c1-8470-4af7-b83c-b5bfff8b997c' --header 'x-api-key: !MY-KEY!' --header 'Content-Type: application/json' --data-binary 'David'
-echo ""

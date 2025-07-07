@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+cd ./examples
+
 cd ./account && cargo run && cd ./../.
 cd ./batch && cargo run  && cd ./../.
 cd ./subscriptions && cargo run  && cd ./../.

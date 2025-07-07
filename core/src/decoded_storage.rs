@@ -1,8 +1,5 @@
-use codec::{Decode, Encode};
-use serde::{Deserialize, Serialize};
-use subxt_core::config::Hasher;
-
 use crate::AccountId;
+use codec::{Decode, Encode};
 
 #[derive(Debug, Clone, Copy)]
 pub enum StorageHasher {
@@ -47,13 +44,13 @@ impl StorageHasher {
 		match self {
 			StorageHasher::Blake2_128Concat => {
 				if data.len() < 17 {
-					todo!()
+					return Err(codec::Error::from("Not enough data to compute Blake2_128Concat"));
 				}
 				Key::decode(&mut &data[16..])
 			},
 			StorageHasher::Twox64Concat => {
 				if data.len() < 9 {
-					todo!()
+					return Err(codec::Error::from("Not enough data to compute Twox64Concat"));
 				}
 				Key::decode(&mut &data[8..])
 			},
@@ -82,9 +79,8 @@ pub trait StorageValue {
 		std::format!("0x{}", hex::encode(&Self::encode_storage_key()))
 	}
 
-	fn decode(value: &mut &[u8]) -> Result<Self::VALUE, ()> {
-		let result = Self::VALUE::decode(value).unwrap();
-		Ok(result)
+	fn decode(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
+		Self::VALUE::decode(value)
 	}
 }
 
@@ -130,10 +126,8 @@ pub trait StorageMap {
 		Self::KEY_HASHER.from_hash::<Self::KEY>(value)
 	}
 
-	fn decode_storage_value(value: &mut &[u8]) -> Result<Self::VALUE, ()> {
-		let value = Self::VALUE::decode(value).unwrap();
-
-		Ok(value)
+	fn decode_storage_value(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
+		Self::VALUE::decode(value)
 	}
 }
 
@@ -189,10 +183,8 @@ pub trait StorageDoubleMap {
 		Ok((key1, key2))
 	}
 
-	fn decode_storage_value(value: &mut &[u8]) -> Result<Self::VALUE, ()> {
-		let value = Self::VALUE::decode(value).unwrap();
-
-		Ok(value)
+	fn decode_storage_value(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
+		Self::VALUE::decode(value)
 	}
 }
 

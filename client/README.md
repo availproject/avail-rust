@@ -154,7 +154,7 @@ Create a custom transaction:
 
 ```rust
 use avail_rust_client::{
-    avail::{TransactionCallLike, TxDispatchIndex},
+    avail::{TransactionCallLike, HasTxDispatchIndex},
     prelude::*,
 };
 
@@ -162,7 +162,7 @@ use avail_rust_client::{
 pub struct CustomTransaction {
     pub data: Vec<u8>,
 }
-impl TxDispatchIndex for CustomTransaction {
+impl HasTxDispatchIndex for CustomTransaction {
     const DISPATCH_INDEX: (u8, u8) = (29u8, 1u8);
 }
 
@@ -180,17 +180,14 @@ async fn main() -> Result<(), ClientError> {
 Create a custom event:
 
 ```rust
-use avail_rust_client::{
-    avail::{TransactionEventLike, TxEventEmittedIndex},
-    prelude::*,
-};
+use avail_rust_client::prelude::*;
 
 #[derive(codec::Decode, codec::Encode, PartialEq, Eq)]
 pub struct CustomEvent {
     pub who: AccountId,
     pub data_hash: H256,
 }
-impl TxEventEmittedIndex for CustomEvent {
+impl HasEventEmittedIndex for CustomEvent {
     const EMITTED_INDEX: (u8, u8) = (29, 1);
 }
 

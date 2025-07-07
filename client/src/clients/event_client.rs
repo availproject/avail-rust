@@ -87,8 +87,7 @@ impl EventClient {
 	/// Both mentioned functions require the runtime to have a specific runtime api available which
 	/// older blocks (runtime) do not have.
 	pub async fn historical_block_events(&self, at: H256) -> Result<Vec<Event>, avail_rust_core::Error> {
-		use crate::config::AvailConfig;
-		use crate::subxt_core::events::Events;
+		use crate::{config::AvailConfig, subxt_core::events::Events};
 
 		let entries = self
 			.client
