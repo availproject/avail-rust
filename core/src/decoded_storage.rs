@@ -186,37 +186,3 @@ pub trait StorageDoubleMap {
 		Self::VALUE::decode(value)
 	}
 }
-
-/*
-pub struct TimestampNow;
-
-impl StorageValue for TimestampNow {
-	const PALLET_NAME: &str = "Timestamp";
-	const STORAGE_NAME: &str = "Now";
-	type VALUE = u64;
-}
-
-pub struct StakingErasValidatorPrefs;
-
-impl StorageDoubleMap for StakingErasValidatorPrefs {
-	const PALLET_NAME: &str = "Staking";
-	const STORAGE_NAME: &str = "ErasValidatorPrefs";
-	const KEY1_HASHER: StorageHasher = StorageHasher::Twox64Concat;
-	const KEY2_HASHER: StorageHasher = StorageHasher::Twox64Concat;
-	type KEY1 = u32;
-	type KEY2 = AccountId;
-	type VALUE = ValidatorPrefs;
-}
-
-#[derive(Debug, Clone, codec::Encode, codec::Decode)]
-pub struct ValidatorPrefs {
-	/// Reward that validator takes up-front; only the rest is split between themselves and
-	/// nominators.
-	#[codec(compact)]
-	pub commission: u32,
-	/// Whether or not this validator is accepting more nominations. If `true`, then no nominator
-	/// who is not already nominating this validator may nominate them. By default, validators
-	/// are accepting nominations.
-	pub blocked: bool,
-}
- */
