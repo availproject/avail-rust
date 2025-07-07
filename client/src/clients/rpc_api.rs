@@ -140,6 +140,16 @@ impl RpcAPI {
 		rpc::state::get_storage(&self.client.rpc_client, key, at).await
 	}
 
+	pub async fn state_get_keys_paged(
+		&self,
+		prefix: Option<String>,
+		count: u32,
+		start_key: Option<String>,
+		at: Option<H256>,
+	) -> Result<Vec<String>, avail_rust_core::Error> {
+		rpc::state::get_keys_paged(&self.client.rpc_client, prefix, count, start_key, at).await
+	}
+
 	pub async fn rpc_methods(&self) -> Result<RpcMethods, avail_rust_core::Error> {
 		Ok(rpc::rpc_methods::call(&self.client.rpc_client).await?)
 	}

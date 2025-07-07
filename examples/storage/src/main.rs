@@ -1,28 +1,56 @@
-use avail_rust_client::prelude::*;
+use avail_rust_client::{
+	avail_rust_core::{StorageHasher, StorageMap, StorageValue},
+	clients::storage_client::{StorageMapFetcher, StorageMapIterator, StorageValueFetcher},
+	prelude::*,
+};
+
+pub struct TimestampNow;
+
+impl StorageValue for TimestampNow {
+	const PALLET_NAME: &str = "Timestamp";
+	const STORAGE_NAME: &str = "Now";
+	type VALUE = u64;
+}
+
+pub struct DataAvailabilityAppKeys;
+
+#[derive(Debug, Clone, codec::Decode)]
+pub struct AppKey {
+	pub owner: AccountId,
+	#[codec(compact)]
+	pub id: u32,
+}
+
+impl StorageMap for DataAvailabilityAppKeys {
+	const PALLET_NAME: &str = "DataAvailability";
+	const STORAGE_NAME: &str = "AppKeys";
+	const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+	type KEY = Vec<u8>;
+	type VALUE = AppKey;
+}
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
 	Client::enable_tracing(false);
 	let client = Client::new(LOCAL_ENDPOINT).await?;
+	let block_hash = client.best_block_hash().await.unwrap();
 
-	let account_id = alice().account_id();
-	let finalized_block_hash = client.finalized_block_hash().await?;
-	let storage = client.storage_client();
-	let address = avail::system::storage::account(&account_id);
-	let account_info = storage.fetch_or_default(&address, finalized_block_hash).await?;
-	println!("Nonce: {}", account_info.nonce);
-
-	let address = avail::system::storage::account_iter();
-	let mut stream = storage.iter(address.unvalidated(), finalized_block_hash).await?;
-	while let Some(Ok(info)) = stream.next().await {
-		if info.key_bytes.len() <= 32 {
-			continue;
+	/* 	let value = StorageMapFetcher::<DataAvailabilityAppKeys>::fetch(&client, vec![b'a'], None).await?;
+	   dbg!(value);
+	*/
+	/* 	let mut it = StorageMapIterator::<DataAvailabilityAppKeys>::new(client.clone(), block_hash);
+	while let value = it.next().await? {
+		if let Some(value) = value.as_ref() {
+			dbg!(value.id);
 		}
-		let account_id_raw = info.key_bytes.last_chunk::<32>().expect("Checked");
-		let account_id = AccountId::from(*account_id_raw);
-		println!("Account Id: {}", account_id);
-		println!("Nonce: {}", info.value.nonce);
+		if value.is_none() {
+			break;
+		}
 	}
+
+	dbg!(it.next().await?);
+	dbg!(it.next().await?);
+	dbg!(it.next().await?); */
 
 	Ok(())
 }

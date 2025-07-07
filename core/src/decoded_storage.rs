@@ -187,23 +187,7 @@ pub trait StorageDoubleMap {
 	}
 }
 
-/* pub struct DataAvailabilityAppKeys;
-
-#[derive(Debug, Clone, codec::Decode)]
-pub struct AppKey {
-	pub owner: AccountId,
-	#[codec(compact)]
-	pub id: u32,
-}
-
-impl StorageMap for DataAvailabilityAppKeys {
-	const PALLET_NAME: &str = "DataAvailability";
-	const STORAGE_NAME: &str = "AppKeys";
-	const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
-	type KEY = Vec<u8>;
-	type VALUE = AppKey;
-}
-
+/*
 pub struct TimestampNow;
 
 impl StorageValue for TimestampNow {

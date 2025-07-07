@@ -19,7 +19,7 @@ pub use config::{
 	HashNumber, MultiAddress, MultiSignature,
 };
 pub use decoded_events::{HasEventEmittedIndex, TransactionEventLike};
-pub use decoded_storage::{StorageDoubleMap, StorageMap, StorageValue};
+pub use decoded_storage::{StorageDoubleMap, StorageHasher, StorageMap, StorageValue};
 pub use decoded_transaction::{DecodedTransaction, HasTxDispatchIndex, OpaqueTransaction, TransactionCallLike};
 pub use error::Error;
 pub use extrinsics_params::DefaultExtrinsicParams;
