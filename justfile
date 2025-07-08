@@ -1,9 +1,9 @@
 build:
-    ./build_sdk.sh
+    ./scripts/build_sdk.sh
 check:
     cargo check && just fmt
 metadata-build:
-    ./build_api.sh
+    ./scripts/build_api.sh
 book-build:
     cd ./documentation && mdbook build
 book-serve:
