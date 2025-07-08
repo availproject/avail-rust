@@ -16,3 +16,5 @@ cd ./block_client && cargo run  && cd ./../.
 cd ./custom_transaction && cargo run  && cd ./../.
 cd ./custom_rpc_client && cargo run  && cd ./../.
 cd ./custom_storage && cargo run  && cd ./../.
+cd ./constants && cargo run  && cd ./../.
+cd ./estimating_fees && cargo run  && cd ./../.

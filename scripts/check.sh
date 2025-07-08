@@ -16,3 +16,5 @@ cd ./block_client && cargo check  && cd ./../.
 cd ./custom_transaction && cargo check && cd ./../.
 cd ./custom_rpc_client && cargo check  && cd ./../.
 cd ./custom_storage && cargo check  && cd ./../.
+cd ./constants && cargo check  && cd ./../.
+cd ./estimating_fees && cargo check  && cd ./../.
