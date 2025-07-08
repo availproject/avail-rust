@@ -12,6 +12,8 @@ pub enum Error {
 	Custom(String) = 3,
 	#[error("Transaction is not allowed. {0}")]
 	TransactionNotAllowed(String) = 4,
+	#[error("{0}")]
+	Codec(codec::Error) = 5,
 }
 
 impl From<subxt_core::Error> for Error {
@@ -42,5 +44,11 @@ impl From<String> for Error {
 impl From<&str> for Error {
 	fn from(value: &str) -> Self {
 		Self::Custom(String::from(value))
+	}
+}
+
+impl From<codec::Error> for Error {
+	fn from(value: codec::Error) -> Self {
+		Self::Codec(value)
 	}
 }

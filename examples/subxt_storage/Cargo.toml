@@ -1,11 +1,11 @@
 [workspace]
 
 [package]
-name = "custom-event-example"
+name = "subxt-storage-example"
 edition = "2024"
 
 [dependencies]
-avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "tracing"] }
+avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "subxt", "tracing" ] }
 tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
-hex = { version = "0.4.3"}
+hex = { version = "0.4.3", default-features = false }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "bit-vec"] }

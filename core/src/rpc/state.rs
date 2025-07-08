@@ -23,6 +23,18 @@ pub async fn get_storage(client: &RpcClient, key: &str, at: Option<H256>) -> Res
 	Ok(Some(value))
 }
 
+pub async fn get_keys_paged(
+	client: &RpcClient,
+	prefix: Option<String>,
+	count: u32,
+	start_key: Option<String>,
+	at: Option<H256>,
+) -> Result<Vec<String>, Error> {
+	let params = rpc_params![prefix, count, start_key, at];
+	let value: Vec<String> = client.request("state_getKeysPaged", params).await?;
+	Ok(value)
+}
+
 pub async fn get_metadata(client: &RpcClient, at: Option<H256>) -> Result<Vec<u8>, Error> {
 	let value: String = client.request("state_getMetadata", rpc_params![at]).await?;
 	Ok(hex::decode(value.trim_start_matches("0x")).map_err(|e| e.to_string())?)
