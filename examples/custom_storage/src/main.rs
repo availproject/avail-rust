@@ -1,7 +1,4 @@
-use avail_rust_client::{
-	avail_rust_core::{StorageDoubleMap, StorageHasher, StorageMap, StorageValue},
-	prelude::*,
-};
+use avail_rust_client::prelude::*;
 
 pub struct TimestampNow;
 impl StorageValue for TimestampNow {
