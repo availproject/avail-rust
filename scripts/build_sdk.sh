@@ -19,8 +19,3 @@ cargo check --target wasm32-unknown-unknown --no-default-features --features "wa
 cargo check --target wasm32-unknown-unknown --no-default-features --features "wasm, generated_metadata"
 cargo check --target wasm32-unknown-unknown --no-default-features --features "wasm, reqwest, subxt, generated_metadata"
 
-# Examples
-# cd ./examples
-# cargo check
-# cargo check --no-default-features
-

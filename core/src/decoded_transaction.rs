@@ -1,11 +1,40 @@
 use super::transaction::{AlreadyEncoded, EXTRINSIC_FORMAT_VERSION, TransactionSigned};
+use crate::TransactionCall;
+#[cfg(not(feature = "generated_metadata"))]
+use crate::avail::RuntimeCall;
+#[cfg(feature = "generated_metadata")]
+use crate::avail_generated::runtime_types::da_runtime::RuntimeCall;
 use codec::{Compact, Decode, Encode, Error, Input};
 use serde::{Deserialize, Serialize};
 
-#[cfg(not(feature = "generated_metadata"))]
-use crate::avail::{RuntimeCall, RuntimeEvent};
-#[cfg(feature = "generated_metadata")]
-use crate::avail_generated::runtime_types::da_runtime::{RuntimeCall, RuntimeEvent};
+pub trait HasTxDispatchIndex {
+	// Pallet ID, Call ID
+	const DISPATCH_INDEX: (u8, u8);
+}
+
+pub trait TransactionCallLike {
+	fn to_call(&self) -> TransactionCall;
+	fn from_ext(raw: &[u8]) -> Option<Box<Self>>;
+}
+
+impl<T: HasTxDispatchIndex + Encode + Decode> TransactionCallLike for T {
+	fn to_call(&self) -> TransactionCall {
+		TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
+	}
+
+	fn from_ext(raw_ext: &[u8]) -> Option<Box<T>> {
+		if raw_ext.len() < 2 {
+			return None;
+		}
+
+		let (pallet_id, call_id) = (raw_ext[0], raw_ext[1]);
+		if Self::DISPATCH_INDEX.0 != pallet_id || Self::DISPATCH_INDEX.1 != call_id {
+			return None;
+		}
+
+		Self::decode(&mut &raw_ext[2..]).ok().map(Box::new)
+	}
+}
 
 #[derive(Clone)]
 pub struct OpaqueTransaction {
@@ -242,25 +271,9 @@ impl<'a> Deserialize<'a> for DecodedTransaction {
 	}
 }
 
-#[derive(Debug, Clone, Decode)]
-pub struct DecodedEvent {
-	pub phase: RuntimePhase,
-	pub event: RuntimeEvent,
-}
-
-/// A phase of a block's execution.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
-pub enum RuntimePhase {
-	/// Applying an extrinsic.
-	ApplyExtrinsic(u32),
-	/// Finalizing the block.
-	Finalization,
-	/// Initializing the block.
-	Initialization,
-}
-
 #[cfg(test)]
 pub mod test {
+	use super::TransactionCallLike;
 	use std::borrow::Cow;
 
 	use codec::Encode;
@@ -268,8 +281,8 @@ pub mod test {
 
 	use crate::{
 		DecodedTransaction, MultiAddress, MultiSignature, Transaction, TransactionExtra,
-		avail::data_availability::tx::SubmitData, chain_types::TransactionCallLike,
-		decoded_transaction::OpaqueTransaction, transaction::TransactionSigned,
+		avail::data_availability::tx::SubmitData, decoded_transaction::OpaqueTransaction,
+		transaction::TransactionSigned,
 	};
 
 	#[test]

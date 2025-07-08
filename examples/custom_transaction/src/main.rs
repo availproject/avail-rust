@@ -3,17 +3,13 @@
 //! - Decoding custom transaction
 //!
 
-use avail_rust_client::{
-	avail::{TransactionCallLike, TxDispatchIndex},
-	avail_rust_core::rpc::system::fetch_extrinsics_v1_types::EncodeSelector,
-	prelude::*,
-};
+use avail_rust_client::{avail_rust_core::rpc::system::fetch_extrinsics_v1_types::EncodeSelector, prelude::*};
 
 #[derive(codec::Decode, codec::Encode, PartialEq, Eq)]
 pub struct CustomTransaction {
 	pub data: Vec<u8>,
 }
-impl TxDispatchIndex for CustomTransaction {
+impl HasTxDispatchIndex for CustomTransaction {
 	const DISPATCH_INDEX: (u8, u8) = (29u8, 1u8);
 }
 

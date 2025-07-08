@@ -2,9 +2,9 @@
 //! - How to subscribe to new headers, blocks and grandpa justifications
 //!
 
-use avail_rust_client::prelude::*;
-use avail_rust_client::subscription::{
-	BlockSubscription, GrandpaJustificationsSubscription, HeaderSubscription, Subscriber,
+use avail_rust_client::{
+	prelude::*,
+	subscription::{BlockSubscription, GrandpaJustificationsSubscription, HeaderSubscription, Subscriber},
 };
 
 #[tokio::main]

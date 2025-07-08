@@ -2,7 +2,7 @@ use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use subxt_rpcs::{RpcClient, methods::legacy::SystemHealth, rpc_params};
 
-use crate::decoded_transaction::RuntimePhase;
+use crate::{HashNumber, decoded_events::RuntimePhase};
 
 /// Network Peer information
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -116,19 +116,20 @@ pub async fn version(client: &RpcClient) -> Result<String, subxt_rpcs::Error> {
 
 pub async fn fetch_events_v1(
 	client: &RpcClient,
-	params: fetch_events_v1_types::Params,
 	at: H256,
+	options: Option<fetch_events_v1_types::Options>,
 ) -> Result<fetch_events_v1_types::Output, subxt_rpcs::Error> {
-	let params = rpc_params![params, at];
+	let params = rpc_params![at, options];
 	let value = client.request("system_fetchEventsV1", params).await?;
 	Ok(value)
 }
 
 pub async fn fetch_extrinsics_v1(
 	client: &RpcClient,
-	params: fetch_extrinsics_v1_types::Params,
+	block_id: HashNumber,
+	options: Option<fetch_extrinsics_v1_types::Options>,
 ) -> Result<fetch_extrinsics_v1_types::Output, subxt_rpcs::Error> {
-	let params = rpc_params![params];
+	let params = rpc_params![block_id, options];
 	let value = client.request("system_fetchExtrinsicsV1", params).await?;
 	Ok(value)
 }
@@ -136,17 +137,17 @@ pub async fn fetch_extrinsics_v1(
 pub mod fetch_events_v1_types {
 	pub use super::*;
 
-	pub type FetchEventsV1Params = Params;
+	pub type FetchEventsV1Options = Options;
 	pub type Output = Vec<GroupedRuntimeEvents>;
 
 	#[derive(Default, Clone, Debug, Serialize, Deserialize)]
-	pub struct Params {
+	pub struct Options {
 		pub filter: Option<Filter>,
 		pub enable_encoding: Option<bool>,
 		pub enable_decoding: Option<bool>,
 	}
 
-	impl Params {
+	impl Options {
 		pub fn new(filter: Option<Filter>, enable_encoding: Option<bool>, enable_decoding: Option<bool>) -> Self {
 			Self {
 				filter,
@@ -189,22 +190,18 @@ pub mod fetch_events_v1_types {
 
 pub mod fetch_extrinsics_v1_types {
 	use super::*;
-	use crate::config::HashNumber;
-
 	pub type Output = Vec<ExtrinsicInformation>;
-	pub type FetchExtrinsicsV1Params = Params;
+	pub type FetchExtrinsicsV1Options = Options;
 
 	#[derive(Clone, Serialize, Deserialize)]
-	pub struct Params {
-		pub block_id: HashNumber,
+	pub struct Options {
 		pub filter: Option<Filter>,
 		pub encode_selector: Option<EncodeSelector>,
 	}
 
-	impl Params {
-		pub fn new(block_id: HashNumber, filter: Option<Filter>, selector: Option<EncodeSelector>) -> Self {
+	impl Options {
+		pub fn new(filter: Option<Filter>, selector: Option<EncodeSelector>) -> Self {
 			Self {
-				block_id,
 				filter,
 				encode_selector: selector,
 			}

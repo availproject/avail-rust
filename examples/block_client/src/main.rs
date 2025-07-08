@@ -41,8 +41,8 @@ pub async fn block_transactions(client: Client, block_hash: H256) -> Result<(), 
 	let blocks = client.block_client();
 
 	let selector = Some(Types::EncodeSelector::Call);
-	let params = Types::Params::new(HashNumber::Hash(block_hash), None, selector);
-	let infos = blocks.block_transactions(params).await?;
+	let params = Some(Types::Options::new(None, selector));
+	let infos = blocks.block_transactions(HashNumber::Hash(block_hash), params).await?;
 	for info in infos {
 		decode_transaction_03(&info)?;
 	}

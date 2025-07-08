@@ -23,6 +23,5 @@ async fn main() -> Result<(), ClientError> {
 		println!("Account Id: {}", account_id);
 		println!("Nonce: {}", info.value.nonce);
 	}
-
 	Ok(())
 }

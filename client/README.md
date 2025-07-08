@@ -101,13 +101,14 @@ Here is an incomplete list of current examples:
 - [Batching transactions](https://github.com/availproject/avail-rust/tree/main/examples/batch)
 - [Executing transactions in parallel](https://github.com/availproject/avail-rust/tree/main/examples/parallel_transaction_submission)
 - Writing your own custom
-  [transaction](https://github.com/availproject/avail-rust/tree/main/examples/custom_transaction)
-  or
+  [transaction](https://github.com/availproject/avail-rust/tree/main/examples/custom_transaction),
   [event](https://github.com/availproject/avail-rust/tree/main/examples/custom_event)
+  or
+  [storage](https://github.com/availproject/avail-rust/tree/main/examples/custom_storage)
 - Dealing with
   [blocks](https://github.com/availproject/avail-rust/tree/main/examples/block_client)
   and
-  [events](https://github.com/availproject/avail-rust/tree/main/examples/custom_event)
+  [events](https://github.com/availproject/avail-rust/tree/main/examples/event_client)
 - [A full example on how to submit a transaction from start to finish](https://github.com/availproject/avail-rust/tree/main/examples/transaction_submission)
 - [Subscribing to block headers, blocks, and justifications](https://github.com/availproject/avail-rust/tree/main/examples/transaction_submission)
 
@@ -150,11 +151,11 @@ greatly increase compile time. In such cases, you can define a custom
 transaction or event and use it just like any predefined type. Both are simple
 to implement and use.
 
-Create a custom transaction:
+Create a [custom transaction](https://github.com/availproject/avail-rust/tree/main/examples/custom_transaction):
 
 ```rust
 use avail_rust_client::{
-    avail::{TransactionCallLike, TxDispatchIndex},
+    avail::{TransactionCallLike, HasTxDispatchIndex},
     prelude::*,
 };
 
@@ -162,7 +163,7 @@ use avail_rust_client::{
 pub struct CustomTransaction {
     pub data: Vec<u8>,
 }
-impl TxDispatchIndex for CustomTransaction {
+impl HasTxDispatchIndex for CustomTransaction {
     const DISPATCH_INDEX: (u8, u8) = (29u8, 1u8);
 }
 
@@ -177,20 +178,17 @@ async fn main() -> Result<(), ClientError> {
 }
 ```
 
-Create a custom event:
+Create a [custom event](https://github.com/availproject/avail-rust/tree/main/examples/custom_event):
 
 ```rust
-use avail_rust_client::{
-    avail::{TransactionEventLike, TxEventEmittedIndex},
-    prelude::*,
-};
+use avail_rust_client::prelude::*;
 
 #[derive(codec::Decode, codec::Encode, PartialEq, Eq)]
 pub struct CustomEvent {
     pub who: AccountId,
     pub data_hash: H256,
 }
-impl TxEventEmittedIndex for CustomEvent {
+impl HasEventEmittedIndex for CustomEvent {
     const EMITTED_INDEX: (u8, u8) = (29, 1);
 }
 
@@ -203,6 +201,66 @@ async fn main() -> Result<(), ClientError> {
     println!("Account: {}, Hash: {}", event.who, event.data_hash);
 
     Ok(())
+}
+```
+
+## Fetching Storage
+
+The easiest way to fetch storage from the chain is by custom defining it and
+implementing either the StorageValue, StorageMap or StorageDoubleMap trait for
+it.
+
+Create a [custom storage](https://github.com/availproject/avail-rust/tree/main/examples/custom_storage):
+
+```rust
+use avail_rust_client::prelude::*;
+
+pub struct DataAvailabilityAppKeys;
+impl StorageMap for DataAvailabilityAppKeys {
+	const PALLET_NAME: &str = "DataAvailability";
+	const STORAGE_NAME: &str = "AppKeys";
+	const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+	type KEY = Vec<u8>;
+	type VALUE = AppKey;
+}
+#[derive(Debug, Clone, codec::Decode)]
+pub struct AppKey {
+	pub owner: AccountId,
+	#[codec(compact)]
+	pub id: u32,
+}
+
+#[tokio::main]
+async fn main() -> Result<(), ClientError> {
+	let client = Client::new(TURING_ENDPOINT).await?;
+	let block_hash = client.finalized_block_hash().await.unwrap();
+
+	// Fetching Storage Map
+	let value = DataAvailabilityAppKeys::fetch(
+		&client.rpc_client,
+		"MyAwesomeKey".to_string().into_bytes(),
+		Some(block_hash),
+	)
+	.await?
+	.expect("Needs to be there");
+	println!("Owner: {}, id: {}", value.owner, value.id);
+
+	// Iterating Storage Map
+	let mut iter = DataAvailabilityAppKeys::iter(client.rpc_client.clone(), block_hash);
+	for _ in 0..5 {
+		let value = iter.next().await?.expect("Needs to be there");
+		println!("Owner: {}, id: {}", value.owner, value.id);
+
+		let (key, value) = iter.next_key_value().await?.expect("Needs to be there");
+		println!(
+			"Key: {}, Owner: {}, id: {}",
+			String::from_utf8(key).expect(""),
+			value.owner,
+			value.id
+		);
+	}
+
+	Ok(())
 }
 ```
 

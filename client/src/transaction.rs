@@ -5,9 +5,10 @@ use crate::{
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockLocation, H256, HashNumber,
-	avail::TransactionCallLike,
+	AccountId, BlockLocation, H256, HashNumber, TransactionCallLike,
 	config::TransactionLocation,
+	ext::codec::Encode,
+	from_substrate::FeeDetails,
 	rpc::system::fetch_events_v1_types::GroupedRuntimeEvents,
 	transaction::{TransactionAdditional, TransactionCall},
 };
@@ -50,6 +51,28 @@ impl SubmittableTransaction {
 		options: Options,
 	) -> Result<avail_rust_core::Transaction, avail_rust_core::Error> {
 		self.client.sign_call(signer, &self.call, options).await
+	}
+
+	pub async fn estimate_call_fees(&self, at: Option<H256>) -> Result<FeeDetails, avail_rust_core::Error> {
+		let call = self.call.encode();
+		self.client
+			.runtime_api()
+			.transaction_payment_query_call_fee_details(call, at)
+			.await
+	}
+
+	pub async fn estimate_extrinsic_fees(
+		&self,
+		signer: &Keypair,
+		options: Options,
+		at: Option<H256>,
+	) -> Result<FeeDetails, avail_rust_core::Error> {
+		let transaction = self.sign(signer, options).await?;
+		let transaction = transaction.encode();
+		self.client
+			.runtime_api()
+			.transaction_payment_query_fee_details(transaction, at)
+			.await
 	}
 }
 
