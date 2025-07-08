@@ -38,6 +38,7 @@ fn try_decode_event_data<T: Decode>(mut event_data: &[u8]) -> Option<Box<T>> {
 }
 
 // Purely here to decrease compilation times
+#[inline(never)]
 fn event_filter_in(event: &[u8], emitted_index: (u8, u8)) -> bool {
 	if event.len() < 2 {
 		return false;

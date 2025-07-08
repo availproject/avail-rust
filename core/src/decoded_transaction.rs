@@ -45,6 +45,7 @@ fn try_decode_transaction<T: Decode>(mut event_data: &[u8]) -> Option<Box<T>> {
 }
 
 // Purely here to decrease compilation times
+#[inline(never)]
 fn tx_filter_in(call: &[u8], dispatch_index: (u8, u8)) -> bool {
 	if call.len() < 3 {
 		return false;
