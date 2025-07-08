@@ -1,4 +1,8 @@
+use crate::{Error, rpc};
 use codec::{Decode, Encode};
+use primitive_types::H256;
+use std::marker::PhantomData;
+use subxt_rpcs::RpcClient;
 
 #[derive(Debug, Clone, Copy)]
 pub enum StorageHasher {
@@ -81,6 +85,23 @@ pub trait StorageValue {
 	fn decode(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
 		Self::VALUE::decode(value)
 	}
+
+	fn fetch(
+		client: &RpcClient,
+		at: Option<H256>,
+	) -> impl std::future::Future<Output = Result<Option<Self::VALUE>, Error>> {
+		async move {
+			let storage_key = hex::encode(Self::encode_storage_key());
+
+			let storage_value = rpc::state::get_storage(client, &storage_key, at).await?;
+			let Some(storage_value) = storage_value else {
+				return Ok(None);
+			};
+
+			let storage_value = Self::decode(&mut storage_value.as_slice())?;
+			return Ok(Some(storage_value));
+		}
+	}
 }
 
 pub trait StorageMap {
@@ -127,6 +148,30 @@ pub trait StorageMap {
 
 	fn decode_storage_value(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
 		Self::VALUE::decode(value)
+	}
+
+	fn fetch(
+		client: &RpcClient,
+		key: Self::KEY,
+		at: Option<H256>,
+	) -> impl std::future::Future<Output = Result<Option<Self::VALUE>, Error>> {
+		async move {
+			let storage_key = hex::encode(Self::encode_storage_key(key));
+			let storage_value = rpc::state::get_storage(client, &storage_key, at).await?;
+			let Some(storage_value) = storage_value else {
+				return Ok(None);
+			};
+
+			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())?;
+			return Ok(Some(storage_value));
+		}
+	}
+
+	fn iter(client: RpcClient, block_hash: H256) -> StorageMapIterator<Self>
+	where
+		Self: Sized,
+	{
+		StorageMapIterator::new(client, block_hash)
 	}
 }
 
@@ -184,5 +229,239 @@ pub trait StorageDoubleMap {
 
 	fn decode_storage_value(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
 		Self::VALUE::decode(value)
+	}
+
+	fn fetch(
+		client: &RpcClient,
+		key_1: Self::KEY1,
+		key_2: Self::KEY2,
+		at: Option<H256>,
+	) -> impl std::future::Future<Output = Result<Option<Self::VALUE>, Error>> {
+		async move {
+			let storage_key = hex::encode(Self::encode_storage_key(key_1, key_2));
+			let storage_value = rpc::state::get_storage(client, &storage_key, at).await?;
+			let Some(storage_value) = storage_value else {
+				return Ok(None);
+			};
+
+			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())?;
+			return Ok(Some(storage_value));
+		}
+	}
+
+	fn iter(client: RpcClient, key_1: Self::KEY1, block_hash: H256) -> StorageDoubleMapIterator<Self>
+	where
+		Self: Sized,
+	{
+		StorageDoubleMapIterator::new(client, key_1, block_hash)
+	}
+}
+
+#[derive(Clone)]
+pub struct StorageMapIterator<T: StorageMap> {
+	client: RpcClient,
+	phantom: PhantomData<T>,
+	block_hash: H256,
+	fetched_keys: Vec<String>,
+	last_key: Option<String>,
+	is_done: bool,
+	prefix: String,
+}
+
+impl<T: StorageMap> StorageMapIterator<T> {
+	pub fn new(client: RpcClient, block_hash: H256) -> Self {
+		Self {
+			client,
+			phantom: PhantomData::<T>,
+			block_hash,
+			fetched_keys: Vec::new(),
+			last_key: None,
+			is_done: false,
+			prefix: hex::encode(T::encode_partial_key()),
+		}
+	}
+
+	pub async fn next_key_value(&mut self) -> Result<Option<(T::KEY, T::VALUE)>, Error> {
+		if self.is_done {
+			return Ok(None);
+		}
+
+		// Fetch new keys
+		if self.fetched_keys.is_empty() {
+			self.fetch_new_keys().await?;
+		}
+
+		let Some(storage_key) = self.fetched_keys.last() else {
+			return Ok(None);
+		};
+
+		let Some(storage_value) = self.fetch_storage_value(storage_key).await? else {
+			return Ok(None);
+		};
+
+		let key = hex::decode(storage_key.trim_start_matches("0x")).map_err(|x| x.to_string())?;
+		let key = T::decode_storage_key(&mut key.as_slice())?;
+
+		self.last_key = Some(storage_key.clone());
+		self.fetched_keys.pop();
+
+		Ok(Some((key, storage_value)))
+	}
+
+	pub async fn next(&mut self) -> Result<Option<T::VALUE>, Error> {
+		if self.is_done {
+			return Ok(None);
+		}
+
+		// Fetch new keys
+		if self.fetched_keys.is_empty() {
+			self.fetch_new_keys().await?;
+		}
+
+		let Some(storage_key) = self.fetched_keys.last() else {
+			return Ok(None);
+		};
+
+		let Some(storage_value) = self.fetch_storage_value(storage_key).await? else {
+			return Ok(None);
+		};
+
+		self.last_key = Some(storage_key.clone());
+		self.fetched_keys.pop();
+
+		Ok(Some(storage_value))
+	}
+
+	async fn fetch_new_keys(&mut self) -> Result<(), Error> {
+		self.fetched_keys = rpc::state::get_keys_paged(
+			&self.client,
+			Some(self.prefix.clone()),
+			100,
+			self.last_key.clone(),
+			Some(self.block_hash),
+		)
+		.await?;
+
+		self.fetched_keys.reverse();
+		if self.fetched_keys.is_empty() {
+			self.is_done = true
+		}
+
+		Ok(())
+	}
+
+	async fn fetch_storage_value(&self, key: &str) -> Result<Option<T::VALUE>, Error> {
+		let storage_value = rpc::state::get_storage(&self.client, key, Some(self.block_hash)).await?;
+		let Some(storage_value) = storage_value else {
+			return Ok(None);
+		};
+		let storage_value = T::decode_storage_value(&mut storage_value.as_slice())?;
+
+		Ok(Some(storage_value))
+	}
+}
+
+#[derive(Clone)]
+pub struct StorageDoubleMapIterator<T: StorageDoubleMap> {
+	client: RpcClient,
+	phantom: PhantomData<T>,
+	block_hash: H256,
+	fetched_keys: Vec<String>,
+	last_key: Option<String>,
+	is_done: bool,
+	prefix: String,
+}
+
+impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
+	pub fn new(client: RpcClient, key_1: T::KEY1, block_hash: H256) -> Self {
+		Self {
+			client,
+			phantom: PhantomData::<T>,
+			block_hash,
+			fetched_keys: Vec::new(),
+			last_key: None,
+			is_done: false,
+
+			prefix: hex::encode(T::encode_partial_key(key_1)),
+		}
+	}
+
+	pub async fn next_key_value(&mut self) -> Result<Option<(T::KEY1, T::KEY2, T::VALUE)>, Error> {
+		if self.is_done {
+			return Ok(None);
+		}
+
+		// Fetch new keys
+		if self.fetched_keys.is_empty() {
+			self.fetch_new_keys().await?;
+		}
+
+		let Some(storage_key) = self.fetched_keys.last() else {
+			return Ok(None);
+		};
+
+		let Some(storage_value) = self.fetch_storage_value(storage_key).await? else {
+			return Ok(None);
+		};
+
+		let key = hex::decode(storage_key.trim_start_matches("0x")).map_err(|x| x.to_string())?;
+		let (key1, key2) = T::decode_storage_key(&mut key.as_slice())?;
+
+		self.last_key = Some(storage_key.clone());
+		self.fetched_keys.pop();
+
+		Ok(Some((key1, key2, storage_value)))
+	}
+
+	pub async fn next(&mut self) -> Result<Option<T::VALUE>, Error> {
+		if self.is_done {
+			return Ok(None);
+		}
+
+		// Fetch new keys
+		if self.fetched_keys.is_empty() {
+			self.fetch_new_keys().await?;
+		}
+
+		let Some(storage_key) = self.fetched_keys.last() else {
+			return Ok(None);
+		};
+
+		let Some(storage_value) = self.fetch_storage_value(storage_key).await? else {
+			return Ok(None);
+		};
+
+		self.last_key = Some(storage_key.clone());
+		self.fetched_keys.pop();
+
+		Ok(Some(storage_value))
+	}
+
+	async fn fetch_new_keys(&mut self) -> Result<(), Error> {
+		self.fetched_keys = rpc::state::get_keys_paged(
+			&self.client,
+			Some(self.prefix.clone()),
+			100,
+			self.last_key.clone(),
+			Some(self.block_hash),
+		)
+		.await?;
+
+		self.fetched_keys.reverse();
+		if self.fetched_keys.is_empty() {
+			self.is_done = true
+		}
+
+		Ok(())
+	}
+
+	async fn fetch_storage_value(&self, key: &str) -> Result<Option<T::VALUE>, Error> {
+		let storage_value = rpc::state::get_storage(&self.client, key, Some(self.block_hash)).await?;
+		let Some(storage_value) = storage_value else {
+			return Ok(None);
+		};
+		let storage_value = T::decode_storage_value(&mut storage_value.as_slice())?;
+
+		Ok(Some(storage_value))
 	}
 }

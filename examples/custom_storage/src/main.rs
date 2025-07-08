@@ -1,13 +1,9 @@
 use avail_rust_client::{
 	avail_rust_core::{StorageDoubleMap, StorageHasher, StorageMap, StorageValue},
-	clients::storage_client::{
-		StorageDoubleMapFetcher, StorageDoubleMapIterator, StorageMapFetcher, StorageMapIterator, StorageValueFetcher,
-	},
 	prelude::*,
 };
 
 pub struct TimestampNow;
-
 impl StorageValue for TimestampNow {
 	const PALLET_NAME: &str = "Timestamp";
 	const STORAGE_NAME: &str = "Now";
@@ -15,14 +11,6 @@ impl StorageValue for TimestampNow {
 }
 
 pub struct DataAvailabilityAppKeys;
-
-#[derive(Debug, Clone, codec::Decode)]
-pub struct AppKey {
-	pub owner: AccountId,
-	#[codec(compact)]
-	pub id: u32,
-}
-
 impl StorageMap for DataAvailabilityAppKeys {
 	const PALLET_NAME: &str = "DataAvailability";
 	const STORAGE_NAME: &str = "AppKeys";
@@ -30,9 +18,14 @@ impl StorageMap for DataAvailabilityAppKeys {
 	type KEY = Vec<u8>;
 	type VALUE = AppKey;
 }
+#[derive(Debug, Clone, codec::Decode)]
+pub struct AppKey {
+	pub owner: AccountId,
+	#[codec(compact)]
+	pub id: u32,
+}
 
 pub struct StakingErasValidatorPrefs;
-
 impl StorageDoubleMap for StakingErasValidatorPrefs {
 	const PALLET_NAME: &str = "Staking";
 	const STORAGE_NAME: &str = "ErasValidatorPrefs";
@@ -61,47 +54,59 @@ async fn main() -> Result<(), ClientError> {
 	let client = Client::new(TURING_ENDPOINT).await?;
 	let block_hash = client.finalized_block_hash().await.unwrap();
 
-	// 468
+	// Fetching Storage Value
+	let value = TimestampNow::fetch(&client.rpc_client, Some(block_hash))
+		.await?
+		.expect("Needs to be there");
+	println!("Timestamp: {}", value);
 
-	/* 	let res = StorageDoubleMapFetcher::<StakingErasValidatorPrefs>::fetch(
-		&client,
+	// Fetching Storage Map
+	let value = DataAvailabilityAppKeys::fetch(
+		&client.rpc_client,
+		"MyAwesomeKey".to_string().into_bytes(),
+		Some(block_hash),
+	)
+	.await?
+	.expect("Needs to be there");
+	println!("Owner: {}, id: {}", value.owner, value.id);
+
+	// Iterating Storage Map
+	let mut iter = DataAvailabilityAppKeys::iter(client.rpc_client.clone(), block_hash);
+	for _ in 0..5 {
+		let value = iter.next().await?.expect("Needs to be there");
+		println!("Owner: {}, id: {}", value.owner, value.id);
+
+		let (key, value) = iter.next_key_value().await?.expect("Needs to be there");
+		println!(
+			"Key: {}, Owner: {}, id: {}",
+			String::from_utf8(key).expect(""),
+			value.owner,
+			value.id
+		);
+	}
+
+	// Fetching Double Storage Map
+	let value = StakingErasValidatorPrefs::fetch(
+		&client.rpc_client,
 		468,
 		AccountId::from_str("5EFs6TqF2knsBtEC6gr5F1cV85N9hkkb2MFuzbEf9zmNMnNV")?,
 		Some(block_hash),
 	)
-	.await?;
+	.await?
+	.expect("Needs to be there");
+	println!("Blocked: {}, Commission: {}", value.blocked, value.commission);
 
-	dbg!(res); */
+	let mut iter = StakingErasValidatorPrefs::iter(client.rpc_client.clone(), 468, block_hash);
+	for _ in 0..5 {
+		let value = iter.next().await?.expect("Needs to be there");
+		println!("Blocked: {}, Commission: {}", value.blocked, value.commission);
 
-	let mut it = StorageDoubleMapIterator::<StakingErasValidatorPrefs>::new(client, 468, block_hash);
-	loop {
-		let new = it.next().await?;
-		let Some(new) = new else {
-			break;
-		};
-
-		dbg!(new);
+		let (key1, key2, value) = iter.next_key_value().await?.expect("Needs to be there");
+		println!(
+			"Key1: {}, Key2: {}, Blocked: {}, Comission: {}",
+			key1, key2, value.blocked, value.commission
+		);
 	}
-
-	dbg!(it.next().await?);
-	dbg!(it.next().await?);
-
-	/* 	let value = StorageMapFetcher::<DataAvailabilityAppKeys>::fetch(&client, vec![b'a'], None).await?;
-	   dbg!(value);
-	*/
-	/* 	let mut it = StorageMapIterator::<DataAvailabilityAppKeys>::new(client.clone(), block_hash);
-	while let value = it.next().await? {
-		if let Some(value) = value.as_ref() {
-			dbg!(value.id);
-		}
-		if value.is_none() {
-			break;
-		}
-	}
-
-	dbg!(it.next().await?);
-	dbg!(it.next().await?);
-	dbg!(it.next().await?); */
 
 	Ok(())
 }
