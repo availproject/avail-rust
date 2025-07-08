@@ -145,159 +145,210 @@ pub mod balances {
 	pub mod events {
 		use super::*;
 
+		/// An account was created with some free balance.
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			/// An account was created with some free balance.
-			Endowed { account: AccountId, free_balance: u128 } = 0,
-			/// An account was removed whose balance was non-zero but below ExistentialDeposit,
-			/// resulting in an outright loss.
-			DustLost { account: AccountId, amount: u128 } = 1,
-			/// Transfer succeeded.
-			Transfer {
-				from: AccountId,
-				to: AccountId,
-				amount: u128,
-			} = 2,
-			/// A balance was set by root.
-			BalanceSet { who: AccountId, free: u128 } = 3,
-			/// Some balance was reserved (moved from free to reserved).
-			Reserved { who: AccountId, amount: u128 } = 4,
-			/// Some balance was unreserved (moved from reserved to free).
-			Unreserved { who: AccountId, amount: u128 } = 5,
-			/// Some balance was moved from the reserve of the first account to the second account.
-			/// Final argument indicates the destination balance type.
-			ReserveRepatriated {
-				from: AccountId,
-				to: AccountId,
-				amount: u128,
-				destination_status: super::types::BalanceStatus,
-			} = 6,
-			/// Some amount was deposited (e.g. for transaction fees).
-			Deposit { who: AccountId, amount: u128 } = 7,
-			/// Some amount was withdrawn from the account (e.g. for transaction fees).
-			Withdraw { who: AccountId, amount: u128 } = 8,
-			/// Some amount was removed from the account (e.g. for misbehavior).
-			Slashed { who: AccountId, amount: u128 } = 9,
-			/// Some amount was minted into an account.
-			Minted { who: AccountId, amount: u128 } = 10,
-			/// Some amount was burned from an account.
-			Burned { who: AccountId, amount: u128 } = 11,
-			/// Some amount was suspended from an account (it can be restored later).
-			Suspended { who: AccountId, amount: u128 } = 12,
-			/// Some amount was restored into an account.
-			Restored { who: AccountId, amount: u128 } = 13,
-			/// An account was upgraded.
-			Upgraded { who: AccountId } = 14,
-			/// Total issuance was increased by `amount`, creating a credit to be balanced.
-			Issued { amount: u128 } = 15,
-			/// Total issuance was decreased by `amount`, creating a debt to be balanced.
-			Rescinded { amount: u128 } = 16,
-			/// Some balance was locked.
-			Locked { who: AccountId, amount: u128 } = 17,
-			/// Some balance was unlocked.
-			Unlocked { who: AccountId, amount: u128 } = 18,
-			/// Some balance was frozen.
-			Frozen { who: AccountId, amount: u128 } = 19,
-			/// Some balance was thawed.
-			Thawed { who: AccountId, amount: u128 } = 20,
-			/// The `TotalIssuance` was forcefully changed.
-			TotalIssuanceForced { old: u128, new: u128 } = 21,
+		pub struct Endowed {
+			pub account: AccountId,
+			pub free_balance: u128,
 		}
-		impl Decode for Event {
+		impl HasEventEmittedIndex for Endowed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for Endowed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::Endowed {
-						account: Decode::decode(input)?,
-						free_balance: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::DustLost {
-						account: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					2 => Ok(Self::Transfer {
-						from: Decode::decode(input)?,
-						to: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					3 => Ok(Self::BalanceSet {
-						who: Decode::decode(input)?,
-						free: Decode::decode(input)?,
-					}),
-					4 => Ok(Self::Reserved {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					5 => Ok(Self::Unreserved {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					6 => Ok(Self::ReserveRepatriated {
-						from: Decode::decode(input)?,
-						to: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-						destination_status: Decode::decode(input)?,
-					}),
-					7 => Ok(Self::Deposit {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					8 => Ok(Self::Withdraw {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					9 => Ok(Self::Slashed {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					10 => Ok(Self::Minted {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					11 => Ok(Self::Burned {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					12 => Ok(Self::Suspended {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					13 => Ok(Self::Restored {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					14 => Ok(Self::Upgraded {
-						who: Decode::decode(input)?,
-					}),
-					15 => Ok(Self::Issued {
-						amount: Decode::decode(input)?,
-					}),
-					16 => Ok(Self::Rescinded {
-						amount: Decode::decode(input)?,
-					}),
-					17 => Ok(Self::Locked {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					18 => Ok(Self::Unlocked {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					19 => Ok(Self::Frozen {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					20 => Ok(Self::Thawed {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					21 => Ok(Self::TotalIssuanceForced {
-						old: Decode::decode(input)?,
-						new: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode Balances Event. Unknown variant".into()),
-				}
+				let account = Decode::decode(input)?;
+				let free_balance = Decode::decode(input)?;
+				Ok(Self { account, free_balance })
+			}
+		}
+
+		/// An account was removed whose balance was non-zero but below ExistentialDeposit,
+		/// resulting in an outright loss.
+		#[derive(Debug, Clone)]
+		pub struct DustLost {
+			pub account: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for DustLost {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for DustLost {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let account = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { account, amount })
+			}
+		}
+
+		/// Transfer succeeded.
+		#[derive(Debug, Clone)]
+		pub struct Transfer {
+			pub from: AccountId,
+			pub to: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Transfer {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+		impl Decode for Transfer {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let from = Decode::decode(input)?;
+				let to = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { from, to, amount })
+			}
+		}
+
+		/// Some balance was reserved (moved from free to reserved).
+		#[derive(Debug, Clone)]
+		pub struct Reserved {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Reserved {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+		impl Decode for Reserved {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was unreserved (moved from reserved to free).
+		#[derive(Debug, Clone)]
+		pub struct Unreserved {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Unreserved {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 5);
+		}
+		impl Decode for Unreserved {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some amount was deposited (e.g. for transaction fees).
+		#[derive(Debug, Clone)]
+		pub struct Deposit {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Deposit {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 7);
+		}
+		impl Decode for Deposit {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some amount was withdrawn from the account (e.g. for transaction fees).
+		#[derive(Debug, Clone)]
+		pub struct Withdraw {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Withdraw {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 8);
+		}
+		impl Decode for Withdraw {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some amount was removed from the account (e.g. for misbehavior).
+		#[derive(Debug, Clone)]
+		pub struct Slashed {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Slashed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 9);
+		}
+		impl Decode for Slashed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was locked..
+		#[derive(Debug, Clone)]
+		pub struct Locked {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Locked {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 17);
+		}
+		impl Decode for Locked {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was unlocked.
+		#[derive(Debug, Clone)]
+		pub struct Unlocked {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Unlocked {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 18);
+		}
+		impl Decode for Unlocked {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was frozen.
+		#[derive(Debug, Clone)]
+		pub struct Frozen {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Frozen {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 19);
+		}
+		impl Decode for Frozen {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was thawed.
+		#[derive(Debug, Clone)]
+		pub struct Thawed {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Thawed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 20);
+		}
+		impl Decode for Thawed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
 			}
 		}
 	}
@@ -380,47 +431,87 @@ pub mod utility {
 	pub mod events {
 		use super::*;
 
+		/// Batch of dispatches did not complete fully. Index of first failing dispatch given, as
+		/// well as the error.
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			/// Batch of dispatches did not complete fully. Index of first failing dispatch given, as
-			/// well as the error.
-			BatchInterrupted {
-				index: u32,
-				error: super::system::types::DispatchError,
-			} = 0,
-			/// Batch of dispatches completed fully with no error.
-			BatchCompleted = 1,
-			/// Batch of dispatches completed but has errors.
-			BatchCompletedWithErrors = 2,
-			/// A single item within a Batch of dispatches has completed with no error.
-			ItemCompleted = 3,
-			/// A single item within a Batch of dispatches has completed with error.
-			ItemFailed { error: super::system::types::DispatchError } = 4,
-			/// A call was dispatched.
-			DispatchedAs {
-				result: Result<(), super::system::types::DispatchError>,
-			} = 5,
+		pub struct BatchInterrupted {
+			pub index: u32,
+			pub error: super::system::types::DispatchError,
 		}
-		impl Decode for Event {
+		impl HasEventEmittedIndex for BatchInterrupted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for BatchInterrupted {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::BatchInterrupted {
-						index: Decode::decode(input)?,
-						error: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::BatchCompleted),
-					2 => Ok(Self::BatchCompletedWithErrors),
-					3 => Ok(Self::ItemCompleted),
-					4 => Ok(Self::ItemFailed {
-						error: Decode::decode(input)?,
-					}),
-					5 => Ok(Self::DispatchedAs {
-						result: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode System Event. Unknown variant".into()),
-				}
+				let index = Decode::decode(input)?;
+				let error = Decode::decode(input)?;
+				Ok(Self { index, error })
+			}
+		}
+
+		/// Batch of dispatches completed fully with no error.
+		#[derive(Debug, Clone)]
+		pub struct BatchCompleted;
+		impl HasEventEmittedIndex for BatchCompleted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for BatchCompleted {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self)
+			}
+		}
+
+		/// Batch of dispatches completed but has error
+		#[derive(Debug, Clone)]
+		pub struct BatchCompletedWithErrors;
+		impl HasEventEmittedIndex for BatchCompletedWithErrors {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+		impl Decode for BatchCompletedWithErrors {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self)
+			}
+		}
+
+		/// A single item within a Batch of dispatches has completed with no error
+		#[derive(Debug, Clone)]
+		pub struct ItemCompleted;
+		impl HasEventEmittedIndex for ItemCompleted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+		impl Decode for ItemCompleted {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self)
+			}
+		}
+
+		/// A single item within a Batch of dispatches has completed with error.
+		#[derive(Debug, Clone)]
+		pub struct ItemFailed {
+			pub error: super::system::types::DispatchError,
+		}
+		impl HasEventEmittedIndex for ItemFailed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+		impl Decode for ItemFailed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let error = Decode::decode(input)?;
+				Ok(Self { error })
+			}
+		}
+
+		/// A call was dispatched.
+		#[derive(Debug, Clone)]
+		pub struct DispatchedAs {
+			pub result: Result<(), super::system::types::DispatchError>,
+		}
+		impl HasEventEmittedIndex for DispatchedAs {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 5);
+		}
+		impl Decode for DispatchedAs {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let result = Decode::decode(input)?;
+				Ok(Self { result })
 			}
 		}
 	}

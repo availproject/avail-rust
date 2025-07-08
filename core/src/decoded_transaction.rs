@@ -20,21 +20,42 @@ impl<T: HasTxDispatchIndex + Encode + Decode> TransactionCallLike for T {
 	}
 
 	fn decode_call(call: &[u8]) -> Option<Box<T>> {
-		if call.len() < 3 {
+		// This was moved out in order to decrease compilation times
+		if !tx_filter_in(call, Self::DISPATCH_INDEX) {
 			return None;
 		}
 
-		let (pallet_id, call_id) = (call[0], call[1]);
-		if Self::DISPATCH_INDEX.0 != pallet_id || Self::DISPATCH_INDEX.1 != call_id {
-			return None;
+		if call.len() <= 2 {
+			try_decode_transaction(&[])
+		} else {
+			try_decode_transaction(&call[2..])
 		}
-
-		Self::decode(&mut &call[2..]).ok().map(Box::new)
 	}
 
-	fn decode_call_data(mut call_data: &[u8]) -> Option<Box<Self>> {
-		Self::decode(&mut call_data).ok().map(Box::new)
+	fn decode_call_data(call_data: &[u8]) -> Option<Box<Self>> {
+		// This was moved out in order to decrease compilation times
+		try_decode_transaction(call_data)
 	}
+}
+
+// Purely here to decrease compilation times
+#[inline(never)]
+fn try_decode_transaction<T: Decode>(mut event_data: &[u8]) -> Option<Box<T>> {
+	T::decode(&mut event_data).ok().map(Box::new)
+}
+
+// Purely here to decrease compilation times
+fn tx_filter_in(call: &[u8], dispatch_index: (u8, u8)) -> bool {
+	if call.len() < 3 {
+		return false;
+	}
+
+	let (pallet_id, call_id) = (call[0], call[1]);
+	if dispatch_index.0 != pallet_id || dispatch_index.1 != call_id {
+		return false;
+	}
+
+	true
 }
 
 #[derive(Clone)]

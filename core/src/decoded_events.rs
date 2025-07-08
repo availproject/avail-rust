@@ -7,27 +7,48 @@ pub trait HasEventEmittedIndex {
 }
 
 pub trait TransactionEventLike {
-	fn decode_event(raw: &[u8]) -> Option<Box<Self>>;
-	fn decode_event_data(raw: &[u8]) -> Option<Box<Self>>;
+	fn decode_event(event: &[u8]) -> Option<Box<Self>>;
+	fn decode_event_data(event_data: &[u8]) -> Option<Box<Self>>;
 }
 
-impl<T: HasEventEmittedIndex + Encode + Decode> TransactionEventLike for T {
-	fn decode_event(raw: &[u8]) -> Option<Box<T>> {
-		if raw.len() < 3 {
+impl<T: HasEventEmittedIndex + Decode> TransactionEventLike for T {
+	fn decode_event(event: &[u8]) -> Option<Box<T>> {
+		// This was moved out in order to decrease compilation times
+		if !event_filter_in(event, Self::EMITTED_INDEX) {
 			return None;
 		}
 
-		let (pallet_id, variant_id) = (raw[0], raw[1]);
-		if Self::EMITTED_INDEX.0 != pallet_id || Self::EMITTED_INDEX.1 != variant_id {
-			return None;
+		if event.len() <= 2 {
+			try_decode_event_data(&[])
+		} else {
+			try_decode_event_data(&event[2..])
 		}
-
-		Self::decode_event_data(&raw[3..])
 	}
 
-	fn decode_event_data(mut raw: &[u8]) -> Option<Box<T>> {
-		Self::decode(&mut raw).ok().map(Box::new)
+	fn decode_event_data(event_data: &[u8]) -> Option<Box<T>> {
+		// This was moved out in order to decrease compilation times
+		try_decode_event_data(event_data)
 	}
+}
+
+// Purely here to decrease compilation times
+#[inline(never)]
+fn try_decode_event_data<T: Decode>(mut event_data: &[u8]) -> Option<Box<T>> {
+	T::decode(&mut event_data).ok().map(Box::new)
+}
+
+// Purely here to decrease compilation times
+fn event_filter_in(event: &[u8], emitted_index: (u8, u8)) -> bool {
+	if event.len() < 2 {
+		return false;
+	}
+
+	let (pallet_id, variant_id) = (event[0], event[1]);
+	if emitted_index.0 != pallet_id || emitted_index.1 != variant_id {
+		return false;
+	}
+
+	true
 }
 
 /// Contains only the event body. Phase and topics are not included here.
