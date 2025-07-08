@@ -1,4 +1,3 @@
-use crate::chain_types::RuntimeEvent;
 use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
@@ -8,12 +7,13 @@ pub trait HasEventEmittedIndex {
 }
 
 pub trait TransactionEventLike {
-	fn from_raw(raw: &[u8]) -> Option<Box<Self>>;
+	fn decode_event(raw: &[u8]) -> Option<Box<Self>>;
+	fn decode_event_data(raw: &[u8]) -> Option<Box<Self>>;
 }
 
 impl<T: HasEventEmittedIndex + Encode + Decode> TransactionEventLike for T {
-	fn from_raw(raw: &[u8]) -> Option<Box<T>> {
-		if raw.len() < 2 {
+	fn decode_event(raw: &[u8]) -> Option<Box<T>> {
+		if raw.len() < 3 {
 			return None;
 		}
 
@@ -22,7 +22,11 @@ impl<T: HasEventEmittedIndex + Encode + Decode> TransactionEventLike for T {
 			return None;
 		}
 
-		Self::decode(&mut &raw[2..]).ok().map(Box::new)
+		Self::decode_event_data(&raw[3..])
+	}
+
+	fn decode_event_data(mut raw: &[u8]) -> Option<Box<T>> {
+		Self::decode(&mut raw).ok().map(Box::new)
 	}
 }
 
@@ -94,22 +98,6 @@ impl TryFrom<&[u8]> for OpaqueEvent {
 		}
 
 		Ok(OpaqueEvent(value.to_owned()))
-	}
-}
-
-impl TryFrom<OpaqueEvent> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: OpaqueEvent) -> Result<Self, Self::Error> {
-		Self::try_from(&value)
-	}
-}
-
-impl TryFrom<&OpaqueEvent> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: &OpaqueEvent) -> Result<Self, Self::Error> {
-		RuntimeEvent::try_from(value.0.as_slice())
 	}
 }
 

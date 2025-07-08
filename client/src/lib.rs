@@ -37,11 +37,11 @@ pub use extensions::DefaultPayloadExt;
 
 // Exporting types from ext libraries
 pub use avail_rust_core::{
-	AccountId, AvailHeader, CompactDataLookup, DecodedTransaction, HasEventEmittedIndex, HasTxDispatchIndex,
-	HashNumber, HeaderExtension, KateCommitment, MultiAddress, OpaqueTransaction, StorageDoubleMap,
-	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue, Transaction,
-	TransactionAdditional, TransactionCall, TransactionCallLike, TransactionEventLike, TransactionExtra,
-	TransactionPayload, TransactionSigned, V3HeaderExtension, avail,
+	AccountId, AvailHeader, CompactDataLookup, HasEventEmittedIndex, HasTxDispatchIndex, HashNumber, HeaderExtension,
+	KateCommitment, MultiAddress, OpaqueTransaction, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher,
+	StorageMap, StorageMapIterator, StorageValue, Transaction, TransactionAdditional, TransactionCall,
+	TransactionCallLike, TransactionEventLike, TransactionExtra, TransactionPayload, TransactionSigned,
+	V3HeaderExtension, avail,
 };
 pub use primitive_types::{H256, U256};
 pub use subxt_signer::{SecretUri, sr25519::Keypair};
@@ -57,5 +57,4 @@ pub mod ext {
 
 pub mod prelude {
 	pub use super::{config::*, constants::dev_accounts::*, *};
-	pub use avail::{RuntimeCall, RuntimeEvent};
 }

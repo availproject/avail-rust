@@ -1,4 +1,4 @@
-use crate::{AccountId, HasTxDispatchIndex, MultiAddress, TransactionCall};
+use crate::{AccountId, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, TransactionCall};
 use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use scale_decode::DecodeAsType;
@@ -8,162 +8,6 @@ use subxt_core::{
 	utils::Yes,
 };
 
-#[derive(Debug, Clone)]
-#[repr(u8)]
-pub enum RuntimeCall {
-	DataAvailability(data_availability::tx::Call) = data_availability::PALLET_ID,
-	Balances(balances::tx::Call) = balances::PALLET_ID,
-	Utility(utility::tx::Call) = utility::PALLET_ID,
-	Proxy(proxy::tx::Call) = proxy::PALLET_ID,
-	Multisig(multisig::tx::Call) = multisig::PALLET_ID,
-	System(system::tx::Call) = system::PALLET_ID,
-}
-impl RuntimeCall {
-	pub fn pallet_index(&self) -> u8 {
-		unsafe { *(self as *const _ as *const u8) }
-	}
-
-	pub fn call_index(&self) -> u8 {
-		match self {
-			Self::DataAvailability(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Balances(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Utility(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Proxy(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Multisig(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::System(call) => unsafe { *(call as *const _ as *const u8) },
-		}
-	}
-}
-
-impl Encode for RuntimeCall {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-		variant.encode_to(dest);
-		match self {
-			Self::DataAvailability(x) => x.encode_to(dest),
-			Self::Balances(x) => x.encode_to(dest),
-			Self::Utility(x) => x.encode_to(dest),
-			Self::Proxy(x) => x.encode_to(dest),
-			Self::Multisig(x) => x.encode_to(dest),
-			Self::System(x) => x.encode_to(dest),
-		}
-	}
-}
-
-impl Decode for RuntimeCall {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let variant = u8::decode(input)?;
-		match variant {
-			data_availability::PALLET_ID => Ok(Self::DataAvailability(Decode::decode(input)?)),
-			balances::PALLET_ID => Ok(Self::Balances(Decode::decode(input)?)),
-			utility::PALLET_ID => Ok(Self::Utility(Decode::decode(input)?)),
-			proxy::PALLET_ID => Ok(Self::Proxy(Decode::decode(input)?)),
-			multisig::PALLET_ID => Ok(Self::Multisig(Decode::decode(input)?)),
-			system::PALLET_ID => Ok(Self::System(Decode::decode(input)?)),
-			_ => Err("Failed to decode Runtime Call. Unknown variant".into()),
-		}
-	}
-}
-
-impl TryFrom<&[u8]> for RuntimeCall {
-	type Error = codec::Error;
-
-	fn try_from(mut value: &[u8]) -> Result<Self, Self::Error> {
-		Self::decode(&mut value)
-	}
-}
-
-impl TryFrom<&Vec<u8>> for RuntimeCall {
-	type Error = codec::Error;
-
-	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
-
-impl TryFrom<Vec<u8>> for RuntimeCall {
-	type Error = codec::Error;
-
-	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
-
-#[derive(Debug, Clone)]
-#[repr(u8)]
-pub enum RuntimeEvent {
-	System(system::events::Event) = system::PALLET_ID,
-	Utility(utility::events::Event) = utility::PALLET_ID,
-	Balances(balances::events::Event) = balances::PALLET_ID,
-	DataAvailability(data_availability::events::Event) = data_availability::PALLET_ID,
-	Multisig(multisig::events::Event) = multisig::PALLET_ID,
-	Proxy(multisig::events::Event) = proxy::PALLET_ID,
-}
-impl RuntimeEvent {
-	pub fn pallet_index(&self) -> u8 {
-		unsafe { *(self as *const _ as *const u8) }
-	}
-
-	pub fn variant_index(&self) -> u8 {
-		match self {
-			Self::System(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Utility(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Balances(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::DataAvailability(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Multisig(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Proxy(call) => unsafe { *(call as *const _ as *const u8) },
-		}
-	}
-}
-/* impl Encode for RuntimeEvent {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-		variant.encode_to(dest);
-		match self {
-			Self::System(x) => x.encode_to(dest),
-			Self::Utility(x) => x.encode_to(dest),
-			Self::DataAvailability(x) => x.encode_to(dest),
-		}
-	}
-} */
-impl Decode for RuntimeEvent {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let variant = u8::decode(input)?;
-		match variant {
-			system::PALLET_ID => Ok(Self::System(Decode::decode(input)?)),
-			utility::PALLET_ID => Ok(Self::Utility(Decode::decode(input)?)),
-			balances::PALLET_ID => Ok(Self::Balances(Decode::decode(input)?)),
-			data_availability::PALLET_ID => Ok(Self::DataAvailability(Decode::decode(input)?)),
-			multisig::PALLET_ID => Ok(Self::Multisig(Decode::decode(input)?)),
-			proxy::PALLET_ID => Ok(Self::Proxy(Decode::decode(input)?)),
-			_ => Err("Failed to decode Runtime Event. Unknown variant".into()),
-		}
-	}
-}
-impl TryFrom<&[u8]> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(mut value: &[u8]) -> Result<Self, Self::Error> {
-		Self::decode(&mut value)
-	}
-}
-
-impl TryFrom<&Vec<u8>> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
-
-impl TryFrom<Vec<u8>> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
-
 pub mod data_availability {
 	use super::*;
 	pub const PALLET_ID: u8 = 29;
@@ -171,80 +15,28 @@ pub mod data_availability {
 	pub mod events {
 		use super::*;
 
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			ApplicationKeyCreated { key: Vec<u8>, owner: AccountId, id: u32 } = 0,
-			DataSubmitted { who: AccountId, data_hash: H256 } = 1,
+		#[derive(Debug, Clone, Decode)]
+		pub struct ApplicationKeyCreated {
+			pub key: Vec<u8>,
+			pub owner: AccountId,
+			pub id: u32,
 		}
-		/* 		impl Encode for Event {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::ApplicationKeyCreated { key, owner, id } => {
-						key.encode_to(dest);
-						owner.encode_to(dest);
-						Compact(*id).encode_to(dest);
-					},
-					Self::DataSubmitted { who, data_hash } => {
-						who.encode_to(dest);
-						data_hash.encode_to(dest);
-					},
-				}
-			}
-		} */
-		impl Decode for Event {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => {
-						let key = Decode::decode(input)?;
-						let owner = Decode::decode(input)?;
-						let id: Compact<u32> = Decode::decode(input)?;
-						Ok(Self::ApplicationKeyCreated { key, owner, id: id.0 })
-					},
-					1 => Ok(Self::DataSubmitted {
-						who: Decode::decode(input)?,
-						data_hash: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode DataAvailability Event. Unknown variant".into()),
-				}
-			}
+		impl HasEventEmittedIndex for ApplicationKeyCreated {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Debug, Clone, Decode)]
+		pub struct DataSubmitted {
+			pub who: AccountId,
+			pub data_hash: H256,
+		}
+		impl HasEventEmittedIndex for DataSubmitted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 	}
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			CreateApplicationKey(CreateApplicationKey) = CreateApplicationKey::DISPATCH_INDEX.1,
-			SubmitData(SubmitData) = SubmitData::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::CreateApplicationKey(x) => x.encode_to(dest),
-					Self::SubmitData(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == CreateApplicationKey::DISPATCH_INDEX.1 => {
-						Ok(Self::CreateApplicationKey(Decode::decode(input)?))
-					},
-					val if val == SubmitData::DISPATCH_INDEX.1 => Ok(Self::SubmitData(Decode::decode(input)?)),
-					_ => Err("Failed to decode DataAvailability Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct CreateApplicationKey {
@@ -412,67 +204,6 @@ pub mod balances {
 			/// The `TotalIssuance` was forcefully changed.
 			TotalIssuanceForced { old: u128, new: u128 } = 21,
 		}
-		/* 		impl Encode for Event {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::Endowed { account, free_balance } => {
-						account.encode_to(dest);
-						free_balance.encode_to(dest);
-					},
-					Self::DustLost { account, amount } => {
-						account.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Transfer { from, to, amount } => {
-						from.encode_to(dest);
-						to.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::BalanceSet { who, free } => {
-						who.encode_to(dest);
-						free.encode_to(dest);
-					},
-					Self::Reserved { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Unreserved { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::ReserveRepatriated {
-						from,
-						to,
-						amount,
-						destination_status,
-					} => {
-						from.encode_to(dest);
-						to.encode_to(dest);
-						amount.encode_to(dest);
-						destination_status.encode_to(dest);
-					},
-					Self::Deposit { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Withdraw { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Slashed { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Minted { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					_ => (),
-				}
-			}
-		} */
 		impl Decode for Event {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let variant = u8::decode(input)?;
@@ -575,40 +306,6 @@ pub mod balances {
 		use super::*;
 
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			TransferAllowDeath(TransferAllowDeath) = TransferAllowDeath::DISPATCH_INDEX.1,
-			TransferKeepAlive(TransferKeepAlive) = TransferKeepAlive::DISPATCH_INDEX.1,
-			TransferAll(TransferAll) = TransferAll::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::TransferAllowDeath(x) => x.encode_to(dest),
-					Self::TransferKeepAlive(x) => x.encode_to(dest),
-					Self::TransferAll(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == TransferAllowDeath::DISPATCH_INDEX.1 => {
-						Ok(Self::TransferAllowDeath(Decode::decode(input)?))
-					},
-					val if val == TransferKeepAlive::DISPATCH_INDEX.1 => {
-						Ok(Self::TransferKeepAlive(Decode::decode(input)?))
-					},
-					val if val == TransferAll::DISPATCH_INDEX.1 => Ok(Self::TransferAll(Decode::decode(input)?)),
-					_ => Err("Failed to decode Balances Call. Unknown variant".into()),
-				}
-			}
-		}
-
-		#[derive(Debug, Clone)]
 		pub struct TransferAllowDeath {
 			pub dest: MultiAddress,
 			pub amount: Compact<u128>,
@@ -705,25 +402,6 @@ pub mod utility {
 				result: Result<(), super::system::types::DispatchError>,
 			} = 5,
 		}
-		/* 		impl Encode for Event {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::BatchInterrupted { index, error } => {
-						index.encode_to(dest);
-						error.encode_to(dest);
-					},
-					Self::ItemFailed { error } => {
-						error.encode_to(dest);
-					},
-					Self::DispatchedAs { result } => {
-						result.encode_to(dest);
-					},
-					_ => (),
-				}
-			}
-		} */
 		impl Decode for Event {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let variant = u8::decode(input)?;
@@ -749,36 +427,6 @@ pub mod utility {
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			Batch(Batch) = Batch::DISPATCH_INDEX.1,
-			BatchAll(BatchAll) = BatchAll::DISPATCH_INDEX.1,
-			ForceBatch(ForceBatch) = ForceBatch::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::Batch(x) => x.encode_to(dest),
-					Self::BatchAll(x) => x.encode_to(dest),
-					Self::ForceBatch(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == Batch::DISPATCH_INDEX.1 => Ok(Self::Batch(Decode::decode(input)?)),
-					val if val == BatchAll::DISPATCH_INDEX.1 => Ok(Self::BatchAll(Decode::decode(input)?)),
-					val if val == ForceBatch::DISPATCH_INDEX.1 => Ok(Self::ForceBatch(Decode::decode(input)?)),
-					_ => Err("Failed to decode Utility Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct Batch {
@@ -955,45 +603,6 @@ pub mod proxy {
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			Proxy(Proxy) = Proxy::DISPATCH_INDEX.1,
-			AddProxy(AddProxy) = AddProxy::DISPATCH_INDEX.1,
-			RemoveProxy(RemoveProxy) = RemoveProxy::DISPATCH_INDEX.1,
-			RemoveProxies(RemoveProxies) = RemoveProxies::DISPATCH_INDEX.1,
-			CreatePure(CreatePure) = CreatePure::DISPATCH_INDEX.1,
-			KillPure(KillPure) = KillPure::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::Proxy(x) => x.encode_to(dest),
-					Self::AddProxy(x) => x.encode_to(dest),
-					Self::RemoveProxy(x) => x.encode_to(dest),
-					Self::RemoveProxies(x) => x.encode_to(dest),
-					Self::CreatePure(x) => x.encode_to(dest),
-					Self::KillPure(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == Proxy::DISPATCH_INDEX.1 => Ok(Self::Proxy(Decode::decode(input)?)),
-					val if val == AddProxy::DISPATCH_INDEX.1 => Ok(Self::AddProxy(Decode::decode(input)?)),
-					val if val == RemoveProxy::DISPATCH_INDEX.1 => Ok(Self::RemoveProxy(Decode::decode(input)?)),
-					val if val == RemoveProxies::DISPATCH_INDEX.1 => Ok(Self::RemoveProxies(Decode::decode(input)?)),
-					val if val == CreatePure::DISPATCH_INDEX.1 => Ok(Self::CreatePure(Decode::decode(input)?)),
-					val if val == KillPure::DISPATCH_INDEX.1 => Ok(Self::KillPure(Decode::decode(input)?)),
-					_ => Err("Failed to decode Proxy Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct Proxy {
@@ -1259,41 +868,6 @@ pub mod multisig {
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			AsMultiThreshold1(AsMultiThreshold1) = AsMultiThreshold1::DISPATCH_INDEX.1,
-			AsMulti(AsMulti) = AsMulti::DISPATCH_INDEX.1,
-			ApproveAsMulti(ApproveAsMulti) = ApproveAsMulti::DISPATCH_INDEX.1,
-			CancelAsMulti(CancelAsMulti) = CancelAsMulti::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::AsMultiThreshold1(x) => x.encode_to(dest),
-					Self::AsMulti(x) => x.encode_to(dest),
-					Self::ApproveAsMulti(x) => x.encode_to(dest),
-					Self::CancelAsMulti(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == AsMultiThreshold1::DISPATCH_INDEX.1 => {
-						Ok(Self::AsMultiThreshold1(Decode::decode(input)?))
-					},
-					val if val == AsMulti::DISPATCH_INDEX.1 => Ok(Self::AsMulti(Decode::decode(input)?)),
-					val if val == ApproveAsMulti::DISPATCH_INDEX.1 => Ok(Self::ApproveAsMulti(Decode::decode(input)?)),
-					val if val == CancelAsMulti::DISPATCH_INDEX.1 => Ok(Self::CancelAsMulti(Decode::decode(input)?)),
-					_ => Err("Failed to decode Multisig Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct AsMultiThreshold1 {
@@ -2289,22 +1863,6 @@ pub mod system {
 				dispatch_info: super::types::DispatchInfo,
 			} = 1,
 		}
-		/* 		impl Encode for Event {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::ExtrinsicSuccess { dispatch_info } => dispatch_info.encode_to(dest),
-					Self::ExtrinsicFailed {
-						dispatch_error,
-						dispatch_info,
-					} => {
-						dispatch_error.encode_to(dest);
-						dispatch_info.encode_to(dest);
-					},
-				}
-			}
-		} */
 		impl Decode for Event {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let variant = u8::decode(input)?;
@@ -2324,43 +1882,6 @@ pub mod system {
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			Remark(Remark) = Remark::DISPATCH_INDEX.1,
-			SetCode(SetCode) = SetCode::DISPATCH_INDEX.1,
-			SetCodeWithoutChecks(SetCodeWithoutChecks) = SetCodeWithoutChecks::DISPATCH_INDEX.1,
-			RemarkWithEvent(RemarkWithEvent) = RemarkWithEvent::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::Remark(x) => x.encode_to(dest),
-					Self::SetCode(x) => x.encode_to(dest),
-					Self::SetCodeWithoutChecks(x) => x.encode_to(dest),
-					Self::RemarkWithEvent(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == Remark::DISPATCH_INDEX.1 => Ok(Self::Remark(Decode::decode(input)?)),
-					val if val == SetCode::DISPATCH_INDEX.1 => Ok(Self::SetCode(Decode::decode(input)?)),
-					val if val == SetCodeWithoutChecks::DISPATCH_INDEX.1 => {
-						Ok(Self::SetCodeWithoutChecks(Decode::decode(input)?))
-					},
-					val if val == RemarkWithEvent::DISPATCH_INDEX.1 => {
-						Ok(Self::RemarkWithEvent(Decode::decode(input)?))
-					},
-					_ => Err("Failed to decode System Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct Remark {
