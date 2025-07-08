@@ -304,7 +304,7 @@ pub mod data_availability {
 				Ok(Self { data, commitments })
 			}
 		}
-		impl TxDispatchIndex for SubmitDataWithCommitments {
+		impl HasTxDispatchIndex for SubmitDataWithCommitments {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 	}
