@@ -620,74 +620,116 @@ pub mod proxy {
 	pub mod events {
 		use super::*;
 
+		/// A proxy was executed correctly, with the given.
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			/// A proxy was executed correctly, with the given.
-			ProxyExecuted {
-				result: Result<(), super::system::types::DispatchError>,
-			} = 0,
-			/// A pure account has been created by new proxy with given
-			/// disambiguation index and proxy type.
-			PureCreated {
-				pure: AccountId,
-				who: AccountId,
-				proxy_type: super::types::ProxyType,
-				disambiguation_index: u16,
-			} = 1,
-			/// An announcement was placed to make a call in the future.
-			Announced {
-				real: AccountId,
-				proxy: AccountId,
-				call_hash: H256,
-			} = 2,
-			/// A proxy was added.
-			ProxyAdded {
-				delegator: AccountId,
-				delegatee: AccountId,
-				proxy_type: super::types::ProxyType,
-				delay: u32,
-			} = 3,
-			/// A proxy was removed.
-			ProxyRemoved {
-				delegator: AccountId,
-				delegatee: AccountId,
-				proxy_type: super::types::ProxyType,
-				delay: u32,
-			} = 4,
+		pub struct ProxyExecuted {
+			pub result: Result<(), super::system::types::DispatchError>,
 		}
-		impl Decode for Event {
+		impl HasEventEmittedIndex for ProxyExecuted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for ProxyExecuted {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::ProxyExecuted {
-						result: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::PureCreated {
-						pure: Decode::decode(input)?,
-						who: Decode::decode(input)?,
-						proxy_type: Decode::decode(input)?,
-						disambiguation_index: Decode::decode(input)?,
-					}),
-					2 => Ok(Self::Announced {
-						real: Decode::decode(input)?,
-						proxy: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-					}),
-					3 => Ok(Self::ProxyAdded {
-						delegator: Decode::decode(input)?,
-						delegatee: Decode::decode(input)?,
-						proxy_type: Decode::decode(input)?,
-						delay: Decode::decode(input)?,
-					}),
-					4 => Ok(Self::ProxyRemoved {
-						delegator: Decode::decode(input)?,
-						delegatee: Decode::decode(input)?,
-						proxy_type: Decode::decode(input)?,
-						delay: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode Multisig Event. Unknown variant".into()),
-				}
+				let result = Decode::decode(input)?;
+				Ok(Self { result })
+			}
+		}
+
+		/// A pure account has been created by new proxy with given
+		/// disambiguation index and proxy type.
+		#[derive(Debug, Clone)]
+		pub struct PureCreated {
+			pub pure: AccountId,
+			pub who: AccountId,
+			pub proxy_type: super::types::ProxyType,
+			pub disambiguation_index: u16,
+		}
+		impl HasEventEmittedIndex for PureCreated {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for PureCreated {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pure = Decode::decode(input)?;
+				let who = Decode::decode(input)?;
+				let proxy_type = Decode::decode(input)?;
+				let disambiguation_index = Decode::decode(input)?;
+				Ok(Self {
+					pure,
+					who,
+					proxy_type,
+					disambiguation_index,
+				})
+			}
+		}
+
+		/// An announcement was placed to make a call in the future.
+		#[derive(Debug, Clone)]
+		pub struct Announced {
+			pub real: AccountId,
+			pub proxy: AccountId,
+			pub call_hash: H256,
+		}
+		impl HasEventEmittedIndex for Announced {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+		impl Decode for Announced {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let real = Decode::decode(input)?;
+				let proxy = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				Ok(Self { real, proxy, call_hash })
+			}
+		}
+
+		/// A proxy was added.
+		#[derive(Debug, Clone)]
+		pub struct ProxyAdded {
+			pub delegator: AccountId,
+			pub delegatee: AccountId,
+			pub proxy_type: super::types::ProxyType,
+			pub delay: u32,
+		}
+		impl HasEventEmittedIndex for ProxyAdded {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+		impl Decode for ProxyAdded {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let delegator = Decode::decode(input)?;
+				let delegatee = Decode::decode(input)?;
+				let proxy_type = Decode::decode(input)?;
+				let delay = Decode::decode(input)?;
+				Ok(Self {
+					delegator,
+					delegatee,
+					proxy_type,
+					delay,
+				})
+			}
+		}
+
+		/// A proxy was removed.
+		#[derive(Debug, Clone)]
+		pub struct ProxyRemoved {
+			pub delegator: AccountId,
+			pub delegatee: AccountId,
+			pub proxy_type: super::types::ProxyType,
+			pub delay: u32,
+		}
+		impl HasEventEmittedIndex for ProxyRemoved {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+		impl Decode for ProxyRemoved {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let delegator = Decode::decode(input)?;
+				let delegatee = Decode::decode(input)?;
+				let proxy_type = Decode::decode(input)?;
+				let delay = Decode::decode(input)?;
+				Ok(Self {
+					delegator,
+					delegatee,
+					proxy_type,
+					delay,
+				})
 			}
 		}
 	}
@@ -891,68 +933,107 @@ pub mod multisig {
 	pub mod events {
 		use super::*;
 
+		/// A new multisig operation has begun.
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			/// A new multisig operation has begun.
-			NewMultisig {
-				approving: AccountId,
-				multisig: AccountId,
-				call_hash: H256,
-			} = 0,
-			/// A multisig operation has been approved by someone.
-			MultisigApproval {
-				approving: AccountId,
-				timepoint: super::types::Timepoint,
-				multisig: AccountId,
-				call_hash: H256,
-			} = 1,
-			/// A multisig operation has been executed.
-			MultisigExecuted {
-				approving: AccountId,
-				timepoint: super::types::Timepoint,
-				multisig: AccountId,
-				call_hash: H256,
-				result: Result<(), super::system::types::DispatchError>,
-			} = 2,
-			/// A multisig operation has been cancelled.
-			MultisigCancelled {
-				cancelling: AccountId,
-				timepoint: super::types::Timepoint,
-				multisig: AccountId,
-				call_hash: H256,
-			} = 3,
+		pub struct NewMultisig {
+			pub approving: AccountId,
+			pub multisig: AccountId,
+			pub call_hash: H256,
 		}
-		impl Decode for Event {
+		impl HasEventEmittedIndex for NewMultisig {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for NewMultisig {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::NewMultisig {
-						approving: Decode::decode(input)?,
-						multisig: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::MultisigApproval {
-						approving: Decode::decode(input)?,
-						timepoint: Decode::decode(input)?,
-						multisig: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-					}),
-					2 => Ok(Self::MultisigExecuted {
-						approving: Decode::decode(input)?,
-						timepoint: Decode::decode(input)?,
-						multisig: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-						result: Decode::decode(input)?,
-					}),
-					3 => Ok(Self::MultisigCancelled {
-						cancelling: Decode::decode(input)?,
-						timepoint: Decode::decode(input)?,
-						multisig: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode Multisig Event. Unknown variant".into()),
-				}
+				let approving = Decode::decode(input)?;
+				let multisig = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				Ok(Self {
+					approving,
+					multisig,
+					call_hash,
+				})
+			}
+		}
+
+		/// A multisig operation has been approved by someone.
+		#[derive(Debug, Clone)]
+		pub struct MultisigApproval {
+			pub approving: AccountId,
+			pub timepoint: super::types::Timepoint,
+			pub multisig: AccountId,
+			pub call_hash: H256,
+		}
+		impl HasEventEmittedIndex for MultisigApproval {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for MultisigApproval {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let approving = Decode::decode(input)?;
+				let timepoint = Decode::decode(input)?;
+				let multisig = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				Ok(Self {
+					approving,
+					timepoint,
+					multisig,
+					call_hash,
+				})
+			}
+		}
+
+		/// A multisig operation has been executed.
+		#[derive(Debug, Clone)]
+		pub struct MultisigExecuted {
+			pub approving: AccountId,
+			pub timepoint: super::types::Timepoint,
+			pub multisig: AccountId,
+			pub call_hash: H256,
+			pub result: Result<(), super::system::types::DispatchError>,
+		}
+		impl HasEventEmittedIndex for MultisigExecuted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+		impl Decode for MultisigExecuted {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let approving = Decode::decode(input)?;
+				let timepoint = Decode::decode(input)?;
+				let multisig = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				let result = Decode::decode(input)?;
+				Ok(Self {
+					approving,
+					timepoint,
+					multisig,
+					call_hash,
+					result,
+				})
+			}
+		}
+
+		/// A multisig operation has been cancelled.
+		#[derive(Debug, Clone)]
+		pub struct MultisigCancelled {
+			pub cancelling: AccountId,
+			pub timepoint: super::types::Timepoint,
+			pub multisig: AccountId,
+			pub call_hash: H256,
+		}
+		impl HasEventEmittedIndex for MultisigCancelled {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+		impl Decode for MultisigCancelled {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let cancelling = Decode::decode(input)?;
+				let timepoint = Decode::decode(input)?;
+				let multisig = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				Ok(Self {
+					cancelling,
+					timepoint,
+					multisig,
+					call_hash,
+				})
 			}
 		}
 	}
@@ -1944,29 +2025,35 @@ pub mod system {
 		use super::*;
 
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			ExtrinsicSuccess {
-				dispatch_info: super::types::DispatchInfo,
-			} = 0,
-			ExtrinsicFailed {
-				dispatch_error: super::types::DispatchError,
-				dispatch_info: super::types::DispatchInfo,
-			} = 1,
+		pub struct ExtrinsicSuccess {
+			pub dispatch_info: super::types::DispatchInfo,
 		}
-		impl Decode for Event {
+		impl HasEventEmittedIndex for ExtrinsicSuccess {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for ExtrinsicSuccess {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::ExtrinsicSuccess {
-						dispatch_info: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::ExtrinsicFailed {
-						dispatch_error: Decode::decode(input)?,
-						dispatch_info: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode System Event. Unknown variant".into()),
-				}
+				let dispatch_info = Decode::decode(input)?;
+				Ok(Self { dispatch_info })
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ExtrinsicFailed {
+			pub dispatch_error: super::types::DispatchError,
+			pub dispatch_info: super::types::DispatchInfo,
+		}
+		impl HasEventEmittedIndex for ExtrinsicFailed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for ExtrinsicFailed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let dispatch_error = Decode::decode(input)?;
+				let dispatch_info = Decode::decode(input)?;
+				Ok(Self {
+					dispatch_error,
+					dispatch_info,
+				})
 			}
 		}
 	}

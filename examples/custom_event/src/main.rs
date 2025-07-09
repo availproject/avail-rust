@@ -32,7 +32,7 @@ async fn main() -> Result<(), ClientError> {
 	let encoded_event = event.encoded.as_ref().expect("Must be there");
 	let encoded_event = hex::decode(encoded_event.trim_start_matches("0x")).expect("Must be ok");
 
-	let event = CustomEvent::from_raw(&encoded_event).expect("Must be Ok");
+	let event = CustomEvent::decode_event(&encoded_event).expect("Must be Ok");
 	println!("Account: {}, Hash: {}", event.who, event.data_hash);
 
 	Ok(())
