@@ -6,6 +6,7 @@
 //! - Fetching and displaying Transaction Events
 //!
 
+use avail::data_availability::{events::DataSubmitted, tx::SubmitData};
 use avail_rust_client::prelude::*;
 
 #[tokio::main]
@@ -52,10 +53,25 @@ async fn main() -> Result<(), ClientError> {
 		);
 
 		let encoded_event = hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
-		if let Ok(event) = RuntimeEvent::try_from(&encoded_event) {
-			dbg!(event);
+		if let Some(event) = DataSubmitted::decode_event(&encoded_event) {
+			println!("Who: {}, Data Hash: {}", event.who, event.data_hash);
 		}
 	}
+
+	// Fetching the same transaction from the block
+	let block_client = client.block_client();
+	let block_tx = block_client
+		.block_transaction(
+			receipt.block_loc.into(),
+			receipt.tx_loc.into(),
+			None,
+			Some(EncodeSelector::Call),
+		)
+		.await?
+		.expect("Must be there");
+	let tx_call = hex::decode(block_tx.encoded.expect("Must be there"))?;
+	let call = SubmitData::decode_call(&tx_call).expect("Must be decodable");
+	println!("Call Data: {:?}", call.data);
 
 	Ok(())
 }
