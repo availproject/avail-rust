@@ -1,16 +1,38 @@
-use crate::{AccountId, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, TransactionCall};
+use crate::{
+	AccountId, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, StorageHasher, StorageMap, TransactionCall,
+};
 use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use scale_decode::DecodeAsType;
 use scale_encode::EncodeAsType;
-use subxt_core::{
-	storage::address::{StaticAddress, StaticStorageKey},
-	utils::Yes,
-};
 
 pub mod data_availability {
 	use super::*;
 	pub const PALLET_ID: u8 = 29;
+
+	pub mod storage {
+		use super::*;
+
+		pub struct AppKeys;
+		impl StorageMap for AppKeys {
+			const PALLET_NAME: &str = "DataAvailability";
+			const STORAGE_NAME: &str = "AppKeys";
+			const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+			type KEY = Vec<u8>;
+			type VALUE = super::types::AppKey;
+		}
+	}
+
+	pub mod types {
+		use super::*;
+
+		#[derive(Debug, Clone, codec::Decode)]
+		pub struct AppKey {
+			pub owner: AccountId,
+			#[codec(compact)]
+			pub id: u32,
+		}
+	}
 
 	pub mod events {
 		use super::*;
@@ -85,7 +107,7 @@ pub mod balances {
 	pub mod types {
 		use super::*;
 
-		#[derive(Debug, Clone, DecodeAsType, EncodeAsType)]
+		#[derive(Debug, Default, Clone, DecodeAsType, EncodeAsType)]
 		pub struct AccountData {
 			pub free: u128,
 			pub reserved: u128,
@@ -1691,7 +1713,7 @@ pub mod system {
 		use crate::from_substrate::{DispatchClass, Weight};
 
 		use super::*;
-		#[derive(Debug, Clone, DecodeAsType, EncodeAsType)]
+		#[derive(Debug, Clone, Default, DecodeAsType, EncodeAsType)]
 		pub struct AccountInfo {
 			pub nonce: u32,
 			pub consumers: u32,
@@ -2001,23 +2023,17 @@ pub mod system {
 	}
 
 	pub mod storage {
+		use crate::chain_types::system::types::AccountInfo;
+
 		use super::*;
 
-		pub fn account_iter() -> StaticAddress<(), super::system::types::AccountInfo, (), Yes, Yes> {
-			let address = StaticAddress::new_static("System", "Account", (), Default::default());
-			address.unvalidated()
-		}
-
-		pub fn account(
-			account_id: &AccountId,
-		) -> StaticAddress<StaticStorageKey<AccountId>, super::system::types::AccountInfo, Yes, Yes, ()> {
-			let address = StaticAddress::new_static(
-				"System",
-				"Account",
-				StaticStorageKey::new(account_id),
-				Default::default(),
-			);
-			address.unvalidated()
+		pub struct Account;
+		impl StorageMap for Account {
+			const PALLET_NAME: &str = "System";
+			const STORAGE_NAME: &str = "Account";
+			const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+			type KEY = AccountId;
+			type VALUE = AccountInfo;
 		}
 	}
 

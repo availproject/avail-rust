@@ -125,7 +125,7 @@ pub trait StorageMap {
 		std::format!("0x{}", hex::encode(&Self::encode_partial_key()))
 	}
 
-	fn encode_storage_key(key: Self::KEY) -> Vec<u8> {
+	fn encode_storage_key(key: &Self::KEY) -> Vec<u8> {
 		let mut storage_key: Vec<u8> = Vec::new();
 		storage_key.extend_from_slice(&Self::encode_partial_key());
 
@@ -135,7 +135,7 @@ pub trait StorageMap {
 		storage_key
 	}
 
-	fn hex_encode_storage_key(key: Self::KEY) -> String {
+	fn hex_encode_storage_key(key: &Self::KEY) -> String {
 		std::format!("0x{}", hex::encode(&Self::encode_storage_key(key)))
 	}
 
@@ -152,7 +152,7 @@ pub trait StorageMap {
 
 	fn fetch(
 		client: &RpcClient,
-		key: Self::KEY,
+		key: &Self::KEY,
 		at: Option<H256>,
 	) -> impl std::future::Future<Output = Result<Option<Self::VALUE>, Error>> {
 		async move {
@@ -184,7 +184,7 @@ pub trait StorageDoubleMap {
 	type KEY2: codec::Decode + codec::Encode;
 	type VALUE: codec::Decode;
 
-	fn encode_partial_key(key1: Self::KEY1) -> Vec<u8> {
+	fn encode_partial_key(key1: &Self::KEY1) -> Vec<u8> {
 		use sp_crypto_hashing::twox_128;
 
 		let mut encoded_storage_key = Vec::new();
@@ -195,11 +195,11 @@ pub trait StorageDoubleMap {
 		encoded_storage_key
 	}
 
-	fn hex_encode_partial_key(key1: Self::KEY1) -> String {
+	fn hex_encode_partial_key(key1: &Self::KEY1) -> String {
 		std::format!("0x{}", hex::encode(&Self::encode_partial_key(key1)))
 	}
 
-	fn encode_storage_key(key1: Self::KEY1, key2: Self::KEY2) -> Vec<u8> {
+	fn encode_storage_key(key1: &Self::KEY1, key2: &Self::KEY2) -> Vec<u8> {
 		let mut storage_key: Vec<u8> = Vec::new();
 		storage_key.extend_from_slice(&Self::encode_partial_key(key1));
 		storage_key.extend_from_slice(&Self::KEY2_HASHER.hash(&key2.encode()));
@@ -207,7 +207,7 @@ pub trait StorageDoubleMap {
 		storage_key
 	}
 
-	fn hex_encode_storage_key(key1: Self::KEY1, key2: Self::KEY2) -> String {
+	fn hex_encode_storage_key(key1: &Self::KEY1, key2: &Self::KEY2) -> String {
 		std::format!("0x{}", hex::encode(&Self::encode_storage_key(key1, key2)))
 	}
 
@@ -233,8 +233,8 @@ pub trait StorageDoubleMap {
 
 	fn fetch(
 		client: &RpcClient,
-		key_1: Self::KEY1,
-		key_2: Self::KEY2,
+		key_1: &Self::KEY1,
+		key_2: &Self::KEY2,
 		at: Option<H256>,
 	) -> impl std::future::Future<Output = Result<Option<Self::VALUE>, Error>> {
 		async move {
@@ -249,7 +249,7 @@ pub trait StorageDoubleMap {
 		}
 	}
 
-	fn iter(client: RpcClient, key_1: Self::KEY1, block_hash: H256) -> StorageDoubleMapIterator<Self>
+	fn iter(client: RpcClient, key_1: &Self::KEY1, block_hash: H256) -> StorageDoubleMapIterator<Self>
 	where
 		Self: Sized,
 	{
@@ -373,7 +373,7 @@ pub struct StorageDoubleMapIterator<T: StorageDoubleMap> {
 }
 
 impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
-	pub fn new(client: RpcClient, key_1: T::KEY1, block_hash: H256) -> Self {
+	pub fn new(client: RpcClient, key_1: &T::KEY1, block_hash: H256) -> Self {
 		Self {
 			client,
 			phantom: PhantomData::<T>,

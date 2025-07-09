@@ -1,3 +1,7 @@
+//! This example showcases the following actions:
+//! - Reading constants from metadata
+//!
+
 use avail_rust_client::prelude::*;
 use codec::Decode;
 

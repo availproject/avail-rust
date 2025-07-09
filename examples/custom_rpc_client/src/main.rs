@@ -1,3 +1,7 @@
+//! This example showcases the following actions:
+//! - Creating custom rpc client
+//!
+
 use avail_rust_client::{prelude::*, subxt_rpcs::RpcClient};
 use serde::Serialize;
 use serde_json::value::{RawValue, to_raw_value};
