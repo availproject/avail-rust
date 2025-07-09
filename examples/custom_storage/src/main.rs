@@ -1,3 +1,8 @@
+//! This example showcases the following actions:
+//! - Creating custom storage
+//! - Decoding custom storage
+//!
+
 use avail_rust_client::prelude::*;
 
 pub struct TimestampNow;
@@ -47,7 +52,6 @@ pub struct ValidatorPrefs {
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	Client::enable_tracing(false);
 	let client = Client::new(TURING_ENDPOINT).await?;
 	let block_hash = client.finalized_block_hash().await.unwrap();
 
@@ -60,7 +64,7 @@ async fn main() -> Result<(), ClientError> {
 	// Fetching Storage Map
 	let value = DataAvailabilityAppKeys::fetch(
 		&client.rpc_client,
-		"MyAwesomeKey".to_string().into_bytes(),
+		&"MyAwesomeKey".as_bytes().to_vec(),
 		Some(block_hash),
 	)
 	.await?
@@ -70,9 +74,11 @@ async fn main() -> Result<(), ClientError> {
 	// Iterating Storage Map
 	let mut iter = DataAvailabilityAppKeys::iter(client.rpc_client.clone(), block_hash);
 	for _ in 0..5 {
+		// You can fetch just the value...
 		let value = iter.next().await?.expect("Needs to be there");
 		println!("Owner: {}, id: {}", value.owner, value.id);
 
+		// ...or both the value and the key
 		let (key, value) = iter.next_key_value().await?.expect("Needs to be there");
 		println!(
 			"Key: {}, Owner: {}, id: {}",
@@ -85,19 +91,21 @@ async fn main() -> Result<(), ClientError> {
 	// Fetching Double Storage Map
 	let value = StakingErasValidatorPrefs::fetch(
 		&client.rpc_client,
-		468,
-		AccountId::from_str("5EFs6TqF2knsBtEC6gr5F1cV85N9hkkb2MFuzbEf9zmNMnNV")?,
+		&468,
+		&AccountId::from_str("5EFs6TqF2knsBtEC6gr5F1cV85N9hkkb2MFuzbEf9zmNMnNV")?,
 		Some(block_hash),
 	)
 	.await?
 	.expect("Needs to be there");
 	println!("Blocked: {}, Commission: {}", value.blocked, value.commission);
 
-	let mut iter = StakingErasValidatorPrefs::iter(client.rpc_client.clone(), 468, block_hash);
+	let mut iter = StakingErasValidatorPrefs::iter(client.rpc_client.clone(), &468, block_hash);
 	for _ in 0..5 {
+		// You can fetch just the value...
 		let value = iter.next().await?.expect("Needs to be there");
 		println!("Blocked: {}, Commission: {}", value.blocked, value.commission);
 
+		// ...or both the value and the key
 		let (key1, key2, value) = iter.next_key_value().await?.expect("Needs to be there");
 		println!(
 			"Key1: {}, Key2: {}, Blocked: {}, Comission: {}",

@@ -7,7 +7,6 @@ use avail_rust_client::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	Client::enable_tracing(false);
 	let client = Client::new(TURING_ENDPOINT).await?;
 
 	// Account Balance

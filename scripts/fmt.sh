@@ -18,3 +18,4 @@ cd ./custom_rpc_client && cargo +nightly fmt  && cd ./../.
 cd ./custom_storage  && cargo +nightly fmt  && cd ./../.
 cd ./constants && cargo +nightly fmt  && cd ./../.
 cd ./estimating_fees && cargo +nightly fmt  && cd ./../.
+cd ./storage && cargo +nightly fmt  && cd ./../.

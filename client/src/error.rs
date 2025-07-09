@@ -7,7 +7,8 @@ pub enum ClientError {
 	Subxt(crate::subxt::Error) = 0,
 	Core(avail_rust_core::Error) = 1,
 	Custom(String) = 2,
-	Codec(codec::Error),
+	Codec(codec::Error) = 3,
+	Hex(hex::FromHexError) = 4,
 }
 
 impl From<avail_rust_core::Error> for ClientError {
@@ -31,6 +32,12 @@ impl From<&str> for ClientError {
 impl From<codec::Error> for ClientError {
 	fn from(value: codec::Error) -> Self {
 		Self::Codec(value)
+	}
+}
+
+impl From<hex::FromHexError> for ClientError {
+	fn from(value: hex::FromHexError) -> Self {
+		Self::Hex(value)
 	}
 }
 

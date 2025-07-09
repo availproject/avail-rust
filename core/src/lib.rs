@@ -22,12 +22,12 @@ pub use decoded_events::{HasEventEmittedIndex, TransactionEventLike};
 pub use decoded_storage::{
 	StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
 };
-pub use decoded_transaction::{DecodedTransaction, HasTxDispatchIndex, OpaqueTransaction, TransactionCallLike};
+pub use decoded_transaction::{HasTxDispatchIndex, OpaqueTransaction, TransactionCallLike};
 pub use error::Error;
 pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
 pub use primitive_types::{H256, U256};
-pub use rpc::{FetchEventsV1Options, FetchExtrinsicsV1Options};
+pub use rpc::{EncodeSelector, FetchEventsV1Options, FetchExtrinsicsV1Options};
 pub use transaction::{
 	Era, Transaction, TransactionAdditional, TransactionCall, TransactionExtra, TransactionPayload, TransactionSigned,
 };

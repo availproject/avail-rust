@@ -1,6 +1,4 @@
-use super::{
-	block_client::BlockClient, event_client::EventClient, online_client::OnlineClientT, storage_client::StorageClient,
-};
+use super::{block_client::BlockClient, event_client::EventClient, online_client::OnlineClientT};
 use crate::{
 	BlockState, avail,
 	clients::{rpc_api::RpcAPI, runtime_api::RuntimeApi},
@@ -11,8 +9,11 @@ use crate::{
 	transaction_options::Options,
 	transactions::Transactions,
 };
-use avail::{balances::types::AccountData, system::types::AccountInfo};
-use avail_rust_core::{AccountId, AvailHeader, BlockLocation, H256, rpc::BlockWithJustifications};
+use avail::{
+	balances::types::AccountData,
+	system::{storage as SystemStorage, types::AccountInfo},
+};
+use avail_rust_core::{AccountId, AvailHeader, BlockLocation, H256, StorageMap, rpc::BlockWithJustifications};
 
 #[cfg(feature = "subxt")]
 use crate::config::{ABlocksClient, AConstantsClient, AStorageClient};
@@ -214,16 +215,14 @@ impl Client {
 
 	// Account Info (nonce, balance, ...)
 	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, avail_rust_core::Error> {
-		let address = avail::system::storage::account(account_id);
-		let storage = self.storage_client();
-		storage.fetch_or_default(&address, at).await
+		SystemStorage::Account::fetch(&self.rpc_client, account_id, Some(at))
+			.await
+			.map(|x| x.unwrap_or_default())
 	}
 
 	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, avail_rust_core::Error> {
 		let at = self.best_block_hash().await?;
-		let address = avail::system::storage::account(account_id);
-		let storage = self.storage_client();
-		storage.fetch_or_default(&address, at).await
+		Self::account_info(&self, account_id, at).await
 	}
 
 	pub async fn finalized_block_account_info(
@@ -231,9 +230,7 @@ impl Client {
 		account_id: &AccountId,
 	) -> Result<AccountInfo, avail_rust_core::Error> {
 		let at = self.finalized_block_hash().await?;
-		let address = avail::system::storage::account(account_id);
-		let storage = self.storage_client();
-		storage.fetch_or_default(&address, at).await
+		Self::account_info(&self, account_id, at).await
 	}
 
 	// Block State
@@ -351,10 +348,6 @@ impl Client {
 
 	pub fn block_client(&self) -> BlockClient {
 		BlockClient::new(self.clone())
-	}
-
-	pub fn storage_client(&self) -> StorageClient {
-		StorageClient::new(self.clone())
 	}
 
 	#[cfg(not(feature = "subxt"))]

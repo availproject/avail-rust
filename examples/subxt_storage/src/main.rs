@@ -1,19 +1,22 @@
+//! This example showcases the following actions:
+//! - Fetching an decoding storage using subxt and generated metadata
+//!
+
 use avail_rust_client::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	Client::enable_tracing(false);
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let account_id = alice().account_id();
-	let finalized_block_hash = client.finalized_block_hash().await?;
-	let storage = client.storage_client();
-	let address = avail::system::storage::account(&account_id);
-	let account_info = storage.fetch_or_default(&address, finalized_block_hash).await?;
+	let storage = client.subxt_storage_client().at_latest().await?;
+
+	let address = avail_generated::storage().system().account(&account_id);
+	let account_info = storage.fetch_or_default(&address).await?;
 	println!("Nonce: {}", account_info.nonce);
 
-	let address = avail::system::storage::account_iter();
-	let mut stream = storage.iter(address.unvalidated(), finalized_block_hash).await?;
+	let address = avail_generated::storage().system().account_iter();
+	let mut stream = storage.iter(address.unvalidated()).await?;
 	while let Some(Ok(info)) = stream.next().await {
 		if info.key_bytes.len() <= 32 {
 			continue;

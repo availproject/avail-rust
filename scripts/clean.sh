@@ -18,3 +18,4 @@ cd ./custom_rpc_client && rm -f Cargo.lock && rm -f -r ./target && cd ./../.
 cd ./custom_storage && rm -f Cargo.lock && rm -f -r ./target && cd ./../
 cd ./constants && rm -f Cargo.lock && rm -f -r ./target && cd ./../
 cd ./estimating_fees && rm -f Cargo.lock && rm -f -r ./target && cd ./../
+cd ./storage && rm -f Cargo.lock && rm -f -r ./target && cd ./../

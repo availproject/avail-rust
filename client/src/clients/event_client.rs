@@ -1,7 +1,5 @@
 use crate::{clients::Client, subxt_core::events::Phase};
-use avail_rust_core::{
-	H256, avail::RuntimeEvent, decoded_events::OpaqueEvent, rpc::system::fetch_events_v1_types as Types,
-};
+use avail_rust_core::{H256, decoded_events::OpaqueEvent, rpc::system::fetch_events_v1_types as Types};
 
 pub const EVENTS_STORAGE_ADDRESS: &str = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
 
@@ -26,24 +24,12 @@ impl Event {
 		self.bytes.variant_index()
 	}
 
+	pub fn event_bytes(&self) -> &[u8] {
+		&self.bytes.0
+	}
+
 	pub fn event_data(&self) -> &[u8] {
 		&self.bytes.event_data()
-	}
-}
-
-impl TryFrom<Event> for RuntimeEvent {
-	type Error = crate::codec::Error;
-
-	fn try_from(value: Event) -> Result<Self, Self::Error> {
-		Self::try_from(&value)
-	}
-}
-
-impl TryFrom<&Event> for RuntimeEvent {
-	type Error = crate::codec::Error;
-
-	fn try_from(value: &Event) -> Result<Self, Self::Error> {
-		RuntimeEvent::try_from(value.bytes.0.as_slice())
 	}
 }
 

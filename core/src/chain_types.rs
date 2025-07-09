@@ -1,250 +1,64 @@
-use crate::{AccountId, HasTxDispatchIndex, MultiAddress, TransactionCall};
+use crate::{
+	AccountId, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, StorageHasher, StorageMap, TransactionCall,
+};
 use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use scale_decode::DecodeAsType;
 use scale_encode::EncodeAsType;
-use subxt_core::{
-	storage::address::{StaticAddress, StaticStorageKey},
-	utils::Yes,
-};
-
-#[derive(Debug, Clone)]
-#[repr(u8)]
-pub enum RuntimeCall {
-	DataAvailability(data_availability::tx::Call) = data_availability::PALLET_ID,
-	Balances(balances::tx::Call) = balances::PALLET_ID,
-	Utility(utility::tx::Call) = utility::PALLET_ID,
-	Proxy(proxy::tx::Call) = proxy::PALLET_ID,
-	Multisig(multisig::tx::Call) = multisig::PALLET_ID,
-	System(system::tx::Call) = system::PALLET_ID,
-}
-impl RuntimeCall {
-	pub fn pallet_index(&self) -> u8 {
-		unsafe { *(self as *const _ as *const u8) }
-	}
-
-	pub fn call_index(&self) -> u8 {
-		match self {
-			Self::DataAvailability(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Balances(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Utility(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Proxy(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Multisig(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::System(call) => unsafe { *(call as *const _ as *const u8) },
-		}
-	}
-}
-
-impl Encode for RuntimeCall {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-		variant.encode_to(dest);
-		match self {
-			Self::DataAvailability(x) => x.encode_to(dest),
-			Self::Balances(x) => x.encode_to(dest),
-			Self::Utility(x) => x.encode_to(dest),
-			Self::Proxy(x) => x.encode_to(dest),
-			Self::Multisig(x) => x.encode_to(dest),
-			Self::System(x) => x.encode_to(dest),
-		}
-	}
-}
-
-impl Decode for RuntimeCall {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let variant = u8::decode(input)?;
-		match variant {
-			data_availability::PALLET_ID => Ok(Self::DataAvailability(Decode::decode(input)?)),
-			balances::PALLET_ID => Ok(Self::Balances(Decode::decode(input)?)),
-			utility::PALLET_ID => Ok(Self::Utility(Decode::decode(input)?)),
-			proxy::PALLET_ID => Ok(Self::Proxy(Decode::decode(input)?)),
-			multisig::PALLET_ID => Ok(Self::Multisig(Decode::decode(input)?)),
-			system::PALLET_ID => Ok(Self::System(Decode::decode(input)?)),
-			_ => Err("Failed to decode Runtime Call. Unknown variant".into()),
-		}
-	}
-}
-
-impl TryFrom<&[u8]> for RuntimeCall {
-	type Error = codec::Error;
-
-	fn try_from(mut value: &[u8]) -> Result<Self, Self::Error> {
-		Self::decode(&mut value)
-	}
-}
-
-impl TryFrom<&Vec<u8>> for RuntimeCall {
-	type Error = codec::Error;
-
-	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
-
-impl TryFrom<Vec<u8>> for RuntimeCall {
-	type Error = codec::Error;
-
-	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
-
-#[derive(Debug, Clone)]
-#[repr(u8)]
-pub enum RuntimeEvent {
-	System(system::events::Event) = system::PALLET_ID,
-	Utility(utility::events::Event) = utility::PALLET_ID,
-	Balances(balances::events::Event) = balances::PALLET_ID,
-	DataAvailability(data_availability::events::Event) = data_availability::PALLET_ID,
-	Multisig(multisig::events::Event) = multisig::PALLET_ID,
-	Proxy(multisig::events::Event) = proxy::PALLET_ID,
-}
-impl RuntimeEvent {
-	pub fn pallet_index(&self) -> u8 {
-		unsafe { *(self as *const _ as *const u8) }
-	}
-
-	pub fn variant_index(&self) -> u8 {
-		match self {
-			Self::System(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Utility(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Balances(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::DataAvailability(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Multisig(call) => unsafe { *(call as *const _ as *const u8) },
-			Self::Proxy(call) => unsafe { *(call as *const _ as *const u8) },
-		}
-	}
-}
-/* impl Encode for RuntimeEvent {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-		variant.encode_to(dest);
-		match self {
-			Self::System(x) => x.encode_to(dest),
-			Self::Utility(x) => x.encode_to(dest),
-			Self::DataAvailability(x) => x.encode_to(dest),
-		}
-	}
-} */
-impl Decode for RuntimeEvent {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let variant = u8::decode(input)?;
-		match variant {
-			system::PALLET_ID => Ok(Self::System(Decode::decode(input)?)),
-			utility::PALLET_ID => Ok(Self::Utility(Decode::decode(input)?)),
-			balances::PALLET_ID => Ok(Self::Balances(Decode::decode(input)?)),
-			data_availability::PALLET_ID => Ok(Self::DataAvailability(Decode::decode(input)?)),
-			multisig::PALLET_ID => Ok(Self::Multisig(Decode::decode(input)?)),
-			proxy::PALLET_ID => Ok(Self::Proxy(Decode::decode(input)?)),
-			_ => Err("Failed to decode Runtime Event. Unknown variant".into()),
-		}
-	}
-}
-impl TryFrom<&[u8]> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(mut value: &[u8]) -> Result<Self, Self::Error> {
-		Self::decode(&mut value)
-	}
-}
-
-impl TryFrom<&Vec<u8>> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
-
-impl TryFrom<Vec<u8>> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
 
 pub mod data_availability {
 	use super::*;
 	pub const PALLET_ID: u8 = 29;
 
+	pub mod storage {
+		use super::*;
+
+		pub struct AppKeys;
+		impl StorageMap for AppKeys {
+			const PALLET_NAME: &str = "DataAvailability";
+			const STORAGE_NAME: &str = "AppKeys";
+			const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+			type KEY = Vec<u8>;
+			type VALUE = super::types::AppKey;
+		}
+	}
+
+	pub mod types {
+		use super::*;
+
+		#[derive(Debug, Clone, codec::Decode)]
+		pub struct AppKey {
+			pub owner: AccountId,
+			#[codec(compact)]
+			pub id: u32,
+		}
+	}
+
 	pub mod events {
 		use super::*;
 
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			ApplicationKeyCreated { key: Vec<u8>, owner: AccountId, id: u32 } = 0,
-			DataSubmitted { who: AccountId, data_hash: H256 } = 1,
+		#[derive(Debug, Clone, Decode)]
+		pub struct ApplicationKeyCreated {
+			pub key: Vec<u8>,
+			pub owner: AccountId,
+			pub id: u32,
 		}
-		/* 		impl Encode for Event {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::ApplicationKeyCreated { key, owner, id } => {
-						key.encode_to(dest);
-						owner.encode_to(dest);
-						Compact(*id).encode_to(dest);
-					},
-					Self::DataSubmitted { who, data_hash } => {
-						who.encode_to(dest);
-						data_hash.encode_to(dest);
-					},
-				}
-			}
-		} */
-		impl Decode for Event {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => {
-						let key = Decode::decode(input)?;
-						let owner = Decode::decode(input)?;
-						let id: Compact<u32> = Decode::decode(input)?;
-						Ok(Self::ApplicationKeyCreated { key, owner, id: id.0 })
-					},
-					1 => Ok(Self::DataSubmitted {
-						who: Decode::decode(input)?,
-						data_hash: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode DataAvailability Event. Unknown variant".into()),
-				}
-			}
+		impl HasEventEmittedIndex for ApplicationKeyCreated {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Debug, Clone, Decode)]
+		pub struct DataSubmitted {
+			pub who: AccountId,
+			pub data_hash: H256,
+		}
+		impl HasEventEmittedIndex for DataSubmitted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 	}
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			CreateApplicationKey(CreateApplicationKey) = CreateApplicationKey::DISPATCH_INDEX.1,
-			SubmitData(SubmitData) = SubmitData::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::CreateApplicationKey(x) => x.encode_to(dest),
-					Self::SubmitData(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == CreateApplicationKey::DISPATCH_INDEX.1 => {
-						Ok(Self::CreateApplicationKey(Decode::decode(input)?))
-					},
-					val if val == SubmitData::DISPATCH_INDEX.1 => Ok(Self::SubmitData(Decode::decode(input)?)),
-					_ => Err("Failed to decode DataAvailability Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct CreateApplicationKey {
@@ -293,7 +107,7 @@ pub mod balances {
 	pub mod types {
 		use super::*;
 
-		#[derive(Debug, Clone, DecodeAsType, EncodeAsType)]
+		#[derive(Debug, Default, Clone, DecodeAsType, EncodeAsType)]
 		pub struct AccountData {
 			pub free: u128,
 			pub reserved: u128,
@@ -353,260 +167,216 @@ pub mod balances {
 	pub mod events {
 		use super::*;
 
+		/// An account was created with some free balance.
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			/// An account was created with some free balance.
-			Endowed { account: AccountId, free_balance: u128 } = 0,
-			/// An account was removed whose balance was non-zero but below ExistentialDeposit,
-			/// resulting in an outright loss.
-			DustLost { account: AccountId, amount: u128 } = 1,
-			/// Transfer succeeded.
-			Transfer {
-				from: AccountId,
-				to: AccountId,
-				amount: u128,
-			} = 2,
-			/// A balance was set by root.
-			BalanceSet { who: AccountId, free: u128 } = 3,
-			/// Some balance was reserved (moved from free to reserved).
-			Reserved { who: AccountId, amount: u128 } = 4,
-			/// Some balance was unreserved (moved from reserved to free).
-			Unreserved { who: AccountId, amount: u128 } = 5,
-			/// Some balance was moved from the reserve of the first account to the second account.
-			/// Final argument indicates the destination balance type.
-			ReserveRepatriated {
-				from: AccountId,
-				to: AccountId,
-				amount: u128,
-				destination_status: super::types::BalanceStatus,
-			} = 6,
-			/// Some amount was deposited (e.g. for transaction fees).
-			Deposit { who: AccountId, amount: u128 } = 7,
-			/// Some amount was withdrawn from the account (e.g. for transaction fees).
-			Withdraw { who: AccountId, amount: u128 } = 8,
-			/// Some amount was removed from the account (e.g. for misbehavior).
-			Slashed { who: AccountId, amount: u128 } = 9,
-			/// Some amount was minted into an account.
-			Minted { who: AccountId, amount: u128 } = 10,
-			/// Some amount was burned from an account.
-			Burned { who: AccountId, amount: u128 } = 11,
-			/// Some amount was suspended from an account (it can be restored later).
-			Suspended { who: AccountId, amount: u128 } = 12,
-			/// Some amount was restored into an account.
-			Restored { who: AccountId, amount: u128 } = 13,
-			/// An account was upgraded.
-			Upgraded { who: AccountId } = 14,
-			/// Total issuance was increased by `amount`, creating a credit to be balanced.
-			Issued { amount: u128 } = 15,
-			/// Total issuance was decreased by `amount`, creating a debt to be balanced.
-			Rescinded { amount: u128 } = 16,
-			/// Some balance was locked.
-			Locked { who: AccountId, amount: u128 } = 17,
-			/// Some balance was unlocked.
-			Unlocked { who: AccountId, amount: u128 } = 18,
-			/// Some balance was frozen.
-			Frozen { who: AccountId, amount: u128 } = 19,
-			/// Some balance was thawed.
-			Thawed { who: AccountId, amount: u128 } = 20,
-			/// The `TotalIssuance` was forcefully changed.
-			TotalIssuanceForced { old: u128, new: u128 } = 21,
+		pub struct Endowed {
+			pub account: AccountId,
+			pub free_balance: u128,
 		}
-		/* 		impl Encode for Event {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::Endowed { account, free_balance } => {
-						account.encode_to(dest);
-						free_balance.encode_to(dest);
-					},
-					Self::DustLost { account, amount } => {
-						account.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Transfer { from, to, amount } => {
-						from.encode_to(dest);
-						to.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::BalanceSet { who, free } => {
-						who.encode_to(dest);
-						free.encode_to(dest);
-					},
-					Self::Reserved { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Unreserved { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::ReserveRepatriated {
-						from,
-						to,
-						amount,
-						destination_status,
-					} => {
-						from.encode_to(dest);
-						to.encode_to(dest);
-						amount.encode_to(dest);
-						destination_status.encode_to(dest);
-					},
-					Self::Deposit { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Withdraw { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Slashed { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					Self::Minted { who, amount } => {
-						who.encode_to(dest);
-						amount.encode_to(dest);
-					},
-					_ => (),
-				}
-			}
-		} */
-		impl Decode for Event {
+		impl HasEventEmittedIndex for Endowed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for Endowed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::Endowed {
-						account: Decode::decode(input)?,
-						free_balance: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::DustLost {
-						account: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					2 => Ok(Self::Transfer {
-						from: Decode::decode(input)?,
-						to: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					3 => Ok(Self::BalanceSet {
-						who: Decode::decode(input)?,
-						free: Decode::decode(input)?,
-					}),
-					4 => Ok(Self::Reserved {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					5 => Ok(Self::Unreserved {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					6 => Ok(Self::ReserveRepatriated {
-						from: Decode::decode(input)?,
-						to: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-						destination_status: Decode::decode(input)?,
-					}),
-					7 => Ok(Self::Deposit {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					8 => Ok(Self::Withdraw {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					9 => Ok(Self::Slashed {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					10 => Ok(Self::Minted {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					11 => Ok(Self::Burned {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					12 => Ok(Self::Suspended {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					13 => Ok(Self::Restored {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					14 => Ok(Self::Upgraded {
-						who: Decode::decode(input)?,
-					}),
-					15 => Ok(Self::Issued {
-						amount: Decode::decode(input)?,
-					}),
-					16 => Ok(Self::Rescinded {
-						amount: Decode::decode(input)?,
-					}),
-					17 => Ok(Self::Locked {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					18 => Ok(Self::Unlocked {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					19 => Ok(Self::Frozen {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					20 => Ok(Self::Thawed {
-						who: Decode::decode(input)?,
-						amount: Decode::decode(input)?,
-					}),
-					21 => Ok(Self::TotalIssuanceForced {
-						old: Decode::decode(input)?,
-						new: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode Balances Event. Unknown variant".into()),
-				}
+				let account = Decode::decode(input)?;
+				let free_balance = Decode::decode(input)?;
+				Ok(Self { account, free_balance })
+			}
+		}
+
+		/// An account was removed whose balance was non-zero but below ExistentialDeposit,
+		/// resulting in an outright loss.
+		#[derive(Debug, Clone)]
+		pub struct DustLost {
+			pub account: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for DustLost {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for DustLost {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let account = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { account, amount })
+			}
+		}
+
+		/// Transfer succeeded.
+		#[derive(Debug, Clone)]
+		pub struct Transfer {
+			pub from: AccountId,
+			pub to: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Transfer {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+		impl Decode for Transfer {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let from = Decode::decode(input)?;
+				let to = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { from, to, amount })
+			}
+		}
+
+		/// Some balance was reserved (moved from free to reserved).
+		#[derive(Debug, Clone)]
+		pub struct Reserved {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Reserved {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+		impl Decode for Reserved {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was unreserved (moved from reserved to free).
+		#[derive(Debug, Clone)]
+		pub struct Unreserved {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Unreserved {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 5);
+		}
+		impl Decode for Unreserved {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some amount was deposited (e.g. for transaction fees).
+		#[derive(Debug, Clone)]
+		pub struct Deposit {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Deposit {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 7);
+		}
+		impl Decode for Deposit {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some amount was withdrawn from the account (e.g. for transaction fees).
+		#[derive(Debug, Clone)]
+		pub struct Withdraw {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Withdraw {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 8);
+		}
+		impl Decode for Withdraw {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some amount was removed from the account (e.g. for misbehavior).
+		#[derive(Debug, Clone)]
+		pub struct Slashed {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Slashed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 9);
+		}
+		impl Decode for Slashed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was locked..
+		#[derive(Debug, Clone)]
+		pub struct Locked {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Locked {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 17);
+		}
+		impl Decode for Locked {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was unlocked.
+		#[derive(Debug, Clone)]
+		pub struct Unlocked {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Unlocked {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 18);
+		}
+		impl Decode for Unlocked {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was frozen.
+		#[derive(Debug, Clone)]
+		pub struct Frozen {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Frozen {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 19);
+		}
+		impl Decode for Frozen {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
+			}
+		}
+
+		/// Some balance was thawed.
+		#[derive(Debug, Clone)]
+		pub struct Thawed {
+			pub who: AccountId,
+			pub amount: u128,
+		}
+		impl HasEventEmittedIndex for Thawed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 20);
+		}
+		impl Decode for Thawed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { who, amount })
 			}
 		}
 	}
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			TransferAllowDeath(TransferAllowDeath) = TransferAllowDeath::DISPATCH_INDEX.1,
-			TransferKeepAlive(TransferKeepAlive) = TransferKeepAlive::DISPATCH_INDEX.1,
-			TransferAll(TransferAll) = TransferAll::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::TransferAllowDeath(x) => x.encode_to(dest),
-					Self::TransferKeepAlive(x) => x.encode_to(dest),
-					Self::TransferAll(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == TransferAllowDeath::DISPATCH_INDEX.1 => {
-						Ok(Self::TransferAllowDeath(Decode::decode(input)?))
-					},
-					val if val == TransferKeepAlive::DISPATCH_INDEX.1 => {
-						Ok(Self::TransferKeepAlive(Decode::decode(input)?))
-					},
-					val if val == TransferAll::DISPATCH_INDEX.1 => Ok(Self::TransferAll(Decode::decode(input)?)),
-					_ => Err("Failed to decode Balances Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct TransferAllowDeath {
@@ -683,102 +453,93 @@ pub mod utility {
 	pub mod events {
 		use super::*;
 
+		/// Batch of dispatches did not complete fully. Index of first failing dispatch given, as
+		/// well as the error.
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			/// Batch of dispatches did not complete fully. Index of first failing dispatch given, as
-			/// well as the error.
-			BatchInterrupted {
-				index: u32,
-				error: super::system::types::DispatchError,
-			} = 0,
-			/// Batch of dispatches completed fully with no error.
-			BatchCompleted = 1,
-			/// Batch of dispatches completed but has errors.
-			BatchCompletedWithErrors = 2,
-			/// A single item within a Batch of dispatches has completed with no error.
-			ItemCompleted = 3,
-			/// A single item within a Batch of dispatches has completed with error.
-			ItemFailed { error: super::system::types::DispatchError } = 4,
-			/// A call was dispatched.
-			DispatchedAs {
-				result: Result<(), super::system::types::DispatchError>,
-			} = 5,
+		pub struct BatchInterrupted {
+			pub index: u32,
+			pub error: super::system::types::DispatchError,
 		}
-		/* 		impl Encode for Event {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::BatchInterrupted { index, error } => {
-						index.encode_to(dest);
-						error.encode_to(dest);
-					},
-					Self::ItemFailed { error } => {
-						error.encode_to(dest);
-					},
-					Self::DispatchedAs { result } => {
-						result.encode_to(dest);
-					},
-					_ => (),
-				}
-			}
-		} */
-		impl Decode for Event {
+		impl HasEventEmittedIndex for BatchInterrupted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for BatchInterrupted {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::BatchInterrupted {
-						index: Decode::decode(input)?,
-						error: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::BatchCompleted),
-					2 => Ok(Self::BatchCompletedWithErrors),
-					3 => Ok(Self::ItemCompleted),
-					4 => Ok(Self::ItemFailed {
-						error: Decode::decode(input)?,
-					}),
-					5 => Ok(Self::DispatchedAs {
-						result: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode System Event. Unknown variant".into()),
-				}
+				let index = Decode::decode(input)?;
+				let error = Decode::decode(input)?;
+				Ok(Self { index, error })
+			}
+		}
+
+		/// Batch of dispatches completed fully with no error.
+		#[derive(Debug, Clone)]
+		pub struct BatchCompleted;
+		impl HasEventEmittedIndex for BatchCompleted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for BatchCompleted {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self)
+			}
+		}
+
+		/// Batch of dispatches completed but has error
+		#[derive(Debug, Clone)]
+		pub struct BatchCompletedWithErrors;
+		impl HasEventEmittedIndex for BatchCompletedWithErrors {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+		impl Decode for BatchCompletedWithErrors {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self)
+			}
+		}
+
+		/// A single item within a Batch of dispatches has completed with no error
+		#[derive(Debug, Clone)]
+		pub struct ItemCompleted;
+		impl HasEventEmittedIndex for ItemCompleted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+		impl Decode for ItemCompleted {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self)
+			}
+		}
+
+		/// A single item within a Batch of dispatches has completed with error.
+		#[derive(Debug, Clone)]
+		pub struct ItemFailed {
+			pub error: super::system::types::DispatchError,
+		}
+		impl HasEventEmittedIndex for ItemFailed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+		impl Decode for ItemFailed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let error = Decode::decode(input)?;
+				Ok(Self { error })
+			}
+		}
+
+		/// A call was dispatched.
+		#[derive(Debug, Clone)]
+		pub struct DispatchedAs {
+			pub result: Result<(), super::system::types::DispatchError>,
+		}
+		impl HasEventEmittedIndex for DispatchedAs {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 5);
+		}
+		impl Decode for DispatchedAs {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let result = Decode::decode(input)?;
+				Ok(Self { result })
 			}
 		}
 	}
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			Batch(Batch) = Batch::DISPATCH_INDEX.1,
-			BatchAll(BatchAll) = BatchAll::DISPATCH_INDEX.1,
-			ForceBatch(ForceBatch) = ForceBatch::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::Batch(x) => x.encode_to(dest),
-					Self::BatchAll(x) => x.encode_to(dest),
-					Self::ForceBatch(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == Batch::DISPATCH_INDEX.1 => Ok(Self::Batch(Decode::decode(input)?)),
-					val if val == BatchAll::DISPATCH_INDEX.1 => Ok(Self::BatchAll(Decode::decode(input)?)),
-					val if val == ForceBatch::DISPATCH_INDEX.1 => Ok(Self::ForceBatch(Decode::decode(input)?)),
-					_ => Err("Failed to decode Utility Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct Batch {
@@ -881,119 +642,122 @@ pub mod proxy {
 	pub mod events {
 		use super::*;
 
+		/// A proxy was executed correctly, with the given.
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			/// A proxy was executed correctly, with the given.
-			ProxyExecuted {
-				result: Result<(), super::system::types::DispatchError>,
-			} = 0,
-			/// A pure account has been created by new proxy with given
-			/// disambiguation index and proxy type.
-			PureCreated {
-				pure: AccountId,
-				who: AccountId,
-				proxy_type: super::types::ProxyType,
-				disambiguation_index: u16,
-			} = 1,
-			/// An announcement was placed to make a call in the future.
-			Announced {
-				real: AccountId,
-				proxy: AccountId,
-				call_hash: H256,
-			} = 2,
-			/// A proxy was added.
-			ProxyAdded {
-				delegator: AccountId,
-				delegatee: AccountId,
-				proxy_type: super::types::ProxyType,
-				delay: u32,
-			} = 3,
-			/// A proxy was removed.
-			ProxyRemoved {
-				delegator: AccountId,
-				delegatee: AccountId,
-				proxy_type: super::types::ProxyType,
-				delay: u32,
-			} = 4,
+		pub struct ProxyExecuted {
+			pub result: Result<(), super::system::types::DispatchError>,
 		}
-		impl Decode for Event {
+		impl HasEventEmittedIndex for ProxyExecuted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for ProxyExecuted {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::ProxyExecuted {
-						result: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::PureCreated {
-						pure: Decode::decode(input)?,
-						who: Decode::decode(input)?,
-						proxy_type: Decode::decode(input)?,
-						disambiguation_index: Decode::decode(input)?,
-					}),
-					2 => Ok(Self::Announced {
-						real: Decode::decode(input)?,
-						proxy: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-					}),
-					3 => Ok(Self::ProxyAdded {
-						delegator: Decode::decode(input)?,
-						delegatee: Decode::decode(input)?,
-						proxy_type: Decode::decode(input)?,
-						delay: Decode::decode(input)?,
-					}),
-					4 => Ok(Self::ProxyRemoved {
-						delegator: Decode::decode(input)?,
-						delegatee: Decode::decode(input)?,
-						proxy_type: Decode::decode(input)?,
-						delay: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode Multisig Event. Unknown variant".into()),
-				}
+				let result = Decode::decode(input)?;
+				Ok(Self { result })
+			}
+		}
+
+		/// A pure account has been created by new proxy with given
+		/// disambiguation index and proxy type.
+		#[derive(Debug, Clone)]
+		pub struct PureCreated {
+			pub pure: AccountId,
+			pub who: AccountId,
+			pub proxy_type: super::types::ProxyType,
+			pub disambiguation_index: u16,
+		}
+		impl HasEventEmittedIndex for PureCreated {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for PureCreated {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pure = Decode::decode(input)?;
+				let who = Decode::decode(input)?;
+				let proxy_type = Decode::decode(input)?;
+				let disambiguation_index = Decode::decode(input)?;
+				Ok(Self {
+					pure,
+					who,
+					proxy_type,
+					disambiguation_index,
+				})
+			}
+		}
+
+		/// An announcement was placed to make a call in the future.
+		#[derive(Debug, Clone)]
+		pub struct Announced {
+			pub real: AccountId,
+			pub proxy: AccountId,
+			pub call_hash: H256,
+		}
+		impl HasEventEmittedIndex for Announced {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+		impl Decode for Announced {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let real = Decode::decode(input)?;
+				let proxy = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				Ok(Self { real, proxy, call_hash })
+			}
+		}
+
+		/// A proxy was added.
+		#[derive(Debug, Clone)]
+		pub struct ProxyAdded {
+			pub delegator: AccountId,
+			pub delegatee: AccountId,
+			pub proxy_type: super::types::ProxyType,
+			pub delay: u32,
+		}
+		impl HasEventEmittedIndex for ProxyAdded {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+		impl Decode for ProxyAdded {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let delegator = Decode::decode(input)?;
+				let delegatee = Decode::decode(input)?;
+				let proxy_type = Decode::decode(input)?;
+				let delay = Decode::decode(input)?;
+				Ok(Self {
+					delegator,
+					delegatee,
+					proxy_type,
+					delay,
+				})
+			}
+		}
+
+		/// A proxy was removed.
+		#[derive(Debug, Clone)]
+		pub struct ProxyRemoved {
+			pub delegator: AccountId,
+			pub delegatee: AccountId,
+			pub proxy_type: super::types::ProxyType,
+			pub delay: u32,
+		}
+		impl HasEventEmittedIndex for ProxyRemoved {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+		impl Decode for ProxyRemoved {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let delegator = Decode::decode(input)?;
+				let delegatee = Decode::decode(input)?;
+				let proxy_type = Decode::decode(input)?;
+				let delay = Decode::decode(input)?;
+				Ok(Self {
+					delegator,
+					delegatee,
+					proxy_type,
+					delay,
+				})
 			}
 		}
 	}
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			Proxy(Proxy) = Proxy::DISPATCH_INDEX.1,
-			AddProxy(AddProxy) = AddProxy::DISPATCH_INDEX.1,
-			RemoveProxy(RemoveProxy) = RemoveProxy::DISPATCH_INDEX.1,
-			RemoveProxies(RemoveProxies) = RemoveProxies::DISPATCH_INDEX.1,
-			CreatePure(CreatePure) = CreatePure::DISPATCH_INDEX.1,
-			KillPure(KillPure) = KillPure::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::Proxy(x) => x.encode_to(dest),
-					Self::AddProxy(x) => x.encode_to(dest),
-					Self::RemoveProxy(x) => x.encode_to(dest),
-					Self::RemoveProxies(x) => x.encode_to(dest),
-					Self::CreatePure(x) => x.encode_to(dest),
-					Self::KillPure(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == Proxy::DISPATCH_INDEX.1 => Ok(Self::Proxy(Decode::decode(input)?)),
-					val if val == AddProxy::DISPATCH_INDEX.1 => Ok(Self::AddProxy(Decode::decode(input)?)),
-					val if val == RemoveProxy::DISPATCH_INDEX.1 => Ok(Self::RemoveProxy(Decode::decode(input)?)),
-					val if val == RemoveProxies::DISPATCH_INDEX.1 => Ok(Self::RemoveProxies(Decode::decode(input)?)),
-					val if val == CreatePure::DISPATCH_INDEX.1 => Ok(Self::CreatePure(Decode::decode(input)?)),
-					val if val == KillPure::DISPATCH_INDEX.1 => Ok(Self::KillPure(Decode::decode(input)?)),
-					_ => Err("Failed to decode Proxy Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct Proxy {
@@ -1191,109 +955,113 @@ pub mod multisig {
 	pub mod events {
 		use super::*;
 
+		/// A new multisig operation has begun.
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			/// A new multisig operation has begun.
-			NewMultisig {
-				approving: AccountId,
-				multisig: AccountId,
-				call_hash: H256,
-			} = 0,
-			/// A multisig operation has been approved by someone.
-			MultisigApproval {
-				approving: AccountId,
-				timepoint: super::types::Timepoint,
-				multisig: AccountId,
-				call_hash: H256,
-			} = 1,
-			/// A multisig operation has been executed.
-			MultisigExecuted {
-				approving: AccountId,
-				timepoint: super::types::Timepoint,
-				multisig: AccountId,
-				call_hash: H256,
-				result: Result<(), super::system::types::DispatchError>,
-			} = 2,
-			/// A multisig operation has been cancelled.
-			MultisigCancelled {
-				cancelling: AccountId,
-				timepoint: super::types::Timepoint,
-				multisig: AccountId,
-				call_hash: H256,
-			} = 3,
+		pub struct NewMultisig {
+			pub approving: AccountId,
+			pub multisig: AccountId,
+			pub call_hash: H256,
 		}
-		impl Decode for Event {
+		impl HasEventEmittedIndex for NewMultisig {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for NewMultisig {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::NewMultisig {
-						approving: Decode::decode(input)?,
-						multisig: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::MultisigApproval {
-						approving: Decode::decode(input)?,
-						timepoint: Decode::decode(input)?,
-						multisig: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-					}),
-					2 => Ok(Self::MultisigExecuted {
-						approving: Decode::decode(input)?,
-						timepoint: Decode::decode(input)?,
-						multisig: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-						result: Decode::decode(input)?,
-					}),
-					3 => Ok(Self::MultisigCancelled {
-						cancelling: Decode::decode(input)?,
-						timepoint: Decode::decode(input)?,
-						multisig: Decode::decode(input)?,
-						call_hash: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode Multisig Event. Unknown variant".into()),
-				}
+				let approving = Decode::decode(input)?;
+				let multisig = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				Ok(Self {
+					approving,
+					multisig,
+					call_hash,
+				})
+			}
+		}
+
+		/// A multisig operation has been approved by someone.
+		#[derive(Debug, Clone)]
+		pub struct MultisigApproval {
+			pub approving: AccountId,
+			pub timepoint: super::types::Timepoint,
+			pub multisig: AccountId,
+			pub call_hash: H256,
+		}
+		impl HasEventEmittedIndex for MultisigApproval {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for MultisigApproval {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let approving = Decode::decode(input)?;
+				let timepoint = Decode::decode(input)?;
+				let multisig = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				Ok(Self {
+					approving,
+					timepoint,
+					multisig,
+					call_hash,
+				})
+			}
+		}
+
+		/// A multisig operation has been executed.
+		#[derive(Debug, Clone)]
+		pub struct MultisigExecuted {
+			pub approving: AccountId,
+			pub timepoint: super::types::Timepoint,
+			pub multisig: AccountId,
+			pub call_hash: H256,
+			pub result: Result<(), super::system::types::DispatchError>,
+		}
+		impl HasEventEmittedIndex for MultisigExecuted {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+		impl Decode for MultisigExecuted {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let approving = Decode::decode(input)?;
+				let timepoint = Decode::decode(input)?;
+				let multisig = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				let result = Decode::decode(input)?;
+				Ok(Self {
+					approving,
+					timepoint,
+					multisig,
+					call_hash,
+					result,
+				})
+			}
+		}
+
+		/// A multisig operation has been cancelled.
+		#[derive(Debug, Clone)]
+		pub struct MultisigCancelled {
+			pub cancelling: AccountId,
+			pub timepoint: super::types::Timepoint,
+			pub multisig: AccountId,
+			pub call_hash: H256,
+		}
+		impl HasEventEmittedIndex for MultisigCancelled {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+		impl Decode for MultisigCancelled {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let cancelling = Decode::decode(input)?;
+				let timepoint = Decode::decode(input)?;
+				let multisig = Decode::decode(input)?;
+				let call_hash = Decode::decode(input)?;
+				Ok(Self {
+					cancelling,
+					timepoint,
+					multisig,
+					call_hash,
+				})
 			}
 		}
 	}
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			AsMultiThreshold1(AsMultiThreshold1) = AsMultiThreshold1::DISPATCH_INDEX.1,
-			AsMulti(AsMulti) = AsMulti::DISPATCH_INDEX.1,
-			ApproveAsMulti(ApproveAsMulti) = ApproveAsMulti::DISPATCH_INDEX.1,
-			CancelAsMulti(CancelAsMulti) = CancelAsMulti::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::AsMultiThreshold1(x) => x.encode_to(dest),
-					Self::AsMulti(x) => x.encode_to(dest),
-					Self::ApproveAsMulti(x) => x.encode_to(dest),
-					Self::CancelAsMulti(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == AsMultiThreshold1::DISPATCH_INDEX.1 => {
-						Ok(Self::AsMultiThreshold1(Decode::decode(input)?))
-					},
-					val if val == AsMulti::DISPATCH_INDEX.1 => Ok(Self::AsMulti(Decode::decode(input)?)),
-					val if val == ApproveAsMulti::DISPATCH_INDEX.1 => Ok(Self::ApproveAsMulti(Decode::decode(input)?)),
-					val if val == CancelAsMulti::DISPATCH_INDEX.1 => Ok(Self::CancelAsMulti(Decode::decode(input)?)),
-					_ => Err("Failed to decode Multisig Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct AsMultiThreshold1 {
@@ -1945,7 +1713,7 @@ pub mod system {
 		use crate::from_substrate::{DispatchClass, Weight};
 
 		use super::*;
-		#[derive(Debug, Clone, DecodeAsType, EncodeAsType)]
+		#[derive(Debug, Clone, Default, DecodeAsType, EncodeAsType)]
 		pub struct AccountInfo {
 			pub nonce: u32,
 			pub consumers: u32,
@@ -2255,23 +2023,17 @@ pub mod system {
 	}
 
 	pub mod storage {
+		use crate::chain_types::system::types::AccountInfo;
+
 		use super::*;
 
-		pub fn account_iter() -> StaticAddress<(), super::system::types::AccountInfo, (), Yes, Yes> {
-			let address = StaticAddress::new_static("System", "Account", (), Default::default());
-			address.unvalidated()
-		}
-
-		pub fn account(
-			account_id: &AccountId,
-		) -> StaticAddress<StaticStorageKey<AccountId>, super::system::types::AccountInfo, Yes, Yes, ()> {
-			let address = StaticAddress::new_static(
-				"System",
-				"Account",
-				StaticStorageKey::new(account_id),
-				Default::default(),
-			);
-			address.unvalidated()
+		pub struct Account;
+		impl StorageMap for Account {
+			const PALLET_NAME: &str = "System";
+			const STORAGE_NAME: &str = "Account";
+			const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+			type KEY = AccountId;
+			type VALUE = AccountInfo;
 		}
 	}
 
@@ -2279,88 +2041,41 @@ pub mod system {
 		use super::*;
 
 		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Event {
-			ExtrinsicSuccess {
-				dispatch_info: super::types::DispatchInfo,
-			} = 0,
-			ExtrinsicFailed {
-				dispatch_error: super::types::DispatchError,
-				dispatch_info: super::types::DispatchInfo,
-			} = 1,
+		pub struct ExtrinsicSuccess {
+			pub dispatch_info: super::types::DispatchInfo,
 		}
-		/* 		impl Encode for Event {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::ExtrinsicSuccess { dispatch_info } => dispatch_info.encode_to(dest),
-					Self::ExtrinsicFailed {
-						dispatch_error,
-						dispatch_info,
-					} => {
-						dispatch_error.encode_to(dest);
-						dispatch_info.encode_to(dest);
-					},
-				}
-			}
-		} */
-		impl Decode for Event {
+		impl HasEventEmittedIndex for ExtrinsicSuccess {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Decode for ExtrinsicSuccess {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					0 => Ok(Self::ExtrinsicSuccess {
-						dispatch_info: Decode::decode(input)?,
-					}),
-					1 => Ok(Self::ExtrinsicFailed {
-						dispatch_error: Decode::decode(input)?,
-						dispatch_info: Decode::decode(input)?,
-					}),
-					_ => Err("Failed to decode System Event. Unknown variant".into()),
-				}
+				let dispatch_info = Decode::decode(input)?;
+				Ok(Self { dispatch_info })
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ExtrinsicFailed {
+			pub dispatch_error: super::types::DispatchError,
+			pub dispatch_info: super::types::DispatchInfo,
+		}
+		impl HasEventEmittedIndex for ExtrinsicFailed {
+			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Decode for ExtrinsicFailed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let dispatch_error = Decode::decode(input)?;
+				let dispatch_info = Decode::decode(input)?;
+				Ok(Self {
+					dispatch_error,
+					dispatch_info,
+				})
 			}
 		}
 	}
 
 	pub mod tx {
 		use super::*;
-
-		#[derive(Debug, Clone)]
-		#[repr(u8)]
-		pub enum Call {
-			Remark(Remark) = Remark::DISPATCH_INDEX.1,
-			SetCode(SetCode) = SetCode::DISPATCH_INDEX.1,
-			SetCodeWithoutChecks(SetCodeWithoutChecks) = SetCodeWithoutChecks::DISPATCH_INDEX.1,
-			RemarkWithEvent(RemarkWithEvent) = RemarkWithEvent::DISPATCH_INDEX.1,
-		}
-		impl Encode for Call {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				let variant: u8 = unsafe { *<*const _>::from(self).cast::<u8>() };
-				variant.encode_to(dest);
-				match self {
-					Self::Remark(x) => x.encode_to(dest),
-					Self::SetCode(x) => x.encode_to(dest),
-					Self::SetCodeWithoutChecks(x) => x.encode_to(dest),
-					Self::RemarkWithEvent(x) => x.encode_to(dest),
-				}
-			}
-		}
-		impl Decode for Call {
-			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let variant = u8::decode(input)?;
-				match variant {
-					val if val == Remark::DISPATCH_INDEX.1 => Ok(Self::Remark(Decode::decode(input)?)),
-					val if val == SetCode::DISPATCH_INDEX.1 => Ok(Self::SetCode(Decode::decode(input)?)),
-					val if val == SetCodeWithoutChecks::DISPATCH_INDEX.1 => {
-						Ok(Self::SetCodeWithoutChecks(Decode::decode(input)?))
-					},
-					val if val == RemarkWithEvent::DISPATCH_INDEX.1 => {
-						Ok(Self::RemarkWithEvent(Decode::decode(input)?))
-					},
-					_ => Err("Failed to decode System Call. Unknown variant".into()),
-				}
-			}
-		}
 
 		#[derive(Debug, Clone)]
 		pub struct Remark {

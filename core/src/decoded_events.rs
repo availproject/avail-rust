@@ -1,4 +1,3 @@
-use crate::chain_types::RuntimeEvent;
 use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
@@ -8,22 +7,49 @@ pub trait HasEventEmittedIndex {
 }
 
 pub trait TransactionEventLike {
-	fn from_raw(raw: &[u8]) -> Option<Box<Self>>;
+	fn decode_event(event: &[u8]) -> Option<Box<Self>>;
+	fn decode_event_data(event_data: &[u8]) -> Option<Box<Self>>;
 }
 
-impl<T: HasEventEmittedIndex + Encode + Decode> TransactionEventLike for T {
-	fn from_raw(raw: &[u8]) -> Option<Box<T>> {
-		if raw.len() < 2 {
+impl<T: HasEventEmittedIndex + Decode> TransactionEventLike for T {
+	fn decode_event(event: &[u8]) -> Option<Box<T>> {
+		// This was moved out in order to decrease compilation times
+		if !event_filter_in(event, Self::EMITTED_INDEX) {
 			return None;
 		}
 
-		let (pallet_id, variant_id) = (raw[0], raw[1]);
-		if Self::EMITTED_INDEX.0 != pallet_id || Self::EMITTED_INDEX.1 != variant_id {
-			return None;
+		if event.len() <= 2 {
+			try_decode_event_data(&[])
+		} else {
+			try_decode_event_data(&event[2..])
 		}
-
-		Self::decode(&mut &raw[2..]).ok().map(Box::new)
 	}
+
+	fn decode_event_data(event_data: &[u8]) -> Option<Box<T>> {
+		// This was moved out in order to decrease compilation times
+		try_decode_event_data(event_data)
+	}
+}
+
+// Purely here to decrease compilation times
+#[inline(never)]
+fn try_decode_event_data<T: Decode>(mut event_data: &[u8]) -> Option<Box<T>> {
+	T::decode(&mut event_data).ok().map(Box::new)
+}
+
+// Purely here to decrease compilation times
+#[inline(never)]
+fn event_filter_in(event: &[u8], emitted_index: (u8, u8)) -> bool {
+	if event.len() < 2 {
+		return false;
+	}
+
+	let (pallet_id, variant_id) = (event[0], event[1]);
+	if emitted_index.0 != pallet_id || emitted_index.1 != variant_id {
+		return false;
+	}
+
+	true
 }
 
 /// Contains only the event body. Phase and topics are not included here.
@@ -40,7 +66,7 @@ impl OpaqueEvent {
 	}
 
 	pub fn event_data(&self) -> &[u8] {
-		&self.0[2..]
+		if self.0.len() <= 2 { &[] } else { &self.0[2..] }
 	}
 }
 
@@ -89,27 +115,11 @@ impl TryFrom<&[u8]> for OpaqueEvent {
 	type Error = String;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		if value.len() < 3 {
-			return Err("Event must have more than two bytes".into());
+		if value.len() < 2 {
+			return Err("Event must have more than one byte".into());
 		}
 
 		Ok(OpaqueEvent(value.to_owned()))
-	}
-}
-
-impl TryFrom<OpaqueEvent> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: OpaqueEvent) -> Result<Self, Self::Error> {
-		Self::try_from(&value)
-	}
-}
-
-impl TryFrom<&OpaqueEvent> for RuntimeEvent {
-	type Error = codec::Error;
-
-	fn try_from(value: &OpaqueEvent) -> Result<Self, Self::Error> {
-		RuntimeEvent::try_from(value.0.as_slice())
 	}
 }
 
