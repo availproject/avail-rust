@@ -11,8 +11,8 @@ pub use super::AvailHeader;
 pub use chain::{Block, BlockJustification, BlockWithJustifications};
 use subxt_rpcs::{RpcClient, client::RpcParams};
 pub use system::{
-	fetch_events_v1_types::FetchEventsV1Options, fetch_extrinsics_v1_types::EncodeSelector,
-	fetch_extrinsics_v1_types::FetchExtrinsicsV1Options,
+	fetch_events_v1_types::FetchEventsV1Options,
+	fetch_extrinsics_v1_types::{EncodeSelector, FetchExtrinsicsV1Options},
 };
 
 pub async fn call_raw<T: serde::de::DeserializeOwned>(
