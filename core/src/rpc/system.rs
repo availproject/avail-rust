@@ -223,7 +223,7 @@ pub mod fetch_extrinsics_v1_types {
 		}
 	}
 
-	#[derive(Clone, Serialize, Deserialize)]
+	#[derive(Clone, Copy, Serialize, Deserialize)]
 	#[repr(u8)]
 	pub enum EncodeSelector {
 		None = 0,

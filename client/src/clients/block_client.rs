@@ -51,21 +51,7 @@ impl BlockClient {
 			.await
 	}
 
-	pub async fn rpc_block(&self, at: H256) -> Result<Option<rpc::Block>, avail_rust_core::Error> {
-		self.client.block(at).await.map(|b| b.map(|x| x.block))
-	}
-
-	pub async fn rpc_block_with_justifications(
-		&self,
-		at: H256,
-	) -> Result<Option<rpc::BlockWithJustifications>, avail_rust_core::Error> {
+	pub async fn rpc_block(&self, at: H256) -> Result<Option<rpc::BlockWithJustifications>, avail_rust_core::Error> {
 		self.client.block(at).await
-	}
-
-	pub async fn rpc_block_justifications(
-		&self,
-		at: H256,
-	) -> Result<Option<Vec<rpc::BlockJustification>>, avail_rust_core::Error> {
-		self.client.block(at).await.map(|b| b.and_then(|x| x.justifications))
 	}
 }

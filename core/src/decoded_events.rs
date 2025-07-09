@@ -66,7 +66,7 @@ impl OpaqueEvent {
 	}
 
 	pub fn event_data(&self) -> &[u8] {
-		&self.0[2..]
+		if self.0.len() <= 2 { &[] } else { &self.0[2..] }
 	}
 }
 
@@ -115,8 +115,8 @@ impl TryFrom<&[u8]> for OpaqueEvent {
 	type Error = String;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		if value.len() < 3 {
-			return Err("Event must have more than two bytes".into());
+		if value.len() < 2 {
+			return Err("Event must have more than one byte".into());
 		}
 
 		Ok(OpaqueEvent(value.to_owned()))

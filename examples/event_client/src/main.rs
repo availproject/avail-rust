@@ -4,10 +4,13 @@
 //! - Fetching and Decoding events from historical blocks
 //!
 
+use avail::{
+	data_availability::events::DataSubmitted as DataSubmittedEvent,
+	system::events::ExtrinsicSuccess as ExtrinsicSuccessEvent,
+};
 use avail_rust_client::{
 	avail_rust_core::{
 		FetchEventsV1Options,
-		avail::RuntimeEvent,
 		rpc::system::fetch_events_v1_types::{Filter, GroupedRuntimeEvents},
 	},
 	prelude::*,
@@ -57,29 +60,27 @@ fn print_event_details(event_group: &GroupedRuntimeEvents) -> Result<(), ClientE
 	println!("Phase: {:?}", event_group.phase);
 	for event in &event_group.events {
 		println!(
-			"Event pallet id: {}, Event event id: {}",
-			event.emitted_index.0, event.emitted_index.1
+			"Event Index: {}, Pallet Id: {}, Variant id: {}",
+			event.index, event.emitted_index.0, event.emitted_index.1
 		);
 		let Some(encoded) = &event.encoded else {
 			return Err("Event was supposed to be encoded".into());
 		};
-		println!("Event (hex and string) encoded value: {}", encoded);
+		println!("Event (hex and string) encoded value: 0x{}", encoded);
 
 		if let Some(decoded) = &event.decoded {
-			println!("Event (hex and string) decoded value: {}", decoded);
+			println!("Event (hex and string) decoded value: 0x{}", decoded);
 		} else {
 			println!("The event was not decoded");
 		}
 
-		// Decoding the event
-		let Ok(encoded) = hex::decode(encoded.trim_start_matches("0x")) else {
-			return Err("Failed to decode encoded event".into());
-		};
-		let Ok(runtime_event) = RuntimeEvent::try_from(&encoded) else {
-			println!("Could note decode the runtime event");
-			continue;
-		};
-		dbg!(runtime_event);
+		let event = hex::decode(encoded)?;
+		if let Some(e) = ExtrinsicSuccessEvent::decode_event(&event) {
+			println!("Weight: {:?}", e.dispatch_info.weight)
+		}
+		if let Some(e) = DataSubmittedEvent::decode_event(&event) {
+			println!("Who: {}, Data Hash: {:?}", e.who, e.data_hash)
+		}
 	}
 
 	Ok(())
@@ -94,11 +95,20 @@ async fn historical_block_events(client: &Client, at: H256, tx_index: u32) -> Re
 			Phase::ApplyExtrinsic(x) if *x == tx_index => (),
 			_ => continue,
 		}
-		let Ok(runtime_event) = RuntimeEvent::try_from(&event) else {
-			println!("Could note decode the runtime event");
-			continue;
-		};
-		dbg!(runtime_event);
+
+		println!(
+			"Pallet id: {}, Variant id: {}, Event Data: {:?}",
+			event.pallet_index(),
+			event.variant_index(),
+			event.event_data(),
+		);
+
+		if let Some(e) = ExtrinsicSuccessEvent::decode_event(event.event_bytes()) {
+			println!("Weight: {:?}", e.dispatch_info.weight)
+		}
+		if let Some(e) = DataSubmittedEvent::decode_event(event.event_bytes()) {
+			println!("Who: {}, Data Hash: {:?}", e.who, e.data_hash)
+		}
 	}
 
 	Ok(())

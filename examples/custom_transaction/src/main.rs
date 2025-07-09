@@ -3,7 +3,7 @@
 //! - Decoding custom transaction
 //!
 
-use avail_rust_client::{avail_rust_core::rpc::system::fetch_extrinsics_v1_types::EncodeSelector, prelude::*};
+use avail_rust_client::prelude::*;
 
 #[derive(codec::Decode, codec::Encode, PartialEq, Eq)]
 pub struct CustomTransaction {
@@ -23,13 +23,13 @@ async fn main() -> Result<(), ClientError> {
 	let receipt = submitted.receipt(true).await?.expect("Must be there");
 
 	let block_tx_1 = block_transaction_from_system_rpc(&client, receipt.clone()).await?;
-	let custom_tx_decoded = CustomTransaction::from_ext(&block_tx_1).expect("Must be fromable");
+	let custom_tx_decoded = CustomTransaction::decode_call(&block_tx_1).expect("Must be fromable");
 	if custom_tx_decoded.as_ref().ne(&custom_tx) {
 		return Err("Created and decoded transaction are not the same".into());
 	}
 
 	let block_tx_2 = block_transaction_from_block_rpc(&client, receipt.clone()).await?;
-	let custom_tx_decoded = CustomTransaction::from_ext(&block_tx_2).expect("Must be fromable");
+	let custom_tx_decoded = CustomTransaction::decode_call(&block_tx_2).expect("Must be fromable");
 	if custom_tx_decoded.as_ref().ne(&custom_tx) {
 		return Err("Created and decoded transaction are not the same".into());
 	}
@@ -58,6 +58,7 @@ async fn block_transaction_from_system_rpc(
 	let encoded_call = hex::decode(encoded_call.trim_start_matches("0x")).expect("Must work");
 	Ok(encoded_call)
 }
+
 async fn block_transaction_from_block_rpc(
 	client: &Client,
 	receipt: TransactionReceipt,
@@ -68,6 +69,7 @@ async fn block_transaction_from_block_rpc(
 		.await?
 		.expect("Must be there");
 	let encoded_ext = block
+		.block
 		.extrinsics
 		.get(receipt.tx_loc.index as usize)
 		.expect("Must be there");

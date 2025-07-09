@@ -1,4 +1,4 @@
-use avail::utility::events::Event as UtilityEvent;
+use avail::utility::events as UtilityEvents;
 use avail_rust_client::prelude::*;
 
 #[tokio::main]
@@ -31,18 +31,23 @@ async fn main() -> Result<(), ClientError> {
 			event.emitted_index.0, event.emitted_index.1,
 		);
 		let encoded_event = hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
-		let Ok(event) = RuntimeEvent::try_from(&encoded_event) else {
-			continue;
-		};
-
-		let RuntimeEvent::Utility(ut) = event else { continue };
-		match ut {
-			UtilityEvent::BatchInterrupted { index: _, error: _ } => println!("Found Utility::BatchInterrupted"),
-			UtilityEvent::BatchCompleted => println!("Found Utility::BatchCompleted"),
-			UtilityEvent::BatchCompletedWithErrors => println!("Found Utility::BatchCompletedWithErrors"),
-			UtilityEvent::ItemCompleted => println!("Found Utility::ItemCompleted"),
-			UtilityEvent::ItemFailed { error: _ } => println!("Found Utility::ItemFailed"),
-			UtilityEvent::DispatchedAs { result: _ } => println!("Found Utility::DispatchedAs"),
+		if let Some(_e) = UtilityEvents::BatchInterrupted::decode_event(&encoded_event) {
+			println!("Found Utility::BatchInterrupted");
+		}
+		if let Some(_e) = UtilityEvents::BatchCompleted::decode_event(&encoded_event) {
+			println!("Found Utility::BatchCompleted");
+		}
+		if let Some(_e) = UtilityEvents::BatchCompletedWithErrors::decode_event(&encoded_event) {
+			println!("Found Utility::BatchCompletedWithErrors");
+		}
+		if let Some(_e) = UtilityEvents::ItemCompleted::decode_event(&encoded_event) {
+			println!("Found Utility::ItemCompleted");
+		}
+		if let Some(_e) = UtilityEvents::ItemFailed::decode_event(&encoded_event) {
+			println!("Found Utility::ItemFailed");
+		}
+		if let Some(_e) = UtilityEvents::DispatchedAs::decode_event(&encoded_event) {
+			println!("Found Utility::DispatchedAs");
 		}
 	}
 

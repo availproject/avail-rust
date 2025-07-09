@@ -24,6 +24,10 @@ impl Event {
 		self.bytes.variant_index()
 	}
 
+	pub fn event_bytes(&self) -> &[u8] {
+		&self.bytes.0
+	}
+
 	pub fn event_data(&self) -> &[u8] {
 		&self.bytes.event_data()
 	}
