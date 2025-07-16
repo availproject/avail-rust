@@ -15,67 +15,37 @@ impl HasTxDispatchIndex for CustomTransaction {
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	Client::enable_tracing(false);
+	// Decoding...
+
+	// Decoding Hex Transaction Call to our Custom Transaction
+	// For decoding from bytes call `decode_call`
+	let ct = CustomTransaction::decode_hex_call("0x1d010c616263").expect("Should work");
+	assert_eq!(ct.data, vec![b'a', b'b', b'c']);
+
+	// Decoding whole Hex Transaction to our Custom Transaction
+	// For decoding from bytes call `decode_transaction`
+	let tx = "0xb90184007e170b74231de8a3b8bbe55e4cda756e1e4eab0807d5637eca2d81d61ac02b15015e7a61c64e171023b165ba4fde6e41bb017a9dab2b357f1fd192c1d2c1f99956cb44df23ff4084b065f31b3b7634e02a081c7f86ca2cbe180b734acd2da3488cd4013c000c1d010c616263";
+	let ct = CustomTransaction::decode_hex_transaction(tx).expect("Should work");
+	assert_eq!(ct.data, vec![b'a', b'b', b'c']);
+
+	// Decoding whole Hex Transaction to Opaque Transaction and then to Custom Transaction
+	// `try_from` accepts &[u8] as well
+	let opaq = OpaqueTransaction::try_from(tx).expect("Should work");
+	let sig = opaq.signature.as_ref().expect("qed");
+	assert_eq!(sig.tx_extra.app_id, 3);
+	let ct = CustomTransaction::decode_call(&opaq.call).expect("Should work");
+	assert_eq!(ct.data, vec![b'a', b'b', b'c']);
+
+	// Encoding....
+
+	// Just one single line, that's it :)
 	let client = Client::new(LOCAL_ENDPOINT).await?;
-	let custom_tx = CustomTransaction { data: vec![0, 1, 2, 3] };
-	let submittable = custom_tx.to_submittable(client.clone());
+	let submittable = CustomTransaction { data: vec![0, 1, 2] }.to_submittable(client.clone());
+
+	// Submitting
 	let submitted = submittable.sign_and_submit(&alice(), Options::new(Some(2))).await?;
 	let receipt = submitted.receipt(true).await?.expect("Must be there");
-
-	let block_tx_1 = block_transaction_from_system_rpc(&client, receipt.clone()).await?;
-	let custom_tx_decoded = CustomTransaction::decode_call(&block_tx_1).expect("Must be fromable");
-	if custom_tx_decoded.as_ref().ne(&custom_tx) {
-		return Err("Created and decoded transaction are not the same".into());
-	}
-
-	let block_tx_2 = block_transaction_from_block_rpc(&client, receipt.clone()).await?;
-	let custom_tx_decoded = CustomTransaction::decode_call(&block_tx_2).expect("Must be fromable");
-	if custom_tx_decoded.as_ref().ne(&custom_tx) {
-		return Err("Created and decoded transaction are not the same".into());
-	}
-
-	println!("Both created and decoded transaction is the same");
+	println!("Block Hash: {:?}", receipt.block_loc.hash);
 
 	Ok(())
-}
-
-async fn block_transaction_from_system_rpc(
-	client: &Client,
-	receipt: TransactionReceipt,
-) -> Result<Vec<u8>, ClientError> {
-	let block_client = client.block_client();
-	let block_tx = block_client
-		.block_transaction(
-			receipt.block_loc.into(),
-			receipt.tx_loc.into(),
-			None,
-			Some(EncodeSelector::Call),
-		)
-		.await?;
-	let block_tx = block_tx.expect("Must be there");
-
-	let encoded_call = block_tx.encoded.expect("Must be there");
-	let encoded_call = hex::decode(encoded_call.trim_start_matches("0x")).expect("Must work");
-	Ok(encoded_call)
-}
-
-async fn block_transaction_from_block_rpc(
-	client: &Client,
-	receipt: TransactionReceipt,
-) -> Result<Vec<u8>, ClientError> {
-	let block_client = client.block_client();
-	let block = block_client
-		.rpc_block(receipt.block_loc.into())
-		.await?
-		.expect("Must be there");
-	let encoded_ext = block
-		.block
-		.extrinsics
-		.get(receipt.tx_loc.index as usize)
-		.expect("Must be there");
-	let Ok(OpaqueTransaction { signature: _, call }) = OpaqueTransaction::try_from(encoded_ext) else {
-		return Err("Failed to covert extrinsic to opaque".into());
-	};
-
-	Ok(call)
 }

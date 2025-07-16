@@ -69,8 +69,7 @@ async fn main() -> Result<(), ClientError> {
 		)
 		.await?
 		.expect("Must be there");
-	let tx_call = hex::decode(block_tx.encoded.expect("Must be there"))?;
-	let call = SubmitData::decode_call(&tx_call).expect("Must be decodable");
+	let call = SubmitData::decode_hex_call(&block_tx.encoded.expect("Must be there")).expect("Must be decodable");
 	println!("Call Data: {:?}", call.data);
 
 	Ok(())

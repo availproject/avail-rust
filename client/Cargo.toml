@@ -31,7 +31,7 @@ wasm-bindgen-futures = { workspace = true, optional = true  }
 wasmtimer = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 
-avail-rust-core = { path = "./../core", version = "0.2.6", default-features = false }
+avail-rust-core = { path = "./../core", version = "0.2.7", default-features = false }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["sync", "time", "rt", "macros"] }
