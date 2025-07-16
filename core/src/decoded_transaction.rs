@@ -8,36 +8,45 @@ pub trait HasTxDispatchIndex {
 	const DISPATCH_INDEX: (u8, u8);
 }
 
-pub trait TransactionCallLike {
+pub trait TransactionConvertible {
 	fn to_call(&self) -> TransactionCall;
+}
+
+pub trait TransactionDecodable {
 	/// Decodes the SCALE encoded Transaction Call
 	///
 	/// If you need to decode hex string call `decode_hex_call`
 	fn decode_call(call: &[u8]) -> Option<Box<Self>>;
+
 	/// Decodes the Hex and SCALE encoded Transaction Call
 	/// This is equal to Hex::decode + Self::decode_call
 	///
 	/// If you need to decode bytes call `decode_call`
 	fn decode_hex_call(call: &str) -> Option<Box<Self>>;
+
 	/// Decodes only the SCALE encoded Transaction Call Data
 	fn decode_call_data(call_data: &[u8]) -> Option<Box<Self>>;
+
 	/// Decodes the whole Hex and SCALE encoded Transaction.
 	/// This is equal to Hex::decode + OpaqueTransaction::try_from + Self::decode_call
 	///
 	/// If you need to decode bytes call `decode_transaction`
 	fn decode_hex_transaction(transaction: &str) -> Option<Box<Self>>;
+
 	/// Decodes the whole SCALE encoded Transaction.
 	/// This is equal to OpaqueTransaction::try_from + Self::decode_call
 	///
-	/// If you need to decode hex string call `decode_hex_transaction`
+	/// If you need to decode Hex string call `decode_hex_transaction`
 	fn decode_transaction(transaction: &[u8]) -> Option<Box<Self>>;
 }
 
-impl<T: HasTxDispatchIndex + Encode + Decode> TransactionCallLike for T {
+impl<T: HasTxDispatchIndex + Encode> TransactionConvertible for T {
 	fn to_call(&self) -> TransactionCall {
 		TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
 	}
+}
 
+impl<T: HasTxDispatchIndex + Decode> TransactionDecodable for T {
 	#[inline(always)]
 	fn decode_hex_transaction(transaction: &str) -> Option<Box<T>> {
 		let opaque = OpaqueTransaction::try_from(transaction).ok()?;
@@ -238,7 +247,7 @@ impl<'a> Deserialize<'a> for OpaqueTransaction {
 
 #[cfg(test)]
 pub mod test {
-	use super::TransactionCallLike;
+	use super::TransactionConvertible;
 	use std::borrow::Cow;
 
 	use codec::Encode;

@@ -6,12 +6,49 @@ pub trait HasEventEmittedIndex {
 	const EMITTED_INDEX: (u8, u8);
 }
 
-pub trait TransactionEventLike {
+pub trait TransactionEventEncodable {
+	/// SCALE encodes the event
+	///
+	/// If you need to Hex and SCALE encode then call `encode_as_hex_event`
+	fn encode_as_event(&self) -> Vec<u8>;
+
+	/// Hex and SCALE encodes the event
+	///
+	/// If you need to just SCALE encode then call `encode_as_event`
+	fn encode_as_hex_event(&self) -> String;
+}
+
+pub trait TransactionEventDecodable {
+	/// Decodes the SCALE encoded Event
+	///
+	/// If you need to decode Hex string call `decode_hex_event`
 	fn decode_event(event: &[u8]) -> Option<Box<Self>>;
+
+	/// Decodes the Hex and SCALE encoded Transaction Call
+	/// This is equal to Hex::decode + Self::decode_event
+	///
+	/// If you need to decode bytes call `decode_event`
+	fn decode_hex_event(event: &str) -> Option<Box<Self>>;
+
+	/// Decodes the SCALE encoded Event Data
 	fn decode_event_data(event_data: &[u8]) -> Option<Box<Self>>;
 }
 
-impl<T: HasEventEmittedIndex + Decode> TransactionEventLike for T {
+impl<T: HasEventEmittedIndex + Encode> TransactionEventEncodable for T {
+	fn encode_as_event(&self) -> Vec<u8> {
+		let pallet_id = Self::EMITTED_INDEX.0;
+		let variant_id = Self::EMITTED_INDEX.1;
+		let mut encoded_event: Vec<u8> = vec![pallet_id, variant_id];
+		Self::encode_to(&self, &mut encoded_event);
+
+		encoded_event
+	}
+	fn encode_as_hex_event(&self) -> String {
+		std::format!("0x{}", hex::encode(Self::encode_as_event(&self)))
+	}
+}
+
+impl<T: HasEventEmittedIndex + Decode> TransactionEventDecodable for T {
 	fn decode_event(event: &[u8]) -> Option<Box<T>> {
 		// This was moved out in order to decrease compilation times
 		if !event_filter_in(event, Self::EMITTED_INDEX) {
@@ -23,6 +60,12 @@ impl<T: HasEventEmittedIndex + Decode> TransactionEventLike for T {
 		} else {
 			try_decode_event_data(&event[2..])
 		}
+	}
+
+	#[inline(always)]
+	fn decode_hex_event(event: &str) -> Option<Box<T>> {
+		let hex_decoded = hex::decode(event.trim_start_matches("0x")).ok()?;
+		Self::decode_event(&hex_decoded)
 	}
 
 	fn decode_event_data(event_data: &[u8]) -> Option<Box<T>> {

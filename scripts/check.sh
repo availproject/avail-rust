@@ -19,3 +19,4 @@ cd ./custom_storage && cargo check  && cd ./../.
 cd ./constants && cargo check  && cd ./../.
 cd ./estimating_fees && cargo check  && cd ./../.
 cd ./storage && cargo check  && cd ./../.
+cd ./decoding_encoding && cargo check  && cd ./../.

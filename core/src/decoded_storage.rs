@@ -82,10 +82,27 @@ pub trait StorageValue {
 		std::format!("0x{}", hex::encode(&Self::encode_storage_key()))
 	}
 
+	/// Decodes the Hex and SCALE encoded Storage Value
+	/// This is equal to Hex::decode + Self::decode
+	///
+	/// If you need to decode bytes call `decode`
+	fn hex_decode(value: &str) -> Result<Self::VALUE, codec::Error> {
+		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+			return Err("Failed to hex decode storage".into());
+		};
+		Self::decode(&mut hex_decoded.as_slice())
+	}
+
+	/// Decodes the SCALE encoded Storage Value
+	///
+	/// If you need to decode Hex string call `hex_decode`
 	fn decode(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
 		Self::VALUE::decode(value)
 	}
 
+	/// Fetches and decodes a Storage Value
+	///
+	/// Returns None if no Storage Value is present
 	fn fetch(
 		client: &RpcClient,
 		at: Option<H256>,
@@ -139,17 +156,54 @@ pub trait StorageMap {
 		std::format!("0x{}", hex::encode(&Self::encode_storage_key(key)))
 	}
 
+	/// Decodes the Hex and SCALE encoded Storage Key
+	/// This is equal to Hex::decode + Self::decode_storage_key
+	///
+	/// If you need to decode bytes call `decode_storage_key`
+	#[inline(always)]
+	fn decode_hex_storage_key(value: &str) -> Result<Self::KEY, codec::Error> {
+		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+			return Err("Failed to hex decode storage key".into());
+		};
+		Self::decode_storage_key(&mut hex_decoded.as_slice())
+	}
+
+	/// Decodes the SCALE encoded Storage Key
+	///
+	/// If you need to decode Hex string call `decode_hex_storage_key`
 	fn decode_storage_key(value: &mut &[u8]) -> Result<Self::KEY, codec::Error> {
+		if value.len() < 32 {
+			return Err("Storage Key is malformed. Has less than 32 bytes".into());
+		}
+
 		// Skip pallet/variant
 		*value = &value[32..];
 
 		Self::KEY_HASHER.from_hash::<Self::KEY>(value)
 	}
 
+	/// Decodes the Hex and SCALE encoded Storage Value
+	/// This is equal to Hex::decode + Self::decode_storage_value
+	///
+	/// If you need to decode bytes call `decode_storage_value`
+	#[inline(always)]
+	fn decode_hex_storage_value(value: &str) -> Result<Self::VALUE, codec::Error> {
+		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+			return Err("Failed to hex decode storage value".into());
+		};
+		Self::decode_storage_value(&mut hex_decoded.as_slice())
+	}
+
+	/// Decodes the SCALE encoded Storage Value
+	///
+	/// If you need to decode Hex string call `decode_hex_storage_value`
 	fn decode_storage_value(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
 		Self::VALUE::decode(value)
 	}
 
+	/// Fetches and decodes a Storage Value
+	///
+	/// Returns None if no Storage Value is present
 	fn fetch(
 		client: &RpcClient,
 		key: &Self::KEY,
@@ -212,13 +266,35 @@ pub trait StorageDoubleMap {
 	}
 
 	fn decode_partial_key(value: &mut &[u8]) -> Result<Self::KEY1, codec::Error> {
+		if value.len() < 32 {
+			return Err("Storage Key is malformed. Has less than 32 bytes".into());
+		}
+
 		// Skip pallet/variant
 		*value = &value[32..];
 
 		Self::KEY1_HASHER.from_hash::<Self::KEY1>(value)
 	}
 
+	/// Decodes the Hex and SCALE encoded Storage Key
+	/// This is equal to Hex::decode + Self::decode_storage_key
+	///
+	/// If you need to decode bytes call `decode_storage_key`
+	fn decode_hex_storage_key(value: &str) -> Result<(Self::KEY1, Self::KEY2), codec::Error> {
+		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+			return Err("Failed to hex decode storage key".into());
+		};
+		Self::decode_storage_key(&mut hex_decoded.as_slice())
+	}
+
+	/// Decodes the SCALE encoded Storage Key
+	///
+	/// If you need to decode Hex string call `decode_hex_storage_key`
 	fn decode_storage_key(value: &mut &[u8]) -> Result<(Self::KEY1, Self::KEY2), codec::Error> {
+		if value.len() < 32 {
+			return Err("Storage Key is malformed. Has less than 32 bytes".into());
+		}
+
 		// Skip pallet/variant
 		*value = &value[32..];
 
@@ -227,10 +303,27 @@ pub trait StorageDoubleMap {
 		Ok((key1, key2))
 	}
 
+	/// Decodes the Hex and SCALE encoded Storage Value
+	/// This is equal to Hex::decode + Self::decode_storage_value
+	///
+	/// If you need to decode bytes call `decode_storage_value`
+	fn decode_hex_storage_value(value: &str) -> Result<Self::VALUE, codec::Error> {
+		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+			return Err("Failed to hex decode storage value".into());
+		};
+		Self::decode_storage_value(&mut hex_decoded.as_slice())
+	}
+
+	/// Decodes the SCALE encoded Storage Value
+	///
+	/// If you need to decode Hex string call `decode_hex_storage_value`
 	fn decode_storage_value(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
 		Self::VALUE::decode(value)
 	}
 
+	/// Fetches and decodes a Storage Value
+	///
+	/// Returns None if no Storage Value is present
 	fn fetch(
 		client: &RpcClient,
 		key_1: &Self::KEY1,
