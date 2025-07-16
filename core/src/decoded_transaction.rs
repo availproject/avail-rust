@@ -10,13 +10,42 @@ pub trait HasTxDispatchIndex {
 
 pub trait TransactionCallLike {
 	fn to_call(&self) -> TransactionCall;
+	/// Decodes the SCALE encoded Transaction Call
 	fn decode_call(call: &[u8]) -> Option<Box<Self>>;
+	/// Decodes the Hex and SCALE encoded Transaction Call
+	/// This is equal to Hex::decode + Self::decode_call
+	fn decode_hex_call(call: &str) -> Option<Box<Self>>;
+	/// Decodes only the SCALE encoded Transaction Call Data
 	fn decode_call_data(call_data: &[u8]) -> Option<Box<Self>>;
+	/// Decodes the whole Hex and SCALE encoded Transaction.
+	/// This is equal to Hex::decode + OpaqueTransaction::try_from + Self::decode_call
+	fn decode_hex_transaction(transaction: &str) -> Option<Box<Self>>;
+	/// Decodes the whole SCALE encoded Transaction.
+	/// This is equal to OpaqueTransaction::try_from + Self::decode_call
+	fn decode_transaction(transaction: &[u8]) -> Option<Box<Self>>;
 }
 
 impl<T: HasTxDispatchIndex + Encode + Decode> TransactionCallLike for T {
 	fn to_call(&self) -> TransactionCall {
 		TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
+	}
+
+	#[inline(always)]
+	fn decode_hex_transaction(transaction: &str) -> Option<Box<T>> {
+		let opaque = OpaqueTransaction::try_from(transaction).ok()?;
+		Self::decode_call(&opaque.call)
+	}
+
+	#[inline(always)]
+	fn decode_transaction(transaction_bytes: &[u8]) -> Option<Box<T>> {
+		let opaque = OpaqueTransaction::try_from(transaction_bytes).ok()?;
+		Self::decode_call(&opaque.call)
+	}
+
+	#[inline(always)]
+	fn decode_hex_call(call: &str) -> Option<Box<T>> {
+		let hex_decoded = hex::decode(call).ok()?;
+		Self::decode_call(&hex_decoded)
 	}
 
 	fn decode_call(call: &[u8]) -> Option<Box<T>> {
@@ -101,6 +130,26 @@ impl TryFrom<&[u8]> for OpaqueTransaction {
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let mut value = value;
 		Self::decode(&mut value)
+	}
+}
+
+impl TryFrom<String> for OpaqueTransaction {
+	type Error = codec::Error;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_str())
+	}
+}
+
+impl TryFrom<&str> for OpaqueTransaction {
+	type Error = codec::Error;
+
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		let Ok(hex_decoded) = hex::decode(value) else {
+			return Err("Failed to hex decode transaction".into());
+		};
+
+		Self::decode(&mut hex_decoded.as_slice())
 	}
 }
 
