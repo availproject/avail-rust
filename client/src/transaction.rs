@@ -5,7 +5,7 @@ use crate::{
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockLocation, H256, HashNumber, TransactionCallLike,
+	AccountId, BlockLocation, H256, HashNumber, TransactionConvertible,
 	config::TransactionLocation,
 	ext::codec::Encode,
 	from_substrate::FeeDetails,
@@ -19,7 +19,7 @@ pub trait SubmittableTransactionLike {
 	fn to_submittable(&self, client: Client) -> SubmittableTransaction;
 }
 
-impl<T: TransactionCallLike> SubmittableTransactionLike for T {
+impl<T: TransactionConvertible> SubmittableTransactionLike for T {
 	fn to_submittable(&self, client: Client) -> SubmittableTransaction {
 		let call = self.to_call();
 		SubmittableTransaction::new(client, call)

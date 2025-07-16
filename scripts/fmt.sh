@@ -19,3 +19,4 @@ cd ./custom_storage  && cargo +nightly fmt  && cd ./../.
 cd ./constants && cargo +nightly fmt  && cd ./../.
 cd ./estimating_fees && cargo +nightly fmt  && cd ./../.
 cd ./storage && cargo +nightly fmt  && cd ./../.
+cd ./decoding_encoding && cargo +nightly fmt  && cd ./../.
