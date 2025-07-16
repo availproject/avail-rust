@@ -44,7 +44,7 @@ impl<T: HasTxDispatchIndex + Encode + Decode> TransactionCallLike for T {
 
 	#[inline(always)]
 	fn decode_hex_call(call: &str) -> Option<Box<T>> {
-		let hex_decoded = hex::decode(call).ok()?;
+		let hex_decoded = hex::decode(call.trim_start_matches("0x")).ok()?;
 		Self::decode_call(&hex_decoded)
 	}
 
@@ -145,7 +145,7 @@ impl TryFrom<&str> for OpaqueTransaction {
 	type Error = codec::Error;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
-		let Ok(hex_decoded) = hex::decode(value) else {
+		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
 			return Err("Failed to hex decode transaction".into());
 		};
 
