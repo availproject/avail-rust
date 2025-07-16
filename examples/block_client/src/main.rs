@@ -46,7 +46,7 @@ pub async fn block_transaction(client: Client, block_hash: H256, tx_hash: H256) 
 		);
 	}
 
-	decode_transaction_call(&info.encoded.expect("Must be there").trim_start_matches("0x"));
+	decode_transaction_call(&info.encoded.expect("Must be there"));
 
 	// Fetching the whole transaction from the block
 	let info = blocks
@@ -65,7 +65,7 @@ pub async fn block_transaction(client: Client, block_hash: H256, tx_hash: H256) 
 		);
 	}
 
-	decode_transaction(info.encoded.expect("Must be there").trim_start_matches("0x"));
+	decode_transaction(&info.encoded.expect("Must be there"));
 
 	Ok(())
 }
@@ -87,7 +87,7 @@ pub async fn block_transactions(client: Client, block_hash: H256) -> Result<(), 
 			);
 		}
 
-		decode_transaction_call(&info.encoded.expect("Must be there").trim_start_matches("0x"));
+		decode_transaction_call(&info.encoded.expect("Must be there"));
 	}
 
 	Ok(())
@@ -214,7 +214,7 @@ pub fn decode_transaction_call(call: &str) {
 
 	// Second option is to manually Hex decode the call and call `Self::decode_call`
 	// which will SCALE decode the call for us
-	let hex_decoded = hex::decode(call).expect("Must work");
+	let hex_decoded = hex::decode(call.trim_start_matches("0x")).expect("Must work");
 	if let Some(decoded) = SubmitData::decode_call(&hex_decoded) {
 		println!("Data: {:?}", decoded.data);
 	}
