@@ -75,7 +75,7 @@ pub struct BlockLength {
 	pub chunk_size: u32,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProofResponse {
 	pub data_proof: DataProof,
@@ -83,7 +83,7 @@ pub struct ProofResponse {
 }
 
 /// Wrapper of `binary-merkle-tree::MerkleProof` with codec support.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DataProof {
 	pub roots: TxDataRoots,
@@ -103,7 +103,7 @@ pub struct DataProof {
 	pub leaf: H256,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TxDataRoots {
 	/// Global Merkle root

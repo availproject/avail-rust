@@ -5,6 +5,7 @@ use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use scale_decode::DecodeAsType;
 use scale_encode::EncodeAsType;
+use serde::{Deserialize, Serialize};
 
 pub mod data_availability {
 	use super::*;
@@ -1204,10 +1205,9 @@ pub mod vector {
 	pub mod types {
 		use super::*;
 		pub use crate::from_substrate::Weight;
-		use serde::Deserialize;
 
 		/// Message type used to bridge between Avail & other chains
-		#[derive(Debug, Clone, Deserialize)]
+		#[derive(Debug, Clone, Serialize, Deserialize)]
 		#[serde(rename_all = "camelCase")]
 		pub struct AddressedMessage {
 			pub message: Message,
@@ -1248,7 +1248,7 @@ pub mod vector {
 		}
 
 		/// Possible types of Messages allowed by Avail to bridge to other chains.
-		#[derive(Debug, Clone, Deserialize)]
+		#[derive(Debug, Clone, Serialize, Deserialize)]
 		#[repr(u8)]
 		pub enum Message {
 			ArbitraryMessage(Vec<u8>) = 0,
