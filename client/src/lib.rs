@@ -9,7 +9,6 @@ pub mod transaction;
 pub mod transaction_options;
 pub mod transactions;
 
-pub use bounded_collections::{self, BoundedVec};
 pub use clients::Client;
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, TURING_ENDPOINT, TURING_WS_ENDPOINT,
@@ -49,7 +48,6 @@ pub use subxt_signer::{SecretUri, sr25519::Keypair};
 // External
 pub mod ext {
 	pub use avail_rust_core::{self, ext::*};
-	pub use bounded_collections;
 
 	#[cfg(feature = "reqwest")]
 	pub use reqwest;

@@ -1,5 +1,4 @@
 use crate::avail;
-use bounded_collections::ConstU32;
 use codec::{Decode, Encode};
 use primitive_types::{H256, U256};
 use serde::{Deserialize, Serialize};
@@ -31,11 +30,6 @@ pub type GRawScalar = U256;
 pub type GRow = Vec<GRawScalar>;
 pub type GDataProof = (GRawScalar, GProof);
 pub type GMultiProof = (Vec<GRawScalar>, GProof);
-
-pub type MaxCells = ConstU32<64>;
-pub type Cells = bounded_collections::BoundedVec<Cell, MaxCells>;
-pub type MaxRows = ConstU32<64>;
-pub type Rows = bounded_collections::BoundedVec<u32, MaxRows>;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(try_from = "Vec<u8>", into = "Vec<u8>")]
@@ -148,6 +142,7 @@ pub async fn query_proof(
 	Ok(value)
 }
 
+/// Constraint: You can pass up to 64 rows
 pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, subxt_rpcs::Error> {
 	let params = rpc_params![rows, at];
 	let value = client.request("kate_queryRows", params).await?;

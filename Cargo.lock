@@ -230,7 +230,6 @@ name = "avail-rust-client"
 version = "0.2.9"
 dependencies = [
  "avail-rust-core",
- "bounded-collections",
  "frame-metadata 20.0.0",
  "futures",
  "hex",
@@ -251,7 +250,6 @@ dependencies = [
 name = "avail-rust-core"
 version = "0.2.9"
 dependencies = [
- "bounded-collections",
  "hex",
  "impl-serde",
  "parity-scale-codec",
@@ -422,18 +420,6 @@ dependencies = [
  "futures-io",
  "futures-lite",
  "piper",
-]
-
-[[package]]
-name = "bounded-collections"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64ad8a0bed7827f0b07a5d23cec2e58cc02038a99e4ca81616cb2bb2025f804d"
-dependencies = [
- "log",
- "parity-scale-codec",
- "scale-info",
- "serde",
 ]
 
 [[package]]
