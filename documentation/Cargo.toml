@@ -1,9 +1,0 @@
-[workspace]
-
-[package]
-name = "sdk-docs"
-edition = "2024"
-
-[dependencies]
-avail-rust = { path = "../../." }
-tokio = { version = "1.38.0", features = ["rt-multi-thread"] }

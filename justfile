@@ -30,13 +30,13 @@ lint-fix:
 doc:
     cargo doc --open
 examples-run:
-    RUST_LOG=info ./scripts/run.sh
+    RUST_LOG=info ./scripts/examples.sh run
 examples-clean:
-    ./scripts/clean.sh
+    ./scripts/examples.sh clean
 examples-fmt:
-    ./scripts/fmt.sh
+    ./scripts/examples.sh fmt
 examples-check:
-    ./scripts/check.sh
+    ./scripts/examples.sh check
 test:
     cargo test
 podman:

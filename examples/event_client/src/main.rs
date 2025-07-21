@@ -11,7 +11,7 @@ use avail::{
 use avail_rust_client::{
 	avail_rust_core::{
 		FetchEventsV1Options,
-		rpc::system::fetch_events_v1_types::{Filter, GroupedRuntimeEvents},
+		rpc::system::fetch_events_v1_types::{Filter, GroupedRuntimeEvents, RuntimeEvent},
 	},
 	prelude::*,
 };
@@ -30,7 +30,7 @@ async fn main() -> Result<(), ClientError> {
 
 	// Fetching transaction events directly via receipt
 	let event_group = receipt.tx_events().await?;
-	print_event_details(&event_group)?;
+	print_events(&event_group)?;
 
 	// Find transaction related event
 	let event_client = client.event_client();
@@ -41,13 +41,13 @@ async fn main() -> Result<(), ClientError> {
 		return Err("Failed to find events".into());
 	};
 
-	print_event_details(&event_group)?;
+	print_events(&event_group)?;
 
 	// Find block related events
 	let params = FetchEventsV1Options::new(Some(Filter::All), Some(true), Some(true));
 	let block_event_group = event_client.block_events(receipt.block_loc.hash, Some(params)).await?;
 	for event_group in block_event_group {
-		print_event_details(&event_group)?;
+		print_grouped_events(&event_group)?;
 	}
 
 	// Fetching historical block events
@@ -56,9 +56,15 @@ async fn main() -> Result<(), ClientError> {
 	Ok(())
 }
 
-fn print_event_details(event_group: &GroupedRuntimeEvents) -> Result<(), ClientError> {
+fn print_grouped_events(event_group: &GroupedRuntimeEvents) -> Result<(), ClientError> {
 	println!("Phase: {:?}", event_group.phase);
-	for event in &event_group.events {
+	print_events(&event_group.events)?;
+
+	Ok(())
+}
+
+fn print_events(events: &Vec<RuntimeEvent>) -> Result<(), ClientError> {
+	for event in events {
 		println!(
 			"Event Index: {}, Pallet Id: {}, Variant id: {}",
 			event.index, event.emitted_index.0, event.emitted_index.1

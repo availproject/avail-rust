@@ -1,7 +1,7 @@
 //! This example showcases the following actions:
-//! - Decode and Encode Transactions
-//! - Decode and Encode Events
-//! - Decode and Encode Storage
+//! - Encode and Decode Transactions
+//! - Encode and Decode Events
+//! - Encode and Decode Storage
 //!
 
 use avail_rust_client::prelude::*;

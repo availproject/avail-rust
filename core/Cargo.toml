@@ -14,7 +14,6 @@ serde_json = {  workspace = true }
 codec = { workspace = true  }
 impl-serde = { workspace = true }
 hex = { workspace = true, default-features = false }
-bounded-collections = { workspace = true }
 primitive-types = { workspace = true }
 thiserror = { workspace = true }
 sp-crypto-hashing = { workspace = true }

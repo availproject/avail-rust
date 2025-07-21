@@ -11,7 +11,6 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 impl-serde = { workspace = true }
 hex = { workspace = true, default-features = false }
-bounded-collections = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -31,7 +30,7 @@ wasm-bindgen-futures = { workspace = true, optional = true  }
 wasmtimer = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 
-avail-rust-core = { path = "./../core", version = "0.2.9", default-features = false }
+avail-rust-core = { path = "./../core", version = "0.2.10", default-features = false }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["sync", "time", "rt", "macros"] }

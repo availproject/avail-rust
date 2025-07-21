@@ -50,7 +50,7 @@ impl EventClient {
 		enable_encoding: bool,
 		enable_decoding: bool,
 		at: H256,
-	) -> Result<Option<Types::GroupedRuntimeEvents>, avail_rust_core::Error> {
+	) -> Result<Option<Vec<Types::RuntimeEvent>>, avail_rust_core::Error> {
 		let options = Types::Options::new(
 			Some(Types::Filter::Only(vec![tx_id])),
 			Some(enable_encoding),
@@ -61,7 +61,7 @@ impl EventClient {
 		if result.is_empty() {
 			return Ok(None);
 		}
-		Ok(Some(result.remove(0)))
+		Ok(Some(result.remove(0).events))
 	}
 
 	/// Function to fetch blocks events in a efficient manner.

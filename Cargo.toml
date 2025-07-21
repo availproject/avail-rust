@@ -7,18 +7,17 @@ resolver = "2"
 
 [workspace.package]
 edition = "2024"
-version = "0.2.9"
+version = "0.2.10"
 license = "ISC"
 
 [workspace.dependencies]
 tokio = { version = "1.45.0", default-features = false, features = ["sync", "time", "rt"] }
 serde = { version = "1.0.195", default-features = false, features = ["derive" ] }
 serde_json = { version = "1.0.124", default-features = false, features = ["raw_value"] }
-codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "bit-vec"] }
+codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
 impl-serde = { version = "0.5.0", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 base58 = { version = "0.2.0", default-features = false }
-bounded-collections = { version = "0.2.0", default-features = false, features = ["serde"] }
 primitive-types = { version = "0.13.1", default-features = false }
 futures = { version = "0.3.31", default-features = false }
 
