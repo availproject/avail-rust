@@ -4,6 +4,7 @@
 //! - Fetching Transaction Receipt
 //! - Fetching Block State
 //! - Fetching and displaying Transaction Events
+//! - Fetching Block Transaction
 //!
 
 use avail::data_availability::{events::DataSubmitted, tx::SubmitData};
@@ -61,12 +62,7 @@ async fn main() -> Result<(), ClientError> {
 	// Fetching the same transaction from the block
 	let block_client = client.block_client();
 	let block_tx = block_client
-		.block_transaction(
-			receipt.block_loc.into(),
-			receipt.tx_loc.into(),
-			None,
-			Some(EncodeSelector::Call),
-		)
+		.block_transaction(receipt.block_loc.into(), receipt.tx_loc.into(), None, None)
 		.await?
 		.expect("Must be there");
 	let call = SubmitData::decode_hex_call(&block_tx.encoded.expect("Must be there")).expect("Must be decodable");

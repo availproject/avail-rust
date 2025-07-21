@@ -9,7 +9,7 @@ cargo check --no-default-features --features "native, tracing"
 cargo check --no-default-features --features "native, reqwest"
 cargo check --no-default-features --features "native, subxt"
 cargo check --no-default-features --features "native, generated_metadata"
-cargo check --no-default-features --features "native, reqwest, subxt, generated_metadata",
+cargo check --no-default-features --features "native, reqwest, subxt, generated_metadata"
 
 rustup target add wasm32-unknown-unknown
 cargo check --target wasm32-unknown-unknown --no-default-features --features "wasm"

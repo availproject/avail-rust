@@ -1,6 +1,7 @@
 //! This example showcases the following actions:
 //! - Creating Keypair from mnemonic seed
 //! - Creating Account Id from SS58 address or Keypair
+//! - Displaying the SS58 Address of a Account Id
 //! - Fetching Account Balance, Nonce and Info
 //!
 use avail_rust_client::prelude::*;

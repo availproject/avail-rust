@@ -126,7 +126,7 @@ impl SubmittedTransaction {
 	}
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum BlockState {
 	Included = 0,
