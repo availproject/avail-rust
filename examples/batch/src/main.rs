@@ -24,8 +24,8 @@ async fn main() -> Result<(), ClientError> {
 	println!("Block State: {:?}", block_state);
 
 	// Fetching and displaying Transaction Events
-	let event_group = receipt.tx_events().await?;
-	for event in event_group.events {
+	let events = receipt.tx_events().await?;
+	for event in events {
 		println!(
 			"Pallet Index: {}, Variant index: {}",
 			event.emitted_index.0, event.emitted_index.1,

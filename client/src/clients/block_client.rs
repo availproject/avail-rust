@@ -1,6 +1,6 @@
 use super::Client;
 use avail_rust_core::{
-	EncodeSelector, FetchExtrinsicsV1Options, H256, HashNumber,
+	EncodeSelector, H256, HashNumber,
 	rpc::{
 		self,
 		system::fetch_extrinsics_v1_types::{self as Types, Filter, SignatureFilter, TransactionFilter},
@@ -28,18 +28,15 @@ impl BlockClient {
 		block_id: HashNumber,
 		transaction_id: HashNumber,
 		signature_filter: Option<SignatureFilter>,
-		selector: Option<EncodeSelector>,
+		encode_as: Option<EncodeSelector>,
 	) -> Result<Option<Types::ExtrinsicInformation>, avail_rust_core::Error> {
-		let filter = match transaction_id {
+		let transaction_filter = match transaction_id {
 			HashNumber::Hash(item) => Types::TransactionFilter::TxHash(vec![item]),
 			HashNumber::Number(item) => Types::TransactionFilter::TxIndex(vec![item]),
 		};
-		let filter = Some(Types::Filter::new(Some(filter), signature_filter));
-		let params = FetchExtrinsicsV1Options::new(filter, selector);
+
 		let mut result = self
-			.client
-			.rpc_api()
-			.system_fetch_extrinsics_v1(block_id, Some(params))
+			.block_transactions(block_id, Some(transaction_filter), signature_filter, encode_as)
 			.await?;
 
 		if result.is_empty() {
@@ -63,7 +60,8 @@ impl BlockClient {
 		encode_as: Option<EncodeSelector>,
 	) -> Result<Types::Output, avail_rust_core::Error> {
 		let filter = Filter::new(transaction_filter, signature_filter);
-		let options = Types::Options::new(Some(filter), encode_as);
+		let encode_as = encode_as.unwrap_or(EncodeSelector::Call);
+		let options = Types::Options::new(Some(filter), Some(encode_as));
 
 		self.client
 			.rpc_api()

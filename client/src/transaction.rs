@@ -9,7 +9,7 @@ use avail_rust_core::{
 	config::TransactionLocation,
 	ext::codec::Encode,
 	from_substrate::FeeDetails,
-	rpc::system::fetch_events_v1_types::GroupedRuntimeEvents,
+	rpc::system::fetch_events_v1_types::RuntimeEvent,
 	transaction::{TransactionAdditional, TransactionCall},
 };
 #[cfg(feature = "tracing")]
@@ -155,16 +155,16 @@ impl TransactionReceipt {
 		self.client.block_state(self.block_loc).await
 	}
 
-	pub async fn tx_events(&self) -> Result<GroupedRuntimeEvents, avail_rust_core::Error> {
+	pub async fn tx_events(&self) -> Result<Vec<RuntimeEvent>, avail_rust_core::Error> {
 		let events_client = self.client.event_client();
-		let Some(grouped_events) = events_client
+		let Some(events) = events_client
 			.transaction_events(self.tx_loc.index, true, false, self.block_loc.hash)
 			.await?
 		else {
 			return Err("Failed to to find events".into());
 		};
 
-		Ok(grouped_events)
+		Ok(events)
 	}
 }
 
