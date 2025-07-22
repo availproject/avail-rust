@@ -80,7 +80,7 @@ fn print_events(events: &Vec<RuntimeEvent>) -> Result<(), ClientError> {
 			println!("The event was not decoded");
 		}
 
-		let event = hex::decode(encoded)?;
+		let event = const_hex::decode(encoded)?;
 		if let Some(e) = ExtrinsicSuccessEvent::decode_event(&event) {
 			println!("Weight: {:?}", e.dispatch_info.weight)
 		}

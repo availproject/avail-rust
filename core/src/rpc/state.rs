@@ -8,7 +8,7 @@ pub async fn call(
 	data: &[u8],
 	at: Option<H256>,
 ) -> Result<String, subxt_rpcs::Error> {
-	let data = std::format!("0x{}", hex::encode(data));
+	let data = std::format!("0x{}", const_hex::encode(data));
 	let params = rpc_params![method, data, at];
 	let value = client.request("state_call", params).await?;
 	Ok(value)
@@ -18,7 +18,7 @@ pub async fn get_storage(client: &RpcClient, key: &str, at: Option<H256>) -> Res
 	let params = rpc_params![key, at];
 	let value: Option<String> = client.request("state_getStorage", params).await?;
 	let Some(value) = value else { return Ok(None) };
-	let value = hex::decode(value.trim_start_matches("0x"));
+	let value = const_hex::decode(value.trim_start_matches("0x"));
 	let value = value.map_err(|e| Error::from(e.to_string()))?;
 	Ok(Some(value))
 }
@@ -37,7 +37,7 @@ pub async fn get_keys_paged(
 
 pub async fn get_metadata(client: &RpcClient, at: Option<H256>) -> Result<Vec<u8>, Error> {
 	let value: String = client.request("state_getMetadata", rpc_params![at]).await?;
-	Ok(hex::decode(value.trim_start_matches("0x")).map_err(|e| e.to_string())?)
+	Ok(const_hex::decode(value.trim_start_matches("0x")).map_err(|e| e.to_string())?)
 }
 
 pub async fn get_runtime_version(client: &RpcClient, at: Option<H256>) -> Result<RuntimeVersion, subxt_rpcs::Error> {

@@ -30,7 +30,7 @@ async fn main() -> Result<(), ClientError> {
 			"Pallet Index: {}, Variant index: {}",
 			event.emitted_index.0, event.emitted_index.1,
 		);
-		let encoded_event = hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
+		let encoded_event = const_hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
 		if let Some(_e) = UtilityEvents::BatchInterrupted::decode_event(&encoded_event) {
 			println!("Found Utility::BatchInterrupted");
 		}

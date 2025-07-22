@@ -79,7 +79,7 @@ pub trait StorageValue {
 	}
 
 	fn hex_encode_storage_key() -> String {
-		std::format!("0x{}", hex::encode(&Self::encode_storage_key()))
+		std::format!("0x{}", const_hex::encode(&Self::encode_storage_key()))
 	}
 
 	/// Decodes the Hex and SCALE encoded Storage Value
@@ -87,7 +87,7 @@ pub trait StorageValue {
 	///
 	/// If you need to decode bytes call `decode`
 	fn hex_decode(value: &str) -> Result<Self::VALUE, codec::Error> {
-		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+		let Ok(hex_decoded) = const_hex::decode(value.trim_start_matches("0x")) else {
 			return Err("Failed to hex decode storage".into());
 		};
 		Self::decode(&mut hex_decoded.as_slice())
@@ -108,7 +108,7 @@ pub trait StorageValue {
 		at: Option<H256>,
 	) -> impl std::future::Future<Output = Result<Option<Self::VALUE>, Error>> {
 		async move {
-			let storage_key = hex::encode(Self::encode_storage_key());
+			let storage_key = const_hex::encode(Self::encode_storage_key());
 
 			let storage_value = rpc::state::get_storage(client, &storage_key, at).await?;
 			let Some(storage_value) = storage_value else {
@@ -139,7 +139,7 @@ pub trait StorageMap {
 	}
 
 	fn hex_encode_partial_key() -> String {
-		std::format!("0x{}", hex::encode(&Self::encode_partial_key()))
+		std::format!("0x{}", const_hex::encode(&Self::encode_partial_key()))
 	}
 
 	fn encode_storage_key(key: &Self::KEY) -> Vec<u8> {
@@ -153,7 +153,7 @@ pub trait StorageMap {
 	}
 
 	fn hex_encode_storage_key(key: &Self::KEY) -> String {
-		std::format!("0x{}", hex::encode(&Self::encode_storage_key(key)))
+		std::format!("0x{}", const_hex::encode(&Self::encode_storage_key(key)))
 	}
 
 	/// Decodes the Hex and SCALE encoded Storage Key
@@ -162,7 +162,7 @@ pub trait StorageMap {
 	/// If you need to decode bytes call `decode_storage_key`
 	#[inline(always)]
 	fn decode_hex_storage_key(value: &str) -> Result<Self::KEY, codec::Error> {
-		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+		let Ok(hex_decoded) = const_hex::decode(value.trim_start_matches("0x")) else {
 			return Err("Failed to hex decode storage key".into());
 		};
 		Self::decode_storage_key(&mut hex_decoded.as_slice())
@@ -188,7 +188,7 @@ pub trait StorageMap {
 	/// If you need to decode bytes call `decode_storage_value`
 	#[inline(always)]
 	fn decode_hex_storage_value(value: &str) -> Result<Self::VALUE, codec::Error> {
-		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+		let Ok(hex_decoded) = const_hex::decode(value.trim_start_matches("0x")) else {
 			return Err("Failed to hex decode storage value".into());
 		};
 		Self::decode_storage_value(&mut hex_decoded.as_slice())
@@ -210,7 +210,7 @@ pub trait StorageMap {
 		at: Option<H256>,
 	) -> impl std::future::Future<Output = Result<Option<Self::VALUE>, Error>> {
 		async move {
-			let storage_key = hex::encode(Self::encode_storage_key(key));
+			let storage_key = const_hex::encode(Self::encode_storage_key(key));
 			let storage_value = rpc::state::get_storage(client, &storage_key, at).await?;
 			let Some(storage_value) = storage_value else {
 				return Ok(None);
@@ -250,7 +250,7 @@ pub trait StorageDoubleMap {
 	}
 
 	fn hex_encode_partial_key(key1: &Self::KEY1) -> String {
-		std::format!("0x{}", hex::encode(&Self::encode_partial_key(key1)))
+		std::format!("0x{}", const_hex::encode(&Self::encode_partial_key(key1)))
 	}
 
 	fn encode_storage_key(key1: &Self::KEY1, key2: &Self::KEY2) -> Vec<u8> {
@@ -262,7 +262,7 @@ pub trait StorageDoubleMap {
 	}
 
 	fn hex_encode_storage_key(key1: &Self::KEY1, key2: &Self::KEY2) -> String {
-		std::format!("0x{}", hex::encode(&Self::encode_storage_key(key1, key2)))
+		std::format!("0x{}", const_hex::encode(&Self::encode_storage_key(key1, key2)))
 	}
 
 	fn decode_partial_key(value: &mut &[u8]) -> Result<Self::KEY1, codec::Error> {
@@ -281,7 +281,7 @@ pub trait StorageDoubleMap {
 	///
 	/// If you need to decode bytes call `decode_storage_key`
 	fn decode_hex_storage_key(value: &str) -> Result<(Self::KEY1, Self::KEY2), codec::Error> {
-		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+		let Ok(hex_decoded) = const_hex::decode(value.trim_start_matches("0x")) else {
 			return Err("Failed to hex decode storage key".into());
 		};
 		Self::decode_storage_key(&mut hex_decoded.as_slice())
@@ -308,7 +308,7 @@ pub trait StorageDoubleMap {
 	///
 	/// If you need to decode bytes call `decode_storage_value`
 	fn decode_hex_storage_value(value: &str) -> Result<Self::VALUE, codec::Error> {
-		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+		let Ok(hex_decoded) = const_hex::decode(value.trim_start_matches("0x")) else {
 			return Err("Failed to hex decode storage value".into());
 		};
 		Self::decode_storage_value(&mut hex_decoded.as_slice())
@@ -331,7 +331,7 @@ pub trait StorageDoubleMap {
 		at: Option<H256>,
 	) -> impl std::future::Future<Output = Result<Option<Self::VALUE>, Error>> {
 		async move {
-			let storage_key = hex::encode(Self::encode_storage_key(key_1, key_2));
+			let storage_key = const_hex::encode(Self::encode_storage_key(key_1, key_2));
 			let storage_value = rpc::state::get_storage(client, &storage_key, at).await?;
 			let Some(storage_value) = storage_value else {
 				return Ok(None);
@@ -370,7 +370,7 @@ impl<T: StorageMap> StorageMapIterator<T> {
 			fetched_keys: Vec::new(),
 			last_key: None,
 			is_done: false,
-			prefix: hex::encode(T::encode_partial_key()),
+			prefix: const_hex::encode(T::encode_partial_key()),
 		}
 	}
 
@@ -392,7 +392,7 @@ impl<T: StorageMap> StorageMapIterator<T> {
 			return Ok(None);
 		};
 
-		let key = hex::decode(storage_key.trim_start_matches("0x")).map_err(|x| x.to_string())?;
+		let key = const_hex::decode(storage_key.trim_start_matches("0x")).map_err(|x| x.to_string())?;
 		let key = T::decode_storage_key(&mut key.as_slice())?;
 
 		self.last_key = Some(storage_key.clone());
@@ -475,7 +475,7 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 			last_key: None,
 			is_done: false,
 
-			prefix: hex::encode(T::encode_partial_key(key_1)),
+			prefix: const_hex::encode(T::encode_partial_key(key_1)),
 		}
 	}
 
@@ -497,7 +497,7 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 			return Ok(None);
 		};
 
-		let key = hex::decode(storage_key.trim_start_matches("0x")).map_err(|x| x.to_string())?;
+		let key = const_hex::decode(storage_key.trim_start_matches("0x")).map_err(|x| x.to_string())?;
 		let (key1, key2) = T::decode_storage_key(&mut key.as_slice())?;
 
 		self.last_key = Some(storage_key.clone());

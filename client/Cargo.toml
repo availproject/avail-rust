@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 impl-serde = { workspace = true }
-hex = { workspace = true, default-features = false }
+const-hex = { workspace = true, default-features = false }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -8,7 +8,7 @@ pub enum ClientError {
 	Core(avail_rust_core::Error) = 1,
 	Custom(String) = 2,
 	Codec(codec::Error) = 3,
-	Hex(hex::FromHexError) = 4,
+	Hex(const_hex::FromHexError) = 4,
 }
 
 impl From<avail_rust_core::Error> for ClientError {
@@ -35,8 +35,8 @@ impl From<codec::Error> for ClientError {
 	}
 }
 
-impl From<hex::FromHexError> for ClientError {
-	fn from(value: hex::FromHexError) -> Self {
+impl From<const_hex::FromHexError> for ClientError {
+	fn from(value: const_hex::FromHexError) -> Self {
 		Self::Hex(value)
 	}
 }

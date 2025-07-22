@@ -28,7 +28,7 @@ impl H256Ext for H256 {
 			return Err(msg);
 		}
 
-		let block_hash = hex::decode(s).map_err(|e| e.to_string())?;
+		let block_hash = const_hex::decode(s).map_err(|e| e.to_string())?;
 		let block_hash = TryInto::<[u8; 32]>::try_into(block_hash);
 		match block_hash {
 			Ok(v) => Ok(H256(v)),

@@ -53,7 +53,7 @@ async fn main() -> Result<(), ClientError> {
 			event.emitted_index.0, event.emitted_index.1,
 		);
 
-		let encoded_event = hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
+		let encoded_event = const_hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
 		if let Some(event) = DataSubmitted::decode_event(&encoded_event) {
 			println!("Who: {}, Data Hash: {}", event.who, event.data_hash);
 		}

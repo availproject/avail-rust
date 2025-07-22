@@ -61,7 +61,7 @@ impl<T: HasTxDispatchIndex + Decode> TransactionDecodable for T {
 
 	#[inline(always)]
 	fn decode_hex_call(call: &str) -> Option<Box<T>> {
-		let hex_decoded = hex::decode(call.trim_start_matches("0x")).ok()?;
+		let hex_decoded = const_hex::decode(call.trim_start_matches("0x")).ok()?;
 		Self::decode_call(&hex_decoded)
 	}
 
@@ -162,7 +162,7 @@ impl TryFrom<&str> for OpaqueTransaction {
 	type Error = codec::Error;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
-		let Ok(hex_decoded) = hex::decode(value.trim_start_matches("0x")) else {
+		let Ok(hex_decoded) = const_hex::decode(value.trim_start_matches("0x")) else {
 			return Err("Failed to hex decode transaction".into());
 		};
 
@@ -312,7 +312,7 @@ pub mod test {
 		};
 
 		let encoded_tx = tx.encode();
-		let expected_serialized = std::format!("0x{}", hex::encode(&encoded_tx));
+		let expected_serialized = std::format!("0x{}", const_hex::encode(&encoded_tx));
 
 		// Transaction Serialized
 		let serialized = serde_json::to_string(&tx).unwrap();

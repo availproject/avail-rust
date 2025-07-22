@@ -7,5 +7,5 @@ edition = "2024"
 [dependencies]
 avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "tracing"] }
 tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
-hex = { version = "0.4.3"}
+const-hex = { version = "1.14.1", default-features = false, features = ["alloc"] }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive", "bit-vec"] }
