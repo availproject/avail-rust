@@ -1,33 +1,31 @@
+use crate::AccountId;
 use codec::{Codec, Decode};
 use primitive_types::H256;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 use crate::AvailHeader;
-#[cfg(feature = "generated_metadata")]
-use crate::avail_generated::runtime_types::sp_consensus_grandpa::app::Public;
-
-#[cfg(not(feature = "generated_metadata"))]
-pub type Public = [u8; 32];
 
 #[derive(Debug, Clone, Decode)]
-pub struct AuthorityId(pub Public);
+pub struct AuthorityId(pub [u8; 32]);
+pub type Public = AuthorityId;
 
 impl Serialize for AuthorityId {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: Serializer,
 	{
-		#[cfg(feature = "generated_metadata")]
-		{
-			let raw = hex::encode(self.0.0.0);
-			serializer.serialize_str(&raw)
-		}
+		let account_id = AccountId::from(self.0.clone());
+		serializer.serialize_str(&account_id.to_string())
+	}
+}
 
-		#[cfg(not(feature = "generated_metadata"))]
-		{
-			let raw = hex::encode(self.0);
-			serializer.serialize_str(&raw)
-		}
+impl<'de> Deserialize<'de> for AuthorityId {
+	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: Deserializer<'de>,
+	{
+		let account_id = AccountId::deserialize(deserializer)?;
+		Ok(Self(account_id.0))
 	}
 }
 
@@ -55,6 +53,28 @@ pub enum ConsensusLog<N: Codec> {
 
 #[derive(Debug, Clone, Copy, Decode)]
 pub struct Signature(pub [u8; 64usize]);
+impl Serialize for Signature {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: Serializer,
+	{
+		serializer.serialize_str(&const_hex::encode(&self.0))
+	}
+}
+
+impl<'de> Deserialize<'de> for Signature {
+	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: Deserializer<'de>,
+	{
+		let signature_hex = const_hex::decode(&String::deserialize(deserializer)?)
+			.map_err(|e| de::Error::custom(format!("{:?}", e)))?;
+		let signature: [u8; 64usize] = signature_hex
+			.try_into()
+			.map_err(|e| de::Error::custom(format!("{:?}", e)))?;
+		Ok(Self(signature))
+	}
+}
 
 #[derive(Debug, Clone, codec::Decode)]
 pub struct Precommit {

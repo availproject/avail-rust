@@ -292,7 +292,7 @@ pub fn decode_transaction_call(call: &str) {
 
 	// Second option is to manually Hex decode the call and call `Self::decode_call`
 	// which will SCALE decode the call for us
-	let hex_decoded = hex::decode(call.trim_start_matches("0x")).expect("Must work");
+	let hex_decoded = const_hex::decode(call.trim_start_matches("0x")).expect("Must work");
 	if let Some(decoded) = SubmitData::decode_call(&hex_decoded) {
 		println!("Data: {:?}", decoded.data);
 	}

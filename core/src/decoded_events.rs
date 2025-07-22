@@ -44,7 +44,7 @@ impl<T: HasEventEmittedIndex + Encode> TransactionEventEncodable for T {
 		encoded_event
 	}
 	fn encode_as_hex_event(&self) -> String {
-		std::format!("0x{}", hex::encode(Self::encode_as_event(&self)))
+		std::format!("0x{}", const_hex::encode(Self::encode_as_event(&self)))
 	}
 }
 
@@ -64,7 +64,7 @@ impl<T: HasEventEmittedIndex + Decode> TransactionEventDecodable for T {
 
 	#[inline(always)]
 	fn decode_hex_event(event: &str) -> Option<Box<T>> {
-		let hex_decoded = hex::decode(event.trim_start_matches("0x")).ok()?;
+		let hex_decoded = const_hex::decode(event.trim_start_matches("0x")).ok()?;
 		Self::decode_event(&hex_decoded)
 	}
 
@@ -133,7 +133,7 @@ impl TryFrom<&str> for OpaqueEvent {
 	type Error = String;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
-		let value = hex::decode(value).map_err(|x| x.to_string())?;
+		let value = const_hex::decode(value).map_err(|x| x.to_string())?;
 		Self::try_from(value)
 	}
 }

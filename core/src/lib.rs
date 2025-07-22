@@ -38,6 +38,7 @@ pub use chain_types_generated::api as avail_generated;
 
 pub mod ext {
 	pub use codec;
+	pub use const_hex;
 	pub use primitive_types;
 	pub use scale_info;
 	pub use sp_crypto_hashing;

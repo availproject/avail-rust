@@ -42,7 +42,7 @@ where
 	let buf = Vec::<String>::deserialize(deserializer)?;
 	let result: Result<Vec<Vec<u8>>, _> = buf
 		.into_iter()
-		.map(|x| hex::decode(x.trim_start_matches("0x")))
+		.map(|x| const_hex::decode(x.trim_start_matches("0x")))
 		.collect();
 	match result {
 		Ok(res) => Ok(res),

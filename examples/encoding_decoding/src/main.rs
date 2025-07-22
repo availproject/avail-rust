@@ -125,5 +125,5 @@ fn storage_decoding_encoding() {
 	let actual_value = AppKey { id: 0, owner }.encode();
 
 	assert_eq!(storage_key, actual_key.as_str());
-	assert_eq!(storage_value, std::format!("0x{}", hex::encode(actual_value)));
+	assert_eq!(storage_value, std::format!("0x{}", const_hex::encode(actual_value)));
 }
