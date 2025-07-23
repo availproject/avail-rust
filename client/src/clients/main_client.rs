@@ -2,6 +2,7 @@ use super::{block_client::BlockClient, event_client::EventClient, online_client:
 use crate::{
 	BlockState, avail,
 	clients::{rpc_api::RpcAPI, runtime_api::RuntimeApi},
+	platform::sleep,
 	subscription::{self, Subscriber},
 	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
@@ -14,6 +15,7 @@ use avail::{
 	system::{storage as SystemStorage, types::AccountInfo},
 };
 use avail_rust_core::{AccountId, AvailHeader, BlockLocation, H256, StorageMap, rpc::BlockWithJustifications};
+use std::time::Duration;
 
 #[cfg(feature = "subxt")]
 use crate::config::{ABlocksClient, AConstantsClient, AStorageClient};
@@ -89,20 +91,62 @@ impl Client {
 		self.rpc_api().chain_get_header(Some(at)).await
 	}
 
+	pub async fn block_header_with_retries(&self, at: H256) -> Result<Option<AvailHeader>, avail_rust_core::Error> {
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+
+		loop {
+			let header = self.block_header(at).await;
+			let header = match header {
+				Ok(x) => x,
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err);
+					};
+
+					trace_warn(&std::format!(
+						"Fetching block header ended with Err {}. Sleep for {} seconds",
+						err.to_string(),
+						duration
+					));
+					sleep(Duration::from_secs(duration)).await;
+					continue;
+				},
+			};
+
+			if let Some(header) = header {
+				return Ok(Some(header));
+			}
+
+			let Some(duration) = sleep_duration.pop() else {
+				return Ok(None);
+			};
+
+			trace_warn(&std::format!(
+				"Fetching block header ended with Option<None>. Sleep for {} seconds",
+				duration
+			));
+			sleep(Duration::from_secs(duration)).await;
+		}
+	}
+
 	pub async fn best_block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
-		let header = self.block_header(self.best_block_hash().await?).await?;
-		let Some(header) = header else {
-			return Err("Best block header not found.".into());
+		let block_hash = self.best_block_hash().await?;
+		let block_header = self.block_header_with_retries(block_hash).await?;
+		let Some(block_header) = block_header else {
+			return Err("Failed to find best block header.".into());
 		};
-		Ok(header)
+
+		Ok(block_header)
 	}
 
 	pub async fn finalized_block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
-		let header = self.block_header(self.finalized_block_hash().await?).await?;
-		let Some(header) = header else {
-			return Err("Finalized block header not found.".into());
+		let block_hash = self.finalized_block_hash().await?;
+		let block_header = self.block_header_with_retries(block_hash).await?;
+		let Some(block_header) = block_header else {
+			return Err("Failed to find best block header.".into());
 		};
-		Ok(header)
+
+		Ok(block_header)
 	}
 
 	// (RPC) Block
@@ -115,19 +159,63 @@ impl Client {
 		}
 	}
 
+	pub async fn block_with_retries(
+		&self,
+		at: H256,
+	) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			let block = self.rpc_api().chain_get_block(Some(at)).await;
+			let block = match block {
+				Ok(x) => x,
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err);
+					};
+
+					trace_warn(&std::format!(
+						"Fetching block ended with Err {}. Sleep for {} seconds",
+						err.to_string(),
+						duration
+					));
+					sleep(Duration::from_secs(duration)).await;
+					continue;
+				},
+			};
+
+			if let Some(block) = block {
+				return Ok(Some(block));
+			}
+
+			let Some(duration) = sleep_duration.pop() else {
+				return Ok(None);
+			};
+
+			trace_warn(&std::format!(
+				"Fetching block ended with Option<None>. Sleep for {} seconds",
+				duration
+			));
+			sleep(Duration::from_secs(duration)).await;
+		}
+	}
+
 	pub async fn best_block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
-		let block = self.block(self.best_block_hash().await?).await?;
+		let block_hash = self.best_block_hash().await?;
+		let block = self.block_with_retries(block_hash).await?;
 		let Some(block) = block else {
 			return Err("Best block not found.".into());
 		};
+
 		Ok(block)
 	}
 
 	pub async fn finalized_block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
-		let block = self.block(self.finalized_block_hash().await?).await?;
+		let block_hash = self.finalized_block_hash().await?;
+		let block = self.block_with_retries(block_hash).await?;
 		let Some(block) = block else {
 			return Err("Finalized block not found.".into());
 		};
+
 		Ok(block)
 	}
 
@@ -136,21 +224,110 @@ impl Client {
 		self.rpc_api().chain_get_block_hash(Some(block_height)).await
 	}
 
+	pub async fn block_hash_with_retries(&self, block_height: u32) -> Result<Option<H256>, avail_rust_core::Error> {
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			let hash = self.rpc_api().chain_get_block_hash(Some(block_height)).await;
+			let hash = match hash {
+				Ok(x) => x,
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err);
+					};
+
+					trace_warn(&std::format!(
+						"Fetching block hash ended with Err {}. Sleep for {} seconds",
+						err.to_string(),
+						duration
+					));
+					sleep(Duration::from_secs(duration)).await;
+					continue;
+				},
+			};
+
+			if let Some(hash) = hash {
+				return Ok(Some(hash));
+			}
+
+			let Some(duration) = sleep_duration.pop() else {
+				return Ok(None);
+			};
+
+			trace_warn(&std::format!(
+				"Fetching block hash ended with Option<None>. Sleep for {} seconds",
+				duration
+			));
+			sleep(Duration::from_secs(duration)).await;
+		}
+	}
+
 	pub async fn best_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
-		let hash = self.rpc_api().chain_get_block_hash(None).await?;
-		let Some(hash) = hash else {
-			return Err("Best block hash not found.".into());
-		};
-		Ok(hash)
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			let hash = self.rpc_api().chain_get_block_hash(None).await;
+			let hash = match hash {
+				Ok(x) => x,
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err);
+					};
+
+					trace_warn(&std::format!(
+						"Fetching best block hash ended with Err {}. Sleep for {} seconds",
+						err.to_string(),
+						duration
+					));
+					sleep(Duration::from_secs(duration)).await;
+					continue;
+				},
+			};
+
+			if let Some(hash) = hash {
+				return Ok(hash);
+			}
+
+			let Some(duration) = sleep_duration.pop() else {
+				return Err("Failed to fetch best block hash".into());
+			};
+
+			trace_warn(&std::format!(
+				"Fetching best block hash ended with Option<None>. Sleep for {} seconds",
+				duration
+			));
+			sleep(Duration::from_secs(duration)).await;
+		}
 	}
 
 	pub async fn finalized_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
-		self.rpc_api().chain_get_finalized_head().await
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			let hash = self.rpc_api().chain_get_finalized_head().await;
+			match hash {
+				Ok(x) => return Ok(x),
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err);
+					};
+
+					trace_warn(&std::format!(
+						"Fetching finalized block hash ended with Option<None>. Sleep for {} seconds",
+						duration
+					));
+					sleep(Duration::from_secs(duration)).await;
+					continue;
+				},
+			};
+		}
 	}
 
 	// Block Height
 	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, avail_rust_core::Error> {
-		let header = self.rpc_api().chain_get_header(Some(block_hash)).await?;
+		let header = self.block_header(block_hash).await?;
+		Ok(header.map(|x| x.number))
+	}
+
+	pub async fn block_height_with_retries(&self, block_hash: H256) -> Result<Option<u32>, avail_rust_core::Error> {
+		let header = self.block_header_with_retries(block_hash).await?;
 		Ok(header.map(|x| x.number))
 	}
 
@@ -165,7 +342,7 @@ impl Client {
 	// Block Id
 	pub async fn best_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
 		let hash = self.best_block_hash().await?;
-		let height = self.block_height(hash).await?;
+		let height = self.block_height_with_retries(hash).await?;
 		let Some(height) = height else {
 			return Err("Best block header not found.".into());
 		};
@@ -174,7 +351,7 @@ impl Client {
 
 	pub async fn finalized_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
 		let hash = self.finalized_block_hash().await?;
-		let height = self.block_height(hash).await?;
+		let height = self.block_height_with_retries(hash).await?;
 		let Some(height) = height else {
 			return Err("Finalized block header not found.".into());
 		};
@@ -401,4 +578,9 @@ impl Client {
 	) -> subscription::GrandpaJustificationsSubscription {
 		subscription::GrandpaJustificationsSubscription::new(self.clone(), poll_rate_ms, block_height)
 	}
+}
+
+fn trace_warn(message: &str) {
+	#[cfg(feature = "tracing")]
+	tracing::warn!(target: "lib", message);
 }

@@ -78,6 +78,22 @@ impl Subscriber {
 		}
 	}
 
+	pub fn stored_height(&self) -> Option<u32> {
+		match self {
+			Subscriber::BestBlock {
+				poll_rate: _,
+				current_block_height: _,
+				block_processed: _,
+				stored_height,
+			} => stored_height.clone(),
+			Subscriber::FinalizedBlock {
+				poll_rate: _,
+				next_block_height: _,
+				stored_height,
+			} => stored_height.clone(),
+		}
+	}
+
 	async fn run_best_block(
 		client: Client,
 		poll_rate: Duration,
@@ -128,7 +144,7 @@ impl Subscriber {
 				continue;
 			}
 
-			break client.block_hash(block_height).await?;
+			break client.block_hash_with_retries(block_height).await?;
 		};
 
 		*next_block_height += 1;
@@ -166,7 +182,7 @@ impl Subscriber {
 				continue;
 			}
 
-			let Some(best_block_height) = client.block_height(best_block_hash).await? else {
+			let Some(best_block_height) = client.block_height_with_retries(best_block_hash).await? else {
 				return Ok(None);
 			};
 
@@ -177,7 +193,7 @@ impl Subscriber {
 
 			if is_ahead_of_current_block {
 				if no_block_processed_yet {
-					let Some(block_hash) = client.block_hash(current_block_height).await? else {
+					let Some(block_hash) = client.block_hash_with_retries(current_block_height).await? else {
 						return Ok(None);
 					};
 					return Ok(Some((current_block_height, block_hash)));
@@ -188,7 +204,7 @@ impl Subscriber {
 				}
 
 				let next_block_height = current_block_height + 1;
-				let Some(next_block_hash) = client.block_hash(next_block_height).await? else {
+				let Some(next_block_hash) = client.block_hash_with_retries(next_block_height).await? else {
 					return Ok(None);
 				};
 
@@ -219,11 +235,21 @@ impl HeaderSubscription {
 	pub async fn next(&mut self) -> Result<Option<AvailHeader>, avail_rust_core::Error> {
 		let block_info = self.sub.run(self.client.clone()).await?;
 
-		let Some((_block_height, block_hash)) = block_info else {
+		let Some((block_height, block_hash)) = block_info else {
 			return Ok(None);
 		};
 
-		self.client.block_header(block_hash).await
+		if let Some(stored_height) = self.sub.stored_height() {
+			if stored_height > block_height {
+				return self.client.block_header(block_hash).await;
+			}
+		}
+
+		self.client.block_header_with_retries(block_hash).await
+	}
+
+	pub fn stored_height(&self) -> Option<u32> {
+		self.sub.stored_height()
 	}
 
 	pub fn current_block_height(&self) -> u32 {
@@ -245,11 +271,21 @@ impl BlockSubscription {
 	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
 		let block_info = self.sub.run(self.client.clone()).await?;
 
-		let Some((_block_height, block_hash)) = block_info else {
+		let Some((block_height, block_hash)) = block_info else {
 			return Ok(None);
 		};
 
-		self.client.block(block_hash).await
+		if let Some(stored_height) = self.sub.stored_height() {
+			if stored_height > block_height {
+				return self.client.block(block_hash).await;
+			}
+		}
+
+		self.client.block_with_retries(block_hash).await
+	}
+
+	pub fn stored_height(&self) -> Option<u32> {
+		self.sub.stored_height()
 	}
 
 	pub fn current_block_height(&self) -> u32 {
