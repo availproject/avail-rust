@@ -22,6 +22,10 @@ impl Transactions {
 	pub fn vector(&self) -> Vector {
 		Vector(self.0.clone())
 	}
+
+	pub fn system(&self) -> System {
+		System(self.0.clone())
+	}
 }
 
 pub struct DataAvailability(Client);

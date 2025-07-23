@@ -1,4 +1,4 @@
-use codec::{Decode, Encode};
+use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use subxt_core::config::{Hasher, Header, substrate::BlakeTwo256};
@@ -64,90 +64,104 @@ where
 	}
 }
 
-/* #[cfg(feature = "generated_metadata")]
-pub mod with_subxt_metadata {
-	use super::*;
-	pub use crate::subxt_avail::runtime_types::{
-		avail_core::header::{extension::HeaderExtension, Header as ApiHeader},
-		sp_runtime::generic::digest::{Digest as ApiDigest, DigestItem as ApiDigestItem},
-	};
-	use avail_rust_core::marker::PhantomData;
-
-	impl<B, H> From<AvailHeader> for ApiHeader<B, H>
-	where
-		B: From<u32>,
-	{
-		fn from(h: AvailHeader) -> Self {
-			Self {
-				parent_hash: h.parent_hash,
-				number: h.number.into(),
-				state_root: h.state_root,
-				extrinsics_root: h.extrinsics_root,
-				digest: h.digest.into(),
-				extension: h.extension,
-				__ignore: PhantomData,
-			}
-		}
-	}
-
-	impl From<Digest> for ApiDigest {
-		fn from(d: Digest) -> Self {
-			let logs = d.logs.into_iter().map(|xt_item| xt_item.into()).collect::<Vec<_>>();
-			Self { logs }
-		}
-	}
-
-	impl From<DigestItem> for ApiDigestItem {
-		fn from(di: DigestItem) -> Self {
-			match di {
-				DigestItem::PreRuntime(id, data) => ApiDigestItem::PreRuntime(id, data),
-				DigestItem::Consensus(id, data) => ApiDigestItem::Consensus(id, data),
-				DigestItem::Seal(id, data) => ApiDigestItem::Seal(id, data),
-				DigestItem::Other(data) => ApiDigestItem::Other(data),
-				DigestItem::RuntimeEnvironmentUpdated => ApiDigestItem::RuntimeEnvironmentUpdated,
-			}
-		}
-	}
-}
-	*/
-
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 #[repr(u8)]
 pub enum HeaderExtension {
 	V3(V3HeaderExtension) = 2,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct V3HeaderExtension {
 	pub app_lookup: CompactDataLookup,
 	pub commitment: KateCommitment,
 }
+impl Encode for V3HeaderExtension {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		self.app_lookup.encode_to(dest);
+		self.commitment.encode_to(dest);
+	}
+}
+impl Decode for V3HeaderExtension {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let app_lookup = Decode::decode(input)?;
+		let commitment = Decode::decode(input)?;
+		Ok(Self { app_lookup, commitment })
+	}
+}
 
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CompactDataLookup {
-	#[codec(compact)]
+	// Compact
 	pub size: u32,
 	pub index: Vec<DataLookupItem>,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-#[serde(rename_all = "camelCase")]
-pub struct DataLookupItem {
-	#[codec(compact)]
-	pub app_id: u32,
-	#[codec(compact)]
-	pub start: u32,
+impl Encode for CompactDataLookup {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		Compact(self.size).encode_to(dest);
+		self.index.encode_to(dest);
+	}
+}
+impl Decode for CompactDataLookup {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let size = Compact::<u32>::decode(input)?.0;
+		let index = Decode::decode(input)?;
+		Ok(Self { size, index })
+	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataLookupItem {
+	// Compact
+	pub app_id: u32,
+	// Compact
+	pub start: u32,
+}
+impl Encode for DataLookupItem {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		Compact(self.app_id).encode_to(dest);
+		Compact(self.start).encode_to(dest);
+	}
+}
+impl Decode for DataLookupItem {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let app_id = Compact::<u32>::decode(input)?.0;
+		let start = Compact::<u32>::decode(input)?.0;
+		Ok(Self { app_id, start })
+	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KateCommitment {
-	#[codec(compact)]
+	// Compact
 	pub rows: u16,
-	#[codec(compact)]
+	// Compact
 	pub cols: u16,
 	pub commitment: Vec<u8>,
 	pub data_root: H256,
+}
+impl Encode for KateCommitment {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		Compact(self.rows).encode_to(dest);
+		Compact(self.cols).encode_to(dest);
+		self.commitment.encode_to(dest);
+		self.data_root.encode_to(dest);
+	}
+}
+impl Decode for KateCommitment {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let rows = Compact::<u16>::decode(input)?.0;
+		let cols = Compact::<u16>::decode(input)?.0;
+		let commitment = Decode::decode(input)?;
+		let data_root = Decode::decode(input)?;
+		Ok(Self {
+			rows,
+			cols,
+			commitment,
+			data_root,
+		})
+	}
 }
