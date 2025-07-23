@@ -13,6 +13,21 @@ pub mod data_availability {
 
 	pub mod storage {
 		use super::*;
+		use crate::chain_types::system::types::DispatchFeeModifier;
+
+		pub struct NextAppId;
+		impl StorageValue for NextAppId {
+			const PALLET_NAME: &str = "DataAvailability";
+			const STORAGE_NAME: &str = "NextAppId";
+			type VALUE = Compact<u32>;
+		}
+
+		pub struct SubmitDataFeeModifier;
+		impl StorageValue for SubmitDataFeeModifier {
+			const PALLET_NAME: &str = "DataAvailability";
+			const STORAGE_NAME: &str = "SubmitDataFeeModifier";
+			type VALUE = DispatchFeeModifier;
+		}
 
 		pub struct AppKeys;
 		impl StorageMap for AppKeys {
@@ -422,18 +437,18 @@ pub mod balances {
 		#[derive(Debug, Clone)]
 		pub struct TransferAllowDeath {
 			pub dest: MultiAddress,
-			pub amount: Compact<u128>,
+			pub amount: u128,
 		}
 		impl Encode for TransferAllowDeath {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.dest.encode());
-				dest.write(&self.amount.encode());
+				self.dest.encode_to(dest);
+				Compact(self.amount).encode_to(dest);
 			}
 		}
 		impl Decode for TransferAllowDeath {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let dest = Decode::decode(input)?;
-				let amount = Decode::decode(input)?;
+				let amount = Compact::<u128>::decode(input)?.0;
 				Ok(Self { dest, amount })
 			}
 		}
@@ -444,18 +459,18 @@ pub mod balances {
 		#[derive(Debug, Clone)]
 		pub struct TransferKeepAlive {
 			pub dest: MultiAddress,
-			pub amount: Compact<u128>,
+			pub amount: u128,
 		}
 		impl Encode for TransferKeepAlive {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.dest.encode());
-				dest.write(&self.amount.encode());
+				self.dest.encode_to(dest);
+				Compact(self.amount).encode_to(dest);
 			}
 		}
 		impl Decode for TransferKeepAlive {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let dest = Decode::decode(input)?;
-				let amount = Decode::decode(input)?;
+				let amount = Compact::<u128>::decode(input)?.0;
 				Ok(Self { dest, amount })
 			}
 		}
@@ -470,8 +485,8 @@ pub mod balances {
 		}
 		impl Encode for TransferAll {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.dest.encode());
-				dest.write(&self.keep_alive.encode());
+				self.dest.encode_to(dest);
+				self.keep_alive.encode_to(dest);
 			}
 		}
 		impl Decode for TransferAll {
@@ -980,8 +995,8 @@ pub mod multisig {
 		}
 		impl Encode for Timepoint {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.height.encode());
-				dest.write(&self.index.encode());
+				self.height.encode_to(dest);
+				self.index.encode_to(dest);
 			}
 		}
 		impl Decode for Timepoint {
@@ -1111,8 +1126,8 @@ pub mod multisig {
 		}
 		impl Encode for AsMultiThreshold1 {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.other_signatories.encode());
-				dest.write(&self.call.encode());
+				self.other_signatories.encode_to(dest);
+				self.call.encode_to(dest);
 			}
 		}
 		impl Decode for AsMultiThreshold1 {
@@ -1139,11 +1154,11 @@ pub mod multisig {
 		}
 		impl Encode for AsMulti {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.threshold.encode());
-				dest.write(&self.other_signatories.encode());
-				dest.write(&self.maybe_timepoint.encode());
-				dest.write(&self.call.encode());
-				dest.write(&self.max_weight.encode());
+				self.threshold.encode_to(dest);
+				self.other_signatories.encode_to(dest);
+				self.maybe_timepoint.encode_to(dest);
+				self.call.encode_to(dest);
+				self.max_weight.encode_to(dest);
 			}
 		}
 		impl Decode for AsMulti {
@@ -1176,11 +1191,11 @@ pub mod multisig {
 		}
 		impl Encode for ApproveAsMulti {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.threshold.encode());
-				dest.write(&self.other_signatories.encode());
-				dest.write(&self.maybe_timepoint.encode());
-				dest.write(&self.call_hash.encode());
-				dest.write(&self.max_weight.encode());
+				self.threshold.encode_to(dest);
+				self.other_signatories.encode_to(dest);
+				self.maybe_timepoint.encode_to(dest);
+				self.call_hash.encode_to(dest);
+				self.max_weight.encode_to(dest);
 			}
 		}
 		impl Decode for ApproveAsMulti {
@@ -1212,10 +1227,10 @@ pub mod multisig {
 		}
 		impl Encode for CancelAsMulti {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.threshold.encode());
-				dest.write(&self.other_signatories.encode());
-				dest.write(&self.maybe_timepoint.encode());
-				dest.write(&self.call_hash.encode());
+				self.threshold.encode_to(dest);
+				self.other_signatories.encode_to(dest);
+				self.maybe_timepoint.encode_to(dest);
+				self.call_hash.encode_to(dest);
 			}
 		}
 		impl Decode for CancelAsMulti {
@@ -1260,12 +1275,12 @@ pub mod vector {
 		}
 		impl Encode for AddressedMessage {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.message.encode());
-				dest.write(&self.from.encode());
-				dest.write(&self.to.encode());
-				dest.write(&self.origin_domain.encode());
-				dest.write(&self.destination_domain.encode());
-				dest.write(&self.id.encode());
+				self.message.encode_to(dest);
+				self.from.encode_to(dest);
+				self.to.encode_to(dest);
+				self.origin_domain.encode_to(dest);
+				self.destination_domain.encode_to(dest);
+				self.id.encode_to(dest);
 			}
 		}
 		impl Decode for AddressedMessage {
@@ -1334,8 +1349,8 @@ pub mod vector {
 		}
 		impl Encode for Configuration {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.slots_per_period.encode());
-				dest.write(&self.finality_threshold.encode());
+				self.slots_per_period.encode_to(dest);
+				self.finality_threshold.encode_to(dest);
 			}
 		}
 		impl Decode for Configuration {
@@ -1363,11 +1378,11 @@ pub mod vector {
 		}
 		impl Encode for FulfillCall {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.function_id.encode());
-				dest.write(&self.input.encode());
-				dest.write(&self.output.encode());
-				dest.write(&self.proof.encode());
-				dest.write(&self.slot.encode());
+				self.function_id.encode_to(dest);
+				self.input.encode_to(dest);
+				self.output.encode_to(dest);
+				self.proof.encode_to(dest);
+				self.slot.encode_to(dest);
 			}
 		}
 		impl Decode for FulfillCall {
@@ -1399,10 +1414,10 @@ pub mod vector {
 		}
 		impl Encode for Execute {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.slot.encode());
-				dest.write(&self.addr_message.encode());
-				dest.write(&self.account_proof.encode());
-				dest.write(&self.storage_proof.encode());
+				self.slot.encode_to(dest);
+				self.addr_message.encode_to(dest);
+				self.account_proof.encode_to(dest);
+				self.storage_proof.encode_to(dest);
 			}
 		}
 		impl Decode for Execute {
@@ -1430,8 +1445,8 @@ pub mod vector {
 		}
 		impl Encode for SourceChainFroze {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.source_chain_id.encode());
-				dest.write(&self.frozen.encode());
+				self.source_chain_id.encode_to(dest);
+				self.frozen.encode_to(dest);
 			}
 		}
 		impl Decode for SourceChainFroze {
@@ -1457,10 +1472,10 @@ pub mod vector {
 		}
 		impl Encode for SendMessage {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.slot.encode());
-				dest.write(&self.message.encode());
-				dest.write(&self.to.encode());
-				dest.write(&self.domain.encode());
+				self.slot.encode_to(dest);
+				self.message.encode_to(dest);
+				self.to.encode_to(dest);
+				self.domain.encode_to(dest);
 			}
 		}
 		impl Decode for SendMessage {
@@ -1488,8 +1503,8 @@ pub mod vector {
 		}
 		impl Encode for SetPoseidonHash {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.period.encode());
-				dest.write(&self.poseidon_hash.encode());
+				self.period.encode_to(dest);
+				self.poseidon_hash.encode_to(dest);
 			}
 		}
 		impl Decode for SetPoseidonHash {
@@ -1510,8 +1525,8 @@ pub mod vector {
 		}
 		impl Encode for SetBroadcaster {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.broadcaster_domain.encode());
-				dest.write(&self.broadcaster.encode());
+				self.broadcaster_domain.encode_to(dest);
+				self.broadcaster.encode_to(dest);
 			}
 		}
 		impl Decode for SetBroadcaster {
@@ -2236,6 +2251,139 @@ pub mod timestamp {
 		}
 		impl HasTxDispatchIndex for Set {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+	}
+}
+
+pub mod staking {
+	pub const PALLET_ID: u8 = 10;
+
+	pub mod types {
+		pub type SessionIndex = u32;
+	}
+}
+
+pub mod grandpa {
+	use super::*;
+	pub const PALLET_ID: u8 = 17;
+
+	pub mod types {
+		use super::*;
+		pub type SetId = u64;
+
+		#[derive(Debug, Clone)]
+		pub struct StoredPendingChange {
+			/// The block number this was scheduled at.
+			pub scheduled_at: u32,
+			/// The delay in blocks until it will be applied.
+			pub delay: u32,
+			/// The next authority set, weakly bounded in size by `Limit`.
+			pub next_authorities: crate::grandpa::AuthorityList,
+			/// If defined it means the change was forced and the given block number
+			/// indicates the median last finalized block when the change was signaled.
+			pub forced: Option<u32>,
+		}
+		impl Encode for StoredPendingChange {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.scheduled_at.encode_to(dest);
+				self.delay.encode_to(dest);
+				self.next_authorities.encode_to(dest);
+				self.forced.encode_to(dest);
+			}
+		}
+		impl Decode for StoredPendingChange {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let scheduled_at = Decode::decode(input)?;
+				let delay = Decode::decode(input)?;
+				let next_authorities = Decode::decode(input)?;
+				let forced = Decode::decode(input)?;
+				Ok(Self {
+					scheduled_at,
+					delay,
+					next_authorities,
+					forced,
+				})
+			}
+		}
+
+		#[derive(Debug, Clone, codec::Decode, codec::Encode)]
+		pub enum StoredState {
+			/// The current authority set is live, and GRANDPA is enabled.
+			Live,
+			/// There is a pending pause event which will be enacted at the given block
+			/// height.
+			PendingPause {
+				/// Block at which the intention to pause was scheduled.
+				scheduled_at: u32,
+				/// Number of blocks after which the change will be enacted.
+				delay: u32,
+			},
+			/// The current GRANDPA authority set is paused.
+			Paused,
+			/// There is a pending resume event which will be enacted at the given block
+			/// height.
+			PendingResume {
+				/// Block at which the intention to resume was scheduled.
+				scheduled_at: u32,
+				/// Number of blocks after which the change will be enacted.
+				delay: u32,
+			},
+		}
+	}
+
+	pub mod storage {
+		use super::*;
+		use crate::avail::staking::types::SessionIndex;
+
+		pub struct SetIdSession;
+		impl StorageMap for SetIdSession {
+			const PALLET_NAME: &str = "Grandpa";
+			const STORAGE_NAME: &str = "SetIdSession";
+			const KEY_HASHER: StorageHasher = StorageHasher::Twox64Concat;
+			type KEY = types::SetId;
+			type VALUE = SessionIndex;
+		}
+
+		pub struct CurrentSetId;
+		impl StorageValue for CurrentSetId {
+			const PALLET_NAME: &str = "Grandpa";
+			const STORAGE_NAME: &str = "CurrentSetId";
+			type VALUE = types::SetId;
+		}
+
+		pub struct Authorities;
+		impl StorageValue for Authorities {
+			const PALLET_NAME: &str = "Grandpa";
+			const STORAGE_NAME: &str = "Authorities";
+			type VALUE = crate::grandpa::AuthorityList;
+		}
+
+		pub struct PendingChange;
+		impl StorageValue for PendingChange {
+			const PALLET_NAME: &str = "Grandpa";
+			const STORAGE_NAME: &str = "PendingChange";
+			type VALUE = types::StoredPendingChange;
+		}
+
+		pub struct StoredState;
+		impl StorageValue for StoredState {
+			const PALLET_NAME: &str = "Grandpa";
+			const STORAGE_NAME: &str = "StoredState";
+			type VALUE = types::StoredState;
+		}
+
+		pub struct NextForced;
+		impl StorageValue for NextForced {
+			const PALLET_NAME: &str = "Grandpa";
+			const STORAGE_NAME: &str = "NextForced";
+			type VALUE = u32;
+		}
+
+		pub struct Stalled;
+		impl StorageValue for Stalled {
+			const PALLET_NAME: &str = "Grandpa";
+			const STORAGE_NAME: &str = "Stalled";
+			type VALUE = (u32, u32);
 		}
 	}
 }
