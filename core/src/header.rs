@@ -64,64 +64,30 @@ where
 	}
 }
 
-/* #[cfg(feature = "generated_metadata")]
-pub mod with_subxt_metadata {
-	use super::*;
-	pub use crate::subxt_avail::runtime_types::{
-		avail_core::header::{extension::HeaderExtension, Header as ApiHeader},
-		sp_runtime::generic::digest::{Digest as ApiDigest, DigestItem as ApiDigestItem},
-	};
-	use avail_rust_core::marker::PhantomData;
-
-	impl<B, H> From<AvailHeader> for ApiHeader<B, H>
-	where
-		B: From<u32>,
-	{
-		fn from(h: AvailHeader) -> Self {
-			Self {
-				parent_hash: h.parent_hash,
-				number: h.number.into(),
-				state_root: h.state_root,
-				extrinsics_root: h.extrinsics_root,
-				digest: h.digest.into(),
-				extension: h.extension,
-				__ignore: PhantomData,
-			}
-		}
-	}
-
-	impl From<Digest> for ApiDigest {
-		fn from(d: Digest) -> Self {
-			let logs = d.logs.into_iter().map(|xt_item| xt_item.into()).collect::<Vec<_>>();
-			Self { logs }
-		}
-	}
-
-	impl From<DigestItem> for ApiDigestItem {
-		fn from(di: DigestItem) -> Self {
-			match di {
-				DigestItem::PreRuntime(id, data) => ApiDigestItem::PreRuntime(id, data),
-				DigestItem::Consensus(id, data) => ApiDigestItem::Consensus(id, data),
-				DigestItem::Seal(id, data) => ApiDigestItem::Seal(id, data),
-				DigestItem::Other(data) => ApiDigestItem::Other(data),
-				DigestItem::RuntimeEnvironmentUpdated => ApiDigestItem::RuntimeEnvironmentUpdated,
-			}
-		}
-	}
-}
-	*/
-
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 #[repr(u8)]
 pub enum HeaderExtension {
 	V3(V3HeaderExtension) = 2,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct V3HeaderExtension {
 	pub app_lookup: CompactDataLookup,
 	pub commitment: KateCommitment,
+}
+impl Encode for V3HeaderExtension {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		self.app_lookup.encode_to(dest);
+		self.commitment.encode_to(dest);
+	}
+}
+impl Decode for V3HeaderExtension {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let app_lookup = Decode::decode(input)?;
+		let commitment = Decode::decode(input)?;
+		Ok(Self { app_lookup, commitment })
+	}
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]

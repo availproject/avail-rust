@@ -27,18 +27,30 @@ pub mod data_availability {
 	pub mod types {
 		use super::*;
 
-		#[derive(Debug, Clone, codec::Decode)]
+		#[derive(Debug, Clone)]
 		pub struct AppKey {
 			pub owner: AccountId,
-			#[codec(compact)]
 			pub id: u32,
+		}
+		impl Encode for AppKey {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.owner.encode_to(dest);
+				Compact::<u32>(self.id).encode_to(dest);
+			}
+		}
+		impl Decode for AppKey {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let owner = Decode::decode(input)?;
+				let id = Compact::<u32>::decode(input)?.0;
+				Ok(Self { owner, id })
+			}
 		}
 	}
 
 	pub mod events {
 		use super::*;
 
-		#[derive(Debug, Clone, Decode)]
+		#[derive(Debug, Clone)]
 		pub struct ApplicationKeyCreated {
 			pub key: Vec<u8>,
 			pub owner: AccountId,
@@ -47,14 +59,42 @@ pub mod data_availability {
 		impl HasEventEmittedIndex for ApplicationKeyCreated {
 			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
+		impl Encode for ApplicationKeyCreated {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.key.encode_to(dest);
+				self.owner.encode_to(dest);
+				self.id.encode_to(dest);
+			}
+		}
+		impl Decode for ApplicationKeyCreated {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let key = Decode::decode(input)?;
+				let owner = Decode::decode(input)?;
+				let id = Decode::decode(input)?;
+				Ok(Self { key, owner, id })
+			}
+		}
 
-		#[derive(Debug, Clone, Decode)]
+		#[derive(Debug, Clone)]
 		pub struct DataSubmitted {
 			pub who: AccountId,
 			pub data_hash: H256,
 		}
 		impl HasEventEmittedIndex for DataSubmitted {
 			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Encode for DataSubmitted {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.data_hash.encode_to(dest);
+			}
+		}
+		impl Decode for DataSubmitted {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let data_hash = Decode::decode(input)?;
+				Ok(Self { who, data_hash })
+			}
 		}
 	}
 

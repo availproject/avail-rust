@@ -26,17 +26,38 @@ pub struct TransactionExtra {
 	pub app_id: u32,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone)]
 pub struct TransactionAdditional {
 	pub spec_version: u32,
 	pub tx_version: u32,
 	pub genesis_hash: H256,
 	pub fork_hash: H256,
 }
+impl Encode for TransactionAdditional {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		self.spec_version.encode_to(dest);
+		self.tx_version.encode_to(dest);
+		self.genesis_hash.encode_to(dest);
+		self.fork_hash.encode_to(dest);
+	}
+}
+impl Decode for TransactionAdditional {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let spec_version = Decode::decode(input)?;
+		let tx_version = Decode::decode(input)?;
+		let genesis_hash = Decode::decode(input)?;
+		let fork_hash = Decode::decode(input)?;
+		Ok(Self {
+			spec_version,
+			tx_version,
+			genesis_hash,
+			fork_hash,
+		})
+	}
+}
 
 #[derive(Debug, Clone)]
 pub struct AlreadyEncoded(pub Vec<u8>);
-
 impl Encode for AlreadyEncoded {
 	fn size_hint(&self) -> usize {
 		self.0.len()
@@ -46,7 +67,6 @@ impl Encode for AlreadyEncoded {
 		dest.write(&self.0);
 	}
 }
-
 impl Decode for AlreadyEncoded {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let length = input.remaining_len()?;
@@ -68,13 +88,12 @@ impl From<Vec<u8>> for AlreadyEncoded {
 	}
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone)]
 pub struct TransactionCall {
 	pub pallet_id: u8,
 	pub call_id: u8,
 	pub data: AlreadyEncoded,
 }
-
 impl TransactionCall {
 	pub fn new(pallet_id: u8, call_id: u8, data: Vec<u8>) -> Self {
 		Self {
@@ -82,6 +101,25 @@ impl TransactionCall {
 			call_id,
 			data: AlreadyEncoded::from(data),
 		}
+	}
+}
+impl Encode for TransactionCall {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		self.pallet_id.encode_to(dest);
+		self.call_id.encode_to(dest);
+		self.data.encode_to(dest);
+	}
+}
+impl Decode for TransactionCall {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let pallet_id = Decode::decode(input)?;
+		let call_id = Decode::decode(input)?;
+		let data = Decode::decode(input)?;
+		Ok(Self {
+			pallet_id,
+			call_id,
+			data,
+		})
 	}
 }
 
@@ -128,18 +166,29 @@ impl<'a> TransactionPayload<'a> {
 	}
 }
 
-#[derive(Debug, Clone, Decode)]
+#[derive(Debug, Clone)]
 pub struct TransactionSigned {
 	pub address: MultiAddress,
 	pub signature: MultiSignature,
 	pub tx_extra: TransactionExtra,
 }
-
 impl Encode for TransactionSigned {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		self.address.encode_to(dest);
 		self.signature.encode_to(dest);
 		self.tx_extra.encode_to(dest);
+	}
+}
+impl Decode for TransactionSigned {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let address = Decode::decode(input)?;
+		let signature = Decode::decode(input)?;
+		let tx_extra = Decode::decode(input)?;
+		Ok(Self {
+			address,
+			signature,
+			tx_extra,
+		})
 	}
 }
 
