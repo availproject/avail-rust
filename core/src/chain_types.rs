@@ -1,8 +1,8 @@
 use crate::{
-	AccountId, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, StorageHasher, StorageMap, TransactionCall,
+	AccountId, H256, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, StorageHasher, StorageMap, StorageValue,
+	TransactionCall,
 };
 use codec::{Compact, Decode, Encode};
-use primitive_types::H256;
 use scale_decode::DecodeAsType;
 use scale_encode::EncodeAsType;
 use serde::{Deserialize, Serialize};
@@ -2063,9 +2063,8 @@ pub mod system {
 	}
 
 	pub mod storage {
-		use crate::chain_types::system::types::AccountInfo;
-
 		use super::*;
+		use crate::chain_types::system::types::AccountInfo;
 
 		pub struct Account;
 		impl StorageMap for Account {
@@ -2191,6 +2190,52 @@ pub mod system {
 		}
 		impl HasTxDispatchIndex for RemarkWithEvent {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 7);
+		}
+	}
+}
+
+pub mod timestamp {
+	use super::*;
+	pub const PALLET_ID: u8 = 3;
+
+	pub mod storage {
+		use super::*;
+
+		pub struct Now;
+		impl StorageValue for Now {
+			const PALLET_NAME: &str = "Timestamp";
+			const STORAGE_NAME: &str = "Now";
+			type VALUE = u64;
+		}
+
+		pub struct DidUpdate;
+		impl StorageValue for DidUpdate {
+			const PALLET_NAME: &str = "Timestamp";
+			const STORAGE_NAME: &str = "DidUpdate";
+			type VALUE = bool;
+		}
+	}
+
+	pub mod tx {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		pub struct Set {
+			pub now: u64,
+		}
+		impl Encode for Set {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.now).encode_to(dest);
+			}
+		}
+		impl Decode for Set {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let now = Compact::<u64>::decode(input)?.0;
+				Ok(Self { now })
+			}
+		}
+		impl HasTxDispatchIndex for Set {
+			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 	}
 }
