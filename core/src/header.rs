@@ -1,4 +1,4 @@
-use codec::{Decode, Encode};
+use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use subxt_core::config::{Hasher, Header, substrate::BlakeTwo256};
@@ -90,30 +90,78 @@ impl Decode for V3HeaderExtension {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CompactDataLookup {
-	#[codec(compact)]
+	// Compact
 	pub size: u32,
 	pub index: Vec<DataLookupItem>,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-#[serde(rename_all = "camelCase")]
-pub struct DataLookupItem {
-	#[codec(compact)]
-	pub app_id: u32,
-	#[codec(compact)]
-	pub start: u32,
+impl Encode for CompactDataLookup {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		Compact(self.size).encode_to(dest);
+		self.index.encode_to(dest);
+	}
+}
+impl Decode for CompactDataLookup {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let size = Compact::<u32>::decode(input)?.0;
+		let index = Decode::decode(input)?;
+		Ok(Self { size, index })
+	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataLookupItem {
+	// Compact
+	pub app_id: u32,
+	// Compact
+	pub start: u32,
+}
+impl Encode for DataLookupItem {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		Compact(self.app_id).encode_to(dest);
+		Compact(self.start).encode_to(dest);
+	}
+}
+impl Decode for DataLookupItem {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let app_id = Compact::<u32>::decode(input)?.0;
+		let start = Compact::<u32>::decode(input)?.0;
+		Ok(Self { app_id, start })
+	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KateCommitment {
-	#[codec(compact)]
+	// Compact
 	pub rows: u16,
-	#[codec(compact)]
+	// Compact
 	pub cols: u16,
 	pub commitment: Vec<u8>,
 	pub data_root: H256,
+}
+impl Encode for KateCommitment {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		Compact(self.rows).encode_to(dest);
+		Compact(self.cols).encode_to(dest);
+		self.commitment.encode_to(dest);
+		self.data_root.encode_to(dest);
+	}
+}
+impl Decode for KateCommitment {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let rows = Compact::<u16>::decode(input)?.0;
+		let cols = Compact::<u16>::decode(input)?.0;
+		let commitment = Decode::decode(input)?;
+		let data_root = Decode::decode(input)?;
+		Ok(Self {
+			rows,
+			cols,
+			commitment,
+			data_root,
+		})
+	}
 }
