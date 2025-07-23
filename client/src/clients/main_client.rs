@@ -103,6 +103,7 @@ impl Client {
 						return Err(err);
 					};
 
+					#[cfg(feature = "tracing")]
 					trace_warn(&std::format!(
 						"Fetching block header ended with Err {}. Sleep for {} seconds",
 						err.to_string(),
@@ -121,6 +122,7 @@ impl Client {
 				return Ok(None);
 			};
 
+			#[cfg(feature = "tracing")]
 			trace_warn(&std::format!(
 				"Fetching block header ended with Option<None>. Sleep for {} seconds",
 				duration
@@ -173,6 +175,7 @@ impl Client {
 						return Err(err);
 					};
 
+					#[cfg(feature = "tracing")]
 					trace_warn(&std::format!(
 						"Fetching block ended with Err {}. Sleep for {} seconds",
 						err.to_string(),
@@ -191,6 +194,7 @@ impl Client {
 				return Ok(None);
 			};
 
+			#[cfg(feature = "tracing")]
 			trace_warn(&std::format!(
 				"Fetching block ended with Option<None>. Sleep for {} seconds",
 				duration
@@ -235,6 +239,7 @@ impl Client {
 						return Err(err);
 					};
 
+					#[cfg(feature = "tracing")]
 					trace_warn(&std::format!(
 						"Fetching block hash ended with Err {}. Sleep for {} seconds",
 						err.to_string(),
@@ -253,6 +258,7 @@ impl Client {
 				return Ok(None);
 			};
 
+			#[cfg(feature = "tracing")]
 			trace_warn(&std::format!(
 				"Fetching block hash ended with Option<None>. Sleep for {} seconds",
 				duration
@@ -272,6 +278,7 @@ impl Client {
 						return Err(err);
 					};
 
+					#[cfg(feature = "tracing")]
 					trace_warn(&std::format!(
 						"Fetching best block hash ended with Err {}. Sleep for {} seconds",
 						err.to_string(),
@@ -290,6 +297,7 @@ impl Client {
 				return Err("Failed to fetch best block hash".into());
 			};
 
+			#[cfg(feature = "tracing")]
 			trace_warn(&std::format!(
 				"Fetching best block hash ended with Option<None>. Sleep for {} seconds",
 				duration
@@ -309,6 +317,7 @@ impl Client {
 						return Err(err);
 					};
 
+					#[cfg(feature = "tracing")]
 					trace_warn(&std::format!(
 						"Fetching finalized block hash ended with Option<None>. Sleep for {} seconds",
 						duration
@@ -580,7 +589,7 @@ impl Client {
 	}
 }
 
+#[cfg(feature = "tracing")]
 fn trace_warn(message: &str) {
-	#[cfg(feature = "tracing")]
 	tracing::warn!(target: "lib", message);
 }

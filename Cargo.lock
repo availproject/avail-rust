@@ -227,7 +227,7 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "avail-rust-client"
-version = "0.2.10"
+version = "0.2.11"
 dependencies = [
  "avail-rust-core",
  "const-hex",
@@ -248,7 +248,7 @@ dependencies = [
 
 [[package]]
 name = "avail-rust-core"
-version = "0.2.10"
+version = "0.2.11"
 dependencies = [
  "const-hex",
  "impl-serde",
