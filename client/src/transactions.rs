@@ -42,27 +42,17 @@ impl DataAvailability {
 pub struct Balances(Client);
 impl Balances {
 	pub fn transfer_allow_death(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
-		avail::balances::tx::TransferAllowDeath {
-			dest: dest.into(),
-			amount: amount.into(),
-		}
-		.to_submittable(self.0.clone())
+		avail::balances::tx::TransferAllowDeath { dest: dest.into(), amount: amount.into() }
+			.to_submittable(self.0.clone())
 	}
 
 	pub fn transfer_keep_alive(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
-		avail::balances::tx::TransferKeepAlive {
-			dest: dest.into(),
-			amount: amount.into(),
-		}
-		.to_submittable(self.0.clone())
+		avail::balances::tx::TransferKeepAlive { dest: dest.into(), amount: amount.into() }
+			.to_submittable(self.0.clone())
 	}
 
 	pub fn transfer_all(&self, dest: AccountId, keep_alive: bool) -> SubmittableTransaction {
-		avail::balances::tx::TransferAll {
-			dest: dest.into(),
-			keep_alive,
-		}
-		.to_submittable(self.0.clone())
+		avail::balances::tx::TransferAll { dest: dest.into(), keep_alive }.to_submittable(self.0.clone())
 	}
 }
 
@@ -89,12 +79,7 @@ impl Proxy {
 		force_proxy_type: Option<avail::proxy::types::ProxyType>,
 		call: TransactionCall,
 	) -> SubmittableTransaction {
-		avail::proxy::tx::Proxy {
-			id: id.into(),
-			force_proxy_type,
-			call,
-		}
-		.to_submittable(self.0.clone())
+		avail::proxy::tx::Proxy { id: id.into(), force_proxy_type, call }.to_submittable(self.0.clone())
 	}
 
 	pub fn add_proxy(
@@ -103,12 +88,7 @@ impl Proxy {
 		proxy_type: avail::proxy::types::ProxyType,
 		delay: u32,
 	) -> SubmittableTransaction {
-		avail::proxy::tx::AddProxy {
-			id: id.into(),
-			proxy_type,
-			delay,
-		}
-		.to_submittable(self.0.clone())
+		avail::proxy::tx::AddProxy { id: id.into(), proxy_type, delay }.to_submittable(self.0.clone())
 	}
 
 	pub fn remove_proxy(
@@ -117,12 +97,7 @@ impl Proxy {
 		proxy_type: avail::proxy::types::ProxyType,
 		delay: u32,
 	) -> SubmittableTransaction {
-		avail::proxy::tx::RemoveProxy {
-			delegate: delegate.into(),
-			proxy_type,
-			delay,
-		}
-		.to_submittable(self.0.clone())
+		avail::proxy::tx::RemoveProxy { delegate: delegate.into(), proxy_type, delay }.to_submittable(self.0.clone())
 	}
 
 	pub fn remove_proxies(&self) -> SubmittableTransaction {
@@ -135,12 +110,7 @@ impl Proxy {
 		delay: u32,
 		index: u16,
 	) -> SubmittableTransaction {
-		avail::proxy::tx::CreatePure {
-			proxy_type,
-			delay,
-			index,
-		}
-		.to_submittable(self.0.clone())
+		avail::proxy::tx::CreatePure { proxy_type, delay, index }.to_submittable(self.0.clone())
 	}
 
 	pub fn kill_pure(
@@ -172,14 +142,8 @@ impl Vector {
 		proof: Vec<u8>,
 		slot: u64,
 	) -> SubmittableTransaction {
-		avail::vector::tx::FulfillCall {
-			function_id,
-			input,
-			output,
-			proof,
-			slot: slot.into(),
-		}
-		.to_submittable(self.0.clone())
+		avail::vector::tx::FulfillCall { function_id, input, output, proof, slot: slot.into() }
+			.to_submittable(self.0.clone())
 	}
 
 	pub fn execute(
@@ -199,11 +163,8 @@ impl Vector {
 	}
 
 	pub fn source_chain_froze(&self, source_chain_id: u32, frozen: bool) -> SubmittableTransaction {
-		avail::vector::tx::SourceChainFroze {
-			source_chain_id: source_chain_id.into(),
-			frozen,
-		}
-		.to_submittable(self.0.clone())
+		avail::vector::tx::SourceChainFroze { source_chain_id: source_chain_id.into(), frozen }
+			.to_submittable(self.0.clone())
 	}
 
 	pub fn send_message(
@@ -213,29 +174,17 @@ impl Vector {
 		to: H256,
 		domain: u32,
 	) -> SubmittableTransaction {
-		avail::vector::tx::SendMessage {
-			slot: slot.into(),
-			message,
-			to,
-			domain: domain.into(),
-		}
-		.to_submittable(self.0.clone())
+		avail::vector::tx::SendMessage { slot: slot.into(), message, to, domain: domain.into() }
+			.to_submittable(self.0.clone())
 	}
 
 	pub fn set_poseidon_hash(&self, period: u64, poseidon_hash: Vec<u8>) -> SubmittableTransaction {
-		avail::vector::tx::SetPoseidonHash {
-			period: period.into(),
-			poseidon_hash,
-		}
-		.to_submittable(self.0.clone())
+		avail::vector::tx::SetPoseidonHash { period: period.into(), poseidon_hash }.to_submittable(self.0.clone())
 	}
 
 	pub fn set_broadcaster(&self, broadcaster_domain: u32, broadcaster: H256) -> SubmittableTransaction {
-		avail::vector::tx::SetBroadcaster {
-			broadcaster_domain: broadcaster_domain.into(),
-			broadcaster,
-		}
-		.to_submittable(self.0.clone())
+		avail::vector::tx::SetBroadcaster { broadcaster_domain: broadcaster_domain.into(), broadcaster }
+			.to_submittable(self.0.clone())
 	}
 
 	pub fn set_whitelisted_domains(&self, value: Vec<u32>) -> SubmittableTransaction {
@@ -288,6 +237,7 @@ impl System {
 	pub fn set_code(&self, code: Vec<u8>) -> SubmittableTransaction {
 		avail::system::tx::SetCode { code }.to_submittable(self.0.clone())
 	}
+
 	pub fn set_code_without_checks(&self, code: Vec<u8>) -> SubmittableTransaction {
 		avail::system::tx::SetCodeWithoutChecks { code }.to_submittable(self.0.clone())
 	}

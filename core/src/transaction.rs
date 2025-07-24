@@ -47,12 +47,7 @@ impl Decode for TransactionAdditional {
 		let tx_version = Decode::decode(input)?;
 		let genesis_hash = Decode::decode(input)?;
 		let fork_hash = Decode::decode(input)?;
-		Ok(Self {
-			spec_version,
-			tx_version,
-			genesis_hash,
-			fork_hash,
-		})
+		Ok(Self { spec_version, tx_version, genesis_hash, fork_hash })
 	}
 }
 
@@ -96,11 +91,7 @@ pub struct TransactionCall {
 }
 impl TransactionCall {
 	pub fn new(pallet_id: u8, call_id: u8, data: Vec<u8>) -> Self {
-		Self {
-			pallet_id,
-			call_id,
-			data: AlreadyEncoded::from(data),
-		}
+		Self { pallet_id, call_id, data: AlreadyEncoded::from(data) }
 	}
 }
 impl Encode for TransactionCall {
@@ -115,11 +106,7 @@ impl Decode for TransactionCall {
 		let pallet_id = Decode::decode(input)?;
 		let call_id = Decode::decode(input)?;
 		let data = Decode::decode(input)?;
-		Ok(Self {
-			pallet_id,
-			call_id,
-			data,
-		})
+		Ok(Self { pallet_id, call_id, data })
 	}
 }
 
@@ -133,19 +120,11 @@ pub struct TransactionPayload<'a> {
 
 impl<'a> TransactionPayload<'a> {
 	pub fn new(call: TransactionCall, extra: TransactionExtra, additional: TransactionAdditional) -> Self {
-		Self {
-			call: Cow::Owned(call),
-			extra,
-			additional,
-		}
+		Self { call: Cow::Owned(call), extra, additional }
 	}
 
 	pub fn new_borrowed(call: &'a TransactionCall, extra: TransactionExtra, additional: TransactionAdditional) -> Self {
-		Self {
-			call: Cow::Borrowed(call),
-			extra,
-			additional,
-		}
+		Self { call: Cow::Borrowed(call), extra, additional }
 	}
 
 	pub fn sign(&self, signer: &Keypair) -> [u8; 64] {
@@ -184,11 +163,7 @@ impl Decode for TransactionSigned {
 		let address = Decode::decode(input)?;
 		let signature = Decode::decode(input)?;
 		let tx_extra = Decode::decode(input)?;
-		Ok(Self {
-			address,
-			signature,
-			tx_extra,
-		})
+		Ok(Self { address, signature, tx_extra })
 	}
 }
 
@@ -203,16 +178,9 @@ impl<'a> Transaction<'a> {
 		let address = MultiAddress::Id(account_id);
 		let signature = MultiSignature::Sr25519(signature);
 
-		let signed = Some(TransactionSigned {
-			address,
-			signature,
-			tx_extra: payload.extra.clone(),
-		});
+		let signed = Some(TransactionSigned { address, signature, tx_extra: payload.extra.clone() });
 
-		Self {
-			signed,
-			call: payload.call,
-		}
+		Self { signed, call: payload.call }
 	}
 
 	pub fn encode(&self) -> Vec<u8> {
@@ -285,10 +253,7 @@ impl<'a> Decode for Transaction<'a> {
 			}
 		}
 
-		Ok(Self {
-			signed,
-			call: Cow::Owned(call),
-		})
+		Ok(Self { signed, call: Cow::Owned(call) })
 	}
 }
 

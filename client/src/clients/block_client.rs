@@ -1,11 +1,8 @@
 use super::Client;
 use avail_rust_core::{
-	DecodedTransaction, EncodeSelector, H256, HasTxDispatchIndex, HashNumber,
-	rpc::{
-		self,
-		system::fetch_extrinsics_v1_types::{
-			self as Types, ExtrinsicInformation, Filter, SignatureFilter, TransactionFilter,
-		},
+	DecodedTransaction, EncodeSelector, H256, HasTxDispatchIndex, HashNumber, rpc,
+	rpc::system::fetch_extrinsics_v1_types::{
+		self as Types, ExtrinsicInformation, Filter, SignatureFilter, TransactionFilter,
 	},
 };
 

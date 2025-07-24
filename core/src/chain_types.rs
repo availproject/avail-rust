@@ -17,25 +17,28 @@ pub mod data_availability {
 
 		pub struct NextAppId;
 		impl StorageValue for NextAppId {
+			type VALUE = Compact<u32>;
+
 			const PALLET_NAME: &str = "DataAvailability";
 			const STORAGE_NAME: &str = "NextAppId";
-			type VALUE = Compact<u32>;
 		}
 
 		pub struct SubmitDataFeeModifier;
 		impl StorageValue for SubmitDataFeeModifier {
+			type VALUE = DispatchFeeModifier;
+
 			const PALLET_NAME: &str = "DataAvailability";
 			const STORAGE_NAME: &str = "SubmitDataFeeModifier";
-			type VALUE = DispatchFeeModifier;
 		}
 
 		pub struct AppKeys;
 		impl StorageMap for AppKeys {
-			const PALLET_NAME: &str = "DataAvailability";
-			const STORAGE_NAME: &str = "AppKeys";
-			const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
 			type KEY = Vec<u8>;
 			type VALUE = super::types::AppKey;
+
+			const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+			const PALLET_NAME: &str = "DataAvailability";
+			const STORAGE_NAME: &str = "AppKeys";
 		}
 	}
 
@@ -185,12 +188,7 @@ pub mod balances {
 				let reserved = Decode::decode(input)?;
 				let frozen = Decode::decode(input)?;
 				let flags = Decode::decode(input)?;
-				Ok(Self {
-					free,
-					reserved,
-					frozen,
-					flags,
-				})
+				Ok(Self { free, reserved, frozen, flags })
 			}
 		}
 
@@ -731,12 +729,7 @@ pub mod proxy {
 				let who = Decode::decode(input)?;
 				let proxy_type = Decode::decode(input)?;
 				let disambiguation_index = Decode::decode(input)?;
-				Ok(Self {
-					pure,
-					who,
-					proxy_type,
-					disambiguation_index,
-				})
+				Ok(Self { pure, who, proxy_type, disambiguation_index })
 			}
 		}
 
@@ -776,12 +769,7 @@ pub mod proxy {
 				let delegatee = Decode::decode(input)?;
 				let proxy_type = Decode::decode(input)?;
 				let delay = Decode::decode(input)?;
-				Ok(Self {
-					delegator,
-					delegatee,
-					proxy_type,
-					delay,
-				})
+				Ok(Self { delegator, delegatee, proxy_type, delay })
 			}
 		}
 
@@ -802,12 +790,7 @@ pub mod proxy {
 				let delegatee = Decode::decode(input)?;
 				let proxy_type = Decode::decode(input)?;
 				let delay = Decode::decode(input)?;
-				Ok(Self {
-					delegator,
-					delegatee,
-					proxy_type,
-					delay,
-				})
+				Ok(Self { delegator, delegatee, proxy_type, delay })
 			}
 		}
 	}
@@ -833,11 +816,7 @@ pub mod proxy {
 				let id = Decode::decode(input)?;
 				let force_proxy_type = Decode::decode(input)?;
 				let call = Decode::decode(input)?;
-				Ok(Self {
-					id,
-					force_proxy_type,
-					call,
-				})
+				Ok(Self { id, force_proxy_type, call })
 			}
 		}
 		impl HasTxDispatchIndex for Proxy {
@@ -887,11 +866,7 @@ pub mod proxy {
 				let delegate = Decode::decode(input)?;
 				let proxy_type = Decode::decode(input)?;
 				let delay = Decode::decode(input)?;
-				Ok(Self {
-					delegate,
-					proxy_type,
-					delay,
-				})
+				Ok(Self { delegate, proxy_type, delay })
 			}
 		}
 		impl HasTxDispatchIndex for RemoveProxy {
@@ -930,11 +905,7 @@ pub mod proxy {
 				let proxy_type = Decode::decode(input)?;
 				let delay = Decode::decode(input)?;
 				let index = Decode::decode(input)?;
-				Ok(Self {
-					proxy_type,
-					delay,
-					index,
-				})
+				Ok(Self { proxy_type, delay, index })
 			}
 		}
 		impl HasTxDispatchIndex for CreatePure {
@@ -965,13 +936,7 @@ pub mod proxy {
 				let index = Decode::decode(input)?;
 				let height = Decode::decode(input)?;
 				let ext_index = Decode::decode(input)?;
-				Ok(Self {
-					spawner,
-					proxy_type,
-					index,
-					height,
-					ext_index,
-				})
+				Ok(Self { spawner, proxy_type, index, height, ext_index })
 			}
 		}
 		impl HasTxDispatchIndex for KillPure {
@@ -1026,11 +991,7 @@ pub mod multisig {
 				let approving = Decode::decode(input)?;
 				let multisig = Decode::decode(input)?;
 				let call_hash = Decode::decode(input)?;
-				Ok(Self {
-					approving,
-					multisig,
-					call_hash,
-				})
+				Ok(Self { approving, multisig, call_hash })
 			}
 		}
 
@@ -1051,12 +1012,7 @@ pub mod multisig {
 				let timepoint = Decode::decode(input)?;
 				let multisig = Decode::decode(input)?;
 				let call_hash = Decode::decode(input)?;
-				Ok(Self {
-					approving,
-					timepoint,
-					multisig,
-					call_hash,
-				})
+				Ok(Self { approving, timepoint, multisig, call_hash })
 			}
 		}
 
@@ -1079,13 +1035,7 @@ pub mod multisig {
 				let multisig = Decode::decode(input)?;
 				let call_hash = Decode::decode(input)?;
 				let result = Decode::decode(input)?;
-				Ok(Self {
-					approving,
-					timepoint,
-					multisig,
-					call_hash,
-					result,
-				})
+				Ok(Self { approving, timepoint, multisig, call_hash, result })
 			}
 		}
 
@@ -1106,12 +1056,7 @@ pub mod multisig {
 				let timepoint = Decode::decode(input)?;
 				let multisig = Decode::decode(input)?;
 				let call_hash = Decode::decode(input)?;
-				Ok(Self {
-					cancelling,
-					timepoint,
-					multisig,
-					call_hash,
-				})
+				Ok(Self { cancelling, timepoint, multisig, call_hash })
 			}
 		}
 	}
@@ -1134,10 +1079,7 @@ pub mod multisig {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let other_signatories = Decode::decode(input)?;
 				let call = Decode::decode(input)?;
-				Ok(Self {
-					other_signatories,
-					call,
-				})
+				Ok(Self { other_signatories, call })
 			}
 		}
 		impl HasTxDispatchIndex for AsMultiThreshold1 {
@@ -1239,12 +1181,7 @@ pub mod multisig {
 				let other_signatories = Decode::decode(input)?;
 				let maybe_timepoint = Decode::decode(input)?;
 				let call_hash = Decode::decode(input)?;
-				Ok(Self {
-					threshold,
-					other_signatories,
-					maybe_timepoint,
-					call_hash,
-				})
+				Ok(Self { threshold, other_signatories, maybe_timepoint, call_hash })
 			}
 		}
 		impl HasTxDispatchIndex for CancelAsMulti {
@@ -1291,14 +1228,7 @@ pub mod vector {
 				let origin_domain = Decode::decode(input)?;
 				let destination_domain = Decode::decode(input)?;
 				let id = Decode::decode(input)?;
-				Ok(Self {
-					message,
-					from,
-					to,
-					origin_domain,
-					destination_domain,
-					id,
-				})
+				Ok(Self { message, from, to, origin_domain, destination_domain, id })
 			}
 		}
 
@@ -1357,10 +1287,7 @@ pub mod vector {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let slots_per_period = Decode::decode(input)?;
 				let finality_threshold = Decode::decode(input)?;
-				Ok(Self {
-					slots_per_period,
-					finality_threshold,
-				})
+				Ok(Self { slots_per_period, finality_threshold })
 			}
 		}
 	}
@@ -1392,13 +1319,7 @@ pub mod vector {
 				let output = Decode::decode(input)?;
 				let proof = Decode::decode(input)?;
 				let slot = Decode::decode(input)?;
-				Ok(Self {
-					function_id,
-					input: inputt,
-					output,
-					proof,
-					slot,
-				})
+				Ok(Self { function_id, input: inputt, output, proof, slot })
 			}
 		}
 		impl HasTxDispatchIndex for FulfillCall {
@@ -1426,12 +1347,7 @@ pub mod vector {
 				let addr_message = Decode::decode(input)?;
 				let account_proof = Decode::decode(input)?;
 				let storage_proof = Decode::decode(input)?;
-				Ok(Self {
-					slot,
-					addr_message,
-					account_proof,
-					storage_proof,
-				})
+				Ok(Self { slot, addr_message, account_proof, storage_proof })
 			}
 		}
 		impl HasTxDispatchIndex for Execute {
@@ -1453,10 +1369,7 @@ pub mod vector {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let source_chain_id = Decode::decode(input)?;
 				let frozen = Decode::decode(input)?;
-				Ok(Self {
-					source_chain_id,
-					frozen,
-				})
+				Ok(Self { source_chain_id, frozen })
 			}
 		}
 		impl HasTxDispatchIndex for SourceChainFroze {
@@ -1484,12 +1397,7 @@ pub mod vector {
 				let message = Decode::decode(input)?;
 				let to = Decode::decode(input)?;
 				let domain = Decode::decode(input)?;
-				Ok(Self {
-					slot,
-					message,
-					to,
-					domain,
-				})
+				Ok(Self { slot, message, to, domain })
 			}
 		}
 		impl HasTxDispatchIndex for SendMessage {
@@ -1533,10 +1441,7 @@ pub mod vector {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let broadcaster_domain = Decode::decode(input)?;
 				let broadcaster = Decode::decode(input)?;
-				Ok(Self {
-					broadcaster_domain,
-					broadcaster,
-				})
+				Ok(Self { broadcaster_domain, broadcaster })
 			}
 		}
 		impl HasTxDispatchIndex for SetBroadcaster {
@@ -1792,13 +1697,7 @@ pub mod system {
 				let providers = Decode::decode(input)?;
 				let sufficients = Decode::decode(input)?;
 				let data = Decode::decode(input)?;
-				Ok(Self {
-					nonce,
-					consumers,
-					providers,
-					sufficients,
-					data,
-				})
+				Ok(Self { nonce, consumers, providers, sufficients, data })
 			}
 		}
 
@@ -1827,12 +1726,7 @@ pub mod system {
 				let class = Decode::decode(input)?;
 				let pays_fee = Decode::decode(input)?;
 				let fee_modifier = Decode::decode(input)?;
-				Ok(Self {
-					weight,
-					class,
-					pays_fee,
-					fee_modifier,
-				})
+				Ok(Self { weight, class, pays_fee, fee_modifier })
 			}
 		}
 
@@ -2083,11 +1977,12 @@ pub mod system {
 
 		pub struct Account;
 		impl StorageMap for Account {
-			const PALLET_NAME: &str = "System";
-			const STORAGE_NAME: &str = "Account";
-			const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
 			type KEY = AccountId;
 			type VALUE = AccountInfo;
+
+			const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+			const PALLET_NAME: &str = "System";
+			const STORAGE_NAME: &str = "Account";
 		}
 	}
 
@@ -2120,10 +2015,7 @@ pub mod system {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let dispatch_error = Decode::decode(input)?;
 				let dispatch_info = Decode::decode(input)?;
-				Ok(Self {
-					dispatch_error,
-					dispatch_info,
-				})
+				Ok(Self { dispatch_error, dispatch_info })
 			}
 		}
 	}
@@ -2218,16 +2110,18 @@ pub mod timestamp {
 
 		pub struct Now;
 		impl StorageValue for Now {
+			type VALUE = u64;
+
 			const PALLET_NAME: &str = "Timestamp";
 			const STORAGE_NAME: &str = "Now";
-			type VALUE = u64;
 		}
 
 		pub struct DidUpdate;
 		impl StorageValue for DidUpdate {
+			type VALUE = bool;
+
 			const PALLET_NAME: &str = "Timestamp";
 			const STORAGE_NAME: &str = "DidUpdate";
-			type VALUE = bool;
 		}
 	}
 
@@ -2297,12 +2191,7 @@ pub mod grandpa {
 				let delay = Decode::decode(input)?;
 				let next_authorities = Decode::decode(input)?;
 				let forced = Decode::decode(input)?;
-				Ok(Self {
-					scheduled_at,
-					delay,
-					next_authorities,
-					forced,
-				})
+				Ok(Self { scheduled_at, delay, next_authorities, forced })
 			}
 		}
 
@@ -2337,53 +2226,60 @@ pub mod grandpa {
 
 		pub struct SetIdSession;
 		impl StorageMap for SetIdSession {
-			const PALLET_NAME: &str = "Grandpa";
-			const STORAGE_NAME: &str = "SetIdSession";
-			const KEY_HASHER: StorageHasher = StorageHasher::Twox64Concat;
 			type KEY = types::SetId;
 			type VALUE = SessionIndex;
+
+			const KEY_HASHER: StorageHasher = StorageHasher::Twox64Concat;
+			const PALLET_NAME: &str = "Grandpa";
+			const STORAGE_NAME: &str = "SetIdSession";
 		}
 
 		pub struct CurrentSetId;
 		impl StorageValue for CurrentSetId {
+			type VALUE = types::SetId;
+
 			const PALLET_NAME: &str = "Grandpa";
 			const STORAGE_NAME: &str = "CurrentSetId";
-			type VALUE = types::SetId;
 		}
 
 		pub struct Authorities;
 		impl StorageValue for Authorities {
+			type VALUE = crate::grandpa::AuthorityList;
+
 			const PALLET_NAME: &str = "Grandpa";
 			const STORAGE_NAME: &str = "Authorities";
-			type VALUE = crate::grandpa::AuthorityList;
 		}
 
 		pub struct PendingChange;
 		impl StorageValue for PendingChange {
+			type VALUE = types::StoredPendingChange;
+
 			const PALLET_NAME: &str = "Grandpa";
 			const STORAGE_NAME: &str = "PendingChange";
-			type VALUE = types::StoredPendingChange;
 		}
 
 		pub struct StoredState;
 		impl StorageValue for StoredState {
+			type VALUE = types::StoredState;
+
 			const PALLET_NAME: &str = "Grandpa";
 			const STORAGE_NAME: &str = "StoredState";
-			type VALUE = types::StoredState;
 		}
 
 		pub struct NextForced;
 		impl StorageValue for NextForced {
+			type VALUE = u32;
+
 			const PALLET_NAME: &str = "Grandpa";
 			const STORAGE_NAME: &str = "NextForced";
-			type VALUE = u32;
 		}
 
 		pub struct Stalled;
 		impl StorageValue for Stalled {
+			type VALUE = (u32, u32);
+
 			const PALLET_NAME: &str = "Grandpa";
 			const STORAGE_NAME: &str = "Stalled";
-			type VALUE = (u32, u32);
 		}
 	}
 }

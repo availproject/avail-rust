@@ -57,10 +57,7 @@ fn account_id_examples() -> Result<(), ClientError> {
 
 	// Account Id to SS58 Address
 	assert_eq!(alice.to_string(), "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
-	assert_eq!(
-		std::format!("{}", alice),
-		"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-	);
+	assert_eq!(std::format!("{}", alice), "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
 
 	Ok(())
 }
@@ -75,10 +72,7 @@ async fn account_information() -> Result<(), ClientError> {
 	let _balance = client.balance(&account_id, finalized_block_hash).await?;
 	let _balance = client.best_block_balance(&account_id).await?;
 	let balance = client.finalized_block_balance(&account_id).await?;
-	println!(
-		"Free: {}, Reserved: {}, Frozen: {}",
-		balance.free, balance.reserved, balance.frozen
-	);
+	println!("Free: {}, Reserved: {}, Frozen: {}", balance.free, balance.reserved, balance.frozen);
 
 	// Account Nonce
 	let account_id = AccountId::from_str("5HN2ZfzS6i87nxxv7Rbugob4KaYGD2B4xNq3ECkHfCkDZrTK")?;

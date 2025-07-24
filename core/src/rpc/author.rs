@@ -16,9 +16,7 @@ impl TryFrom<&[u8]> for SessionKeys {
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		if value.len() != 128 {
-			return Err(String::from(
-				"Session keys len cannot have length be more or less than 128",
-			));
+			return Err(String::from("Session keys len cannot have length be more or less than 128"));
 		}
 
 		let err = |e: TryFromSliceError| e.to_string();
@@ -27,12 +25,7 @@ impl TryFrom<&[u8]> for SessionKeys {
 		let grandpa: [u8; 32] = value[32..64].try_into().map_err(err)?;
 		let im_online: [u8; 32] = value[64..96].try_into().map_err(err)?;
 		let authority_discovery: [u8; 32] = value[96..128].try_into().map_err(err)?;
-		Ok(Self {
-			babe,
-			grandpa,
-			im_online,
-			authority_discovery,
-		})
+		Ok(Self { babe, grandpa, im_online, authority_discovery })
 	}
 }
 

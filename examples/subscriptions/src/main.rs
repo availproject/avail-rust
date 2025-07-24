@@ -140,11 +140,7 @@ async fn showcase_best_block_subscription(client: &Client) -> Result<(), ClientE
 		println!("Fetching new best block...");
 		let block = sub.next().await.ok().flatten().expect("Must be there");
 		let header = &block.block.header;
-		println!(
-			"Fetched best block with block number: {}, block hash: {:?}",
-			header.number,
-			header.hash(),
-		);
+		println!("Fetched best block with block number: {}, block hash: {:?}", header.number, header.hash(),);
 
 		if header.number == (expected_height - 1) {
 			println!(
@@ -165,16 +161,10 @@ async fn showcase_grandpa_justifications_subscription(client: &Client) -> Result
 	let mut sub = GrandpaJustificationsSubscription::new(client.clone(), 1000, 0);
 
 	let (justification, block_height) = sub.next().await?;
-	println!(
-		"Found grandpa justification at block: {}. Round: {}",
-		block_height, justification.round
-	);
+	println!("Found grandpa justification at block: {}. Round: {}", block_height, justification.round);
 
 	let (justification, block_height) = sub.next().await?;
-	println!(
-		"Found grandpa justification at block: {}. Round: {}",
-		block_height, justification.round
-	);
+	println!("Found grandpa justification at block: {}. Round: {}", block_height, justification.round);
 
 	Ok(())
 }

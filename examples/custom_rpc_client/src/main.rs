@@ -188,10 +188,7 @@ async fn main() -> Result<(), ClientError> {
 	let submittable = client.tx().data_availability().submit_data(vec![0, 1, 2]);
 	let submitted = submittable.sign_and_submit(&alice(), Options::new(Some(2))).await?;
 	let receipt = submitted.receipt(true).await?.expect("Must be there");
-	println!(
-		"Block Hash: {:?}, Tx hash: {:?}",
-		receipt.block_loc.hash, receipt.tx_loc.hash
-	);
+	println!("Block Hash: {:?}, Tx hash: {:?}", receipt.block_loc.hash, receipt.tx_loc.hash);
 
 	Ok(())
 }

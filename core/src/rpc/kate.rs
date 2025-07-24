@@ -19,10 +19,7 @@ where
 	C: Into<u32>,
 {
 	fn from((row, col): (R, C)) -> Self {
-		Self {
-			row: row.into(),
-			col: col.into(),
-		}
+		Self { row: row.into(), col: col.into() }
 	}
 }
 
@@ -43,6 +40,7 @@ impl From<GProof> for Vec<u8> {
 
 impl TryFrom<Vec<u8>> for GProof {
 	type Error = u32;
+
 	fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
 		if data.len() != 48 {
 			return Err(data.len() as u32);

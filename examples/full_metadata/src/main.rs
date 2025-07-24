@@ -14,20 +14,14 @@ async fn main() -> Result<(), ClientError> {
 	let st = payload.to_submittable_transaction(client.clone())?;
 	let st = st.sign_and_submit(&alice(), options).await?;
 	let receipt = st.receipt(false).await?.expect("");
-	println!(
-		"Block Hash: {:?}, Block Height: {:?}",
-		receipt.block_loc.hash, receipt.block_loc.height
-	);
+	println!("Block Hash: {:?}, Block Height: {:?}", receipt.block_loc.hash, receipt.block_loc.height);
 
 	// Payload can be converted to Transaction Call
 	let call = payload.to_transaction_call(&client)?;
 	let tx = SubmittableTransaction::new(client, call);
 	let st = tx.sign_and_submit(&alice(), options).await?;
 	let receipt = st.receipt(false).await?.expect("");
-	println!(
-		"Block Hash: {:?}, Block Height: {:?}",
-		receipt.block_loc.hash, receipt.block_loc.height
-	);
+	println!("Block Hash: {:?}, Block Height: {:?}", receipt.block_loc.hash, receipt.block_loc.height);
 
 	Ok(())
 }

@@ -176,14 +176,6 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 			Some(x) => transaction_extensions::CheckNonceParams::with_nonce(x),
 			None => transaction_extensions::CheckNonceParams::from_chain(),
 		};
-		(
-			(),
-			(),
-			(),
-			check_mortality_params,
-			check_nonce_params,
-			charge_transaction_params,
-			self.app_id,
-		)
+		((), (), (), check_mortality_params, check_nonce_params, charge_transaction_params, self.app_id)
 	}
 }

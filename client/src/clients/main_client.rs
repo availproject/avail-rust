@@ -52,10 +52,7 @@ impl Client {
 		rpc_client: RpcClient,
 		online_client: super::online_client::OnlineClient,
 	) -> Result<Client, avail_rust_core::Error> {
-		Ok(Self {
-			online_client,
-			rpc_client,
-		})
+		Ok(Self { online_client, rpc_client })
 	}
 
 	#[cfg(feature = "subxt")]
@@ -63,10 +60,7 @@ impl Client {
 		rpc_client: RpcClient,
 		online_client: crate::config::AOnlineClient,
 	) -> Result<Client, avail_rust_core::Error> {
-		Ok(Self {
-			online_client,
-			rpc_client,
-		})
+		Ok(Self { online_client, rpc_client })
 	}
 
 	pub fn tx(&self) -> Transactions {
@@ -123,10 +117,7 @@ impl Client {
 			};
 
 			#[cfg(feature = "tracing")]
-			trace_warn(&std::format!(
-				"Fetching block header ended with Option<None>. Sleep for {} seconds",
-				duration
-			));
+			trace_warn(&std::format!("Fetching block header ended with Option<None>. Sleep for {} seconds", duration));
 			sleep(Duration::from_secs(duration)).await;
 		}
 	}
@@ -195,10 +186,7 @@ impl Client {
 			};
 
 			#[cfg(feature = "tracing")]
-			trace_warn(&std::format!(
-				"Fetching block ended with Option<None>. Sleep for {} seconds",
-				duration
-			));
+			trace_warn(&std::format!("Fetching block ended with Option<None>. Sleep for {} seconds", duration));
 			sleep(Duration::from_secs(duration)).await;
 		}
 	}
@@ -259,10 +247,7 @@ impl Client {
 			};
 
 			#[cfg(feature = "tracing")]
-			trace_warn(&std::format!(
-				"Fetching block hash ended with Option<None>. Sleep for {} seconds",
-				duration
-			));
+			trace_warn(&std::format!("Fetching block hash ended with Option<None>. Sleep for {} seconds", duration));
 			sleep(Duration::from_secs(duration)).await;
 		}
 	}

@@ -29,11 +29,12 @@ impl HasEventEmittedIndex for CustomEvent {
 // Storage Definition
 pub struct CustomStorage;
 impl StorageMap for CustomStorage {
-	const PALLET_NAME: &str = "DataAvailability";
-	const STORAGE_NAME: &str = "AppKeys";
-	const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
 	type KEY = Vec<u8>;
 	type VALUE = AppKey;
+
+	const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+	const PALLET_NAME: &str = "DataAvailability";
+	const STORAGE_NAME: &str = "AppKeys";
 }
 #[derive(Debug, Clone, codec::Decode, codec::Encode)]
 pub struct AppKey {
@@ -99,10 +100,7 @@ fn event_decoding_encoding() {
 	assert_eq!(target_data_hash, custom.data_hash);
 
 	// Encoding
-	let custom = CustomEvent {
-		who: target_who,
-		data_hash: target_data_hash,
-	};
+	let custom = CustomEvent { who: target_who, data_hash: target_data_hash };
 	assert_eq!(event, custom.encode_as_hex_event());
 }
 

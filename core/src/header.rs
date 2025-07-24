@@ -157,11 +157,6 @@ impl Decode for KateCommitment {
 		let cols = Compact::<u16>::decode(input)?.0;
 		let commitment = Decode::decode(input)?;
 		let data_root = Decode::decode(input)?;
-		Ok(Self {
-			rows,
-			cols,
-			commitment,
-			data_root,
-		})
+		Ok(Self { rows, cols, commitment, data_root })
 	}
 }

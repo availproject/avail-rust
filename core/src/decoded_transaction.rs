@@ -198,10 +198,7 @@ impl Decode for OpaqueTransaction {
 			}
 		}
 
-		Ok(Self {
-			signature,
-			call: call.0,
-		})
+		Ok(Self { signature, call: call.0 })
 	}
 }
 
@@ -273,10 +270,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<&[u8]> for DecodedTransaction<T> {
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let opaque = OpaqueTransaction::try_from(value)?;
 		let call = T::decode_call(&opaque.call).ok_or(codec::Error::from("Failed to decode call"))?;
-		Ok(Self {
-			signature: opaque.signature,
-			call,
-		})
+		Ok(Self { signature: opaque.signature, call })
 	}
 }
 
@@ -302,10 +296,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<&str> for DecodedTransaction<T> {
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
 		let opaque = OpaqueTransaction::try_from(value)?;
 		let call = T::decode_call(&opaque.call).ok_or(codec::Error::from("Failed to decode call"))?;
-		Ok(Self {
-			signature: opaque.signature,
-			call,
-		})
+		Ok(Self { signature: opaque.signature, call })
 	}
 }
 
@@ -322,10 +313,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<&OpaqueTransaction> for DecodedTran
 
 	fn try_from(value: &OpaqueTransaction) -> Result<Self, Self::Error> {
 		let call = T::decode_call(&value.call).ok_or(codec::Error::from("Failed to decode call"))?;
-		Ok(Self {
-			signature: value.signature.clone(),
-			call,
-		})
+		Ok(Self { signature: value.signature.clone(), call })
 	}
 }
 
@@ -359,10 +347,7 @@ pub mod test {
 			},
 		};
 
-		let tx = Transaction {
-			signed: Some(signed.clone()),
-			call: Cow::Owned(call.clone()),
-		};
+		let tx = Transaction { signed: Some(signed.clone()), call: Cow::Owned(call.clone()) };
 
 		let encoded_tx = tx.encode();
 
@@ -390,10 +375,7 @@ pub mod test {
 			},
 		};
 
-		let tx = Transaction {
-			signed: Some(signed.clone()),
-			call: Cow::Owned(call.clone()),
-		};
+		let tx = Transaction { signed: Some(signed.clone()), call: Cow::Owned(call.clone()) };
 
 		let encoded_tx = tx.encode();
 		let expected_serialized = std::format!("0x{}", const_hex::encode(&encoded_tx));

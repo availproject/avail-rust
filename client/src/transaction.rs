@@ -104,13 +104,7 @@ impl SubmittedTransaction {
 		options: RefinedOptions,
 		additional: TransactionAdditional,
 	) -> Self {
-		Self {
-			client,
-			tx_hash,
-			account_id,
-			options,
-			additional,
-		}
+		Self { client, tx_hash, account_id, options, additional }
 	}
 
 	pub async fn receipt(&self, use_best_block: bool) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
@@ -144,11 +138,7 @@ pub struct TransactionReceipt {
 
 impl TransactionReceipt {
 	pub fn new(client: Client, block_loc: BlockLocation, tx_loc: TransactionLocation) -> Self {
-		Self {
-			client,
-			block_loc,
-			tx_loc,
-		}
+		Self { client, block_loc, tx_loc }
 	}
 
 	pub async fn block_state(&self) -> Result<BlockState, avail_rust_core::Error> {
@@ -233,7 +223,9 @@ impl Utils {
 			let next_header = sub.next().await?;
 			current_block_height = sub.current_block_height();
 
-			let Some(header) = next_header else { continue };
+			let Some(header) = next_header else {
+				continue;
+			};
 			let block_loc = BlockLocation::from((header.hash(), header.number));
 			let state_nonce = client.block_nonce(account_id, block_loc.hash).await?;
 

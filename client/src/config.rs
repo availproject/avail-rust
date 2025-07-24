@@ -44,17 +44,17 @@ pub struct AvailConfig;
 impl crate::subxt_core::Config for AvailConfig {
 	type AccountId = avail_rust_core::AccountId;
 	type Address = avail_rust_core::MultiAddress;
+	type AssetId = u32;
 	type ExtrinsicParams = AvailExtrinsicParams<Self>;
 	type Hash = avail_rust_core::BlockHash;
 	type Hasher = avail_rust_core::BlakeTwo256;
 	type Header = avail_rust_core::AvailHeader;
 	type Signature = avail_rust_core::MultiSignature;
-	type AssetId = u32;
 }
 
 #[cfg(not(feature = "subxt"))]
 impl RpcConfig for AvailConfig {
-	type Header = avail_rust_core::AvailHeader;
-	type Hash = avail_rust_core::BlockHash;
 	type AccountId = avail_rust_core::AccountId;
+	type Hash = avail_rust_core::BlockHash;
+	type Header = avail_rust_core::AvailHeader;
 }

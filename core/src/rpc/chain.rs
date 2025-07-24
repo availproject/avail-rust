@@ -63,7 +63,9 @@ pub async fn get_block(
 ) -> Result<Option<BlockWithJustifications>, subxt_rpcs::Error> {
 	let params = rpc_params![at];
 	let res: Option<BlockWithJustifications> = client.request("chain_getBlock", params).await?;
-	let Some(value) = res else { return Ok(None) };
+	let Some(value) = res else {
+		return Ok(None);
+	};
 	Ok(Some(value))
 }
 

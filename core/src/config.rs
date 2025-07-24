@@ -56,10 +56,7 @@ pub struct BlockLocation {
 
 impl From<(H256, u32)> for BlockLocation {
 	fn from(value: (H256, u32)) -> Self {
-		Self {
-			hash: value.0,
-			height: value.1,
-		}
+		Self { hash: value.0, height: value.1 }
 	}
 }
 
@@ -77,10 +74,7 @@ pub struct TransactionLocation {
 
 impl From<(H256, u32)> for TransactionLocation {
 	fn from(value: (H256, u32)) -> Self {
-		Self {
-			hash: value.0,
-			index: value.1,
-		}
+		Self { hash: value.0, index: value.1 }
 	}
 }
 

@@ -189,7 +189,9 @@ impl RpcAPI {
 		at: u32,
 	) -> Result<Option<GrandpaJustification>, avail_rust_core::Error> {
 		let result = rpc::grandpa::block_justification(&self.client.rpc_client, at).await?;
-		let Some(result) = result else { return Ok(None) };
+		let Some(result) = result else {
+			return Ok(None);
+		};
 
 		let justification = const_hex::decode(result.trim_start_matches("0x"))
 			.map_err(|x| avail_rust_core::Error::from(x.to_string()))?;

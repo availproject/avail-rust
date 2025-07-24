@@ -110,10 +110,7 @@ impl Decode for Precommit {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let target_hash = Decode::decode(input)?;
 		let target_number = Decode::decode(input)?;
-		Ok(Self {
-			target_hash,
-			target_number,
-		})
+		Ok(Self { target_hash, target_number })
 	}
 }
 
@@ -138,11 +135,7 @@ impl Decode for SignedPrecommit {
 		let precommit = Decode::decode(input)?;
 		let signature = Decode::decode(input)?;
 		let id = Decode::decode(input)?;
-		Ok(Self {
-			precommit,
-			signature,
-			id,
-		})
+		Ok(Self { precommit, signature, id })
 	}
 }
 
@@ -167,11 +160,7 @@ impl Decode for Commit {
 		let target_hash = Decode::decode(input)?;
 		let target_number = Decode::decode(input)?;
 		let precommits = Decode::decode(input)?;
-		Ok(Self {
-			target_hash,
-			target_number,
-			precommits,
-		})
+		Ok(Self { target_hash, target_number, precommits })
 	}
 }
 
@@ -193,10 +182,6 @@ impl Decode for GrandpaJustification {
 		let round = Decode::decode(input)?;
 		let commit = Decode::decode(input)?;
 		let votes_ancestries = Decode::decode(input)?;
-		Ok(Self {
-			round,
-			commit,
-			votes_ancestries,
-		})
+		Ok(Self { round, commit, votes_ancestries })
 	}
 }

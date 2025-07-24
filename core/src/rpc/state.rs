@@ -17,7 +17,9 @@ pub async fn call(
 pub async fn get_storage(client: &RpcClient, key: &str, at: Option<H256>) -> Result<Option<Vec<u8>>, Error> {
 	let params = rpc_params![key, at];
 	let value: Option<String> = client.request("state_getStorage", params).await?;
-	let Some(value) = value else { return Ok(None) };
+	let Some(value) = value else {
+		return Ok(None);
+	};
 	let value = const_hex::decode(value.trim_start_matches("0x"));
 	let value = value.map_err(|e| Error::from(e.to_string()))?;
 	Ok(Some(value))

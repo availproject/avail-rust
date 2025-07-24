@@ -43,6 +43,7 @@ impl<T: HasEventEmittedIndex + Encode> TransactionEventEncodable for T {
 
 		encoded_event
 	}
+
 	fn encode_as_hex_event(&self) -> String {
 		std::format!("0x{}", const_hex::encode(Self::encode_as_event(&self)))
 	}

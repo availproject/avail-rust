@@ -51,11 +51,8 @@ impl EventClient {
 		enable_decoding: bool,
 		at: H256,
 	) -> Result<Option<Vec<Types::RuntimeEvent>>, avail_rust_core::Error> {
-		let options = Types::Options::new(
-			Some(Types::Filter::Only(vec![tx_id])),
-			Some(enable_encoding),
-			Some(enable_decoding),
-		);
+		let options =
+			Types::Options::new(Some(Types::Filter::Only(vec![tx_id])), Some(enable_encoding), Some(enable_decoding));
 
 		let mut result = self.client.rpc_api().system_fetch_events_v1(at, Some(options)).await?;
 		if result.is_empty() {
@@ -91,7 +88,9 @@ impl EventClient {
 		let mut result: Vec<Event> = Vec::with_capacity(5);
 		let raw_events = Events::<AvailConfig>::decode_from(event_bytes, self.client.online_client().metadata());
 		for raw in raw_events.iter() {
-			let Ok(raw) = raw else { todo!() };
+			let Ok(raw) = raw else {
+				continue;
+			};
 			let mut bytes: Vec<u8> = Vec::with_capacity(raw.field_bytes().len() + 2);
 			bytes.push(raw.pallet_index());
 			bytes.push(raw.variant_index());
@@ -101,11 +100,7 @@ impl EventClient {
 				continue;
 			};
 
-			let value = Event {
-				phase: raw.phase(),
-				bytes,
-				topics: raw.topics().to_vec(),
-			};
+			let value = Event { phase: raw.phase(), bytes, topics: raw.topics().to_vec() };
 			result.push(value);
 		}
 

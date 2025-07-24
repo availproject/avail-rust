@@ -14,19 +14,13 @@ async fn main() -> Result<(), ClientError> {
 	let account_info = SystemStorage::Account::fetch(&client.rpc_client, &account_id, None)
 		.await?
 		.expect("Should be there");
-	println!(
-		"Account Nonce: {}, Account Free Balance: {}",
-		account_info.nonce, account_info.data.free
-	);
+	println!("Account Nonce: {}, Account Free Balance: {}", account_info.nonce, account_info.data.free);
 
 	let mut iter = SystemStorage::Account::iter(client.rpc_client.clone(), client.finalized_block_hash().await?);
 	for _ in 0..10 {
 		// You can fetch just the value...
 		let account_info = iter.next().await?.expect("Must be there");
-		println!(
-			"Account Nonce: {}, Account Free Balance: {}",
-			account_info.nonce, account_info.data.free
-		);
+		println!("Account Nonce: {}, Account Free Balance: {}", account_info.nonce, account_info.data.free);
 
 		// ...or both the value and the key
 		let (account_id, account_info) = iter.next_key_value().await?.expect("Must be there");

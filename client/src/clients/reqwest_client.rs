@@ -280,10 +280,7 @@ pub mod testable {
 				other: HashMap::new(),
 			};
 			let extension = V3HeaderExtension {
-				app_lookup: CompactDataLookup {
-					size: 0,
-					index: Vec::new(),
-				},
+				app_lookup: CompactDataLookup { size: 0, index: Vec::new() },
 				commitment: KateCommitment {
 					rows: 0,
 					cols: 0,

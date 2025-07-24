@@ -149,11 +149,7 @@ pub mod fetch_events_v1_types {
 
 	impl Options {
 		pub fn new(filter: Option<Filter>, enable_encoding: Option<bool>, enable_decoding: Option<bool>) -> Self {
-			Self {
-				filter,
-				enable_encoding,
-				enable_decoding,
-			}
+			Self { filter, enable_encoding, enable_decoding }
 		}
 	}
 
@@ -201,10 +197,7 @@ pub mod fetch_extrinsics_v1_types {
 
 	impl Options {
 		pub fn new(filter: Option<Filter>, selector: Option<EncodeSelector>) -> Self {
-			Self {
-				filter,
-				encode_selector: selector,
-			}
+			Self { filter, encode_selector: selector }
 		}
 	}
 
@@ -216,10 +209,7 @@ pub mod fetch_extrinsics_v1_types {
 
 	impl Filter {
 		pub fn new(tx: Option<TransactionFilter>, sig: Option<SignatureFilter>) -> Self {
-			Self {
-				transaction: tx,
-				signature: sig,
-			}
+			Self { transaction: tx, signature: sig }
 		}
 	}
 
@@ -272,11 +262,7 @@ pub mod fetch_extrinsics_v1_types {
 
 	impl SignatureFilter {
 		pub fn new(ss58_address: Option<String>, app_id: Option<u32>, nonce: Option<u32>) -> Self {
-			Self {
-				ss58_address,
-				app_id,
-				nonce,
-			}
+			Self { ss58_address, app_id, nonce }
 		}
 	}
 

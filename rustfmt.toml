@@ -3,12 +3,16 @@ use_field_init_shorthand = true
 edition = "2024"
 hard_tabs = true
 max_width = 120
+reorder_impl_items = true
+short_array_element_width_threshold = 20
+single_line_let_else_max_width = 0
+imports_granularity = "Crate"
+struct_lit_width = 60
+fn_call_width = 100
 
 # Disabled on Stable
 #
 # fn_single_line = true
 # match_arm_blocks = true
-imports_granularity = "Crate"
 # overflow_delimited_expr = true
-# reorder_impl_items = true
 # group_imports = "StdExternalCrate"

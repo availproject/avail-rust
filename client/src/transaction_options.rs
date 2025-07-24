@@ -58,12 +58,7 @@ impl Options {
 			MortalityOption::Full(mortality) => mortality,
 		};
 
-		Ok(RefinedOptions {
-			app_id,
-			mortality,
-			nonce,
-			tip,
-		})
+		Ok(RefinedOptions { app_id, mortality, nonce, tip })
 	}
 }
 
@@ -101,20 +96,12 @@ pub struct RefinedMortality {
 }
 impl RefinedMortality {
 	pub fn new(period: u64, block_hash: H256, block_height: u32) -> Self {
-		Self {
-			period,
-			block_hash,
-			block_height,
-		}
+		Self { period, block_hash, block_height }
 	}
 
 	pub async fn from_period(client: &Client, period: u64) -> Result<Self, avail_rust_core::Error> {
 		let header = client.finalized_block_header().await?;
 		let (block_hash, block_height) = (header.hash(), header.number());
-		Ok(Self {
-			period,
-			block_hash,
-			block_height,
-		})
+		Ok(Self { period, block_hash, block_height })
 	}
 }

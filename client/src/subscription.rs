@@ -46,11 +46,7 @@ impl Subscriber {
 				return Self::run_best_block(client, *poll_rate, current_block_height, block_processed, stored_height)
 					.await;
 			},
-			Subscriber::FinalizedBlock {
-				poll_rate,
-				next_block_height,
-				stored_height,
-			} => {
+			Subscriber::FinalizedBlock { poll_rate, next_block_height, stored_height } => {
 				return Self::run_finalized(client, *poll_rate, next_block_height, stored_height).await;
 			},
 		}
@@ -64,11 +60,7 @@ impl Subscriber {
 				block_processed: _,
 				stored_height: _,
 			} => *current_block_height,
-			Subscriber::FinalizedBlock {
-				poll_rate: _,
-				next_block_height,
-				stored_height: _,
-			} => {
+			Subscriber::FinalizedBlock { poll_rate: _, next_block_height, stored_height: _ } => {
 				if *next_block_height > 0 {
 					*next_block_height - 1
 				} else {
@@ -86,11 +78,7 @@ impl Subscriber {
 				block_processed: _,
 				stored_height,
 			} => stored_height.clone(),
-			Subscriber::FinalizedBlock {
-				poll_rate: _,
-				next_block_height: _,
-				stored_height,
-			} => stored_height.clone(),
+			Subscriber::FinalizedBlock { poll_rate: _, next_block_height: _, stored_height } => stored_height.clone(),
 		}
 	}
 

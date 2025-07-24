@@ -90,10 +90,7 @@ pub async fn transaction_example(client: Client, block_hash: H256, tx_hash: H256
 
 	// Printing out Transaction signature data like: Signer, Nonce, App Id
 	if let Some(signature) = &info.signature {
-		println!(
-			"ss58: {:?}, Nonce: {}, App Id: {}",
-			signature.ss58_address, signature.nonce, signature.app_id
-		);
+		println!("ss58: {:?}, Nonce: {}, App Id: {}", signature.ss58_address, signature.nonce, signature.app_id);
 	}
 
 	// Decoding the Transaction Call
@@ -113,10 +110,7 @@ pub async fn transaction_example(client: Client, block_hash: H256, tx_hash: H256
 
 	// Printing out Transaction signature data like: Signer, Nonce, App Id
 	if let Some(signature) = &info.signature {
-		println!(
-			"ss58: {:?}, Nonce: {}, App Id: {}",
-			signature.ss58_address, signature.nonce, signature.app_id
-		);
+		println!("ss58: {:?}, Nonce: {}, App Id: {}", signature.ss58_address, signature.nonce, signature.app_id);
 	}
 
 	decode_transaction(&info.encoded.expect("Must be there"));
@@ -142,10 +136,7 @@ pub async fn transaction_static_example(client: Client, block_hash: H256, tx_has
 
 	// Printing out Transaction signature data like: Signer, Nonce, App Id
 	if let Some(signature) = &info.signature {
-		println!(
-			"ss58: {:?}, Nonce: {}, App Id: {}",
-			signature.ss58_address, signature.nonce, signature.app_id
-		);
+		println!("ss58: {:?}, Nonce: {}, App Id: {}", signature.ss58_address, signature.nonce, signature.app_id);
 	}
 
 	println!("Data: {:?}", transaction.call.data);
@@ -214,10 +205,7 @@ pub async fn transactions_filter_example(client: Client, block_hash: H256) -> Re
 	assert_eq!(infos.len(), 1);
 	for info in infos.iter() {
 		let signature = &info.signature;
-		assert_eq!(
-			signature.as_ref().and_then(|x| x.ss58_address.clone()),
-			Some(address.clone())
-		);
+		assert_eq!(signature.as_ref().and_then(|x| x.ss58_address.clone()), Some(address.clone()));
 	}
 
 	Ok(())

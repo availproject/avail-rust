@@ -26,6 +26,7 @@ pub struct OnlineClient {
 
 impl std::ops::Deref for OnlineClient {
 	type Target = dyn OnlineClientT;
+
 	fn deref(&self) -> &Self::Target {
 		&*self.client
 	}
@@ -67,18 +68,14 @@ impl OnlineClientT for OnlineClient {
 
 impl From<SimpleOnlineClient> for OnlineClient {
 	fn from(value: SimpleOnlineClient) -> Self {
-		Self {
-			client: Arc::new(value),
-		}
+		Self { client: Arc::new(value) }
 	}
 }
 
 #[cfg(feature = "subxt")]
 impl From<SubxtOnlineClient<AvailConfig>> for OnlineClient {
 	fn from(value: SubxtOnlineClient<AvailConfig>) -> Self {
-		Self {
-			client: Arc::new(value),
-		}
+		Self { client: Arc::new(value) }
 	}
 }
 
@@ -111,9 +108,7 @@ impl SimpleOnlineClient {
 			transaction_version: runtime_version.transaction_version,
 			metadata,
 		};
-		Ok(Self {
-			inner: Arc::new(RwLock::new(inner)),
-		})
+		Ok(Self { inner: Arc::new(RwLock::new(inner)) })
 	}
 }
 

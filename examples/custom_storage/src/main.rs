@@ -7,18 +7,20 @@ use avail_rust_client::prelude::*;
 
 pub struct TimestampNow;
 impl StorageValue for TimestampNow {
+	type VALUE = u64;
+
 	const PALLET_NAME: &str = "Timestamp";
 	const STORAGE_NAME: &str = "Now";
-	type VALUE = u64;
 }
 
 pub struct DataAvailabilityAppKeys;
 impl StorageMap for DataAvailabilityAppKeys {
-	const PALLET_NAME: &str = "DataAvailability";
-	const STORAGE_NAME: &str = "AppKeys";
-	const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
 	type KEY = Vec<u8>;
 	type VALUE = AppKey;
+
+	const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
+	const PALLET_NAME: &str = "DataAvailability";
+	const STORAGE_NAME: &str = "AppKeys";
 }
 #[derive(Debug, Clone, codec::Decode)]
 pub struct AppKey {
@@ -29,13 +31,14 @@ pub struct AppKey {
 
 pub struct StakingErasValidatorPrefs;
 impl StorageDoubleMap for StakingErasValidatorPrefs {
-	const PALLET_NAME: &str = "Staking";
-	const STORAGE_NAME: &str = "ErasValidatorPrefs";
-	const KEY1_HASHER: StorageHasher = StorageHasher::Twox64Concat;
-	const KEY2_HASHER: StorageHasher = StorageHasher::Twox64Concat;
 	type KEY1 = u32;
 	type KEY2 = AccountId;
 	type VALUE = ValidatorPrefs;
+
+	const KEY1_HASHER: StorageHasher = StorageHasher::Twox64Concat;
+	const KEY2_HASHER: StorageHasher = StorageHasher::Twox64Concat;
+	const PALLET_NAME: &str = "Staking";
+	const STORAGE_NAME: &str = "ErasValidatorPrefs";
 }
 
 #[derive(Debug, Clone, codec::Encode, codec::Decode)]
@@ -62,13 +65,10 @@ async fn main() -> Result<(), ClientError> {
 	println!("Timestamp: {}", value);
 
 	// Fetching Storage Map
-	let value = DataAvailabilityAppKeys::fetch(
-		&client.rpc_client,
-		&"MyAwesomeKey".as_bytes().to_vec(),
-		Some(block_hash),
-	)
-	.await?
-	.expect("Needs to be there");
+	let value =
+		DataAvailabilityAppKeys::fetch(&client.rpc_client, &"MyAwesomeKey".as_bytes().to_vec(), Some(block_hash))
+			.await?
+			.expect("Needs to be there");
 	println!("Owner: {}, id: {}", value.owner, value.id);
 
 	// Iterating Storage Map
@@ -80,12 +80,7 @@ async fn main() -> Result<(), ClientError> {
 
 		// ...or both the value and the key
 		let (key, value) = iter.next_key_value().await?.expect("Needs to be there");
-		println!(
-			"Key: {}, Owner: {}, id: {}",
-			String::from_utf8(key).expect(""),
-			value.owner,
-			value.id
-		);
+		println!("Key: {}, Owner: {}, id: {}", String::from_utf8(key).expect(""), value.owner, value.id);
 	}
 
 	// Fetching Double Storage Map
@@ -107,10 +102,7 @@ async fn main() -> Result<(), ClientError> {
 
 		// ...or both the value and the key
 		let (key1, key2, value) = iter.next_key_value().await?.expect("Needs to be there");
-		println!(
-			"Key1: {}, Key2: {}, Blocked: {}, Comission: {}",
-			key1, key2, value.blocked, value.commission
-		);
+		println!("Key1: {}, Key2: {}, Blocked: {}, Comission: {}", key1, key2, value.blocked, value.commission);
 	}
 
 	Ok(())
