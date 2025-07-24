@@ -245,6 +245,90 @@ impl<'a> Deserialize<'a> for OpaqueTransaction {
 	}
 }
 
+#[derive(Debug, Clone)]
+pub struct DecodedTransaction<T: HasTxDispatchIndex + Decode> {
+	pub signature: Option<TransactionSigned>,
+	pub call: Box<T>,
+}
+
+impl<T: HasTxDispatchIndex + Decode> TryFrom<Vec<u8>> for DecodedTransaction<T> {
+	type Error = codec::Error;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_slice())
+	}
+}
+
+impl<T: HasTxDispatchIndex + Decode> TryFrom<&Vec<u8>> for DecodedTransaction<T> {
+	type Error = codec::Error;
+
+	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_slice())
+	}
+}
+
+impl<T: HasTxDispatchIndex + Decode> TryFrom<&[u8]> for DecodedTransaction<T> {
+	type Error = codec::Error;
+
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let opaque = OpaqueTransaction::try_from(value)?;
+		let call = T::decode_call(&opaque.call).ok_or(codec::Error::from("Failed to decode call"))?;
+		Ok(Self {
+			signature: opaque.signature,
+			call,
+		})
+	}
+}
+
+impl<T: HasTxDispatchIndex + Decode> TryFrom<String> for DecodedTransaction<T> {
+	type Error = codec::Error;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_str())
+	}
+}
+
+impl<T: HasTxDispatchIndex + Decode> TryFrom<&String> for DecodedTransaction<T> {
+	type Error = codec::Error;
+
+	fn try_from(value: &String) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_str())
+	}
+}
+
+impl<T: HasTxDispatchIndex + Decode> TryFrom<&str> for DecodedTransaction<T> {
+	type Error = codec::Error;
+
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		let opaque = OpaqueTransaction::try_from(value)?;
+		let call = T::decode_call(&opaque.call).ok_or(codec::Error::from("Failed to decode call"))?;
+		Ok(Self {
+			signature: opaque.signature,
+			call,
+		})
+	}
+}
+
+impl<T: HasTxDispatchIndex + Decode> TryFrom<OpaqueTransaction> for DecodedTransaction<T> {
+	type Error = codec::Error;
+
+	fn try_from(value: OpaqueTransaction) -> Result<Self, Self::Error> {
+		Self::try_from(&value)
+	}
+}
+
+impl<T: HasTxDispatchIndex + Decode> TryFrom<&OpaqueTransaction> for DecodedTransaction<T> {
+	type Error = codec::Error;
+
+	fn try_from(value: &OpaqueTransaction) -> Result<Self, Self::Error> {
+		let call = T::decode_call(&value.call).ok_or(codec::Error::from("Failed to decode call"))?;
+		Ok(Self {
+			signature: value.signature.clone(),
+			call,
+		})
+	}
+}
+
 #[cfg(test)]
 pub mod test {
 	use super::TransactionConvertible;

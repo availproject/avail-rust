@@ -234,6 +234,7 @@ dependencies = [
  "frame-metadata 20.0.0",
  "futures",
  "impl-serde",
+ "parity-scale-codec",
  "reqwest",
  "scale-info",
  "serde",

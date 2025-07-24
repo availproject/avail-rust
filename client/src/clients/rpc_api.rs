@@ -1,3 +1,4 @@
+use crate::platform::sleep;
 use avail_rust_core::{
 	AvailHeader, H256, HashNumber,
 	ext::{
@@ -16,6 +17,7 @@ use avail_rust_core::{
 		system::{NodeRole, PeerInfo, SyncState, SystemProperties, fetch_events_v1_types, fetch_extrinsics_v1_types},
 	},
 };
+use std::time::Duration;
 
 use crate::Client;
 
@@ -204,6 +206,36 @@ impl RpcAPI {
 		Ok(rpc::system::fetch_events_v1(&self.client.rpc_client, at, options).await?)
 	}
 
+	pub async fn system_fetch_events_v1_with_retries(
+		&self,
+		at: H256,
+		options: Option<fetch_events_v1_types::Options>,
+	) -> Result<fetch_events_v1_types::Output, avail_rust_core::Error> {
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			let events = rpc::system::fetch_events_v1(&self.client.rpc_client, at, options.clone()).await;
+			let events = match events {
+				Ok(x) => x,
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err.into());
+					};
+
+					#[cfg(feature = "tracing")]
+					trace_warn(&std::format!(
+						"Fetching events (system_fetchEventsV1) ended with Err {}. Sleep for {} seconds",
+						err.to_string(),
+						duration
+					));
+					sleep(Duration::from_secs(duration)).await;
+					continue;
+				},
+			};
+
+			return Ok(events);
+		}
+	}
+
 	pub async fn system_fetch_extrinsics_v1(
 		&self,
 		block_id: HashNumber,
@@ -211,4 +243,39 @@ impl RpcAPI {
 	) -> Result<fetch_extrinsics_v1_types::Output, avail_rust_core::Error> {
 		Ok(rpc::system::fetch_extrinsics_v1(&self.client.rpc_client, block_id, options).await?)
 	}
+
+	pub async fn system_fetch_extrinsics_v1_with_retries(
+		&self,
+		block_id: HashNumber,
+		options: Option<fetch_extrinsics_v1_types::Options>,
+	) -> Result<fetch_extrinsics_v1_types::Output, avail_rust_core::Error> {
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			let txs = rpc::system::fetch_extrinsics_v1(&self.client.rpc_client, block_id, options.clone()).await;
+			let txs = match txs {
+				Ok(x) => x,
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err.into());
+					};
+
+					#[cfg(feature = "tracing")]
+					trace_warn(&std::format!(
+						"Fetching extrinsics (system_fetchExtrinsicsV1) ended with Err {}. Sleep for {} seconds",
+						err.to_string(),
+						duration
+					));
+					sleep(Duration::from_secs(duration)).await;
+					continue;
+				},
+			};
+
+			return Ok(txs);
+		}
+	}
+}
+
+#[cfg(feature = "tracing")]
+fn trace_warn(message: &str) {
+	tracing::warn!(target: "lib", message);
 }

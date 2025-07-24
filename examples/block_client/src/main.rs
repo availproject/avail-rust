@@ -10,7 +10,7 @@
 //! (block header + all transactions + justifications) while the second RPC will fetch only the
 //! transactions that we specify plus it decodes some of the transaction parts for us.
 //!
-//! In 99.99% cases block_transactions RPC is the one that you need/want
+//! In 99.99% cases transactions RPC is the one that you need/want
 
 use avail::data_availability::tx::SubmitData;
 use avail_rust_client::{
@@ -26,9 +26,10 @@ async fn main() -> Result<(), ClientError> {
 	let receipt = submit_dummy_transactions(&client).await?;
 
 	block_rpc_example(client.clone(), receipt.block_loc.hash).await?;
-	block_transaction_example(client.clone(), receipt.block_loc.into(), receipt.tx_loc.into()).await?;
-	block_transactions_example(client.clone(), receipt.block_loc.into()).await?;
-	block_transactions_filter_example(client.clone(), receipt.block_loc.into()).await?;
+	transaction_example(client.clone(), receipt.block_loc.into(), receipt.tx_loc.into()).await?;
+	transaction_static_example(client.clone(), receipt.block_loc.into(), receipt.tx_loc.into()).await?;
+	transactions_example(client.clone(), receipt.block_loc.into()).await?;
+	transactions_filter_example(client.clone(), receipt.block_loc.into()).await?;
 
 	Ok(())
 }
@@ -46,7 +47,7 @@ pub async fn submit_dummy_transactions(client: &Client) -> Result<TransactionRec
 /// - Block Justifications
 /// from an rpc block
 ///
-/// In 99.99% cases `block_transaction` and `block_transactions` methods are the one that you need/want
+/// In 99.99% cases `transaction` and `transactions` methods are the one that you need/want
 pub async fn block_rpc_example(client: Client, hash: H256) -> Result<(), ClientError> {
 	let blocks = client.block_client();
 
@@ -72,12 +73,12 @@ pub async fn block_rpc_example(client: Client, hash: H256) -> Result<(), ClientE
 }
 
 /// This example showcases how to fetch and decode a specific Transaction
-pub async fn block_transaction_example(client: Client, block_hash: H256, tx_hash: H256) -> Result<(), ClientError> {
+pub async fn transaction_example(client: Client, block_hash: H256, tx_hash: H256) -> Result<(), ClientError> {
 	let blocks = client.block_client();
 
 	// Fetching only the Transaction Call from the block
 	let info = blocks
-		.block_transaction(block_hash.into(), tx_hash.into(), None, None)
+		.transaction(block_hash.into(), tx_hash.into(), None)
 		.await?
 		.expect("Should be there");
 
@@ -100,7 +101,7 @@ pub async fn block_transaction_example(client: Client, block_hash: H256, tx_hash
 
 	// Fetching the whole transaction from the block
 	let info = blocks
-		.block_transaction(block_hash.into(), tx_hash.into(), None, Some(EncodeSelector::Extrinsic))
+		.transaction(block_hash.into(), tx_hash.into(), Some(EncodeSelector::Extrinsic))
 		.await?
 		.expect("Should be there");
 
@@ -123,12 +124,41 @@ pub async fn block_transaction_example(client: Client, block_hash: H256, tx_hash
 	Ok(())
 }
 
+/// This example showcases how to fetch and decode a specific Transaction
+pub async fn transaction_static_example(client: Client, block_hash: H256, tx_hash: H256) -> Result<(), ClientError> {
+	let blocks = client.block_client();
+
+	// Fetching the whole transaction from a block. This API will automatically decode it as well.
+	let (transaction, info) = blocks
+		.transaction_static::<SubmitData>(block_hash.into(), tx_hash.into())
+		.await?
+		.expect("Should be there");
+
+	// Printing out Transaction metadata like: Tx Hash, Tx Index, Pallet Id, Call Id
+	println!(
+		"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Call Id: {}",
+		info.tx_hash, info.call_id, info.pallet_id, info.call_id
+	);
+
+	// Printing out Transaction signature data like: Signer, Nonce, App Id
+	if let Some(signature) = &info.signature {
+		println!(
+			"ss58: {:?}, Nonce: {}, App Id: {}",
+			signature.ss58_address, signature.nonce, signature.app_id
+		);
+	}
+
+	println!("Data: {:?}", transaction.call.data);
+
+	Ok(())
+}
+
 /// This example showcases how to fetch and decode multiple transactions from a block
-pub async fn block_transactions_example(client: Client, block_hash: H256) -> Result<(), ClientError> {
+pub async fn transactions_example(client: Client, block_hash: H256) -> Result<(), ClientError> {
 	let blocks = client.block_client();
 
 	// This will fetch all block transactions.
-	let infos = blocks.block_transactions(block_hash.into(), None, None, None).await?;
+	let infos = blocks.transactions(block_hash.into(), None, None, None).await?;
 	for info in infos {
 		println!(
 			"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Call Id: {}",
@@ -149,14 +179,14 @@ pub async fn block_transactions_example(client: Client, block_hash: H256) -> Res
 
 /// This example showcases how to filter specific transactions from a block
 ///
-/// To decode the transactions take a look at `block_transactions_example` example !!!
-pub async fn block_transactions_filter_example(client: Client, block_hash: H256) -> Result<(), ClientError> {
+/// To decode the transactions take a look at `transactions_example` example !!!
+pub async fn transactions_filter_example(client: Client, block_hash: H256) -> Result<(), ClientError> {
 	let blocks = client.block_client();
 
 	// This will fetch all block transactions that have App Id set to `3`
 	let signature_filter = Some(SignatureFilter::new(None, Some(2), None));
 	let infos = blocks
-		.block_transactions(block_hash.into(), None, signature_filter, None)
+		.transactions(block_hash.into(), None, signature_filter, None)
 		.await?;
 
 	assert_eq!(infos.len(), 1);
@@ -168,7 +198,7 @@ pub async fn block_transactions_filter_example(client: Client, block_hash: H256)
 	// This will fetch only block transactions with indices 0 and 1
 	let transaction_filter = Some(TransactionFilter::TxIndex(vec![0, 1]));
 	let infos = blocks
-		.block_transactions(block_hash.into(), transaction_filter, None, None)
+		.transactions(block_hash.into(), transaction_filter, None, None)
 		.await?;
 	assert_eq!(infos.len(), 2);
 	for (i, info) in infos.iter().enumerate() {
@@ -179,7 +209,7 @@ pub async fn block_transactions_filter_example(client: Client, block_hash: H256)
 	let address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string();
 	let signature_filter = Some(SignatureFilter::new(Some(address.clone()), None, None));
 	let infos = blocks
-		.block_transactions(block_hash.into(), None, signature_filter, None)
+		.transactions(block_hash.into(), None, signature_filter, None)
 		.await?;
 	assert_eq!(infos.len(), 1);
 	for info in infos.iter() {

@@ -5,7 +5,7 @@ use crate::{
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockLocation, H256, HashNumber, TransactionConvertible,
+	AccountId, BlockLocation, H256, TransactionConvertible,
 	config::TransactionLocation,
 	ext::codec::Encode,
 	from_substrate::FeeDetails,
@@ -179,27 +179,21 @@ impl Utils {
 		mortality: &RefinedMortality,
 		use_best_block: bool,
 	) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
-		use avail_rust_core::rpc::system::fetch_extrinsics_v1_types as Types;
 		let Some(block_loc) =
 			Self::find_block_loc_via_nonce(&client, nonce, account_id, mortality, use_best_block).await?
 		else {
 			return Ok(None);
 		};
 
-		let sig_filter = Types::SignatureFilter::new(Some(std::format!("{}", account_id)), None, Some(nonce));
 		let block_client = client.block_client();
 		let tx = block_client
-			.block_transaction(
-				HashNumber::Hash(block_loc.hash),
-				HashNumber::Hash(tx_hash),
-				Some(sig_filter),
-				None,
-			)
+			.transaction_with_retries(block_loc.hash.into(), tx_hash.into(), None)
 			.await?;
 
 		let Some(tx) = tx else {
 			return Ok(None);
 		};
+
 		let tx_location = TransactionLocation::from((tx.tx_hash, tx.tx_index));
 
 		Ok(Some(TransactionReceipt::new(client, block_loc, tx_location)))
