@@ -426,12 +426,18 @@ impl Client {
 	// Sign and submit
 	pub async fn submit<'a>(&self, tx: &avail_rust_core::Transaction<'a>) -> Result<H256, avail_rust_core::Error> {
 		let encoded = tx.encode();
+		#[cfg(feature = "tracing")]
+		if let Some(signed) = &tx.signed {
+			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
+				tracing::info!(target: "tx", "Submitting Transaction. Address: {}, Nonce: {}, App Id: {}", account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
+			}
+		}
 		let tx_hash = self.rpc_api().author_submit_extrinsic(&encoded).await?;
 
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signed {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
-				tracing::info!(target: "lib", "Transaction submitted. Tx Hash: {:?}, Address: {}, Nonce: {}, App Id: {}", tx_hash, account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
+				tracing::info!(target: "tx", "Transaction Submitted.  Address: {}, Nonce: {}, App Id: {}, Tx Hash: {:?},", account_id, signed.tx_extra.nonce, signed.tx_extra.app_id, tx_hash);
 			}
 		}
 
