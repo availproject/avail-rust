@@ -1,11 +1,100 @@
 use crate::{
 	AccountId, H256, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, StorageHasher, StorageMap, StorageValue,
 	TransactionCall,
+	transaction::{AlreadyEncoded, TransactionCallDecoded},
 };
 use codec::{Compact, Decode, Encode};
 use scale_decode::DecodeAsType;
 use scale_encode::EncodeAsType;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone)]
+pub enum RuntimeCall {
+	BalancesTransferAllDeath(TransactionCallDecoded<balances::tx::TransferAllowDeath>),
+	BalancesTransferKeepAlive(TransactionCallDecoded<balances::tx::TransferKeepAlive>),
+	BalancesTransferAll(TransactionCallDecoded<balances::tx::TransferAll>),
+	UtilityBatch(TransactionCallDecoded<utility::tx::Batch>),
+	UtilityBatchAll(TransactionCallDecoded<utility::tx::BatchAll>),
+	UtilityForceBatch(TransactionCallDecoded<utility::tx::ForceBatch>),
+	SystemRemark(TransactionCallDecoded<system::tx::Remark>),
+	SystemSetCode(TransactionCallDecoded<system::tx::SetCode>),
+	SystemSetCodeWithoutChecks(TransactionCallDecoded<system::tx::SetCodeWithoutChecks>),
+	SystemRemarkWithEvent(TransactionCallDecoded<system::tx::RemarkWithEvent>),
+}
+impl Decode for RuntimeCall {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let pallet_id = input.read_byte()?;
+		let call_id = input.read_byte()?;
+
+		if pallet_id == balances::PALLET_ID {
+			if call_id == balances::tx::TransferAllowDeath::DISPATCH_INDEX.1 {
+				let data = balances::tx::TransferAllowDeath::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::BalancesTransferAllDeath(call));
+			}
+
+			if call_id == balances::tx::TransferKeepAlive::DISPATCH_INDEX.1 {
+				let data = balances::tx::TransferKeepAlive::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::BalancesTransferKeepAlive(call));
+			}
+
+			if call_id == balances::tx::TransferAll::DISPATCH_INDEX.1 {
+				let data = balances::tx::TransferAll::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::BalancesTransferAll(call));
+			}
+		}
+
+		if pallet_id == utility::PALLET_ID {
+			if call_id == utility::tx::Batch::DISPATCH_INDEX.1 {
+				let data = utility::tx::Batch::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::UtilityBatch(call));
+			}
+
+			if call_id == utility::tx::BatchAll::DISPATCH_INDEX.1 {
+				let data = utility::tx::BatchAll::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::UtilityBatchAll(call));
+			}
+
+			if call_id == utility::tx::ForceBatch::DISPATCH_INDEX.1 {
+				let data = utility::tx::ForceBatch::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::UtilityForceBatch(call));
+			}
+		}
+
+		if pallet_id == system::PALLET_ID {
+			if call_id == system::tx::Remark::DISPATCH_INDEX.1 {
+				let data = system::tx::Remark::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::SystemRemark(call));
+			}
+
+			if call_id == system::tx::SetCode::DISPATCH_INDEX.1 {
+				let data = system::tx::SetCode::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::SystemSetCode(call));
+			}
+
+			if call_id == system::tx::SetCodeWithoutChecks::DISPATCH_INDEX.1 {
+				let data = system::tx::SetCodeWithoutChecks::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::SystemSetCodeWithoutChecks(call));
+			}
+
+			if call_id == system::tx::RemarkWithEvent::DISPATCH_INDEX.1 {
+				let data = system::tx::RemarkWithEvent::decode(input)?;
+				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				return Ok(RuntimeCall::SystemRemarkWithEvent(call));
+			}
+		}
+
+		return Err(codec::Error::from("Failed to decode runtime call"));
+	}
+}
 
 pub mod data_availability {
 	use super::*;
@@ -597,17 +686,74 @@ pub mod utility {
 
 		#[derive(Debug, Clone)]
 		pub struct Batch {
-			pub calls: Vec<TransactionCall>,
+			length: u32,
+			calls: Vec<u8>,
+		}
+		impl Batch {
+			pub fn new() -> Self {
+				Self { length: 0, calls: Vec::new() }
+			}
+
+			pub fn decode_calls(&self) -> Result<Vec<RuntimeCall>, codec::Error> {
+				if self.length == 0 {
+					return Ok(Vec::new());
+				}
+
+				let mut runtime_calls: Vec<RuntimeCall> = Vec::with_capacity(self.length as usize);
+				let mut calls = self.calls.as_slice();
+				for _ in 0..self.length {
+					runtime_calls.push(RuntimeCall::decode(&mut calls)?)
+				}
+				if !calls.is_empty() {
+					return Err(codec::Error::from(
+						"Bytes left in array. Failed to decode Batch call into RuntimeCalls",
+					));
+				}
+
+				return Ok(runtime_calls);
+			}
+
+			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
+				for v in value {
+					self.add_call(v);
+				}
+			}
+
+			pub fn add_call(&mut self, value: TransactionCall) {
+				self.length += 1;
+				value.encode_to(&mut self.calls);
+			}
+
+			pub fn add_hex(&mut self, value: &str) -> Result<(), const_hex::FromHexError> {
+				let decoded = const_hex::decode(value.trim_start_matches("0x"))?;
+				self.add(decoded);
+				Ok(())
+			}
+
+			pub fn add(&mut self, mut value: Vec<u8>) {
+				self.length += 1;
+				self.calls.append(&mut value);
+			}
+
+			pub fn len(&self) -> u32 {
+				self.length
+			}
+
+			pub fn calls(&self) -> &[u8] {
+				&self.calls
+			}
 		}
 		impl Encode for Batch {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.calls.encode());
+				Compact(self.length).encode_to(dest);
+				dest.write(&self.calls);
 			}
 		}
 		impl Decode for Batch {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let calls = Decode::decode(input)?;
-				Ok(Self { calls })
+				let length = Compact::<u32>::decode(input)?.0;
+				let calls = AlreadyEncoded::decode(input)?.0;
+				Ok(Self { length, calls })
 			}
 		}
 		impl HasTxDispatchIndex for Batch {
@@ -616,17 +762,74 @@ pub mod utility {
 
 		#[derive(Debug, Clone)]
 		pub struct BatchAll {
-			pub calls: Vec<TransactionCall>,
+			length: u32,
+			calls: Vec<u8>,
+		}
+		impl BatchAll {
+			pub fn new() -> Self {
+				Self { length: 0, calls: Vec::new() }
+			}
+
+			pub fn decode_calls(&self) -> Result<Vec<RuntimeCall>, codec::Error> {
+				if self.length == 0 {
+					return Ok(Vec::new());
+				}
+
+				let mut runtime_calls: Vec<RuntimeCall> = Vec::with_capacity(self.length as usize);
+				let mut calls = self.calls.as_slice();
+				for _ in 0..self.length {
+					runtime_calls.push(RuntimeCall::decode(&mut calls)?)
+				}
+				if !calls.is_empty() {
+					return Err(codec::Error::from(
+						"Bytes left in array. Failed to decode Batch call into RuntimeCalls",
+					));
+				}
+
+				return Ok(runtime_calls);
+			}
+
+			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
+				for v in value {
+					self.add_call(v);
+				}
+			}
+
+			pub fn add_call(&mut self, value: TransactionCall) {
+				self.length += 1;
+				value.encode_to(&mut self.calls);
+			}
+
+			pub fn add_hex(&mut self, value: &str) -> Result<(), const_hex::FromHexError> {
+				let decoded = const_hex::decode(value.trim_start_matches("0x"))?;
+				self.add(decoded);
+				Ok(())
+			}
+
+			pub fn add(&mut self, mut value: Vec<u8>) {
+				self.length += 1;
+				self.calls.append(&mut value);
+			}
+
+			pub fn len(&self) -> u32 {
+				self.length
+			}
+
+			pub fn calls(&self) -> &[u8] {
+				&self.calls
+			}
 		}
 		impl Encode for BatchAll {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.calls.encode());
+				Compact(self.length).encode_to(dest);
+				dest.write(&self.calls);
 			}
 		}
 		impl Decode for BatchAll {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let calls = Decode::decode(input)?;
-				Ok(Self { calls })
+				let length = Compact::<u32>::decode(input)?.0;
+				let calls = AlreadyEncoded::decode(input)?.0;
+				Ok(Self { length, calls })
 			}
 		}
 		impl HasTxDispatchIndex for BatchAll {
@@ -635,17 +838,74 @@ pub mod utility {
 
 		#[derive(Debug, Clone)]
 		pub struct ForceBatch {
-			pub calls: Vec<TransactionCall>,
+			pub length: u32,
+			pub calls: Vec<u8>,
+		}
+		impl ForceBatch {
+			pub fn new() -> Self {
+				Self { length: 0, calls: Vec::new() }
+			}
+
+			pub fn decode_calls(&self) -> Result<Vec<RuntimeCall>, codec::Error> {
+				if self.length == 0 {
+					return Ok(Vec::new());
+				}
+
+				let mut runtime_calls: Vec<RuntimeCall> = Vec::with_capacity(self.length as usize);
+				let mut calls = self.calls.as_slice();
+				for _ in 0..self.length {
+					runtime_calls.push(RuntimeCall::decode(&mut calls)?)
+				}
+				if !calls.is_empty() {
+					return Err(codec::Error::from(
+						"Bytes left in array. Failed to decode Batch call into RuntimeCalls",
+					));
+				}
+
+				return Ok(runtime_calls);
+			}
+
+			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
+				for v in value {
+					self.add_call(v);
+				}
+			}
+
+			pub fn add_call(&mut self, value: TransactionCall) {
+				self.length += 1;
+				value.encode_to(&mut self.calls);
+			}
+
+			pub fn add_hex(&mut self, value: &str) -> Result<(), const_hex::FromHexError> {
+				let decoded = const_hex::decode(value.trim_start_matches("0x"))?;
+				self.add(decoded);
+				Ok(())
+			}
+
+			pub fn add(&mut self, mut value: Vec<u8>) {
+				self.length += 1;
+				self.calls.append(&mut value);
+			}
+
+			pub fn len(&self) -> u32 {
+				self.length
+			}
+
+			pub fn calls(&self) -> &[u8] {
+				&self.calls
+			}
 		}
 		impl Encode for ForceBatch {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.calls.encode());
+				Compact(self.length).encode_to(dest);
+				dest.write(&self.calls);
 			}
 		}
 		impl Decode for ForceBatch {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let calls = Decode::decode(input)?;
-				Ok(Self { calls })
+				let length = Compact::<u32>::decode(input)?.0;
+				let calls = AlreadyEncoded::decode(input)?.0;
+				Ok(Self { length, calls })
 			}
 		}
 		impl HasTxDispatchIndex for ForceBatch {

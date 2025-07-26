@@ -59,15 +59,21 @@ impl Balances {
 pub struct Utility(Client);
 impl Utility {
 	pub fn batch(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
-		avail::utility::tx::Batch { calls }.to_submittable(self.0.clone())
+		let mut batch = avail::utility::tx::Batch::new();
+		batch.add_calls(calls);
+		batch.to_submittable(self.0.clone())
 	}
 
 	pub fn batch_all(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
-		avail::utility::tx::BatchAll { calls }.to_submittable(self.0.clone())
+		let mut batch = avail::utility::tx::BatchAll::new();
+		batch.add_calls(calls);
+		batch.to_submittable(self.0.clone())
 	}
 
 	pub fn force_batch(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
-		avail::utility::tx::ForceBatch { calls }.to_submittable(self.0.clone())
+		let mut batch = avail::utility::tx::ForceBatch::new();
+		batch.add_calls(calls);
+		batch.to_submittable(self.0.clone())
 	}
 }
 

@@ -136,7 +136,7 @@ impl Client {
 		let block_hash = self.finalized_block_hash().await?;
 		let block_header = self.block_header_with_retries(block_hash).await?;
 		let Some(block_header) = block_header else {
-			return Err("Failed to find best block header.".into());
+			return Err("Failed to find finalized block header.".into());
 		};
 
 		Ok(block_header)
@@ -144,12 +144,7 @@ impl Client {
 
 	// (RPC) Block
 	pub async fn block(&self, at: H256) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
-		let block = self.rpc_api().chain_get_block(Some(at)).await?;
-		if let Some(block) = block {
-			Ok(Some(block))
-		} else {
-			Ok(None)
-		}
+		Ok(self.rpc_api().chain_get_block(Some(at)).await?)
 	}
 
 	pub async fn block_with_retries(
@@ -158,7 +153,7 @@ impl Client {
 	) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
 		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
 		loop {
-			let block = self.rpc_api().chain_get_block(Some(at)).await;
+			let block = self.block(at).await;
 			let block = match block {
 				Ok(x) => x,
 				Err(err) => {
@@ -195,7 +190,7 @@ impl Client {
 		let block_hash = self.best_block_hash().await?;
 		let block = self.block_with_retries(block_hash).await?;
 		let Some(block) = block else {
-			return Err("Best block not found.".into());
+			return Err("Best block not found".into());
 		};
 
 		Ok(block)
@@ -205,7 +200,7 @@ impl Client {
 		let block_hash = self.finalized_block_hash().await?;
 		let block = self.block_with_retries(block_hash).await?;
 		let Some(block) = block else {
-			return Err("Finalized block not found.".into());
+			return Err("Finalized block not found".into());
 		};
 
 		Ok(block)
@@ -219,7 +214,7 @@ impl Client {
 	pub async fn block_hash_with_retries(&self, block_height: u32) -> Result<Option<H256>, avail_rust_core::Error> {
 		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
 		loop {
-			let hash = self.rpc_api().chain_get_block_hash(Some(block_height)).await;
+			let hash = self.block_hash(block_height).await;
 			let hash = match hash {
 				Ok(x) => x,
 				Err(err) => {

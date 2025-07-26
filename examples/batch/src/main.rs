@@ -1,5 +1,5 @@
-use avail::utility::events as UtilityEvents;
-use avail_rust_client::prelude::*;
+use avail::utility::{events as UtilityEvents, tx::BatchAll as UtilityBatchAll};
+use avail_rust_client::{avail::RuntimeCall, prelude::*};
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
@@ -27,7 +27,7 @@ async fn main() -> Result<(), ClientError> {
 	let events = receipt.tx_events().await?;
 	for event in events {
 		println!("Pallet Index: {}, Variant index: {}", event.emitted_index.0, event.emitted_index.1,);
-		let encoded_event = const_hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
+		let encoded_event = const_hex::decode(event.encoded.expect("Must be there"))?;
 		if let Some(_e) = UtilityEvents::BatchInterrupted::decode_event(&encoded_event) {
 			println!("Found Utility::BatchInterrupted");
 		}
@@ -46,6 +46,23 @@ async fn main() -> Result<(), ClientError> {
 		if let Some(_e) = UtilityEvents::DispatchedAs::decode_event(&encoded_event) {
 			println!("Found Utility::DispatchedAs");
 		}
+	}
+
+	// Decoding batch call
+	let block_client = client.block_client();
+	let (decoded_transaction, _) = block_client
+		.transaction_static::<UtilityBatchAll>(receipt.block_loc.into(), receipt.tx_loc.into())
+		.await?
+		.expect("Should be there");
+
+	// Not all calls are decodable.
+	let decoded_calls = decoded_transaction.call.decode_calls()?;
+	for call in decoded_calls {
+		let RuntimeCall::BalancesTransferKeepAlive(tx) = call else {
+			return Err("Expected Balance Transfer Keep Alive".into());
+		};
+
+		println!("Dest: {:?}, Amount: {}", tx.data.amount, tx.data.amount);
 	}
 
 	Ok(())

@@ -110,6 +110,13 @@ impl Decode for TransactionCall {
 	}
 }
 
+#[derive(Debug, Clone)]
+pub struct TransactionCallDecoded<T> {
+	pub pallet_id: u8,
+	pub call_id: u8,
+	pub data: T,
+}
+
 // There is no need for Encode and Decode
 #[derive(Debug, Clone)]
 pub struct TransactionPayload<'a> {
