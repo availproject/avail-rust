@@ -9,6 +9,7 @@ resolver = "2"
 edition = "2024"
 version = "0.2.12"
 license = "ISC"
+repository = "https://github.com/availproject/avail-rust"
 
 [workspace.dependencies]
 tokio = { version = "1.45.0", default-features = false, features = ["sync", "time", "rt"] }
