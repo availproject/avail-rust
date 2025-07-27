@@ -1,7 +1,6 @@
 use crate::{
 	AccountId, H256, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, StorageHasher, StorageMap, StorageValue,
-	TransactionCall,
-	transaction::{AlreadyEncoded, TransactionCallDecoded},
+	TransactionCall, transaction::AlreadyEncoded,
 };
 use codec::{Compact, Decode, Encode};
 use scale_decode::DecodeAsType;
@@ -10,16 +9,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub enum RuntimeCall {
-	BalancesTransferAllDeath(TransactionCallDecoded<balances::tx::TransferAllowDeath>),
-	BalancesTransferKeepAlive(TransactionCallDecoded<balances::tx::TransferKeepAlive>),
-	BalancesTransferAll(TransactionCallDecoded<balances::tx::TransferAll>),
-	UtilityBatch(TransactionCallDecoded<utility::tx::Batch>),
-	UtilityBatchAll(TransactionCallDecoded<utility::tx::BatchAll>),
-	UtilityForceBatch(TransactionCallDecoded<utility::tx::ForceBatch>),
-	SystemRemark(TransactionCallDecoded<system::tx::Remark>),
-	SystemSetCode(TransactionCallDecoded<system::tx::SetCode>),
-	SystemSetCodeWithoutChecks(TransactionCallDecoded<system::tx::SetCodeWithoutChecks>),
-	SystemRemarkWithEvent(TransactionCallDecoded<system::tx::RemarkWithEvent>),
+	BalancesTransferAllDeath(balances::tx::TransferAllowDeath),
+	BalancesTransferKeepAlive(balances::tx::TransferKeepAlive),
+	BalancesTransferAll(balances::tx::TransferAll),
+	UtilityBatch(utility::tx::Batch),
+	UtilityBatchAll(utility::tx::BatchAll),
+	UtilityForceBatch(utility::tx::ForceBatch),
+	SystemRemark(system::tx::Remark),
+	SystemSetCode(system::tx::SetCode),
+	SystemSetCodeWithoutChecks(system::tx::SetCodeWithoutChecks),
+	SystemRemarkWithEvent(system::tx::RemarkWithEvent),
 }
 impl Decode for RuntimeCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -28,66 +27,56 @@ impl Decode for RuntimeCall {
 
 		if pallet_id == balances::PALLET_ID {
 			if call_id == balances::tx::TransferAllowDeath::DISPATCH_INDEX.1 {
-				let data = balances::tx::TransferAllowDeath::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = balances::tx::TransferAllowDeath::decode(input)?;
 				return Ok(RuntimeCall::BalancesTransferAllDeath(call));
 			}
 
 			if call_id == balances::tx::TransferKeepAlive::DISPATCH_INDEX.1 {
-				let data = balances::tx::TransferKeepAlive::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = balances::tx::TransferKeepAlive::decode(input)?;
 				return Ok(RuntimeCall::BalancesTransferKeepAlive(call));
 			}
 
 			if call_id == balances::tx::TransferAll::DISPATCH_INDEX.1 {
-				let data = balances::tx::TransferAll::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = balances::tx::TransferAll::decode(input)?;
 				return Ok(RuntimeCall::BalancesTransferAll(call));
 			}
 		}
 
 		if pallet_id == utility::PALLET_ID {
 			if call_id == utility::tx::Batch::DISPATCH_INDEX.1 {
-				let data = utility::tx::Batch::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = utility::tx::Batch::decode(input)?;
 				return Ok(RuntimeCall::UtilityBatch(call));
 			}
 
 			if call_id == utility::tx::BatchAll::DISPATCH_INDEX.1 {
-				let data = utility::tx::BatchAll::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = utility::tx::BatchAll::decode(input)?;
 				return Ok(RuntimeCall::UtilityBatchAll(call));
 			}
 
 			if call_id == utility::tx::ForceBatch::DISPATCH_INDEX.1 {
-				let data = utility::tx::ForceBatch::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = utility::tx::ForceBatch::decode(input)?;
 				return Ok(RuntimeCall::UtilityForceBatch(call));
 			}
 		}
 
 		if pallet_id == system::PALLET_ID {
 			if call_id == system::tx::Remark::DISPATCH_INDEX.1 {
-				let data = system::tx::Remark::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = system::tx::Remark::decode(input)?;
 				return Ok(RuntimeCall::SystemRemark(call));
 			}
 
 			if call_id == system::tx::SetCode::DISPATCH_INDEX.1 {
-				let data = system::tx::SetCode::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = system::tx::SetCode::decode(input)?;
 				return Ok(RuntimeCall::SystemSetCode(call));
 			}
 
 			if call_id == system::tx::SetCodeWithoutChecks::DISPATCH_INDEX.1 {
-				let data = system::tx::SetCodeWithoutChecks::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = system::tx::SetCodeWithoutChecks::decode(input)?;
 				return Ok(RuntimeCall::SystemSetCodeWithoutChecks(call));
 			}
 
 			if call_id == system::tx::RemarkWithEvent::DISPATCH_INDEX.1 {
-				let data = system::tx::RemarkWithEvent::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = system::tx::RemarkWithEvent::decode(input)?;
 				return Ok(RuntimeCall::SystemRemarkWithEvent(call));
 			}
 		}
