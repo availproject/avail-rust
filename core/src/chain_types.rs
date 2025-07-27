@@ -19,6 +19,17 @@ pub enum RuntimeCall {
 	SystemSetCode(system::tx::SetCode),
 	SystemSetCodeWithoutChecks(system::tx::SetCodeWithoutChecks),
 	SystemRemarkWithEvent(system::tx::RemarkWithEvent),
+	ProxyProxy(proxy::tx::Proxy),
+	ProxyAddProxy(proxy::tx::AddProxy),
+	ProxyRemoveProxy(proxy::tx::RemoveProxy),
+	ProxyRemoveProxies(proxy::tx::RemoveProxies),
+	ProxyCreatePure(proxy::tx::CreatePure),
+	ProxyKillPure(proxy::tx::KillPure),
+	MultisigAsMultiThreshold1(multisig::tx::AsMultiThreshold1),
+	MultisigAsMulti(multisig::tx::AsMulti),
+	MultisigApproveAsMulti(multisig::tx::ApproveAsMulti),
+	MultisigCancelAsMulti(multisig::tx::CancelAsMulti),
+	DataAvailabilityCreateApplicationKey(data_availability::tx::CreateApplicationKey),
 }
 impl Decode for RuntimeCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -78,6 +89,67 @@ impl Decode for RuntimeCall {
 			if call_id == system::tx::RemarkWithEvent::DISPATCH_INDEX.1 {
 				let call = system::tx::RemarkWithEvent::decode(input)?;
 				return Ok(RuntimeCall::SystemRemarkWithEvent(call));
+			}
+		}
+
+		if pallet_id == proxy::PALLET_ID {
+			if call_id == proxy::tx::Proxy::DISPATCH_INDEX.1 {
+				let call = proxy::tx::Proxy::decode(input)?;
+				return Ok(RuntimeCall::ProxyProxy(call));
+			}
+
+			if call_id == proxy::tx::AddProxy::DISPATCH_INDEX.1 {
+				let call = proxy::tx::AddProxy::decode(input)?;
+				return Ok(RuntimeCall::ProxyAddProxy(call));
+			}
+
+			if call_id == proxy::tx::CreatePure::DISPATCH_INDEX.1 {
+				let call = proxy::tx::CreatePure::decode(input)?;
+				return Ok(RuntimeCall::ProxyCreatePure(call));
+			}
+
+			if call_id == proxy::tx::KillPure::DISPATCH_INDEX.1 {
+				let call = proxy::tx::KillPure::decode(input)?;
+				return Ok(RuntimeCall::ProxyKillPure(call));
+			}
+
+			if call_id == proxy::tx::RemoveProxies::DISPATCH_INDEX.1 {
+				let call = proxy::tx::RemoveProxies::decode(input)?;
+				return Ok(RuntimeCall::ProxyRemoveProxies(call));
+			}
+
+			if call_id == proxy::tx::RemoveProxy::DISPATCH_INDEX.1 {
+				let call = proxy::tx::RemoveProxy::decode(input)?;
+				return Ok(RuntimeCall::ProxyRemoveProxy(call));
+			}
+		}
+
+		if pallet_id == multisig::PALLET_ID {
+			if call_id == multisig::tx::ApproveAsMulti::DISPATCH_INDEX.1 {
+				let call = multisig::tx::ApproveAsMulti::decode(input)?;
+				return Ok(RuntimeCall::MultisigApproveAsMulti(call));
+			}
+
+			if call_id == multisig::tx::AsMulti::DISPATCH_INDEX.1 {
+				let call = multisig::tx::AsMulti::decode(input)?;
+				return Ok(RuntimeCall::MultisigAsMulti(call));
+			}
+
+			if call_id == multisig::tx::AsMultiThreshold1::DISPATCH_INDEX.1 {
+				let call = multisig::tx::AsMultiThreshold1::decode(input)?;
+				return Ok(RuntimeCall::MultisigAsMultiThreshold1(call));
+			}
+
+			if call_id == multisig::tx::CancelAsMulti::DISPATCH_INDEX.1 {
+				let call = multisig::tx::CancelAsMulti::decode(input)?;
+				return Ok(RuntimeCall::MultisigCancelAsMulti(call));
+			}
+		}
+
+		if pallet_id == data_availability::PALLET_ID {
+			if call_id == data_availability::tx::CreateApplicationKey::DISPATCH_INDEX.1 {
+				let call = data_availability::tx::CreateApplicationKey::decode(input)?;
+				return Ok(RuntimeCall::DataAvailabilityCreateApplicationKey(call));
 			}
 		}
 
