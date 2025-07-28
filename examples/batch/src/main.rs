@@ -62,7 +62,7 @@ async fn main() -> Result<(), ClientError> {
 			return Err("Expected Balance Transfer Keep Alive".into());
 		};
 
-		println!("Dest: {:?}, Amount: {}", tx.amount, tx.amount);
+		println!("Dest: {:?}, Amount: {}", tx.dest, tx.value);
 	}
 
 	Ok(())

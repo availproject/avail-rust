@@ -585,19 +585,19 @@ pub mod balances {
 		#[derive(Debug, Clone)]
 		pub struct TransferAllowDeath {
 			pub dest: MultiAddress,
-			pub amount: u128,
+			pub value: u128,
 		}
 		impl Encode for TransferAllowDeath {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				self.dest.encode_to(dest);
-				Compact(self.amount).encode_to(dest);
+				Compact(self.value).encode_to(dest);
 			}
 		}
 		impl Decode for TransferAllowDeath {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let dest = Decode::decode(input)?;
-				let amount = Compact::<u128>::decode(input)?.0;
-				Ok(Self { dest, amount })
+				let value = Compact::<u128>::decode(input)?.0;
+				Ok(Self { dest, value })
 			}
 		}
 		impl HasTxDispatchIndex for TransferAllowDeath {
@@ -607,19 +607,19 @@ pub mod balances {
 		#[derive(Debug, Clone)]
 		pub struct TransferKeepAlive {
 			pub dest: MultiAddress,
-			pub amount: u128,
+			pub value: u128,
 		}
 		impl Encode for TransferKeepAlive {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				self.dest.encode_to(dest);
-				Compact(self.amount).encode_to(dest);
+				Compact(self.value).encode_to(dest);
 			}
 		}
 		impl Decode for TransferKeepAlive {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let dest = Decode::decode(input)?;
-				let amount = Compact::<u128>::decode(input)?.0;
-				Ok(Self { dest, amount })
+				let value = Compact::<u128>::decode(input)?.0;
+				Ok(Self { dest, value })
 			}
 		}
 		impl HasTxDispatchIndex for TransferKeepAlive {
@@ -1485,14 +1485,14 @@ pub mod multisig {
 		pub struct CancelAsMulti {
 			pub threshold: u16,
 			pub other_signatories: Vec<AccountId>,
-			pub maybe_timepoint: super::types::Timepoint,
+			pub timepoint: super::types::Timepoint,
 			pub call_hash: H256,
 		}
 		impl Encode for CancelAsMulti {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				self.threshold.encode_to(dest);
 				self.other_signatories.encode_to(dest);
-				self.maybe_timepoint.encode_to(dest);
+				self.timepoint.encode_to(dest);
 				self.call_hash.encode_to(dest);
 			}
 		}
@@ -1500,9 +1500,9 @@ pub mod multisig {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let threshold = Decode::decode(input)?;
 				let other_signatories = Decode::decode(input)?;
-				let maybe_timepoint = Decode::decode(input)?;
+				let timepoint = Decode::decode(input)?;
 				let call_hash = Decode::decode(input)?;
-				Ok(Self { threshold, other_signatories, maybe_timepoint, call_hash })
+				Ok(Self { threshold, other_signatories, timepoint, call_hash })
 			}
 		}
 		impl HasTxDispatchIndex for CancelAsMulti {

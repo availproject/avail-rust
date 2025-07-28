@@ -69,10 +69,10 @@ fn print_events(events: &Vec<RuntimeEvent>) -> Result<(), ClientError> {
 			"Event Index: {}, Pallet Id: {}, Variant id: {}",
 			event.index, event.emitted_index.0, event.emitted_index.1
 		);
-		let Some(encoded) = &event.encoded else {
+		let Some(hex_encoded) = &event.encoded else {
 			return Err("Event was supposed to be encoded".into());
 		};
-		println!("Event (hex and string) encoded value: 0x{}", encoded);
+		println!("Event (hex and string) encoded value: 0x{}", hex_encoded);
 
 		if let Some(decoded) = &event.decoded {
 			println!("Event (hex and string) decoded value: 0x{}", decoded);
@@ -80,11 +80,10 @@ fn print_events(events: &Vec<RuntimeEvent>) -> Result<(), ClientError> {
 			println!("The event was not decoded");
 		}
 
-		let event = const_hex::decode(encoded)?;
-		if let Some(e) = ExtrinsicSuccessEvent::decode_event(&event) {
+		if let Some(e) = ExtrinsicSuccessEvent::decode_hex_event(&hex_encoded) {
 			println!("Weight: {:?}", e.dispatch_info.weight)
 		}
-		if let Some(e) = DataSubmittedEvent::decode_event(&event) {
+		if let Some(e) = DataSubmittedEvent::decode_hex_event(&hex_encoded) {
 			println!("Who: {}, Data Hash: {:?}", e.who, e.data_hash)
 		}
 	}

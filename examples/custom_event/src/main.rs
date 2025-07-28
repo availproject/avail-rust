@@ -29,10 +29,8 @@ async fn main() -> Result<(), ClientError> {
 		.find(|x| x.emitted_index == CustomEvent::EMITTED_INDEX)
 		.expect("Must be there");
 
-	let encoded_event = event.encoded.as_ref().expect("Must be there");
-	let encoded_event = const_hex::decode(encoded_event.trim_start_matches("0x")).expect("Must be ok");
-
-	let event = CustomEvent::decode_event(&encoded_event).expect("Must be Ok");
+	let hex_encoded_event = event.encoded.as_ref().expect("Must be there");
+	let event = CustomEvent::decode_hex_event(&hex_encoded_event).expect("Must be Ok");
 	println!("Account: {}, Hash: {}", event.who, event.data_hash);
 
 	Ok(())
