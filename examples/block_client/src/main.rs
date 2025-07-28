@@ -174,8 +174,8 @@ pub async fn transactions_example(client: Client, block_hash: H256) -> Result<()
 pub async fn transactions_filter_example(client: Client, block_hash: H256) -> Result<(), ClientError> {
 	let blocks = client.block_client();
 
-	// This will fetch all block transactions that have App Id set to `3`
-	let signature_filter = Some(SignatureFilter::new(None, Some(2), None));
+	// This will fetch all block transactions that have App Id set to `2`
+	let signature_filter = Some(SignatureFilter::default().app_id(2));
 	let infos = blocks
 		.transactions(block_hash.into(), None, signature_filter, None)
 		.await?;
@@ -198,7 +198,7 @@ pub async fn transactions_filter_example(client: Client, block_hash: H256) -> Re
 
 	// This will fetch only block transactions that were submitted by Alice
 	let address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string();
-	let signature_filter = Some(SignatureFilter::new(Some(address.clone()), None, None));
+	let signature_filter = Some(SignatureFilter::default().ss58_address(address.clone()));
 	let infos = blocks
 		.transactions(block_hash.into(), None, signature_filter, None)
 		.await?;

@@ -264,6 +264,21 @@ pub mod fetch_extrinsics_v1_types {
 		pub fn new(ss58_address: Option<String>, app_id: Option<u32>, nonce: Option<u32>) -> Self {
 			Self { ss58_address, app_id, nonce }
 		}
+
+		pub fn ss58_address(mut self, value: String) -> Self {
+			self.ss58_address = Some(value);
+			self
+		}
+
+		pub fn app_id(mut self, value: u32) -> Self {
+			self.app_id = Some(value);
+			self
+		}
+
+		pub fn nonce(mut self, value: u32) -> Self {
+			self.nonce = Some(value);
+			self
+		}
 	}
 
 	#[derive(Debug, Clone, Serialize, Deserialize)]

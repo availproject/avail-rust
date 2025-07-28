@@ -299,7 +299,8 @@ impl Client {
 
 					#[cfg(feature = "tracing")]
 					trace_warn(&std::format!(
-						"Fetching finalized block hash ended with Option<None>. Sleep for {} seconds",
+						"Fetching finalized block hash ended with Err {}. Sleep for {} seconds",
+						err.to_string(),
 						duration
 					));
 					sleep(Duration::from_secs(duration)).await;
@@ -511,6 +512,35 @@ impl Client {
 
 		let value = SubmittedTransaction::new(self.clone(), tx_hash, account_id, refined_options, tx_additional);
 		Ok(value)
+	}
+
+	pub async fn sign_and_submit_call_with_retries(
+		&self,
+		signer: &Keypair,
+		tx_call: &avail_rust_core::TransactionCall,
+		options: Options,
+	) -> Result<SubmittedTransaction, avail_rust_core::Error> {
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			let result = self.sign_and_submit_call(signer, tx_call, options).await;
+			match result {
+				Ok(x) => return Ok(x),
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err);
+					};
+
+					#[cfg(feature = "tracing")]
+					trace_warn(&std::format!(
+						"Sign and Submitting call ended with Err {}. Sleep for {} seconds",
+						err.to_string(),
+						duration
+					));
+					sleep(Duration::from_secs(duration)).await;
+					continue;
+				},
+			};
+		}
 	}
 
 	// Mini Clients
