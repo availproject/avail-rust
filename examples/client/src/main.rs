@@ -27,7 +27,7 @@ pub async fn block_header_example(client: &Client) -> Result<(), ClientError> {
 
 	// Custom Block Header (On Failure and None it retries)
 	let block_header = client
-		.block_header_with_retries(block_hash)
+		.block_header_ext(block_hash, true, true)
 		.await?
 		.expect("Must be there");
 	assert_eq!(block_header.number, 100);
@@ -75,7 +75,7 @@ pub async fn block_height_example(client: &Client) -> Result<(), ClientError> {
 
 	// Block Hash to Block Height (On Failure and None it retries)
 	let block_height = client
-		.block_height_with_retries(block_hash)
+		.block_height_ext(block_hash, true, true)
 		.await?
 		.expect("Must be there");
 	assert_eq!(block_height, 100);
@@ -100,7 +100,7 @@ pub async fn block_hash_example(client: &Client) -> Result<(), ClientError> {
 	);
 
 	// Block Height to Block Hash (On Failure and None it retries)
-	let block_hash = client.block_hash_with_retries(100).await?.expect("Must be there");
+	let block_hash = client.block_hash_ext(100, true, true).await?.expect("Must be there");
 	assert_eq!(
 		std::format!("{:?}", block_hash),
 		"0x149d4a65196867e6693c5bc731a430ebb4566a873f278d712c8e6d36aec7cb78"

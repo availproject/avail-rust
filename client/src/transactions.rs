@@ -42,13 +42,11 @@ impl DataAvailability {
 pub struct Balances(Client);
 impl Balances {
 	pub fn transfer_allow_death(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
-		avail::balances::tx::TransferAllowDeath { dest: dest.into(), value: amount.into() }
-			.to_submittable(self.0.clone())
+		avail::balances::tx::TransferAllowDeath { dest: dest.into(), value: amount }.to_submittable(self.0.clone())
 	}
 
 	pub fn transfer_keep_alive(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
-		avail::balances::tx::TransferKeepAlive { dest: dest.into(), value: amount.into() }
-			.to_submittable(self.0.clone())
+		avail::balances::tx::TransferKeepAlive { dest: dest.into(), value: amount }.to_submittable(self.0.clone())
 	}
 
 	pub fn transfer_all(&self, dest: AccountId, keep_alive: bool) -> SubmittableTransaction {

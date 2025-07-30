@@ -148,7 +148,7 @@ impl TransactionReceipt {
 	pub async fn tx_events(&self) -> Result<Vec<RuntimeEvent>, avail_rust_core::Error> {
 		let events_client = self.client.event_client();
 		let Some(events) = events_client
-			.transaction_events(self.tx_loc.index, true, false, self.block_loc.hash)
+			.transaction_events(self.block_loc.into(), self.tx_loc.index)
 			.await?
 		else {
 			return Err("Failed to to find events".into());
@@ -177,7 +177,7 @@ impl Utils {
 
 		let block_client = client.block_client();
 		let tx = block_client
-			.transaction_with_retries(block_loc.hash.into(), tx_hash.into(), None)
+			.transaction(block_loc.hash.into(), tx_hash.into(), None)
 			.await?;
 
 		let Some(tx) = tx else {

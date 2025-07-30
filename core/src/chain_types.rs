@@ -153,7 +153,7 @@ impl Decode for RuntimeCall {
 			}
 		}
 
-		return Err(codec::Error::from("Failed to decode runtime call"));
+		Err(codec::Error::from("Failed to decode runtime call"))
 	}
 }
 
@@ -745,14 +745,14 @@ pub mod utility {
 	pub mod tx {
 		use super::*;
 
-		#[derive(Debug, Clone)]
+		#[derive(Debug, Default, Clone)]
 		pub struct Batch {
 			length: u32,
 			calls: Vec<u8>,
 		}
 		impl Batch {
 			pub fn new() -> Self {
-				Self { length: 0, calls: Vec::new() }
+				Self::default()
 			}
 
 			pub fn decode_calls(&self) -> Result<Vec<RuntimeCall>, codec::Error> {
@@ -771,7 +771,7 @@ pub mod utility {
 					));
 				}
 
-				return Ok(runtime_calls);
+				Ok(runtime_calls)
 			}
 
 			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
@@ -798,6 +798,10 @@ pub mod utility {
 
 			pub fn len(&self) -> u32 {
 				self.length
+			}
+
+			pub fn is_empty(&self) -> bool {
+				self.len() == 0
 			}
 
 			pub fn calls(&self) -> &[u8] {
@@ -821,14 +825,14 @@ pub mod utility {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
-		#[derive(Debug, Clone)]
+		#[derive(Debug, Default, Clone)]
 		pub struct BatchAll {
 			length: u32,
 			calls: Vec<u8>,
 		}
 		impl BatchAll {
 			pub fn new() -> Self {
-				Self { length: 0, calls: Vec::new() }
+				Self::default()
 			}
 
 			pub fn decode_calls(&self) -> Result<Vec<RuntimeCall>, codec::Error> {
@@ -847,7 +851,7 @@ pub mod utility {
 					));
 				}
 
-				return Ok(runtime_calls);
+				Ok(runtime_calls)
 			}
 
 			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
@@ -874,6 +878,10 @@ pub mod utility {
 
 			pub fn len(&self) -> u32 {
 				self.length
+			}
+
+			pub fn is_empty(&self) -> bool {
+				self.len() == 0
 			}
 
 			pub fn calls(&self) -> &[u8] {
@@ -897,14 +905,14 @@ pub mod utility {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
-		#[derive(Debug, Clone)]
+		#[derive(Debug, Default, Clone)]
 		pub struct ForceBatch {
 			pub length: u32,
 			pub calls: Vec<u8>,
 		}
 		impl ForceBatch {
 			pub fn new() -> Self {
-				Self { length: 0, calls: Vec::new() }
+				Self::default()
 			}
 
 			pub fn decode_calls(&self) -> Result<Vec<RuntimeCall>, codec::Error> {
@@ -923,7 +931,7 @@ pub mod utility {
 					));
 				}
 
-				return Ok(runtime_calls);
+				Ok(runtime_calls)
 			}
 
 			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
@@ -950,6 +958,10 @@ pub mod utility {
 
 			pub fn len(&self) -> u32 {
 				self.length
+			}
+
+			pub fn is_empty(&self) -> bool {
+				self.len() == 0
 			}
 
 			pub fn calls(&self) -> &[u8] {

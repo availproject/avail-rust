@@ -26,7 +26,7 @@ impl Serialize for AuthorityId {
 	where
 		S: Serializer,
 	{
-		let account_id = AccountId::from(self.0.clone());
+		let account_id = AccountId::from(self.0);
 		serializer.serialize_str(&account_id.to_string())
 	}
 }
@@ -76,7 +76,7 @@ impl Serialize for Signature {
 	where
 		S: Serializer,
 	{
-		serializer.serialize_str(&const_hex::encode(&self.0))
+		serializer.serialize_str(&const_hex::encode(self.0))
 	}
 }
 impl<'de> Deserialize<'de> for Signature {

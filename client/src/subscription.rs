@@ -77,8 +77,8 @@ impl Subscriber {
 				current_block_height: _,
 				block_processed: _,
 				stored_height,
-			} => stored_height.clone(),
-			Subscriber::FinalizedBlock { poll_rate: _, next_block_height: _, stored_height } => stored_height.clone(),
+			} => *stored_height,
+			Subscriber::FinalizedBlock { poll_rate: _, next_block_height: _, stored_height } => *stored_height,
 		}
 	}
 
@@ -125,19 +125,19 @@ impl Subscriber {
 			return Ok(block_hash.map(|x| (block_height, x)));
 		}
 
-		let block_hash = loop {
-			let new_height = client.finalized_block_height().await?;
-			if block_height > new_height {
+		let loc = loop {
+			let new_loc = client.finalized_block_loc_ext(true, true).await?;
+			if block_height > new_loc.height {
 				sleep(poll_rate).await;
 				continue;
 			}
 
-			break client.block_hash_with_retries(block_height).await?;
+			break new_loc;
 		};
 
 		*next_block_height += 1;
 
-		Ok(block_hash.map(|x| (block_height, x)))
+		Ok(Some((loc.height, loc.hash)))
 	}
 
 	async fn fetch_best_block_height(
@@ -170,7 +170,7 @@ impl Subscriber {
 				continue;
 			}
 
-			let Some(best_block_height) = client.block_height_with_retries(best_block_hash).await? else {
+			let Some(best_block_height) = client.block_height_ext(best_block_hash, true, true).await? else {
 				return Ok(None);
 			};
 
@@ -181,7 +181,7 @@ impl Subscriber {
 
 			if is_ahead_of_current_block {
 				if no_block_processed_yet {
-					let Some(block_hash) = client.block_hash_with_retries(current_block_height).await? else {
+					let Some(block_hash) = client.block_hash_ext(current_block_height, true, true).await? else {
 						return Ok(None);
 					};
 					return Ok(Some((current_block_height, block_hash)));
@@ -192,7 +192,7 @@ impl Subscriber {
 				}
 
 				let next_block_height = current_block_height + 1;
-				let Some(next_block_hash) = client.block_hash_with_retries(next_block_height).await? else {
+				let Some(next_block_hash) = client.block_hash_ext(next_block_height, true, true).await? else {
 					return Ok(None);
 				};
 
@@ -233,7 +233,7 @@ impl HeaderSubscription {
 			}
 		}
 
-		self.client.block_header_with_retries(block_hash).await
+		self.client.block_header_ext(block_hash, true, true).await
 	}
 
 	pub fn stored_height(&self) -> Option<u32> {
@@ -269,7 +269,7 @@ impl BlockSubscription {
 			}
 		}
 
-		self.client.block_with_retries(block_hash).await
+		self.client.block_ext(block_hash, true, true).await
 	}
 
 	pub fn stored_height(&self) -> Option<u32> {

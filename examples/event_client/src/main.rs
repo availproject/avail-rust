@@ -35,7 +35,7 @@ async fn main() -> Result<(), ClientError> {
 	// Find transaction related event
 	let event_client = client.event_client();
 	let Some(event_group) = event_client
-		.transaction_events(receipt.tx_loc.index, true, true, receipt.block_loc.hash)
+		.transaction_events(receipt.block_loc.into(), receipt.tx_loc.index)
 		.await?
 	else {
 		return Err("Failed to find events".into());
@@ -44,8 +44,12 @@ async fn main() -> Result<(), ClientError> {
 	print_events(&event_group)?;
 
 	// Find block related events
-	let params = FetchEventsV1Options::new(Some(Filter::All), Some(true), Some(true));
-	let block_event_group = event_client.block_events(receipt.block_loc.hash, Some(params)).await?;
+	let block_event_group = event_client
+		.builder()
+		.enable_encoding(true)
+		.enable_decoding(true)
+		.fetch(receipt.block_loc.hash.into())
+		.await?;
 	for event_group in block_event_group {
 		print_grouped_events(&event_group)?;
 	}

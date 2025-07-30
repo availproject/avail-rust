@@ -189,7 +189,7 @@ pub mod fetch_extrinsics_v1_types {
 	pub type Output = Vec<ExtrinsicInformation>;
 	pub type FetchExtrinsicsV1Options = Options;
 
-	#[derive(Clone, Serialize, Deserialize)]
+	#[derive(Clone, Default, Serialize, Deserialize)]
 	pub struct Options {
 		pub filter: Option<Filter>,
 		pub encode_selector: Option<EncodeSelector>,
@@ -213,10 +213,11 @@ pub mod fetch_extrinsics_v1_types {
 		}
 	}
 
-	#[derive(Clone, Copy, Serialize, Deserialize)]
+	#[derive(Clone, Default, Copy, Serialize, Deserialize)]
 	#[repr(u8)]
 	pub enum EncodeSelector {
 		None = 0,
+		#[default]
 		Call = 1,
 		Extrinsic = 2,
 	}

@@ -79,7 +79,7 @@ pub trait StorageValue {
 	}
 
 	fn hex_encode_storage_key() -> String {
-		std::format!("0x{}", const_hex::encode(&Self::encode_storage_key()))
+		std::format!("0x{}", const_hex::encode(Self::encode_storage_key()))
 	}
 
 	/// Decodes the Hex and SCALE encoded Storage Value
@@ -116,7 +116,7 @@ pub trait StorageValue {
 			};
 
 			let storage_value = Self::decode(&mut storage_value.as_slice())?;
-			return Ok(Some(storage_value));
+			Ok(Some(storage_value))
 		}
 	}
 }
@@ -139,7 +139,7 @@ pub trait StorageMap {
 	}
 
 	fn hex_encode_partial_key() -> String {
-		std::format!("0x{}", const_hex::encode(&Self::encode_partial_key()))
+		std::format!("0x{}", const_hex::encode(Self::encode_partial_key()))
 	}
 
 	fn encode_storage_key(key: &Self::KEY) -> Vec<u8> {
@@ -153,7 +153,7 @@ pub trait StorageMap {
 	}
 
 	fn hex_encode_storage_key(key: &Self::KEY) -> String {
-		std::format!("0x{}", const_hex::encode(&Self::encode_storage_key(key)))
+		std::format!("0x{}", const_hex::encode(Self::encode_storage_key(key)))
 	}
 
 	/// Decodes the Hex and SCALE encoded Storage Key
@@ -217,7 +217,7 @@ pub trait StorageMap {
 			};
 
 			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())?;
-			return Ok(Some(storage_value));
+			Ok(Some(storage_value))
 		}
 	}
 
@@ -250,7 +250,7 @@ pub trait StorageDoubleMap {
 	}
 
 	fn hex_encode_partial_key(key1: &Self::KEY1) -> String {
-		std::format!("0x{}", const_hex::encode(&Self::encode_partial_key(key1)))
+		std::format!("0x{}", const_hex::encode(Self::encode_partial_key(key1)))
 	}
 
 	fn encode_storage_key(key1: &Self::KEY1, key2: &Self::KEY2) -> Vec<u8> {
@@ -262,7 +262,7 @@ pub trait StorageDoubleMap {
 	}
 
 	fn hex_encode_storage_key(key1: &Self::KEY1, key2: &Self::KEY2) -> String {
-		std::format!("0x{}", const_hex::encode(&Self::encode_storage_key(key1, key2)))
+		std::format!("0x{}", const_hex::encode(Self::encode_storage_key(key1, key2)))
 	}
 
 	fn decode_partial_key(value: &mut &[u8]) -> Result<Self::KEY1, codec::Error> {
@@ -338,7 +338,7 @@ pub trait StorageDoubleMap {
 			};
 
 			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())?;
-			return Ok(Some(storage_value));
+			Ok(Some(storage_value))
 		}
 	}
 

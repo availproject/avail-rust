@@ -8,4 +8,5 @@ pub mod runtime_api;
 #[cfg(feature = "reqwest")]
 pub mod reqwest_client;
 
+pub use block_client::BlockTransactionsBuilder;
 pub use main_client::Client;

@@ -9,7 +9,7 @@ pub mod transaction;
 pub mod transaction_options;
 pub mod transactions;
 
-pub use clients::Client;
+pub use clients::{BlockTransactionsBuilder, Client};
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
