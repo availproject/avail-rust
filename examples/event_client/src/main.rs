@@ -9,10 +9,7 @@ use avail::{
 	system::events::ExtrinsicSuccess as ExtrinsicSuccessEvent,
 };
 use avail_rust_client::{
-	avail_rust_core::{
-		FetchEventsV1Options,
-		rpc::system::fetch_events_v1_types::{Filter, GroupedRuntimeEvents, RuntimeEvent},
-	},
+	avail_rust_core::rpc::system::fetch_events_v1_types::{GroupedRuntimeEvents, RuntimeEvent},
 	prelude::*,
 };
 

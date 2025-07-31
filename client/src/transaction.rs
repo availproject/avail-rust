@@ -1,6 +1,6 @@
 use crate::{
 	Client,
-	subscription::{HeaderSubscription, Subscriber},
+	subscription::{HeaderSubscription, SubscriptionBuilder},
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
@@ -198,10 +198,13 @@ impl Utils {
 		use_best_block: bool,
 	) -> Result<Option<BlockLocation>, avail_rust_core::Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
-		let sub = match use_best_block {
-			true => Subscriber::new_best_block(3_000, mortality.block_height),
-			false => Subscriber::new_finalized_block(3_000, mortality.block_height),
+
+		let sub_builder = SubscriptionBuilder::new().block_height(mortality.block_height);
+		let sub_builder = match use_best_block {
+			true => sub_builder.follow_best_blocks(),
+			false => sub_builder.follow_finalized_blocks(),
 		};
+		let sub = sub_builder.build(client).await?;
 		let mut sub = HeaderSubscription::new(client.clone(), sub);
 		let mut current_block_height = mortality.block_height;
 
@@ -209,11 +212,11 @@ impl Utils {
 		{
 			match use_best_block {
 				true => {
-					let id = client.best_block_loc().await?;
+					let id = client.best_block_loc_ext(true, false).await?;
 					info!(target: "lib", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, id.height, mortality_ends_height);
 				},
 				false => {
-					let id = client.finalized_block_loc().await?;
+					let id = client.finalized_block_loc_ext(true, false).await?;
 					info!(target: "lib", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, id.height, mortality_ends_height);
 				},
 			};

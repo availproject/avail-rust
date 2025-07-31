@@ -3,7 +3,7 @@ use crate::{
 	BlockState, avail,
 	clients::{rpc_api::RpcAPI, runtime_api::RuntimeApi},
 	platform::sleep,
-	subscription::{self, Subscriber},
+	subscription::{self, Subscription},
 	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
 	transaction::SubmittedTransaction,
@@ -692,20 +692,20 @@ impl Client {
 	}
 
 	// Subscription
-	pub fn subscription_block_header(&self, sub: Subscriber) -> subscription::HeaderSubscription {
+	pub fn subscription_block_header(&self, sub: Subscription) -> subscription::HeaderSubscription {
 		subscription::HeaderSubscription::new(self.clone(), sub)
 	}
 
-	pub fn subscription_block(&self, sub: Subscriber) -> subscription::BlockSubscription {
+	pub fn subscription_block(&self, sub: Subscription) -> subscription::BlockSubscription {
 		subscription::BlockSubscription::new(self.clone(), sub)
 	}
 
 	pub fn subscription_grandpa_justifications(
 		&self,
 		block_height: u32,
-		poll_rate_ms: u64,
+		poll_rate: Duration,
 	) -> subscription::GrandpaJustificationsSubscription {
-		subscription::GrandpaJustificationsSubscription::new(self.clone(), poll_rate_ms, block_height)
+		subscription::GrandpaJustificationsSubscription::new(self.clone(), poll_rate, block_height)
 	}
 }
 
