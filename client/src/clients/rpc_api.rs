@@ -80,6 +80,26 @@ impl RpcAPI {
 		Ok(rpc::system::sync_state(&self.client.rpc_client).await?)
 	}
 
+	pub async fn system_sync_state_ext(&self, retry_on_error: bool) -> Result<SyncState, avail_rust_core::Error> {
+		const MESSAGE: &str = "Failed to execute RPC: system_sync_state";
+
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			match rpc::system::sync_state(&self.client.rpc_client).await {
+				Ok(x) => return Ok(x),
+				Err(err) if !retry_on_error => {
+					return Err(err.into());
+				},
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err.into());
+					};
+					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
+				},
+			};
+		}
+	}
+
 	pub async fn system_version(&self) -> Result<String, avail_rust_core::Error> {
 		Ok(rpc::system::version(&self.client.rpc_client).await?)
 	}
@@ -98,8 +118,62 @@ impl RpcAPI {
 		Ok(rpc::chain::get_block_hash(&self.client.rpc_client, block_height).await?)
 	}
 
+	pub async fn chain_get_block_hash_ext(
+		&self,
+		block_height: Option<u32>,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<Option<H256>, avail_rust_core::Error> {
+		const MESSAGE: &str = "Failed to fetch block hash";
+
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			match rpc::chain::get_block_hash(&self.client.rpc_client, block_height).await {
+				Ok(Some(x)) => return Ok(Some(x)),
+				Ok(None) if !retry_on_none => {
+					return Ok(None);
+				},
+				Ok(None) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Ok(None);
+					};
+					sleep_on_retry(duration, MESSAGE, "Option<None>").await;
+				},
+				Err(err) if !retry_on_error => {
+					return Err(err.into());
+				},
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err.into());
+					};
+					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
+				},
+			};
+		}
+	}
+
 	pub async fn chain_get_finalized_head(&self) -> Result<H256, avail_rust_core::Error> {
 		Ok(rpc::chain::get_finalized_head(&self.client.rpc_client).await?)
+	}
+
+	pub async fn chain_get_finalized_head_ext(&self, retry_on_error: bool) -> Result<H256, avail_rust_core::Error> {
+		const MESSAGE: &str = "Failed to execute RPC: chain_getFinalized_Head";
+
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			match rpc::chain::get_finalized_head(&self.client.rpc_client).await {
+				Ok(x) => return Ok(x),
+				Err(err) if !retry_on_error => {
+					return Err(err.into());
+				},
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err.into());
+					};
+					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
+				},
+			};
+		}
 	}
 
 	pub async fn chain_get_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, avail_rust_core::Error> {

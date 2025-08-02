@@ -56,7 +56,7 @@ impl SubscriptionBuilder {
 		let block_height = match self.block_height {
 			Some(x) => x,
 			None => match self.kind {
-				SubscriptionKind::BestBlock => client.best_block_height_ext(self.retry_on_error, true).await?,
+				SubscriptionKind::BestBlock => client.best_block_height_ext(self.retry_on_error).await?,
 				SubscriptionKind::FinalizedBlock => {
 					client.finalized_block_height_ext(self.retry_on_error, true).await?
 				},

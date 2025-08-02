@@ -264,32 +264,9 @@ impl Client {
 		retry_on_error: bool,
 		retry_on_none: bool,
 	) -> Result<Option<H256>, avail_rust_core::Error> {
-		const MESSAGE: &str = "Failed to fetch block hash";
-
-		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
-		loop {
-			match self.block_hash(block_height).await {
-				Ok(Some(x)) => return Ok(Some(x)),
-				Ok(None) if !retry_on_none => {
-					return Ok(None);
-				},
-				Ok(None) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Ok(None);
-					};
-					sleep_on_retry(duration, MESSAGE, "Option<None>").await;
-				},
-				Err(err) if !retry_on_error => {
-					return Err(err);
-				},
-				Err(err) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Err(err);
-					};
-					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
-				},
-			};
-		}
+		self.rpc_api()
+			.chain_get_block_hash_ext(Some(block_height), retry_on_error, retry_on_none)
+			.await
 	}
 
 	pub async fn best_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
@@ -306,32 +283,15 @@ impl Client {
 		retry_on_error: bool,
 		retry_on_none: bool,
 	) -> Result<H256, avail_rust_core::Error> {
-		const MESSAGE: &str = "Failed to fetch best block hash";
+		let result = self
+			.rpc_api()
+			.chain_get_block_hash_ext(None, retry_on_error, retry_on_none)
+			.await?;
+		let Some(result) = result else {
+			return Err("Failed to fetch best block hash".into());
+		};
 
-		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
-		loop {
-			match self.rpc_api().chain_get_block_hash(None).await {
-				Ok(Some(x)) => return Ok(x),
-				Ok(None) if !retry_on_none => {
-					return Err(MESSAGE.into());
-				},
-				Ok(None) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Err(MESSAGE.into());
-					};
-					sleep_on_retry(duration, MESSAGE, "Option<None>").await;
-				},
-				Err(err) if !retry_on_error => {
-					return Err(err);
-				},
-				Err(err) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Err(err);
-					};
-					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
-				},
-			};
-		}
+		Ok(result)
 	}
 
 	pub async fn finalized_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
@@ -339,23 +299,7 @@ impl Client {
 	}
 
 	pub async fn finalized_block_hash_ext(&self, retry_on_error: bool) -> Result<H256, avail_rust_core::Error> {
-		const MESSAGE: &str = "Failed to fetch finalized block hash";
-
-		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
-		loop {
-			match self.finalized_block_hash().await {
-				Ok(x) => return Ok(x),
-				Err(err) if !retry_on_error => {
-					return Err(err);
-				},
-				Err(err) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Err(err);
-					};
-					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
-				},
-			};
-		}
+		self.rpc_api().chain_get_finalized_head_ext(retry_on_error).await
 	}
 
 	// Block Height
@@ -399,17 +343,15 @@ impl Client {
 	}
 
 	pub async fn best_block_height(&self) -> Result<u32, avail_rust_core::Error> {
-		self.best_block_header().await.map(|x| x.number)
+		Ok(self.rpc_api().system_sync_state_ext(false).await?.current_block)
 	}
 
-	pub async fn best_block_height_ext(
-		&self,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<u32, avail_rust_core::Error> {
-		self.best_block_header_ext(retry_on_error, retry_on_none)
-			.await
-			.map(|x| x.number)
+	pub async fn best_block_height_ext(&self, retry_on_error: bool) -> Result<u32, avail_rust_core::Error> {
+		Ok(self
+			.rpc_api()
+			.system_sync_state_ext(retry_on_error)
+			.await?
+			.current_block)
 	}
 
 	pub async fn finalized_block_height(&self) -> Result<u32, avail_rust_core::Error> {
