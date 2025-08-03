@@ -5,22 +5,6 @@ check:
     cargo check && just fmt
 metadata-build:
     ./scripts/build_api.sh
-book-build:
-    cd ./documentation && mdbook build
-book-serve:
-    cd ./documentation && mdbook serve
-book-deploy:
-    just book-build
-    rm -rf ./docs
-    mv ./documentation/book/html ./docs
-book-publish:
-    git diff --quiet
-    git checkout gh-page
-    git reset --hard main
-    just book-deploy
-    git add .
-    git commit -m 'Book Deployed'
-    git pf
 fmt:
     cargo +nightly fmt
     just examples-fmt
@@ -41,7 +25,6 @@ examples-check:
 test:
     cargo test
 podman:
-    podman run -it --rm --network host docker.io/availj/avail:v2.2.5.1 --dev
+    podman run -it --rm --network host docker.io/availj/avail:v2.3.2.0 --dev
 docker:
-    docker run -it --rm --network host docker.io/availj/avail:v2.2.5.1 --dev
-    
+    docker run -it --rm --network host docker.io/availj/avail:v2.3.2.0 --dev

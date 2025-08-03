@@ -10,16 +10,14 @@ shell commands. You can install both tools by running and executing
 
 Here is the list of available `just` commands (`just -l`):
 
-- book-build
-- book-deploy
-- book-publish
-- book-serve
 - build
 - check
 - doc
 - docker
-- examples
+- examples-check
 - examples-clean
+- examples-fmt
+- examples-run
 - fmt
 - lint
 - lint-fix
