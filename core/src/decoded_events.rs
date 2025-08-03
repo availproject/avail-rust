@@ -39,13 +39,13 @@ impl<T: HasEventEmittedIndex + Encode> TransactionEventEncodable for T {
 		let pallet_id = Self::EMITTED_INDEX.0;
 		let variant_id = Self::EMITTED_INDEX.1;
 		let mut encoded_event: Vec<u8> = vec![pallet_id, variant_id];
-		Self::encode_to(&self, &mut encoded_event);
+		Self::encode_to(self, &mut encoded_event);
 
 		encoded_event
 	}
 
 	fn encode_as_hex_event(&self) -> String {
-		std::format!("0x{}", const_hex::encode(Self::encode_as_event(&self)))
+		std::format!("0x{}", const_hex::encode(Self::encode_as_event(self)))
 	}
 }
 

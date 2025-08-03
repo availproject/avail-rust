@@ -1,4 +1,5 @@
 build:
+    just fmt
     ./scripts/build_sdk.sh
 check:
     cargo check && just fmt

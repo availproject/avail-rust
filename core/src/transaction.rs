@@ -215,7 +215,7 @@ impl<'a> Transaction<'a> {
 	}
 }
 
-impl<'a> TryFrom<&Vec<u8>> for Transaction<'a> {
+impl TryFrom<&Vec<u8>> for Transaction<'_> {
 	type Error = codec::Error;
 
 	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
@@ -223,7 +223,7 @@ impl<'a> TryFrom<&Vec<u8>> for Transaction<'a> {
 	}
 }
 
-impl<'a> TryFrom<&[u8]> for Transaction<'a> {
+impl TryFrom<&[u8]> for Transaction<'_> {
 	type Error = codec::Error;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
@@ -232,7 +232,7 @@ impl<'a> TryFrom<&[u8]> for Transaction<'a> {
 	}
 }
 
-impl<'a> Decode for Transaction<'a> {
+impl Decode for Transaction<'_> {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		// This is a little more complicated than usual since the binary format must be compatible
 		// with SCALE's generic `Vec<u8>` type. Basically this just means accepting that there
@@ -264,7 +264,7 @@ impl<'a> Decode for Transaction<'a> {
 	}
 }
 
-impl<'a> Serialize for Transaction<'a> {
+impl Serialize for Transaction<'_> {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -274,7 +274,7 @@ impl<'a> Serialize for Transaction<'a> {
 	}
 }
 
-impl<'a, 'b> Deserialize<'a> for Transaction<'b> {
+impl<'a> Deserialize<'a> for Transaction<'_> {
 	fn deserialize<D>(de: D) -> Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'a>,

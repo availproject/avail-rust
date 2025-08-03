@@ -1,210 +1,302 @@
 use crate::{AvailHeader, Client, platform::sleep};
-use avail_rust_core::{H256, grandpa::GrandpaJustification, rpc::BlockWithJustifications};
+use avail_rust_core::{Error as CoreError, H256, grandpa::GrandpaJustification, rpc::BlockWithJustifications};
 use std::time::Duration;
 
-#[derive(Clone)]
-pub enum Subscriber {
-	BestBlock {
-		poll_rate: Duration,
-		current_block_height: u32,
-		block_processed: Vec<H256>,
-		stored_height: Option<u32>,
-	},
-	FinalizedBlock {
-		poll_rate: Duration,
-		next_block_height: u32,
-		stored_height: Option<u32>,
-	},
+#[derive(Debug, Default, Clone, Copy)]
+pub enum SubscriptionKind {
+	BestBlock,
+	#[default]
+	FinalizedBlock,
 }
 
-impl Subscriber {
-	pub fn new_best_block(poll_rate_milli: u64, block_height: u32) -> Self {
-		Self::BestBlock {
-			poll_rate: Duration::from_millis(poll_rate_milli),
-			current_block_height: block_height,
-			block_processed: Vec::new(),
-			stored_height: None,
-		}
+#[derive(Clone)]
+pub struct SubscriptionBuilder {
+	kind: SubscriptionKind,
+	block_height: Option<u32>,
+	poll_rate: Duration,
+	retry_on_error: bool,
+}
+
+impl SubscriptionBuilder {
+	pub fn new() -> Self {
+		Self::default()
 	}
 
-	pub fn new_finalized_block(poll_rate_milli: u64, block_height: u32) -> Self {
-		Self::FinalizedBlock {
-			poll_rate: Duration::from_millis(poll_rate_milli),
-			next_block_height: block_height,
-			stored_height: None,
-		}
+	pub fn follow_best_blocks(mut self) -> Self {
+		self.kind = SubscriptionKind::BestBlock;
+		self
 	}
 
-	pub async fn run(&mut self, client: Client) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
+	pub fn follow_finalized_blocks(mut self) -> Self {
+		self.kind = SubscriptionKind::FinalizedBlock;
+		self
+	}
+
+	pub fn block_height(mut self, value: u32) -> Self {
+		self.block_height = Some(value);
+		self
+	}
+
+	pub fn poll_rate(mut self, value: Duration) -> Self {
+		self.poll_rate = value;
+		self
+	}
+
+	pub fn kind(mut self, value: SubscriptionKind) -> Self {
+		self.kind = value;
+		self
+	}
+
+	pub fn retry_on_error(mut self, value: bool) -> Self {
+		self.retry_on_error = value;
+		self
+	}
+
+	pub async fn build(&self, client: &Client) -> Result<Subscription, CoreError> {
+		let block_height = match self.block_height {
+			Some(x) => x,
+			None => match self.kind {
+				SubscriptionKind::BestBlock => client.best_block_height_ext(self.retry_on_error).await?,
+				SubscriptionKind::FinalizedBlock => {
+					client.finalized_block_height_ext(self.retry_on_error, true).await?
+				},
+			},
+		};
+
+		let sub = match self.kind {
+			SubscriptionKind::BestBlock => Subscription::BestBlock(BestBlockSubscriber {
+				poll_rate: self.poll_rate,
+				current_block_height: block_height,
+				block_processed: Vec::new(),
+				retry_on_error: self.retry_on_error,
+				latest_finalized_height: None,
+				stopwatch: std::time::Instant::now(),
+			}),
+			SubscriptionKind::FinalizedBlock => Subscription::FinalizedBlock(FinalizedBlockSubscriber {
+				poll_rate: self.poll_rate,
+				next_block_height: block_height,
+				retry_on_error: self.retry_on_error,
+				latest_finalized_height: None,
+				stopwatch: std::time::Instant::now(),
+			}),
+		};
+		Ok(sub)
+	}
+}
+
+impl Default for SubscriptionBuilder {
+	fn default() -> Self {
+		Self {
+			kind: Default::default(),
+			block_height: Default::default(),
+			poll_rate: Duration::from_secs(3),
+			retry_on_error: true,
+		}
+	}
+}
+
+#[derive(Clone)]
+pub struct FinalizedBlockSubscriber {
+	poll_rate: Duration,
+	next_block_height: u32,
+	retry_on_error: bool,
+	latest_finalized_height: Option<u32>,
+	stopwatch: std::time::Instant,
+}
+
+impl FinalizedBlockSubscriber {
+	pub async fn run(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
+		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
+
+		// Dealing with historical blocks
+		if latest_finalized_height > self.next_block_height {
+			return self.run_historical(client).await;
+		}
+
+		// Dealing with most recent blocks
+		self.run_head(client).await.map(Some)
+	}
+
+	pub fn current_block_height(&self) -> u32 {
+		self.next_block_height.saturating_sub(1)
+	}
+
+	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, CoreError> {
+		if self.stopwatch.elapsed().as_secs() > 300 {
+			self.latest_finalized_height = None
+		}
+
+		if let Some(height) = self.latest_finalized_height.as_ref() {
+			return Ok(*height);
+		}
+
+		self.stopwatch = std::time::Instant::now();
+		let latest_finalized_height = client.finalized_block_height_ext(self.retry_on_error, true).await?;
+		self.latest_finalized_height = Some(latest_finalized_height);
+		Ok(latest_finalized_height)
+	}
+
+	async fn run_historical(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
+		let block_height = self.next_block_height;
+		let block_hash = client.block_hash_ext(block_height, self.retry_on_error, false).await?;
+		self.next_block_height = block_height + 1;
+
+		Ok(block_hash.map(|x| (block_height, x)))
+	}
+
+	async fn run_head(&mut self, client: &Client) -> Result<(u32, H256), CoreError> {
+		loop {
+			let head = client.finalized_block_loc_ext(self.retry_on_error, true).await?;
+			if self.next_block_height > head.height {
+				sleep(self.poll_rate).await;
+				continue;
+			}
+			self.next_block_height += 1;
+			return Ok((head.height, head.hash));
+		}
+	}
+}
+
+#[derive(Clone)]
+pub struct BestBlockSubscriber {
+	poll_rate: Duration,
+	current_block_height: u32,
+	block_processed: Vec<H256>,
+	retry_on_error: bool,
+	latest_finalized_height: Option<u32>,
+	stopwatch: std::time::Instant,
+}
+
+impl BestBlockSubscriber {
+	pub async fn run(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
+		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
+
+		// Dealing with historical blocks
+		if latest_finalized_height > self.current_block_height {
+			return self.run_historical(client).await;
+		}
+
+		// Dealing with most recent blocks
+		self.run_head(client).await.map(Some)
+	}
+
+	pub fn current_block_height(&self) -> u32 {
+		self.current_block_height
+	}
+
+	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, CoreError> {
+		if self.stopwatch.elapsed().as_secs() > 300 {
+			self.latest_finalized_height = None
+		}
+
+		if let Some(height) = self.latest_finalized_height.as_ref() {
+			return Ok(*height);
+		}
+
+		self.stopwatch = std::time::Instant::now();
+		let latest_finalized_height = client.finalized_block_height_ext(self.retry_on_error, true).await?;
+		self.latest_finalized_height = Some(latest_finalized_height);
+		Ok(latest_finalized_height)
+	}
+
+	async fn run_historical(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
+		let block_height = self.current_block_height;
+		let block_hash = client.block_hash_ext(block_height, self.retry_on_error, false).await?;
+		self.current_block_height = block_height + 1;
+		self.block_processed.clear();
+
+		Ok(block_hash.map(|x| (block_height, x)))
+	}
+
+	async fn run_head(&mut self, client: &Client) -> Result<(u32, H256), CoreError> {
+		loop {
+			let head_hash = client.best_block_hash_ext(self.retry_on_error, true).await?;
+			if self.block_processed.contains(&head_hash) {
+				sleep(self.poll_rate).await;
+				continue;
+			}
+
+			let head_height = client.block_height_ext(head_hash, self.retry_on_error, true).await?;
+			let Some(head_height) = head_height else {
+				return Err(CoreError::from("Failed to fetch block height"));
+			};
+
+			let is_current_block = head_height == self.current_block_height;
+			if is_current_block {
+				self.block_processed.push(head_hash);
+				return Ok((head_height, head_hash));
+			}
+
+			let is_ahead_of_current_block = head_height > self.current_block_height;
+			let is_next_block = head_height == (self.current_block_height + 1);
+			let no_block_processed_yet = self.block_processed.is_empty();
+
+			if is_ahead_of_current_block {
+				if no_block_processed_yet {
+					let block_hash = client
+						.block_hash_ext(self.current_block_height, self.retry_on_error, true)
+						.await?;
+					let Some(block_hash) = block_hash else {
+						return Err(CoreError::from("Failed to fetch block hash"));
+					};
+
+					self.block_processed.push(head_hash);
+					return Ok((self.current_block_height, block_hash));
+				}
+
+				if is_next_block {
+					self.current_block_height = head_height;
+					self.block_processed.clear();
+					self.block_processed.push(head_hash);
+					return Ok((head_height, head_hash));
+				}
+
+				let next_block_height = self.current_block_height + 1;
+				let block_hash = client
+					.block_hash_ext(next_block_height, self.retry_on_error, true)
+					.await?;
+				let Some(block_hash) = block_hash else {
+					return Err(CoreError::from("Failed to fetch block hash"));
+				};
+
+				self.block_processed.clear();
+				self.block_processed.push(block_hash);
+				self.current_block_height = next_block_height;
+				return Ok((next_block_height, block_hash));
+			}
+
+			// If we are here it means we are targeting a block in the future
+			sleep(self.poll_rate).await;
+			continue;
+		}
+	}
+}
+
+#[derive(Clone)]
+pub enum Subscription {
+	BestBlock(BestBlockSubscriber),
+	FinalizedBlock(FinalizedBlockSubscriber),
+}
+
+impl Subscription {
+	pub async fn run(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
 		match self {
-			Subscriber::BestBlock {
-				poll_rate,
-				current_block_height,
-				block_processed,
-				stored_height,
-			} => {
-				return Self::run_best_block(client, *poll_rate, current_block_height, block_processed, stored_height)
-					.await;
-			},
-			Subscriber::FinalizedBlock { poll_rate, next_block_height, stored_height } => {
-				return Self::run_finalized(client, *poll_rate, next_block_height, stored_height).await;
-			},
+			Self::BestBlock(s) => s.run(client).await,
+			Self::FinalizedBlock(s) => s.run(client).await,
+		}
+	}
+
+	pub fn retry_on_error(&self) -> bool {
+		match self {
+			Self::BestBlock(s) => s.retry_on_error,
+			Self::FinalizedBlock(s) => s.retry_on_error,
 		}
 	}
 
 	pub fn current_block_height(&self) -> u32 {
 		match self {
-			Subscriber::BestBlock {
-				poll_rate: _,
-				current_block_height,
-				block_processed: _,
-				stored_height: _,
-			} => *current_block_height,
-			Subscriber::FinalizedBlock { poll_rate: _, next_block_height, stored_height: _ } => {
-				if *next_block_height > 0 {
-					*next_block_height - 1
-				} else {
-					*next_block_height
-				}
-			},
-		}
-	}
-
-	pub fn stored_height(&self) -> Option<u32> {
-		match self {
-			Subscriber::BestBlock {
-				poll_rate: _,
-				current_block_height: _,
-				block_processed: _,
-				stored_height,
-			} => stored_height.clone(),
-			Subscriber::FinalizedBlock { poll_rate: _, next_block_height: _, stored_height } => stored_height.clone(),
-		}
-	}
-
-	async fn run_best_block(
-		client: Client,
-		poll_rate: Duration,
-		current_block_height: &mut u32,
-		block_processed: &mut Vec<H256>,
-		stored_height: &mut Option<u32>,
-	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
-		let block_height = *current_block_height;
-		let res =
-			Self::fetch_best_block_height(client, block_height, block_processed, poll_rate, stored_height).await?;
-		if let Some(res) = &res {
-			*current_block_height = res.0;
-			if res.0 > block_height {
-				block_processed.clear();
-			}
-			block_processed.push(res.1);
-		} else {
-			*current_block_height += 1;
-			block_processed.clear();
-		}
-
-		Ok(res)
-	}
-
-	async fn run_finalized(
-		client: Client,
-		poll_rate: Duration,
-		next_block_height: &mut u32,
-		stored_height: &mut Option<u32>,
-	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
-		let block_height = *next_block_height;
-
-		if stored_height.is_none() {
-			let new_height = client.finalized_block_height().await?;
-			*stored_height = Some(new_height);
-		}
-
-		if stored_height.is_some_and(|stored_h| stored_h > block_height) {
-			let block_hash = client.block_hash(block_height).await?;
-			*next_block_height += 1;
-			return Ok(block_hash.map(|x| (block_height, x)));
-		}
-
-		let block_hash = loop {
-			let new_height = client.finalized_block_height().await?;
-			if block_height > new_height {
-				sleep(poll_rate).await;
-				continue;
-			}
-
-			break client.block_hash_with_retries(block_height).await?;
-		};
-
-		*next_block_height += 1;
-
-		Ok(block_hash.map(|x| (block_height, x)))
-	}
-
-	async fn fetch_best_block_height(
-		client: Client,
-		current_block_height: u32,
-		block_processed: &[H256],
-		poll_rate: Duration,
-		stored_height: &mut Option<u32>,
-	) -> Result<Option<(u32, H256)>, avail_rust_core::Error> {
-		if stored_height.is_none() {
-			let new_height = client.best_block_height().await?;
-			*stored_height = Some(new_height);
-		}
-
-		if stored_height.is_some_and(|stored_h| stored_h > current_block_height) {
-			let mut block_height = current_block_height;
-			if !block_processed.is_empty() {
-				block_height += 1;
-			}
-			let Some(block_hash) = client.block_hash(block_height).await? else {
-				return Ok(None);
-			};
-			return Ok(Some((block_height, block_hash)));
-		}
-
-		loop {
-			let best_block_hash = client.best_block_hash().await?;
-			if block_processed.contains(&best_block_hash) {
-				sleep(poll_rate).await;
-				continue;
-			}
-
-			let Some(best_block_height) = client.block_height_with_retries(best_block_hash).await? else {
-				return Ok(None);
-			};
-
-			let is_ahead_of_current_block = best_block_height > current_block_height;
-			let is_next_block = best_block_height == (current_block_height + 1);
-			let is_current_block = best_block_height == current_block_height;
-			let no_block_processed_yet = block_processed.is_empty();
-
-			if is_ahead_of_current_block {
-				if no_block_processed_yet {
-					let Some(block_hash) = client.block_hash_with_retries(current_block_height).await? else {
-						return Ok(None);
-					};
-					return Ok(Some((current_block_height, block_hash)));
-				}
-
-				if is_next_block {
-					return Ok(Some((best_block_height, best_block_hash)));
-				}
-
-				let next_block_height = current_block_height + 1;
-				let Some(next_block_hash) = client.block_hash_with_retries(next_block_height).await? else {
-					return Ok(None);
-				};
-
-				return Ok(Some((next_block_height, next_block_hash)));
-			}
-
-			if is_current_block && !block_processed.contains(&best_block_hash) {
-				return Ok(Some((best_block_height, best_block_hash)));
-			}
-
-			sleep(poll_rate).await;
-			continue;
+			Self::BestBlock(s) => s.current_block_height(),
+			Self::FinalizedBlock(s) => s.current_block_height(),
 		}
 	}
 }
@@ -212,32 +304,26 @@ impl Subscriber {
 #[derive(Clone)]
 pub struct HeaderSubscription {
 	client: Client,
-	sub: Subscriber,
+	sub: Subscription,
+	retry_on_error: bool,
 }
 
 impl HeaderSubscription {
-	pub fn new(client: Client, sub: Subscriber) -> Self {
-		Self { client, sub }
+	pub fn new(client: Client, sub: Subscription) -> Self {
+		let retry_on_error = sub.retry_on_error();
+		Self { client, sub, retry_on_error }
 	}
 
-	pub async fn next(&mut self) -> Result<Option<AvailHeader>, avail_rust_core::Error> {
-		let block_info = self.sub.run(self.client.clone()).await?;
+	pub async fn next(&mut self) -> Result<Option<AvailHeader>, CoreError> {
+		let block_info = self.sub.run(&self.client).await?;
 
-		let Some((block_height, block_hash)) = block_info else {
+		let Some((_, block_hash)) = block_info else {
 			return Ok(None);
 		};
 
-		if let Some(stored_height) = self.sub.stored_height() {
-			if stored_height > block_height {
-				return self.client.block_header(block_hash).await;
-			}
-		}
-
-		self.client.block_header_with_retries(block_hash).await
-	}
-
-	pub fn stored_height(&self) -> Option<u32> {
-		self.sub.stored_height()
+		self.client
+			.block_header_ext(block_hash, self.retry_on_error, true)
+			.await
 	}
 
 	pub fn current_block_height(&self) -> u32 {
@@ -248,32 +334,24 @@ impl HeaderSubscription {
 #[derive(Clone)]
 pub struct BlockSubscription {
 	client: Client,
-	sub: Subscriber,
+	sub: Subscription,
+	retry_on_error: bool,
 }
 
 impl BlockSubscription {
-	pub fn new(client: Client, sub: Subscriber) -> Self {
-		Self { client, sub }
+	pub fn new(client: Client, sub: Subscription) -> Self {
+		let retry_on_error = sub.retry_on_error();
+		Self { client, sub, retry_on_error }
 	}
 
-	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
-		let block_info = self.sub.run(self.client.clone()).await?;
+	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, CoreError> {
+		let block_info = self.sub.run(&self.client).await?;
 
-		let Some((block_height, block_hash)) = block_info else {
+		let Some((_, block_hash)) = block_info else {
 			return Ok(None);
 		};
 
-		if let Some(stored_height) = self.sub.stored_height() {
-			if stored_height > block_height {
-				return self.client.block(block_hash).await;
-			}
-		}
-
-		self.client.block_with_retries(block_hash).await
-	}
-
-	pub fn stored_height(&self) -> Option<u32> {
-		self.sub.stored_height()
+		self.client.block_ext(block_hash, self.retry_on_error, true).await
 	}
 
 	pub fn current_block_height(&self) -> u32 {
@@ -285,106 +363,72 @@ impl BlockSubscription {
 #[derive(Clone)]
 pub struct GrandpaJustificationsSubscription {
 	client: Client,
-	block_height: u32,
+	next_block_height: u32,
 	poll_rate: Duration,
-	stored_height: Option<u32>,
+	latest_finalized_height: Option<u32>,
+	stopwatch: std::time::Instant,
 }
 
 impl GrandpaJustificationsSubscription {
-	pub fn new(client: Client, poll_rate_ms: u64, block_height: u32) -> Self {
+	pub fn new(client: Client, poll_rate: Duration, next_block_height: u32) -> Self {
 		Self {
 			client,
-			block_height,
-			poll_rate: Duration::from_millis(poll_rate_ms),
-			stored_height: None,
+			next_block_height,
+			poll_rate,
+			latest_finalized_height: None,
+			stopwatch: std::time::Instant::now(),
 		}
 	}
 
-	pub async fn next(&mut self) -> Result<(GrandpaJustification, u32), avail_rust_core::Error> {
+	pub async fn next(&mut self) -> Result<(GrandpaJustification, u32), CoreError> {
 		loop {
-			let stored_height = if let Some(height) = self.stored_height.as_ref() {
-				*height
+			let latest_finalized_height = self.fetch_latest_finalized_height().await?;
+
+			// Dealing with historical blocks
+			let block_height = if latest_finalized_height > self.next_block_height {
+				self.run_historical()
 			} else {
-				let height = self.client.finalized_block_height().await?;
-				self.stored_height = Some(height);
-				height
+				self.run_head().await?
 			};
 
-			if self.block_height > stored_height {
-				let finalized_block_height = self.client.finalized_block_height().await?;
-				if self.block_height > finalized_block_height {
-					sleep(self.poll_rate).await;
-					continue;
-				}
-			}
+			let justification = self.client.rpc_api().grandpa_block_justification(block_height).await?;
+			self.next_block_height += 1;
 
-			let height = self.block_height;
-			let grandpa_justification = self.client.rpc_api().grandpa_block_justification(height).await?;
-
-			self.block_height += 1;
-			let Some(justification) = grandpa_justification else {
+			let Some(justification) = justification else {
 				continue;
 			};
 
-			return Ok((justification, height));
+			return Ok((justification, block_height));
 		}
 	}
 
-	pub fn current_block_height(&self) -> u32 {
-		if self.block_height > 0 {
-			self.block_height - 1
-		} else {
-			self.block_height
+	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, CoreError> {
+		if self.stopwatch.elapsed().as_secs() > 300 {
+			self.latest_finalized_height = None
 		}
+
+		if let Some(height) = self.latest_finalized_height.as_ref() {
+			return Ok(*height);
+		}
+
+		self.stopwatch = std::time::Instant::now();
+		let latest_finalized_height = self.client.finalized_block_height_ext(true, true).await?;
+		self.latest_finalized_height = Some(latest_finalized_height);
+		Ok(latest_finalized_height)
 	}
-}
 
-#[cfg(test)]
-pub mod test {
-	use std::{
-		sync::{Arc, Mutex},
-		time::Duration,
-	};
-
-	use avail_rust_core::{H256, ext::subxt_rpcs::RpcClient};
-
-	use crate::{
-		Client,
-		clients::reqwest_client::{ReqwestClient, testable::*},
-		constants,
-		subscription::Subscriber,
-	};
-
-	/* 	#[tokio::test]
-	async fn todo_name_finalized_block_test() {
-		let rv = ReturnValues::new();
-		let rv = Arc::new(Mutex::new(rv));
-		let rpc_client = ReqwestClient::new_mocked(rv.clone());
-		let rpc_client = RpcClient::new(rpc_client);
-		let client = Client::new_rpc_client(rpc_client).await.unwrap();
-
-		let mut todo_name = super::TodoName::FinalizedBlock { next_block_height: 0 };
-		let res1 = todo_name.run(client.clone(), Duration::from_millis(100)).await.unwrap();
-		ReturnValues::lock_new_block(&rv, 1, H256::default());
-		let res2 = todo_name.run(client, Duration::from_millis(100)).await.unwrap();
-
-		dbg!(res1);
-		dbg!(res2);
+	fn run_historical(&mut self) -> u32 {
+		self.next_block_height
 	}
-	 */
 
-	#[tokio::test]
-	async fn todoname_test2() {
-		let client = Client::new(constants::TURING_ENDPOINT).await.unwrap();
-		let mut header_sub = client.subscription_block_header(Subscriber::new_finalized_block(19222232, 0));
-		let mut i = 0;
-		while let Ok(Some(header)) = header_sub.next().await {
-			dbg!(header.number);
-
-			i += 1;
-			if i > 1000 {
-				break;
+	async fn run_head(&mut self) -> Result<u32, CoreError> {
+		loop {
+			let head = self.client.finalized_block_loc_ext(true, true).await?;
+			if self.next_block_height > head.height {
+				sleep(self.poll_rate).await;
+				continue;
 			}
+			return Ok(self.next_block_height);
 		}
 	}
 }

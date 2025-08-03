@@ -3,7 +3,7 @@ use crate::{
 	BlockState, avail,
 	clients::{rpc_api::RpcAPI, runtime_api::RuntimeApi},
 	platform::sleep,
-	subscription::{self, Subscriber},
+	subscription::{self, Subscription},
 	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
 	transaction::SubmittedTransaction,
@@ -85,46 +85,42 @@ impl Client {
 		self.rpc_api().chain_get_header(Some(at)).await
 	}
 
-	pub async fn block_header_with_retries(&self, at: H256) -> Result<Option<AvailHeader>, avail_rust_core::Error> {
-		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+	pub async fn block_header_ext(
+		&self,
+		at: H256,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<Option<AvailHeader>, avail_rust_core::Error> {
+		const MESSAGE: &str = "Failed to fetch block header";
 
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
 		loop {
-			let header = self.block_header(at).await;
-			let header = match header {
-				Ok(x) => x,
+			match self.block_header(at).await {
+				Ok(Some(x)) => return Ok(Some(x)),
+				Ok(None) if !retry_on_none => {
+					return Ok(None);
+				},
+				Ok(None) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Ok(None);
+					};
+					sleep_on_retry(duration, MESSAGE, "Option<None>").await;
+				},
+				Err(err) if !retry_on_error => {
+					return Err(err);
+				},
 				Err(err) => {
 					let Some(duration) = sleep_duration.pop() else {
 						return Err(err);
 					};
-
-					#[cfg(feature = "tracing")]
-					trace_warn(&std::format!(
-						"Fetching block header ended with Err {}. Sleep for {} seconds",
-						err.to_string(),
-						duration
-					));
-					sleep(Duration::from_secs(duration)).await;
-					continue;
+					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
 				},
 			};
-
-			if let Some(header) = header {
-				return Ok(Some(header));
-			}
-
-			let Some(duration) = sleep_duration.pop() else {
-				return Ok(None);
-			};
-
-			#[cfg(feature = "tracing")]
-			trace_warn(&std::format!("Fetching block header ended with Option<None>. Sleep for {} seconds", duration));
-			sleep(Duration::from_secs(duration)).await;
 		}
 	}
 
 	pub async fn best_block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
-		let block_hash = self.best_block_hash().await?;
-		let block_header = self.block_header_with_retries(block_hash).await?;
+		let block_header = self.rpc_api().chain_get_header(None).await?;
 		let Some(block_header) = block_header else {
 			return Err("Failed to find best block header.".into());
 		};
@@ -132,9 +128,37 @@ impl Client {
 		Ok(block_header)
 	}
 
+	pub async fn best_block_header_ext(
+		&self,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<AvailHeader, avail_rust_core::Error> {
+		let block_hash = self.best_block_hash_ext(retry_on_error, retry_on_none).await?;
+		let block_header = self.block_header_ext(block_hash, retry_on_error, retry_on_none).await?;
+		let Some(block_header) = block_header else {
+			return Err("Failed to fetch best block header".into());
+		};
+
+		Ok(block_header)
+	}
+
 	pub async fn finalized_block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
 		let block_hash = self.finalized_block_hash().await?;
-		let block_header = self.block_header_with_retries(block_hash).await?;
+		let block_header = self.block_header(block_hash).await?;
+		let Some(block_header) = block_header else {
+			return Err("Failed to find finalized block header.".into());
+		};
+
+		Ok(block_header)
+	}
+
+	pub async fn finalized_block_header_ext(
+		&self,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<AvailHeader, avail_rust_core::Error> {
+		let block_hash = self.finalized_block_hash_ext(retry_on_error).await?;
+		let block_header = self.block_header_ext(block_hash, retry_on_error, retry_on_none).await?;
 		let Some(block_header) = block_header else {
 			return Err("Failed to find finalized block header.".into());
 		};
@@ -144,51 +168,60 @@ impl Client {
 
 	// (RPC) Block
 	pub async fn block(&self, at: H256) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
-		Ok(self.rpc_api().chain_get_block(Some(at)).await?)
+		self.rpc_api().chain_get_block(Some(at)).await
 	}
 
-	pub async fn block_with_retries(
+	pub async fn block_ext(
 		&self,
 		at: H256,
+		retry_on_error: bool,
+		retry_on_none: bool,
 	) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
+		const MESSAGE: &str = "Failed to fetch RPC block";
+
 		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
 		loop {
-			let block = self.block(at).await;
-			let block = match block {
-				Ok(x) => x,
+			match self.block(at).await {
+				Ok(Some(x)) => return Ok(Some(x)),
+				Ok(None) if !retry_on_none => {
+					return Ok(None);
+				},
+				Ok(None) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Ok(None);
+					};
+					sleep_on_retry(duration, MESSAGE, "Option<None>").await;
+				},
+				Err(err) if !retry_on_error => {
+					return Err(err);
+				},
 				Err(err) => {
 					let Some(duration) = sleep_duration.pop() else {
 						return Err(err);
 					};
-
-					#[cfg(feature = "tracing")]
-					trace_warn(&std::format!(
-						"Fetching block ended with Err {}. Sleep for {} seconds",
-						err.to_string(),
-						duration
-					));
-					sleep(Duration::from_secs(duration)).await;
-					continue;
+					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
 				},
 			};
-
-			if let Some(block) = block {
-				return Ok(Some(block));
-			}
-
-			let Some(duration) = sleep_duration.pop() else {
-				return Ok(None);
-			};
-
-			#[cfg(feature = "tracing")]
-			trace_warn(&std::format!("Fetching block ended with Option<None>. Sleep for {} seconds", duration));
-			sleep(Duration::from_secs(duration)).await;
 		}
 	}
 
 	pub async fn best_block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
 		let block_hash = self.best_block_hash().await?;
-		let block = self.block_with_retries(block_hash).await?;
+		let block = self.block(block_hash).await?;
+		let Some(block) = block else {
+			return Err("Best block not found".into());
+		};
+
+		Ok(block)
+	}
+
+	pub async fn best_block_ext(
+		&self,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<BlockWithJustifications, avail_rust_core::Error> {
+		let block_hash = self.best_block_hash_ext(retry_on_error, retry_on_none).await?;
+		let block = self.block_ext(block_hash, retry_on_error, retry_on_none).await?;
 		let Some(block) = block else {
 			return Err("Best block not found".into());
 		};
@@ -198,7 +231,21 @@ impl Client {
 
 	pub async fn finalized_block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
 		let block_hash = self.finalized_block_hash().await?;
-		let block = self.block_with_retries(block_hash).await?;
+		let block = self.block(block_hash).await?;
+		let Some(block) = block else {
+			return Err("Finalized block not found".into());
+		};
+
+		Ok(block)
+	}
+
+	pub async fn finalized_block_ext(
+		&self,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<BlockWithJustifications, avail_rust_core::Error> {
+		let block_hash = self.finalized_block_hash_ext(retry_on_error).await?;
+		let block = self.block_ext(block_hash, retry_on_error, retry_on_none).await?;
 		let Some(block) = block else {
 			return Err("Finalized block not found".into());
 		};
@@ -211,102 +258,48 @@ impl Client {
 		self.rpc_api().chain_get_block_hash(Some(block_height)).await
 	}
 
-	pub async fn block_hash_with_retries(&self, block_height: u32) -> Result<Option<H256>, avail_rust_core::Error> {
-		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
-		loop {
-			let hash = self.block_hash(block_height).await;
-			let hash = match hash {
-				Ok(x) => x,
-				Err(err) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Err(err);
-					};
-
-					#[cfg(feature = "tracing")]
-					trace_warn(&std::format!(
-						"Fetching block hash ended with Err {}. Sleep for {} seconds",
-						err.to_string(),
-						duration
-					));
-					sleep(Duration::from_secs(duration)).await;
-					continue;
-				},
-			};
-
-			if let Some(hash) = hash {
-				return Ok(Some(hash));
-			}
-
-			let Some(duration) = sleep_duration.pop() else {
-				return Ok(None);
-			};
-
-			#[cfg(feature = "tracing")]
-			trace_warn(&std::format!("Fetching block hash ended with Option<None>. Sleep for {} seconds", duration));
-			sleep(Duration::from_secs(duration)).await;
-		}
+	pub async fn block_hash_ext(
+		&self,
+		block_height: u32,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<Option<H256>, avail_rust_core::Error> {
+		self.rpc_api()
+			.chain_get_block_hash_ext(Some(block_height), retry_on_error, retry_on_none)
+			.await
 	}
 
 	pub async fn best_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
-		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
-		loop {
-			let hash = self.rpc_api().chain_get_block_hash(None).await;
-			let hash = match hash {
-				Ok(x) => x,
-				Err(err) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Err(err);
-					};
+		let result = self.rpc_api().chain_get_block_hash(None).await?;
+		let Some(result) = result else {
+			return Err("Failed to fetch best block hash".into());
+		};
 
-					#[cfg(feature = "tracing")]
-					trace_warn(&std::format!(
-						"Fetching best block hash ended with Err {}. Sleep for {} seconds",
-						err.to_string(),
-						duration
-					));
-					sleep(Duration::from_secs(duration)).await;
-					continue;
-				},
-			};
+		Ok(result)
+	}
 
-			if let Some(hash) = hash {
-				return Ok(hash);
-			}
+	pub async fn best_block_hash_ext(
+		&self,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<H256, avail_rust_core::Error> {
+		let result = self
+			.rpc_api()
+			.chain_get_block_hash_ext(None, retry_on_error, retry_on_none)
+			.await?;
+		let Some(result) = result else {
+			return Err("Failed to fetch best block hash".into());
+		};
 
-			let Some(duration) = sleep_duration.pop() else {
-				return Err("Failed to fetch best block hash".into());
-			};
-
-			#[cfg(feature = "tracing")]
-			trace_warn(&std::format!(
-				"Fetching best block hash ended with Option<None>. Sleep for {} seconds",
-				duration
-			));
-			sleep(Duration::from_secs(duration)).await;
-		}
+		Ok(result)
 	}
 
 	pub async fn finalized_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
-		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
-		loop {
-			let hash = self.rpc_api().chain_get_finalized_head().await;
-			match hash {
-				Ok(x) => return Ok(x),
-				Err(err) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Err(err);
-					};
+		self.rpc_api().chain_get_finalized_head().await
+	}
 
-					#[cfg(feature = "tracing")]
-					trace_warn(&std::format!(
-						"Fetching finalized block hash ended with Option<None>. Sleep for {} seconds",
-						duration
-					));
-					sleep(Duration::from_secs(duration)).await;
-					continue;
-				},
-			};
-		}
+	pub async fn finalized_block_hash_ext(&self, retry_on_error: bool) -> Result<H256, avail_rust_core::Error> {
+		self.rpc_api().chain_get_finalized_head_ext(retry_on_error).await
 	}
 
 	// Block Height
@@ -315,36 +308,93 @@ impl Client {
 		Ok(header.map(|x| x.number))
 	}
 
-	pub async fn block_height_with_retries(&self, block_hash: H256) -> Result<Option<u32>, avail_rust_core::Error> {
-		let header = self.block_header_with_retries(block_hash).await?;
-		Ok(header.map(|x| x.number))
+	pub async fn block_height_ext(
+		&self,
+		block_hash: H256,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<Option<u32>, avail_rust_core::Error> {
+		const MESSAGE: &str = "Failed to fetch block height";
+
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			match self.block_height(block_hash).await {
+				Ok(Some(x)) => return Ok(Some(x)),
+				Ok(None) if !retry_on_none => {
+					return Ok(None);
+				},
+				Ok(None) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Ok(None);
+					};
+					sleep_on_retry(duration, MESSAGE, "Option<None>").await;
+				},
+				Err(err) if !retry_on_error => {
+					return Err(err);
+				},
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err);
+					};
+					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
+				},
+			};
+		}
 	}
 
 	pub async fn best_block_height(&self) -> Result<u32, avail_rust_core::Error> {
-		self.best_block_header().await.map(|x| x.number)
+		Ok(self.rpc_api().system_sync_state_ext(false).await?.current_block)
+	}
+
+	pub async fn best_block_height_ext(&self, retry_on_error: bool) -> Result<u32, avail_rust_core::Error> {
+		Ok(self
+			.rpc_api()
+			.system_sync_state_ext(retry_on_error)
+			.await?
+			.current_block)
 	}
 
 	pub async fn finalized_block_height(&self) -> Result<u32, avail_rust_core::Error> {
 		self.finalized_block_header().await.map(|x| x.number)
 	}
 
+	pub async fn finalized_block_height_ext(
+		&self,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<u32, avail_rust_core::Error> {
+		self.finalized_block_header_ext(retry_on_error, retry_on_none)
+			.await
+			.map(|x| x.number)
+	}
+
 	// Block Id
 	pub async fn best_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
-		let hash = self.best_block_hash().await?;
-		let height = self.block_height_with_retries(hash).await?;
-		let Some(height) = height else {
-			return Err("Best block header not found.".into());
-		};
-		Ok(BlockLocation::from((hash, height)))
+		let header = self.best_block_header().await?;
+		Ok(BlockLocation::from((header.hash(), header.number)))
+	}
+
+	pub async fn best_block_loc_ext(
+		&self,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<BlockLocation, avail_rust_core::Error> {
+		let header = self.best_block_header_ext(retry_on_error, retry_on_none).await?;
+		Ok(BlockLocation::from((header.hash(), header.number)))
 	}
 
 	pub async fn finalized_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
-		let hash = self.finalized_block_hash().await?;
-		let height = self.block_height_with_retries(hash).await?;
-		let Some(height) = height else {
-			return Err("Finalized block header not found.".into());
-		};
-		Ok(BlockLocation::from((hash, height)))
+		let header = self.finalized_block_header().await?;
+		Ok(BlockLocation::from((header.hash(), header.number)))
+	}
+
+	pub async fn finalized_block_loc_ext(
+		&self,
+		retry_on_error: bool,
+		retry_on_none: bool,
+	) -> Result<BlockLocation, avail_rust_core::Error> {
+		let header = self.finalized_block_header_ext(retry_on_error, retry_on_none).await?;
+		Ok(BlockLocation::from((header.hash(), header.number)))
 	}
 
 	// Nonce
@@ -388,7 +438,7 @@ impl Client {
 
 	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, avail_rust_core::Error> {
 		let at = self.best_block_hash().await?;
-		Self::account_info(&self, account_id, at).await
+		Self::account_info(self, account_id, at).await
 	}
 
 	pub async fn finalized_block_account_info(
@@ -396,7 +446,7 @@ impl Client {
 		account_id: &AccountId,
 	) -> Result<AccountInfo, avail_rust_core::Error> {
 		let at = self.finalized_block_hash().await?;
-		Self::account_info(&self, account_id, at).await
+		Self::account_info(self, account_id, at).await
 	}
 
 	// Block State
@@ -419,7 +469,7 @@ impl Client {
 	}
 
 	// Sign and submit
-	pub async fn submit<'a>(&self, tx: &avail_rust_core::Transaction<'a>) -> Result<H256, avail_rust_core::Error> {
+	pub async fn submit(&self, tx: &avail_rust_core::Transaction<'_>) -> Result<H256, avail_rust_core::Error> {
 		let encoded = tx.encode();
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signed {
@@ -474,10 +524,10 @@ impl Client {
 		self.sign_payload(signer, tx_payload).await
 	}
 
-	pub async fn sign_and_submit_payload<'a>(
+	pub async fn sign_and_submit_payload(
 		&self,
 		signer: &Keypair,
-		tx_payload: avail_rust_core::TransactionPayload<'a>,
+		tx_payload: avail_rust_core::TransactionPayload<'_>,
 	) -> Result<H256, avail_rust_core::Error> {
 		use avail_rust_core::Transaction;
 
@@ -511,6 +561,32 @@ impl Client {
 
 		let value = SubmittedTransaction::new(self.clone(), tx_hash, account_id, refined_options, tx_additional);
 		Ok(value)
+	}
+
+	pub async fn sign_and_submit_call_ext(
+		&self,
+		signer: &Keypair,
+		tx_call: &avail_rust_core::TransactionCall,
+		options: Options,
+		retry_on_error: bool,
+	) -> Result<SubmittedTransaction, avail_rust_core::Error> {
+		const MESSAGE: &str = "Failed to sign and submit Transaction";
+
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		loop {
+			match self.sign_and_submit_call(signer, tx_call, options).await {
+				Ok(x) => return Ok(x),
+				Err(err) if !retry_on_error => {
+					return Err(err);
+				},
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err);
+					};
+					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
+				},
+			};
+		}
 	}
 
 	// Mini Clients
@@ -558,24 +634,35 @@ impl Client {
 	}
 
 	// Subscription
-	pub fn subscription_block_header(&self, sub: Subscriber) -> subscription::HeaderSubscription {
+	pub fn subscription_block_header(&self, sub: Subscription) -> subscription::HeaderSubscription {
 		subscription::HeaderSubscription::new(self.clone(), sub)
 	}
 
-	pub fn subscription_block(&self, sub: Subscriber) -> subscription::BlockSubscription {
+	pub fn subscription_block(&self, sub: Subscription) -> subscription::BlockSubscription {
 		subscription::BlockSubscription::new(self.clone(), sub)
 	}
 
 	pub fn subscription_grandpa_justifications(
 		&self,
 		block_height: u32,
-		poll_rate_ms: u64,
+		poll_rate: Duration,
 	) -> subscription::GrandpaJustificationsSubscription {
-		subscription::GrandpaJustificationsSubscription::new(self.clone(), poll_rate_ms, block_height)
+		subscription::GrandpaJustificationsSubscription::new(self.clone(), poll_rate, block_height)
 	}
 }
 
 #[cfg(feature = "tracing")]
-fn trace_warn(message: &str) {
+pub(crate) fn trace_warn(message: &str) {
 	tracing::warn!(target: "lib", message);
+}
+
+#[cfg(feature = "tracing")]
+pub(crate) async fn sleep_on_retry(duration: u64, message: &str, value: &str) {
+	trace_warn(&std::format!("Message: {}, Value: {}, Sleep for {} seconds", message, value, duration));
+	sleep(Duration::from_secs(duration)).await;
+}
+
+#[cfg(not(feature = "tracing"))]
+pub(crate) async fn sleep_on_retry(duration: u64, _message: &str, _value: &str) {
+	sleep(Duration::from_secs(duration)).await;
 }

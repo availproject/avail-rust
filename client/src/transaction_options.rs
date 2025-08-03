@@ -11,9 +11,7 @@ pub struct Options {
 
 impl Options {
 	pub fn new(app_id: Option<u32>) -> Self {
-		let mut s = Self::default();
-		s.app_id = app_id;
-		s
+		Self { app_id, ..Default::default() }
 	}
 
 	pub fn app_id(mut self, value: u32) -> Self {

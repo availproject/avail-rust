@@ -50,8 +50,7 @@ async fn main() -> Result<(), ClientError> {
 	for event in events {
 		println!("Pallet Index: {}, Variant index: {}", event.emitted_index.0, event.emitted_index.1,);
 
-		let encoded_event = const_hex::decode(event.encoded.expect("Must be there")).expect("Must be ok");
-		if let Some(event) = DataSubmitted::decode_event(&encoded_event) {
+		if let Some(event) = DataSubmitted::decode_hex_event(&event.encoded.expect("Must be there")) {
 			println!("Who: {}, Data Hash: {}", event.who, event.data_hash);
 		}
 	}

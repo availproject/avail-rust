@@ -76,6 +76,13 @@ async fn transaction_decoding_encoding() -> Result<(), ClientError> {
 	let ct = CustomTransaction::decode_call(&opaq.call).expect("Should work");
 	assert_eq!(ct.data, vec![b'a', b'b', b'c']);
 
+	// Decoding whole Hex Transaction to Decoded Transaction
+	// `try_from` accepts &[u8] as well
+	let decoded_tx = DecodedTransaction::<CustomTransaction>::try_from(tx).expect("Should work");
+	let sig = decoded_tx.signature.as_ref().expect("qed");
+	assert_eq!(sig.tx_extra.app_id, 3);
+	assert_eq!(decoded_tx.call.data, vec![b'a', b'b', b'c']);
+
 	// Encoding
 	let custom = CustomTransaction { data: vec![0, 1, 2] };
 	let submittable = custom.to_submittable(client.clone());

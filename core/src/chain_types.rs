@@ -1,7 +1,6 @@
 use crate::{
 	AccountId, H256, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, StorageHasher, StorageMap, StorageValue,
-	TransactionCall,
-	transaction::{AlreadyEncoded, TransactionCallDecoded},
+	TransactionCall, transaction::AlreadyEncoded,
 };
 use codec::{Compact, Decode, Encode};
 use scale_decode::DecodeAsType;
@@ -10,16 +9,27 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub enum RuntimeCall {
-	BalancesTransferAllDeath(TransactionCallDecoded<balances::tx::TransferAllowDeath>),
-	BalancesTransferKeepAlive(TransactionCallDecoded<balances::tx::TransferKeepAlive>),
-	BalancesTransferAll(TransactionCallDecoded<balances::tx::TransferAll>),
-	UtilityBatch(TransactionCallDecoded<utility::tx::Batch>),
-	UtilityBatchAll(TransactionCallDecoded<utility::tx::BatchAll>),
-	UtilityForceBatch(TransactionCallDecoded<utility::tx::ForceBatch>),
-	SystemRemark(TransactionCallDecoded<system::tx::Remark>),
-	SystemSetCode(TransactionCallDecoded<system::tx::SetCode>),
-	SystemSetCodeWithoutChecks(TransactionCallDecoded<system::tx::SetCodeWithoutChecks>),
-	SystemRemarkWithEvent(TransactionCallDecoded<system::tx::RemarkWithEvent>),
+	BalancesTransferAllDeath(balances::tx::TransferAllowDeath),
+	BalancesTransferKeepAlive(balances::tx::TransferKeepAlive),
+	BalancesTransferAll(balances::tx::TransferAll),
+	UtilityBatch(utility::tx::Batch),
+	UtilityBatchAll(utility::tx::BatchAll),
+	UtilityForceBatch(utility::tx::ForceBatch),
+	SystemRemark(system::tx::Remark),
+	SystemSetCode(system::tx::SetCode),
+	SystemSetCodeWithoutChecks(system::tx::SetCodeWithoutChecks),
+	SystemRemarkWithEvent(system::tx::RemarkWithEvent),
+	ProxyProxy(proxy::tx::Proxy),
+	ProxyAddProxy(proxy::tx::AddProxy),
+	ProxyRemoveProxy(proxy::tx::RemoveProxy),
+	ProxyRemoveProxies(proxy::tx::RemoveProxies),
+	ProxyCreatePure(proxy::tx::CreatePure),
+	ProxyKillPure(proxy::tx::KillPure),
+	MultisigAsMultiThreshold1(multisig::tx::AsMultiThreshold1),
+	MultisigAsMulti(multisig::tx::AsMulti),
+	MultisigApproveAsMulti(multisig::tx::ApproveAsMulti),
+	MultisigCancelAsMulti(multisig::tx::CancelAsMulti),
+	DataAvailabilityCreateApplicationKey(data_availability::tx::CreateApplicationKey),
 }
 impl Decode for RuntimeCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -28,71 +38,122 @@ impl Decode for RuntimeCall {
 
 		if pallet_id == balances::PALLET_ID {
 			if call_id == balances::tx::TransferAllowDeath::DISPATCH_INDEX.1 {
-				let data = balances::tx::TransferAllowDeath::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = balances::tx::TransferAllowDeath::decode(input)?;
 				return Ok(RuntimeCall::BalancesTransferAllDeath(call));
 			}
 
 			if call_id == balances::tx::TransferKeepAlive::DISPATCH_INDEX.1 {
-				let data = balances::tx::TransferKeepAlive::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = balances::tx::TransferKeepAlive::decode(input)?;
 				return Ok(RuntimeCall::BalancesTransferKeepAlive(call));
 			}
 
 			if call_id == balances::tx::TransferAll::DISPATCH_INDEX.1 {
-				let data = balances::tx::TransferAll::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = balances::tx::TransferAll::decode(input)?;
 				return Ok(RuntimeCall::BalancesTransferAll(call));
 			}
 		}
 
 		if pallet_id == utility::PALLET_ID {
 			if call_id == utility::tx::Batch::DISPATCH_INDEX.1 {
-				let data = utility::tx::Batch::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = utility::tx::Batch::decode(input)?;
 				return Ok(RuntimeCall::UtilityBatch(call));
 			}
 
 			if call_id == utility::tx::BatchAll::DISPATCH_INDEX.1 {
-				let data = utility::tx::BatchAll::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = utility::tx::BatchAll::decode(input)?;
 				return Ok(RuntimeCall::UtilityBatchAll(call));
 			}
 
 			if call_id == utility::tx::ForceBatch::DISPATCH_INDEX.1 {
-				let data = utility::tx::ForceBatch::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = utility::tx::ForceBatch::decode(input)?;
 				return Ok(RuntimeCall::UtilityForceBatch(call));
 			}
 		}
 
 		if pallet_id == system::PALLET_ID {
 			if call_id == system::tx::Remark::DISPATCH_INDEX.1 {
-				let data = system::tx::Remark::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = system::tx::Remark::decode(input)?;
 				return Ok(RuntimeCall::SystemRemark(call));
 			}
 
 			if call_id == system::tx::SetCode::DISPATCH_INDEX.1 {
-				let data = system::tx::SetCode::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = system::tx::SetCode::decode(input)?;
 				return Ok(RuntimeCall::SystemSetCode(call));
 			}
 
 			if call_id == system::tx::SetCodeWithoutChecks::DISPATCH_INDEX.1 {
-				let data = system::tx::SetCodeWithoutChecks::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = system::tx::SetCodeWithoutChecks::decode(input)?;
 				return Ok(RuntimeCall::SystemSetCodeWithoutChecks(call));
 			}
 
 			if call_id == system::tx::RemarkWithEvent::DISPATCH_INDEX.1 {
-				let data = system::tx::RemarkWithEvent::decode(input)?;
-				let call = TransactionCallDecoded { pallet_id, call_id, data };
+				let call = system::tx::RemarkWithEvent::decode(input)?;
 				return Ok(RuntimeCall::SystemRemarkWithEvent(call));
 			}
 		}
 
-		return Err(codec::Error::from("Failed to decode runtime call"));
+		if pallet_id == proxy::PALLET_ID {
+			if call_id == proxy::tx::Proxy::DISPATCH_INDEX.1 {
+				let call = proxy::tx::Proxy::decode(input)?;
+				return Ok(RuntimeCall::ProxyProxy(call));
+			}
+
+			if call_id == proxy::tx::AddProxy::DISPATCH_INDEX.1 {
+				let call = proxy::tx::AddProxy::decode(input)?;
+				return Ok(RuntimeCall::ProxyAddProxy(call));
+			}
+
+			if call_id == proxy::tx::CreatePure::DISPATCH_INDEX.1 {
+				let call = proxy::tx::CreatePure::decode(input)?;
+				return Ok(RuntimeCall::ProxyCreatePure(call));
+			}
+
+			if call_id == proxy::tx::KillPure::DISPATCH_INDEX.1 {
+				let call = proxy::tx::KillPure::decode(input)?;
+				return Ok(RuntimeCall::ProxyKillPure(call));
+			}
+
+			if call_id == proxy::tx::RemoveProxies::DISPATCH_INDEX.1 {
+				let call = proxy::tx::RemoveProxies::decode(input)?;
+				return Ok(RuntimeCall::ProxyRemoveProxies(call));
+			}
+
+			if call_id == proxy::tx::RemoveProxy::DISPATCH_INDEX.1 {
+				let call = proxy::tx::RemoveProxy::decode(input)?;
+				return Ok(RuntimeCall::ProxyRemoveProxy(call));
+			}
+		}
+
+		if pallet_id == multisig::PALLET_ID {
+			if call_id == multisig::tx::ApproveAsMulti::DISPATCH_INDEX.1 {
+				let call = multisig::tx::ApproveAsMulti::decode(input)?;
+				return Ok(RuntimeCall::MultisigApproveAsMulti(call));
+			}
+
+			if call_id == multisig::tx::AsMulti::DISPATCH_INDEX.1 {
+				let call = multisig::tx::AsMulti::decode(input)?;
+				return Ok(RuntimeCall::MultisigAsMulti(call));
+			}
+
+			if call_id == multisig::tx::AsMultiThreshold1::DISPATCH_INDEX.1 {
+				let call = multisig::tx::AsMultiThreshold1::decode(input)?;
+				return Ok(RuntimeCall::MultisigAsMultiThreshold1(call));
+			}
+
+			if call_id == multisig::tx::CancelAsMulti::DISPATCH_INDEX.1 {
+				let call = multisig::tx::CancelAsMulti::decode(input)?;
+				return Ok(RuntimeCall::MultisigCancelAsMulti(call));
+			}
+		}
+
+		if pallet_id == data_availability::PALLET_ID {
+			if call_id == data_availability::tx::CreateApplicationKey::DISPATCH_INDEX.1 {
+				let call = data_availability::tx::CreateApplicationKey::decode(input)?;
+				return Ok(RuntimeCall::DataAvailabilityCreateApplicationKey(call));
+			}
+		}
+
+		Err(codec::Error::from("Failed to decode runtime call"))
 	}
 }
 
@@ -524,19 +585,19 @@ pub mod balances {
 		#[derive(Debug, Clone)]
 		pub struct TransferAllowDeath {
 			pub dest: MultiAddress,
-			pub amount: u128,
+			pub value: u128,
 		}
 		impl Encode for TransferAllowDeath {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				self.dest.encode_to(dest);
-				Compact(self.amount).encode_to(dest);
+				Compact(self.value).encode_to(dest);
 			}
 		}
 		impl Decode for TransferAllowDeath {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let dest = Decode::decode(input)?;
-				let amount = Compact::<u128>::decode(input)?.0;
-				Ok(Self { dest, amount })
+				let value = Compact::<u128>::decode(input)?.0;
+				Ok(Self { dest, value })
 			}
 		}
 		impl HasTxDispatchIndex for TransferAllowDeath {
@@ -546,19 +607,19 @@ pub mod balances {
 		#[derive(Debug, Clone)]
 		pub struct TransferKeepAlive {
 			pub dest: MultiAddress,
-			pub amount: u128,
+			pub value: u128,
 		}
 		impl Encode for TransferKeepAlive {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				self.dest.encode_to(dest);
-				Compact(self.amount).encode_to(dest);
+				Compact(self.value).encode_to(dest);
 			}
 		}
 		impl Decode for TransferKeepAlive {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let dest = Decode::decode(input)?;
-				let amount = Compact::<u128>::decode(input)?.0;
-				Ok(Self { dest, amount })
+				let value = Compact::<u128>::decode(input)?.0;
+				Ok(Self { dest, value })
 			}
 		}
 		impl HasTxDispatchIndex for TransferKeepAlive {
@@ -684,14 +745,14 @@ pub mod utility {
 	pub mod tx {
 		use super::*;
 
-		#[derive(Debug, Clone)]
+		#[derive(Debug, Default, Clone)]
 		pub struct Batch {
 			length: u32,
 			calls: Vec<u8>,
 		}
 		impl Batch {
 			pub fn new() -> Self {
-				Self { length: 0, calls: Vec::new() }
+				Self::default()
 			}
 
 			pub fn decode_calls(&self) -> Result<Vec<RuntimeCall>, codec::Error> {
@@ -710,7 +771,7 @@ pub mod utility {
 					));
 				}
 
-				return Ok(runtime_calls);
+				Ok(runtime_calls)
 			}
 
 			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
@@ -737,6 +798,10 @@ pub mod utility {
 
 			pub fn len(&self) -> u32 {
 				self.length
+			}
+
+			pub fn is_empty(&self) -> bool {
+				self.len() == 0
 			}
 
 			pub fn calls(&self) -> &[u8] {
@@ -760,14 +825,14 @@ pub mod utility {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
-		#[derive(Debug, Clone)]
+		#[derive(Debug, Default, Clone)]
 		pub struct BatchAll {
 			length: u32,
 			calls: Vec<u8>,
 		}
 		impl BatchAll {
 			pub fn new() -> Self {
-				Self { length: 0, calls: Vec::new() }
+				Self::default()
 			}
 
 			pub fn decode_calls(&self) -> Result<Vec<RuntimeCall>, codec::Error> {
@@ -786,7 +851,7 @@ pub mod utility {
 					));
 				}
 
-				return Ok(runtime_calls);
+				Ok(runtime_calls)
 			}
 
 			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
@@ -813,6 +878,10 @@ pub mod utility {
 
 			pub fn len(&self) -> u32 {
 				self.length
+			}
+
+			pub fn is_empty(&self) -> bool {
+				self.len() == 0
 			}
 
 			pub fn calls(&self) -> &[u8] {
@@ -836,14 +905,14 @@ pub mod utility {
 			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
-		#[derive(Debug, Clone)]
+		#[derive(Debug, Default, Clone)]
 		pub struct ForceBatch {
 			pub length: u32,
 			pub calls: Vec<u8>,
 		}
 		impl ForceBatch {
 			pub fn new() -> Self {
-				Self { length: 0, calls: Vec::new() }
+				Self::default()
 			}
 
 			pub fn decode_calls(&self) -> Result<Vec<RuntimeCall>, codec::Error> {
@@ -862,7 +931,7 @@ pub mod utility {
 					));
 				}
 
-				return Ok(runtime_calls);
+				Ok(runtime_calls)
 			}
 
 			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
@@ -889,6 +958,10 @@ pub mod utility {
 
 			pub fn len(&self) -> u32 {
 				self.length
+			}
+
+			pub fn is_empty(&self) -> bool {
+				self.len() == 0
 			}
 
 			pub fn calls(&self) -> &[u8] {
@@ -1424,14 +1497,14 @@ pub mod multisig {
 		pub struct CancelAsMulti {
 			pub threshold: u16,
 			pub other_signatories: Vec<AccountId>,
-			pub maybe_timepoint: super::types::Timepoint,
+			pub timepoint: super::types::Timepoint,
 			pub call_hash: H256,
 		}
 		impl Encode for CancelAsMulti {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				self.threshold.encode_to(dest);
 				self.other_signatories.encode_to(dest);
-				self.maybe_timepoint.encode_to(dest);
+				self.timepoint.encode_to(dest);
 				self.call_hash.encode_to(dest);
 			}
 		}
@@ -1439,9 +1512,9 @@ pub mod multisig {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let threshold = Decode::decode(input)?;
 				let other_signatories = Decode::decode(input)?;
-				let maybe_timepoint = Decode::decode(input)?;
+				let timepoint = Decode::decode(input)?;
 				let call_hash = Decode::decode(input)?;
-				Ok(Self { threshold, other_signatories, maybe_timepoint, call_hash })
+				Ok(Self { threshold, other_signatories, timepoint, call_hash })
 			}
 		}
 		impl HasTxDispatchIndex for CancelAsMulti {

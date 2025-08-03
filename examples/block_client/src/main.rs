@@ -13,10 +13,7 @@
 //! In 99.99% cases transactions RPC is the one that you need/want
 
 use avail::data_availability::tx::SubmitData;
-use avail_rust_client::{
-	avail_rust_core::rpc::system::fetch_extrinsics_v1_types::{SignatureFilter, TransactionFilter},
-	prelude::*,
-};
+use avail_rust_client::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
@@ -149,7 +146,7 @@ pub async fn transactions_example(client: Client, block_hash: H256) -> Result<()
 	let blocks = client.block_client();
 
 	// This will fetch all block transactions.
-	let infos = blocks.transactions(block_hash.into(), None, None, None).await?;
+	let infos = blocks.builder().fetch(block_hash.into()).await?;
 	for info in infos {
 		println!(
 			"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Call Id: {}",
@@ -173,12 +170,10 @@ pub async fn transactions_example(client: Client, block_hash: H256) -> Result<()
 /// To decode the transactions take a look at `transactions_example` example !!!
 pub async fn transactions_filter_example(client: Client, block_hash: H256) -> Result<(), ClientError> {
 	let blocks = client.block_client();
+	let block_id = HashNumber::from(block_hash);
 
-	// This will fetch all block transactions that have App Id set to `3`
-	let signature_filter = Some(SignatureFilter::new(None, Some(2), None));
-	let infos = blocks
-		.transactions(block_hash.into(), None, signature_filter, None)
-		.await?;
+	// This will fetch all block transactions that have App Id set to `2`
+	let infos = blocks.builder().app_id(Some(2)).fetch(block_id).await?;
 
 	assert_eq!(infos.len(), 1);
 	for info in infos {
@@ -187,25 +182,18 @@ pub async fn transactions_filter_example(client: Client, block_hash: H256) -> Re
 	}
 
 	// This will fetch only block transactions with indices 0 and 1
-	let transaction_filter = Some(TransactionFilter::TxIndex(vec![0, 1]));
-	let infos = blocks
-		.transactions(block_hash.into(), transaction_filter, None, None)
-		.await?;
+	let infos = blocks.builder().tx_indexes(vec![0, 1]).fetch(block_id).await?;
 	assert_eq!(infos.len(), 2);
-	for (i, info) in infos.iter().enumerate() {
-		assert_eq!(info.tx_index, i as u32)
-	}
+	assert_eq!(infos[0].tx_index, 0);
+	assert_eq!(infos[1].tx_index, 1);
 
 	// This will fetch only block transactions that were submitted by Alice
-	let address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string();
-	let signature_filter = Some(SignatureFilter::new(Some(address.clone()), None, None));
-	let infos = blocks
-		.transactions(block_hash.into(), None, signature_filter, None)
-		.await?;
+	let address = Some("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string());
+	let infos = blocks.builder().ss58_address(address.clone()).fetch(block_id).await?;
 	assert_eq!(infos.len(), 1);
 	for info in infos.iter() {
 		let signature = &info.signature;
-		assert_eq!(signature.as_ref().and_then(|x| x.ss58_address.clone()), Some(address.clone()));
+		assert_eq!(signature.as_ref().and_then(|x| x.ss58_address.clone()), address.clone());
 	}
 
 	Ok(())
