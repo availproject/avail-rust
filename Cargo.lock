@@ -884,7 +884,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 [[package]]
 name = "avail-core"
 version = "0.6.2"
-source = "git+https://github.com/availproject/avail-core?tag=core-node-10#5cad9917a7d6c742cce3b53808e03ab7aee3ec7b"
+source = "git+https://github.com/availproject/avail-core?tag=core-node-11#2c75a04c03582efa988271b6a5d4c4da892146fd"
 dependencies = [
  "binary-merkle-tree 13.0.0",
  "blake2b_simd",
@@ -2862,7 +2862,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cea14ef9355e3beab063703aa9dab15afd25f0667c341310c1e5274bb1d0da18"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4229,17 +4229,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "impl-num-traits"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "803d15461ab0dcc56706adf266158acbc44ccf719bf7d0af30705f58b90a4b8c"
-dependencies = [
- "integer-sqrt",
- "num-traits",
- "uint 0.10.0",
-]
-
-[[package]]
 name = "impl-rlp"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4360,7 +4349,7 @@ checksum = "e04d7f318608d35d4b61ddd75cbdaee86b023ebe2bd5a66ee0915f0bf93095a9"
 dependencies = [
  "hermit-abi 0.5.1",
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4610,7 +4599,7 @@ dependencies = [
 [[package]]
 name = "kate"
 version = "0.9.2"
-source = "git+https://github.com/availproject/avail-core?tag=core-node-10#5cad9917a7d6c742cce3b53808e03ab7aee3ec7b"
+source = "git+https://github.com/availproject/avail-core?tag=core-node-11#2c75a04c03582efa988271b6a5d4c4da892146fd"
 dependencies = [
  "avail-core",
  "derive_more 0.99.20",
@@ -4628,7 +4617,7 @@ dependencies = [
 [[package]]
 name = "kate-recovery"
 version = "0.10.0"
-source = "git+https://github.com/availproject/avail-core?tag=core-node-10#5cad9917a7d6c742cce3b53808e03ab7aee3ec7b"
+source = "git+https://github.com/availproject/avail-core?tag=core-node-11#2c75a04c03582efa988271b6a5d4c4da892146fd"
 dependencies = [
  "avail-core",
  "derive_more 0.99.20",
@@ -7936,9 +7925,9 @@ dependencies = [
 
 [[package]]
 name = "polkavm-common"
-version = "0.18.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31ff33982a807d8567645d4784b9b5d7ab87bcb494f534a57cadd9012688e102"
+checksum = "49a5794b695626ba70d29e66e3f4f4835767452a6723f3a0bc20884b07088fe8"
 
 [[package]]
 name = "polkavm-derive"
@@ -7960,11 +7949,11 @@ dependencies = [
 
 [[package]]
 name = "polkavm-derive"
-version = "0.18.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2eb703f3b6404c13228402e98a5eae063fd16b8f58afe334073ec105ee4117e"
+checksum = "95282a203ae1f6828a04ff334145c3f6dc718bba6d3959805d273358b45eab93"
 dependencies = [
- "polkavm-derive-impl-macro 0.18.0",
+ "polkavm-derive-impl-macro 0.26.0",
 ]
 
 [[package]]
@@ -7993,11 +7982,11 @@ dependencies = [
 
 [[package]]
 name = "polkavm-derive-impl"
-version = "0.18.1"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f2116a92e6e96220a398930f4c8a6cda1264206f3e2034fc9982bfd93f261f7"
+checksum = "6069dc7995cde6e612b868a02ce48b54397c6d2582bd1b97b63aabbe962cd779"
 dependencies = [
- "polkavm-common 0.18.0",
+ "polkavm-common 0.26.0",
  "proc-macro2",
  "quote",
  "syn 2.0.101",
@@ -8025,11 +8014,11 @@ dependencies = [
 
 [[package]]
 name = "polkavm-derive-impl-macro"
-version = "0.18.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48c16669ddc7433e34c1007d31080b80901e3e8e523cb9d4b441c3910cf9294b"
+checksum = "581d34cafec741dc5ffafbb341933c205b6457f3d76257a9d99fb56687219c91"
 dependencies = [
- "polkavm-derive-impl 0.18.1",
+ "polkavm-derive-impl 0.26.0",
  "syn 2.0.101",
 ]
 
@@ -8200,7 +8189,6 @@ checksum = "d15600a7d856470b7d278b3fe0e311fe28c2526348549f8ef2ff7db3299c87f5"
 dependencies = [
  "fixed-hash",
  "impl-codec 0.7.1",
- "impl-num-traits",
  "impl-serde 0.5.0",
  "scale-info",
  "uint 0.10.0",
@@ -8716,7 +8704,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -8729,7 +8717,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.9.4",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -8786,7 +8774,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs 0.26.11",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -10354,7 +10342,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-ec-utils"
 version = "0.10.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#7b224d3bf9ce1e8eebeac4cc33a06a702cae3501"
+source = "git+https://github.com/paritytech/polkadot-sdk#aa010dc3286063cd1f3522fc988ba472dede345b"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-377-ext",
@@ -10464,7 +10452,7 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#7b224d3bf9ce1e8eebeac4cc33a06a702cae3501"
+source = "git+https://github.com/paritytech/polkadot-sdk#aa010dc3286063cd1f3522fc988ba472dede345b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -10485,7 +10473,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.25.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#7b224d3bf9ce1e8eebeac4cc33a06a702cae3501"
+source = "git+https://github.com/paritytech/polkadot-sdk#aa010dc3286063cd1f3522fc988ba472dede345b"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -10821,13 +10809,12 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "24.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#7b224d3bf9ce1e8eebeac4cc33a06a702cae3501"
+source = "git+https://github.com/paritytech/polkadot-sdk#aa010dc3286063cd1f3522fc988ba472dede345b"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
  "parity-scale-codec",
- "polkavm-derive 0.18.0",
- "primitive-types 0.13.1",
+ "polkavm-derive 0.26.0",
  "sp-externalities 0.25.0 (git+https://github.com/paritytech/polkadot-sdk)",
  "sp-runtime-interface-proc-macro 17.0.0 (git+https://github.com/paritytech/polkadot-sdk)",
  "sp-std 14.0.0 (git+https://github.com/paritytech/polkadot-sdk)",
@@ -10873,7 +10860,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "17.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#7b224d3bf9ce1e8eebeac4cc33a06a702cae3501"
+source = "git+https://github.com/paritytech/polkadot-sdk#aa010dc3286063cd1f3522fc988ba472dede345b"
 dependencies = [
  "Inflector",
  "expander",
@@ -11029,7 +11016,7 @@ source = "git+https://github.com/availproject/polkadot-sdk.git?tag=polkadot-1.7.
 [[package]]
 name = "sp-std"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#7b224d3bf9ce1e8eebeac4cc33a06a702cae3501"
+source = "git+https://github.com/paritytech/polkadot-sdk#aa010dc3286063cd1f3522fc988ba472dede345b"
 
 [[package]]
 name = "sp-storage"
@@ -11047,7 +11034,7 @@ dependencies = [
 [[package]]
 name = "sp-storage"
 version = "19.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#7b224d3bf9ce1e8eebeac4cc33a06a702cae3501"
+source = "git+https://github.com/paritytech/polkadot-sdk#aa010dc3286063cd1f3522fc988ba472dede345b"
 dependencies = [
  "impl-serde 0.5.0",
  "parity-scale-codec",
@@ -11097,9 +11084,10 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "16.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#7b224d3bf9ce1e8eebeac4cc33a06a702cae3501"
+source = "git+https://github.com/paritytech/polkadot-sdk#aa010dc3286063cd1f3522fc988ba472dede345b"
 dependencies = [
  "parity-scale-codec",
+ "regex",
  "tracing",
  "tracing-core",
  "tracing-subscriber 0.3.19",
@@ -11264,7 +11252,7 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "20.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#7b224d3bf9ce1e8eebeac4cc33a06a702cae3501"
+source = "git+https://github.com/paritytech/polkadot-sdk#aa010dc3286063cd1f3522fc988ba472dede345b"
 dependencies = [
  "anyhow",
  "impl-trait-for-tuples",
@@ -11834,7 +11822,7 @@ dependencies = [
  "getrandom 0.3.3",
  "once_cell",
  "rustix 1.0.7",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -12961,7 +12949,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
