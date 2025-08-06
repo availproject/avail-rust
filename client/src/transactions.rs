@@ -34,11 +34,18 @@ impl DataAvailability {
 		avail::data_availability::tx::SubmitData { data }.to_submittable(self.0.clone())
 	}
 
-	pub fn submit_blob_metadata(&self, blob_hash: H256, size: u64, commitments: Vec<u8>) -> SubmittableTransaction {
+	pub fn submit_blob_metadata(
+		&self,
+		blob_hash: H256,
+		size: u64,
+		commitments: Vec<u8>,
+		extended_commitment: Vec<[u8; 48]>,
+	) -> SubmittableTransaction {
 		avail::data_availability::tx::SubmitBlobMetadata {
 			blob_hash,
 			size,
 			commitments,
+			extended_commitment,
 		}
 		.to_submittable(self.0.clone())
 	}
