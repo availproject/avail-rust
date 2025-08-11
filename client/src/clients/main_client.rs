@@ -642,12 +642,20 @@ impl Client {
 		subscription::BlockSubscription::new(self.clone(), sub)
 	}
 
-	pub fn subscription_grandpa_justifications(
+	pub fn subscription_grandpa_justification(
 		&self,
 		block_height: u32,
 		poll_rate: Duration,
-	) -> subscription::GrandpaJustificationsSubscription {
-		subscription::GrandpaJustificationsSubscription::new(self.clone(), poll_rate, block_height)
+	) -> subscription::GrandpaJustificationSubscription {
+		subscription::GrandpaJustificationSubscription::new(self.clone(), poll_rate, block_height)
+	}
+
+	pub fn subscription_grandpa_json_justification(
+		&self,
+		block_height: u32,
+		poll_rate: Duration,
+	) -> subscription::GrandpaJustificationJsonSubscription {
+		subscription::GrandpaJustificationJsonSubscription::new(self.clone(), poll_rate, block_height)
 	}
 }
 

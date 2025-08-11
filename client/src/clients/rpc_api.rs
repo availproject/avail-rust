@@ -305,6 +305,50 @@ impl RpcAPI {
 		Ok(Some(justification))
 	}
 
+	pub async fn grandpa_block_justification_json(
+		&self,
+		at: u32,
+	) -> Result<Option<GrandpaJustification>, avail_rust_core::Error> {
+		let result = rpc::grandpa::block_justification_json(&self.client.rpc_client, at).await?;
+		let Some(result) = result else {
+			return Ok(None);
+		};
+
+		let justification: GrandpaJustification = serde_json::from_str(result.as_str()).map_err(|e| e.to_string())?;
+		Ok(Some(justification))
+	}
+
+	pub async fn grandpa_block_justification_json_ext(
+		&self,
+		at: u32,
+		retry_on_error: bool,
+	) -> Result<Option<GrandpaJustification>, avail_rust_core::Error> {
+		const MESSAGE: &str = "Failed to execute RPC: grandpa_blockJustificationJson";
+
+		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
+		let result = loop {
+			match rpc::grandpa::block_justification_json(&self.client.rpc_client, at).await {
+				Ok(x) => break x,
+				Err(err) if !retry_on_error => {
+					return Err(err.into());
+				},
+				Err(err) => {
+					let Some(duration) = sleep_duration.pop() else {
+						return Err(err.into());
+					};
+					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
+				},
+			};
+		};
+
+		let Some(result) = result else {
+			return Ok(None);
+		};
+
+		let justification: GrandpaJustification = serde_json::from_str(result.as_str()).map_err(|e| e.to_string())?;
+		Ok(Some(justification))
+	}
+
 	pub async fn system_fetch_events_v1(
 		&self,
 		at: H256,

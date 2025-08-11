@@ -76,7 +76,7 @@ impl Serialize for Signature {
 	where
 		S: Serializer,
 	{
-		serializer.serialize_str(&const_hex::encode(self.0))
+		serializer.serialize_str(&const_hex::encode_prefixed(self.0))
 	}
 }
 impl<'de> Deserialize<'de> for Signature {
@@ -84,7 +84,7 @@ impl<'de> Deserialize<'de> for Signature {
 	where
 		D: Deserializer<'de>,
 	{
-		let signature_hex = const_hex::decode(&String::deserialize(deserializer)?)
+		let signature_hex = const_hex::decode(String::deserialize(deserializer)?.trim_start_matches("0x"))
 			.map_err(|e| de::Error::custom(format!("{:?}", e)))?;
 		let signature: [u8; 64usize] = signature_hex
 			.try_into()
@@ -93,7 +93,7 @@ impl<'de> Deserialize<'de> for Signature {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Precommit {
 	/// The target block's hash.
 	pub target_hash: H256,
@@ -114,7 +114,7 @@ impl Decode for Precommit {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SignedPrecommit {
 	/// The precommit message which has been signed.
 	pub precommit: Precommit,
@@ -139,7 +139,7 @@ impl Decode for SignedPrecommit {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Commit {
 	/// The target block's hash.
 	pub target_hash: H256,
@@ -164,7 +164,7 @@ impl Decode for Commit {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GrandpaJustification {
 	pub round: u64,
 	pub commit: Commit,

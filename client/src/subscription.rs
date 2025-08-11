@@ -359,9 +359,8 @@ impl BlockSubscription {
 	}
 }
 
-// This one is a bit different.
 #[derive(Clone)]
-pub struct GrandpaJustificationsSubscription {
+pub struct GrandpaJustificationSubscription {
 	client: Client,
 	next_block_height: u32,
 	poll_rate: Duration,
@@ -369,7 +368,7 @@ pub struct GrandpaJustificationsSubscription {
 	stopwatch: std::time::Instant,
 }
 
-impl GrandpaJustificationsSubscription {
+impl GrandpaJustificationSubscription {
 	pub fn new(client: Client, poll_rate: Duration, next_block_height: u32) -> Self {
 		Self {
 			client,
@@ -380,7 +379,7 @@ impl GrandpaJustificationsSubscription {
 		}
 	}
 
-	pub async fn next(&mut self) -> Result<(GrandpaJustification, u32), CoreError> {
+	pub async fn next(&mut self) -> Result<GrandpaJustification, CoreError> {
 		loop {
 			let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
@@ -391,14 +390,95 @@ impl GrandpaJustificationsSubscription {
 				self.run_head().await?
 			};
 
-			let justification = self.client.rpc_api().grandpa_block_justification(block_height).await?;
+			let justification = self
+				.client
+				.rpc_api()
+				.grandpa_block_justification_ext(block_height, true)
+				.await?;
 			self.next_block_height += 1;
 
 			let Some(justification) = justification else {
 				continue;
 			};
 
-			return Ok((justification, block_height));
+			return Ok(justification);
+		}
+	}
+
+	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, CoreError> {
+		if self.stopwatch.elapsed().as_secs() > 300 {
+			self.latest_finalized_height = None
+		}
+
+		if let Some(height) = self.latest_finalized_height.as_ref() {
+			return Ok(*height);
+		}
+
+		self.stopwatch = std::time::Instant::now();
+		let latest_finalized_height = self.client.finalized_block_height_ext(true, true).await?;
+		self.latest_finalized_height = Some(latest_finalized_height);
+		Ok(latest_finalized_height)
+	}
+
+	fn run_historical(&mut self) -> u32 {
+		self.next_block_height
+	}
+
+	async fn run_head(&mut self) -> Result<u32, CoreError> {
+		loop {
+			let head = self.client.finalized_block_loc_ext(true, true).await?;
+			if self.next_block_height > head.height {
+				sleep(self.poll_rate).await;
+				continue;
+			}
+			return Ok(self.next_block_height);
+		}
+	}
+}
+
+#[derive(Clone)]
+pub struct GrandpaJustificationJsonSubscription {
+	client: Client,
+	next_block_height: u32,
+	poll_rate: Duration,
+	latest_finalized_height: Option<u32>,
+	stopwatch: std::time::Instant,
+}
+
+impl GrandpaJustificationJsonSubscription {
+	pub fn new(client: Client, poll_rate: Duration, next_block_height: u32) -> Self {
+		Self {
+			client,
+			next_block_height,
+			poll_rate,
+			latest_finalized_height: None,
+			stopwatch: std::time::Instant::now(),
+		}
+	}
+
+	pub async fn next(&mut self) -> Result<GrandpaJustification, CoreError> {
+		loop {
+			let latest_finalized_height = self.fetch_latest_finalized_height().await?;
+
+			// Dealing with historical blocks
+			let block_height = if latest_finalized_height > self.next_block_height {
+				self.run_historical()
+			} else {
+				self.run_head().await?
+			};
+
+			let justification = self
+				.client
+				.rpc_api()
+				.grandpa_block_justification_json_ext(block_height, true)
+				.await?;
+			self.next_block_height += 1;
+
+			let Some(justification) = justification else {
+				continue;
+			};
+
+			return Ok(justification);
 		}
 	}
 

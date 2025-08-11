@@ -6,7 +6,10 @@ use std::time::Duration;
 
 use avail_rust_client::{
 	prelude::*,
-	subscription::{BlockSubscription, GrandpaJustificationsSubscription, HeaderSubscription, SubscriptionBuilder},
+	subscription::{
+		BlockSubscription, GrandpaJustificationJsonSubscription, GrandpaJustificationSubscription, HeaderSubscription,
+		SubscriptionBuilder,
+	},
 };
 
 #[tokio::main]
@@ -18,7 +21,8 @@ async fn main() -> Result<(), ClientError> {
 	showcase_block_subscription(&client).await?;
 	showcase_best_block_subscription(&client).await?;
 	showcase_historical_subscription(&client).await?;
-	showcase_grandpa_justifications_subscription(&client).await?;
+	showcase_grandpa_justification_subscription(&client).await?;
+	showcase_grandpa_justification_json_subscription(&client).await?;
 
 	Ok(())
 }
@@ -124,14 +128,38 @@ async fn showcase_best_block_subscription(client: &Client) -> Result<(), ClientE
 	Ok(())
 }
 
-async fn showcase_grandpa_justifications_subscription(client: &Client) -> Result<(), ClientError> {
-	let mut sub = GrandpaJustificationsSubscription::new(client.clone(), Duration::from_secs(1), 0);
+async fn showcase_grandpa_justification_subscription(client: &Client) -> Result<(), ClientError> {
+	let mut sub = GrandpaJustificationSubscription::new(client.clone(), Duration::from_secs(1), 2100000);
 
-	let (justification, block_height) = sub.next().await?;
-	println!("Found grandpa justification at block: {}. Round: {}", block_height, justification.round);
+	let justification = sub.next().await?;
+	println!(
+		"Found grandpa justification at block: {}. Round: {}",
+		justification.commit.target_number, justification.round
+	);
 
-	let (justification, block_height) = sub.next().await?;
-	println!("Found grandpa justification at block: {}. Round: {}", block_height, justification.round);
+	let justification = sub.next().await?;
+	println!(
+		"Found grandpa justification at block: {}. Round: {}",
+		justification.commit.target_number, justification.round
+	);
+
+	Ok(())
+}
+
+async fn showcase_grandpa_justification_json_subscription(client: &Client) -> Result<(), ClientError> {
+	let mut sub = GrandpaJustificationJsonSubscription::new(client.clone(), Duration::from_secs(1), 2100223);
+
+	let justification = sub.next().await?;
+	println!(
+		"Found grandpa justification json at block: {}. Round: {}",
+		justification.commit.target_number, justification.round
+	);
+
+	let justification = sub.next().await?;
+	println!(
+		"Found grandpa justification json at block: {}. Round: {}",
+		justification.commit.target_number, justification.round
+	);
 
 	Ok(())
 }

@@ -8,6 +8,11 @@ pub async fn block_justification(client: &RpcClient, at: u32) -> Result<Option<S
 
 pub async fn block_justification_json(client: &RpcClient, at: u32) -> Result<Option<String>, subxt_rpcs::Error> {
 	let params = rpc_params![at];
-	let value = client.request("grandpa_blockJustificationJson", params).await?;
-	Ok(value)
+	let value: Box<serde_json::value::RawValue> = client.request("grandpa_blockJustificationJson", params).await?;
+	let value = value.to_string();
+	if value == "null" {
+		return Ok(None);
+	}
+
+	Ok(Some(value))
 }
