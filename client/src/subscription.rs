@@ -151,8 +151,18 @@ impl FinalizedBlockSubscriber {
 				sleep(self.poll_rate).await;
 				continue;
 			}
+
+			if self.next_block_height == head.height {
+				self.next_block_height += 1;
+				return Ok((head.height, head.hash));
+			}
+
+			let block_height = self.next_block_height;
+			let block_hash = client.block_hash_ext(block_height, true, true).await?;
+			let block_hash = block_hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
+
 			self.next_block_height += 1;
-			return Ok((head.height, head.hash));
+			return Ok((block_height, block_hash));
 		}
 	}
 }
