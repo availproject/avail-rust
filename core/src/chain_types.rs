@@ -307,14 +307,12 @@ pub mod data_availability {
 			pub blob_hash: H256,
 			pub size: u64,
 			pub commitments: Vec<u8>,
-			pub extended_commitment: Vec<u8>,
 		}
 		impl Encode for SubmitBlobMetadata {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				dest.write(&self.blob_hash.encode());
 				dest.write(&self.size.encode());
 				dest.write(&self.commitments.encode());
-				dest.write(&self.extended_commitment.encode());
 			}
 		}
 		impl Decode for SubmitBlobMetadata {
@@ -322,12 +320,10 @@ pub mod data_availability {
 				let blob_hash = Decode::decode(input)?;
 				let size = Decode::decode(input)?;
 				let commitments = Decode::decode(input)?;
-				let extended_commitment = Decode::decode(input)?;
 				Ok(Self {
 					blob_hash,
 					size,
 					commitments,
-					extended_commitment,
 				})
 			}
 		}
