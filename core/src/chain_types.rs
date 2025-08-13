@@ -307,7 +307,7 @@ pub mod data_availability {
 			pub blob_hash: H256,
 			pub size: u64,
 			pub commitments: Vec<u8>,
-			pub extended_commitment: Vec<[u8; 48]>,
+			pub extended_commitment: Vec<u8>,
 		}
 		impl Encode for SubmitBlobMetadata {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {

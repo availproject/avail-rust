@@ -39,7 +39,7 @@ impl DataAvailability {
 		blob_hash: H256,
 		size: u64,
 		commitments: Vec<u8>,
-		extended_commitment: Vec<[u8; 48]>,
+		extended_commitment: Vec<u8>,
 	) -> SubmittableTransaction {
 		avail::data_availability::tx::SubmitBlobMetadata {
 			blob_hash,
