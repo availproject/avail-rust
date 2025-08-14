@@ -1,4 +1,4 @@
-use crate::config::TransactionLocation;
+use crate::config::TxRef;
 
 use super::AvailHeader;
 use primitive_types::H256;
@@ -24,10 +24,10 @@ pub struct Block {
 }
 
 impl Block {
-	pub fn has_transaction(&self, tx_hash: H256) -> Option<TransactionLocation> {
+	pub fn has_transaction(&self, tx_hash: H256) -> Option<TxRef> {
 		for (i, tx) in self.extrinsics.iter().enumerate() {
 			if BlakeTwo256::hash(tx) == tx_hash {
-				return Some(TransactionLocation::from((tx_hash, i as u32)));
+				return Some(TxRef::from((tx_hash, i as u32)));
 			}
 		}
 

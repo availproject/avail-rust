@@ -51,7 +51,7 @@ async fn main() -> Result<(), ClientError> {
 	// Decoding batch call
 	let block_client = client.block_client();
 	let (decoded_transaction, _) = block_client
-		.transaction_static::<UtilityBatchAll>(receipt.block_loc.into(), receipt.tx_loc.into())
+		.transaction_static::<UtilityBatchAll>(receipt.block_ref.into(), receipt.tx_ref.into())
 		.await?
 		.expect("Should be there");
 

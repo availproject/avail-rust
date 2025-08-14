@@ -49,37 +49,37 @@ pub type DispatchIndex = (u8, u8);
 pub type EmittedIndex = (u8, u8);
 
 #[derive(Debug, Clone, Copy, Deserialize)]
-pub struct BlockLocation {
+pub struct BlockRef {
 	pub hash: H256,
 	pub height: u32,
 }
 
-impl From<(H256, u32)> for BlockLocation {
+impl From<(H256, u32)> for BlockRef {
 	fn from(value: (H256, u32)) -> Self {
 		Self { hash: value.0, height: value.1 }
 	}
 }
 
-impl From<BlockLocation> for H256 {
-	fn from(value: BlockLocation) -> Self {
+impl From<BlockRef> for H256 {
+	fn from(value: BlockRef) -> Self {
 		value.hash
 	}
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
-pub struct TransactionLocation {
+pub struct TxRef {
 	pub hash: H256,
 	pub index: u32,
 }
 
-impl From<(H256, u32)> for TransactionLocation {
+impl From<(H256, u32)> for TxRef {
 	fn from(value: (H256, u32)) -> Self {
 		Self { hash: value.0, index: value.1 }
 	}
 }
 
-impl From<TransactionLocation> for H256 {
-	fn from(value: TransactionLocation) -> Self {
+impl From<TxRef> for H256 {
+	fn from(value: TxRef) -> Self {
 		value.hash
 	}
 }
@@ -90,14 +90,14 @@ pub enum HashNumber {
 	Number(u32),
 }
 
-impl From<BlockLocation> for HashNumber {
-	fn from(value: BlockLocation) -> Self {
+impl From<BlockRef> for HashNumber {
+	fn from(value: BlockRef) -> Self {
 		Self::Hash(value.hash)
 	}
 }
 
-impl From<TransactionLocation> for HashNumber {
-	fn from(value: TransactionLocation) -> Self {
+impl From<TxRef> for HashNumber {
+	fn from(value: TxRef) -> Self {
 		Self::Number(value.index)
 	}
 }

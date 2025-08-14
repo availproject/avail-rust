@@ -22,11 +22,11 @@ async fn main() -> Result<(), ClientError> {
 	// Submit Dummy transaction so that we have something to play with
 	let receipt = submit_dummy_transactions(&client).await?;
 
-	block_rpc_example(client.clone(), receipt.block_loc.hash).await?;
-	transaction_example(client.clone(), receipt.block_loc.into(), receipt.tx_loc.into()).await?;
-	transaction_static_example(client.clone(), receipt.block_loc.into(), receipt.tx_loc.into()).await?;
-	transactions_example(client.clone(), receipt.block_loc.into()).await?;
-	transactions_filter_example(client.clone(), receipt.block_loc.into()).await?;
+	block_rpc_example(client.clone(), receipt.block_ref.hash).await?;
+	transaction_example(client.clone(), receipt.block_ref.into(), receipt.tx_ref.into()).await?;
+	transaction_static_example(client.clone(), receipt.block_ref.into(), receipt.tx_ref.into()).await?;
+	transactions_example(client.clone(), receipt.block_ref.into()).await?;
+	transactions_filter_example(client.clone(), receipt.block_ref.into()).await?;
 
 	Ok(())
 }

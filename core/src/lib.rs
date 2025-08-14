@@ -15,7 +15,7 @@ pub mod runtime_api;
 pub mod transaction;
 
 pub use config::{
-	AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockLocation, DispatchIndex, EmittedIndex,
+	AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockRef, DispatchIndex, EmittedIndex,
 	HashNumber, MultiAddress, MultiSignature,
 };
 pub use decoded_events::{HasEventEmittedIndex, TransactionEventDecodable, TransactionEventEncodable};

@@ -33,7 +33,7 @@ async fn main() -> Result<(), ClientError> {
 	};
 	println!(
 		"Block Hash: {:?}, Block Height: {}, Tx Hash: {:?}, Tx Index: {}",
-		receipt.block_loc.hash, receipt.block_loc.height, receipt.tx_loc.hash, receipt.tx_loc.index
+		receipt.block_ref.hash, receipt.block_ref.height, receipt.tx_ref.hash, receipt.tx_ref.index
 	);
 
 	// Fetching Block State
@@ -58,7 +58,7 @@ async fn main() -> Result<(), ClientError> {
 	// Fetching the same transaction from the block
 	let block_client = client.block_client();
 	let block_tx = block_client
-		.transaction(receipt.block_loc.into(), receipt.tx_loc.into(), None)
+		.transaction(receipt.block_ref.into(), receipt.tx_ref.into(), None)
 		.await?
 		.expect("Must be there");
 	let call = SubmitData::decode_hex_call(&block_tx.encoded.expect("Must be there")).expect("Must be decodable");

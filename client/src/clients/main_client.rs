@@ -14,7 +14,7 @@ use avail::{
 	balances::types::AccountData,
 	system::{storage as SystemStorage, types::AccountInfo},
 };
-use avail_rust_core::{AccountId, AvailHeader, BlockLocation, H256, StorageMap, rpc::BlockWithJustifications};
+use avail_rust_core::{AccountId, AvailHeader, BlockRef, H256, StorageMap, rpc::BlockWithJustifications};
 use std::time::Duration;
 
 #[cfg(feature = "subxt")]
@@ -369,32 +369,32 @@ impl Client {
 	}
 
 	// Block Id
-	pub async fn best_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
+	pub async fn best_block_loc(&self) -> Result<BlockRef, avail_rust_core::Error> {
 		let header = self.best_block_header().await?;
-		Ok(BlockLocation::from((header.hash(), header.number)))
+		Ok(BlockRef::from((header.hash(), header.number)))
 	}
 
 	pub async fn best_block_loc_ext(
 		&self,
 		retry_on_error: bool,
 		retry_on_none: bool,
-	) -> Result<BlockLocation, avail_rust_core::Error> {
+	) -> Result<BlockRef, avail_rust_core::Error> {
 		let header = self.best_block_header_ext(retry_on_error, retry_on_none).await?;
-		Ok(BlockLocation::from((header.hash(), header.number)))
+		Ok(BlockRef::from((header.hash(), header.number)))
 	}
 
-	pub async fn finalized_block_loc(&self) -> Result<BlockLocation, avail_rust_core::Error> {
+	pub async fn finalized_block_loc(&self) -> Result<BlockRef, avail_rust_core::Error> {
 		let header = self.finalized_block_header().await?;
-		Ok(BlockLocation::from((header.hash(), header.number)))
+		Ok(BlockRef::from((header.hash(), header.number)))
 	}
 
 	pub async fn finalized_block_loc_ext(
 		&self,
 		retry_on_error: bool,
 		retry_on_none: bool,
-	) -> Result<BlockLocation, avail_rust_core::Error> {
+	) -> Result<BlockRef, avail_rust_core::Error> {
 		let header = self.finalized_block_header_ext(retry_on_error, retry_on_none).await?;
-		Ok(BlockLocation::from((header.hash(), header.number)))
+		Ok(BlockRef::from((header.hash(), header.number)))
 	}
 
 	// Nonce
@@ -450,18 +450,18 @@ impl Client {
 	}
 
 	// Block State
-	pub async fn block_state(&self, block_loc: BlockLocation) -> Result<BlockState, avail_rust_core::Error> {
-		let real_block_hash = self.block_hash(block_loc.height).await?;
+	pub async fn block_state(&self, block_ref: BlockRef) -> Result<BlockState, avail_rust_core::Error> {
+		let real_block_hash = self.block_hash(block_ref.height).await?;
 		let Some(real_block_hash) = real_block_hash else {
 			return Ok(BlockState::DoesNotExist);
 		};
 
 		let finalized_block_height = self.finalized_block_height().await?;
-		if block_loc.height > finalized_block_height {
+		if block_ref.height > finalized_block_height {
 			return Ok(BlockState::Included);
 		}
 
-		if block_loc.hash != real_block_hash {
+		if block_ref.hash != real_block_hash {
 			return Ok(BlockState::Discarded);
 		}
 
