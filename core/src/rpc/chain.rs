@@ -62,11 +62,7 @@ pub async fn get_block(
 	at: Option<H256>,
 ) -> Result<Option<BlockWithJustifications>, subxt_rpcs::Error> {
 	let params = rpc_params![at];
-	let res: Option<BlockWithJustifications> = client.request("chain_getBlock", params).await?;
-	let Some(value) = res else {
-		return Ok(None);
-	};
-	Ok(Some(value))
+	client.request("chain_getBlock", params).await
 }
 
 pub async fn get_block_hash(client: &RpcClient, block_height: Option<u32>) -> Result<Option<H256>, subxt_rpcs::Error> {
