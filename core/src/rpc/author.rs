@@ -16,7 +16,7 @@ impl TryFrom<&[u8]> for SessionKeys {
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		if value.len() != 128 {
-			return Err(String::from("Session keys len cannot have length be more or less than 128"));
+			return Err(format!("Session keys length must be exactly 128 bytes, got {}", value.len()));
 		}
 
 		let err = |e: TryFromSliceError| e.to_string();

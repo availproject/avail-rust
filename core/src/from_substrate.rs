@@ -57,7 +57,7 @@ impl FeeDetails {
 		self.inclusion_fee
 			.as_ref()
 			.map(|i| i.inclusion_fee())
-			.unwrap_or_else(|| 0u128)
+			.unwrap_or(0)
 			.saturating_add(self.tip)
 	}
 }
