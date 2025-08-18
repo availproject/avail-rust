@@ -34,7 +34,7 @@ pub struct GProof(pub [u8; 48]);
 
 impl From<GProof> for Vec<u8> {
 	fn from(proof: GProof) -> Self {
-		proof.0.to_vec()
+		proof.0.into()
 	}
 }
 
@@ -152,7 +152,7 @@ pub async fn query_multi_proof(
 	at: Option<H256>,
 	cells: Vec<Cell>,
 ) -> Result<Vec<(GMultiProof, GCellBlock)>, subxt_rpcs::Error> {
-	let params = rpc_params![cells.to_vec(), at];
+	let params = rpc_params![cells, at];
 	let proofs: Vec<(GMultiProof, GCellBlock)> = client.request("kate_queryMultiProof", params).await?;
 
 	Ok(proofs)
