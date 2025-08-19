@@ -45,7 +45,7 @@ async fn main() -> Result<(), ClientError> {
 	// Submitting
 	let submitted = submittable.sign_and_submit(&alice(), Options::new(Some(2))).await?;
 	let receipt = submitted.receipt(true).await?.expect("Must be there");
-	println!("Block Hash: {:?}", receipt.block_loc.hash);
+	println!("Block Hash: {:?}", receipt.block_ref.hash);
 
 	Ok(())
 }

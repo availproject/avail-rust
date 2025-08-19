@@ -5,8 +5,8 @@ use crate::{
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockLocation, H256, TransactionConvertible,
-	config::TransactionLocation,
+	AccountId, BlockRef, H256, TransactionConvertible,
+	config::TxRef,
 	ext::codec::Encode,
 	from_substrate::FeeDetails,
 	rpc::system::fetch_events_v1_types::RuntimeEvent,
@@ -132,23 +132,23 @@ pub enum BlockState {
 #[derive(Clone)]
 pub struct TransactionReceipt {
 	client: Client,
-	pub block_loc: BlockLocation,
-	pub tx_loc: TransactionLocation,
+	pub block_ref: BlockRef,
+	pub tx_ref: TxRef,
 }
 
 impl TransactionReceipt {
-	pub fn new(client: Client, block_loc: BlockLocation, tx_loc: TransactionLocation) -> Self {
-		Self { client, block_loc, tx_loc }
+	pub fn new(client: Client, block_ref: BlockRef, tx_ref: TxRef) -> Self {
+		Self { client, block_ref, tx_ref }
 	}
 
 	pub async fn block_state(&self) -> Result<BlockState, avail_rust_core::Error> {
-		self.client.block_state(self.block_loc).await
+		self.client.block_state(self.block_ref).await
 	}
 
 	pub async fn tx_events(&self) -> Result<Vec<RuntimeEvent>, avail_rust_core::Error> {
 		let events_client = self.client.event_client();
 		let Some(events) = events_client
-			.transaction_events(self.block_loc.into(), self.tx_loc.index)
+			.transaction_events(self.block_ref.into(), self.tx_ref.index)
 			.await?
 		else {
 			return Err("Failed to to find events".into());
@@ -169,7 +169,7 @@ impl Utils {
 		mortality: &RefinedMortality,
 		use_best_block: bool,
 	) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
-		let Some(block_loc) =
+		let Some(block_ref) =
 			Self::find_block_loc_via_nonce(&client, nonce, account_id, mortality, use_best_block).await?
 		else {
 			return Ok(None);
@@ -177,16 +177,16 @@ impl Utils {
 
 		let block_client = client.block_client();
 		let tx = block_client
-			.transaction(block_loc.hash.into(), tx_hash.into(), None)
+			.transaction(block_ref.hash.into(), tx_hash.into(), None)
 			.await?;
 
 		let Some(tx) = tx else {
 			return Ok(None);
 		};
 
-		let tx_location = TransactionLocation::from((tx.tx_hash, tx.tx_index));
+		let tx_ref = TxRef::from((tx.tx_hash, tx.tx_index));
 
-		Ok(Some(TransactionReceipt::new(client, block_loc, tx_location)))
+		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref)))
 	}
 
 	/// TODO
@@ -196,7 +196,7 @@ impl Utils {
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
 		use_best_block: bool,
-	) -> Result<Option<BlockLocation>, avail_rust_core::Error> {
+	) -> Result<Option<BlockRef>, avail_rust_core::Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
 		let sub_builder = SubscriptionBuilder::new().block_height(mortality.block_height);
@@ -229,15 +229,15 @@ impl Utils {
 			let Some(header) = next_header else {
 				continue;
 			};
-			let block_loc = BlockLocation::from((header.hash(), header.number));
-			let state_nonce = client.block_nonce(account_id, block_loc.hash).await?;
+			let block_ref = BlockRef::from((header.hash(), header.number));
+			let state_nonce = client.block_nonce(account_id, block_ref.hash).await?;
 
 			if state_nonce > nonce {
-				trace_new_block(nonce, state_nonce, account_id, block_loc, true);
-				return Ok(Some(block_loc));
+				trace_new_block(nonce, state_nonce, account_id, block_ref, true);
+				return Ok(Some(block_ref));
 			}
 
-			trace_new_block(nonce, state_nonce, account_id, block_loc, false);
+			trace_new_block(nonce, state_nonce, account_id, block_ref, false);
 		}
 
 		Ok(None)
@@ -245,21 +245,15 @@ impl Utils {
 }
 
 #[cfg(feature = "tracing")]
-fn trace_new_block(nonce: u32, state_nonce: u32, account_id: &AccountId, block_loc: BlockLocation, search_done: bool) {
+fn trace_new_block(nonce: u32, state_nonce: u32, account_id: &AccountId, block_ref: BlockRef, search_done: bool) {
 	if search_done {
-		info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done", nonce, account_id, block_loc.height, block_loc.hash, state_nonce);
+		info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done", nonce, account_id, block_ref.height, block_ref.hash, state_nonce);
 	} else {
-		info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}.", nonce, account_id, block_loc.height, block_loc.hash, state_nonce);
+		info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}.", nonce, account_id, block_ref.height, block_ref.hash, state_nonce);
 	}
 }
 
 #[cfg(not(feature = "tracing"))]
-fn trace_new_block(
-	_nonce: u32,
-	_state_nonce: u32,
-	_account_id: &AccountId,
-	_block_loc: BlockLocation,
-	_search_done: bool,
-) {
+fn trace_new_block(_nonce: u32, _state_nonce: u32, _account_id: &AccountId, _block_loc: BlockRef, _search_done: bool) {
 	return;
 }

@@ -109,7 +109,7 @@ impl FinalizedBlockSubscriber {
 		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
 
 		// Dealing with historical blocks
-		if latest_finalized_height > self.next_block_height {
+		if latest_finalized_height >= self.next_block_height {
 			return self.run_historical(client).await;
 		}
 
@@ -182,7 +182,7 @@ impl BestBlockSubscriber {
 		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
 
 		// Dealing with historical blocks
-		if latest_finalized_height > self.current_block_height {
+		if latest_finalized_height >= self.current_block_height {
 			return self.run_historical(client).await;
 		}
 
@@ -231,53 +231,51 @@ impl BestBlockSubscriber {
 				return Err(CoreError::from("Failed to fetch block height"));
 			};
 
+			let is_past_block = self.current_block_height > head_height;
+			if is_past_block {
+				sleep(self.poll_rate).await;
+				continue;
+			}
+
 			let is_current_block = head_height == self.current_block_height;
 			if is_current_block {
 				self.block_processed.push(head_hash);
 				return Ok((head_height, head_hash));
 			}
 
-			let is_ahead_of_current_block = head_height > self.current_block_height;
-			let is_next_block = head_height == (self.current_block_height + 1);
 			let no_block_processed_yet = self.block_processed.is_empty();
-
-			if is_ahead_of_current_block {
-				if no_block_processed_yet {
-					let block_hash = client
-						.block_hash_ext(self.current_block_height, self.retry_on_error, true)
-						.await?;
-					let Some(block_hash) = block_hash else {
-						return Err(CoreError::from("Failed to fetch block hash"));
-					};
-
-					self.block_processed.push(head_hash);
-					return Ok((self.current_block_height, block_hash));
-				}
-
-				if is_next_block {
-					self.current_block_height = head_height;
-					self.block_processed.clear();
-					self.block_processed.push(head_hash);
-					return Ok((head_height, head_hash));
-				}
-
-				let next_block_height = self.current_block_height + 1;
+			if no_block_processed_yet {
 				let block_hash = client
-					.block_hash_ext(next_block_height, self.retry_on_error, true)
+					.block_hash_ext(self.current_block_height, self.retry_on_error, true)
 					.await?;
 				let Some(block_hash) = block_hash else {
 					return Err(CoreError::from("Failed to fetch block hash"));
 				};
 
-				self.block_processed.clear();
-				self.block_processed.push(block_hash);
-				self.current_block_height = next_block_height;
-				return Ok((next_block_height, block_hash));
+				self.block_processed.push(head_hash);
+				return Ok((self.current_block_height, block_hash));
 			}
 
-			// If we are here it means we are targeting a block in the future
-			sleep(self.poll_rate).await;
-			continue;
+			let is_next_block = head_height == (self.current_block_height + 1);
+			if is_next_block {
+				self.current_block_height = head_height;
+				self.block_processed.clear();
+				self.block_processed.push(head_hash);
+				return Ok((head_height, head_hash));
+			}
+
+			let next_block_height = self.current_block_height + 1;
+			let block_hash = client
+				.block_hash_ext(next_block_height, self.retry_on_error, true)
+				.await?;
+			let Some(block_hash) = block_hash else {
+				return Err(CoreError::from("Failed to fetch block hash"));
+			};
+
+			self.block_processed.clear();
+			self.block_processed.push(block_hash);
+			self.current_block_height = next_block_height;
+			return Ok((next_block_height, block_hash));
 		}
 	}
 }

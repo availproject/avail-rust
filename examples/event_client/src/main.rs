@@ -32,7 +32,7 @@ async fn main() -> Result<(), ClientError> {
 	// Find transaction related event
 	let event_client = client.event_client();
 	let Some(event_group) = event_client
-		.transaction_events(receipt.block_loc.into(), receipt.tx_loc.index)
+		.transaction_events(receipt.block_ref.into(), receipt.tx_ref.index)
 		.await?
 	else {
 		return Err("Failed to find events".into());
@@ -45,14 +45,14 @@ async fn main() -> Result<(), ClientError> {
 		.builder()
 		.enable_encoding(true)
 		.enable_decoding(true)
-		.fetch(receipt.block_loc.hash.into())
+		.fetch(receipt.block_ref.hash.into())
 		.await?;
 	for event_group in block_event_group {
 		print_grouped_events(&event_group)?;
 	}
 
 	// Fetching historical block events
-	historical_block_events(&client, receipt.block_loc.hash, receipt.tx_loc.index).await?;
+	historical_block_events(&client, receipt.block_ref.hash, receipt.tx_ref.index).await?;
 
 	Ok(())
 }

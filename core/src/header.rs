@@ -70,7 +70,7 @@ pub enum HeaderExtension {
 	V3(V3HeaderExtension) = 2,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct V3HeaderExtension {
 	pub app_lookup: CompactDataLookup,
@@ -90,7 +90,7 @@ impl Decode for V3HeaderExtension {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CompactDataLookup {
 	// Compact
@@ -133,7 +133,7 @@ impl Decode for DataLookupItem {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct KateCommitment {
 	// Compact

@@ -36,7 +36,7 @@ pub use extensions::DefaultPayloadExt;
 
 // Exporting types from ext libraries
 pub use avail_rust_core::{
-	AccountId, AvailHeader, BlockLocation, CompactDataLookup, DecodedTransaction, EncodeSelector, HasEventEmittedIndex,
+	AccountId, AvailHeader, BlockRef, CompactDataLookup, DecodedTransaction, EncodeSelector, HasEventEmittedIndex,
 	HasTxDispatchIndex, HashNumber, HeaderExtension, KateCommitment, MultiAddress, OpaqueTransaction, StorageDoubleMap,
 	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue, Transaction,
 	TransactionAdditional, TransactionCall, TransactionConvertible, TransactionDecodable, TransactionEventDecodable,

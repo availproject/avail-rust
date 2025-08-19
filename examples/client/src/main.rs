@@ -45,12 +45,12 @@ pub async fn block_header_example(client: &Client) -> Result<(), ClientError> {
 
 pub async fn block_state_example(client: &Client) -> Result<(), ClientError> {
 	// Custom Block State (unknown block hash)
-	let loc = BlockLocation::from((H256::default(), 100u32));
+	let loc = BlockRef::from((H256::default(), 100u32));
 	let block_state = client.block_state(loc).await?;
 	assert_eq!(block_state, BlockState::Discarded);
 
 	// Custom Block State (unknown block height)
-	let loc = BlockLocation::from((H256::default(), 50_000_000u32));
+	let loc = BlockRef::from((H256::default(), 50_000_000u32));
 	let block_state = client.block_state(loc).await?;
 	assert_eq!(block_state, BlockState::DoesNotExist);
 
