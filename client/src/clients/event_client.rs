@@ -193,8 +193,6 @@ impl BlockEventsBuilder {
 		self.client
 			.rpc_api()
 			.system_fetch_events_v1_ext(block_hash, options.clone(), self.retry_on_error)
-			.await?;
-
-		todo!()
+			.await
 	}
 }
