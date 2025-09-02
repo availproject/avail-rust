@@ -428,9 +428,9 @@ impl<T: StorageMap> StorageMapIterator<T> {
 	async fn fetch_new_keys(&mut self) -> Result<(), Error> {
 		self.fetched_keys = rpc::state::get_keys_paged(
 			&self.client,
-			Some(self.prefix.clone()),
+			Some(&self.prefix),
 			100,
-			self.last_key.clone(),
+			self.last_key.as_ref().map(|x| x.as_str()),
 			Some(self.block_hash),
 		)
 		.await?;
@@ -533,9 +533,9 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 	async fn fetch_new_keys(&mut self) -> Result<(), Error> {
 		self.fetched_keys = rpc::state::get_keys_paged(
 			&self.client,
-			Some(self.prefix.clone()),
+			Some(&self.prefix),
 			100,
-			self.last_key.clone(),
+			self.last_key.as_ref().map(|x| x.as_str()),
 			Some(self.block_hash),
 		)
 		.await?;

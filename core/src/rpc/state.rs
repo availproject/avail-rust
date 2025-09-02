@@ -27,9 +27,9 @@ pub async fn get_storage(client: &RpcClient, key: &str, at: Option<H256>) -> Res
 
 pub async fn get_keys_paged(
 	client: &RpcClient,
-	prefix: Option<String>,
+	prefix: Option<&str>,
 	count: u32,
-	start_key: Option<String>,
+	start_key: Option<&str>,
 	at: Option<H256>,
 ) -> Result<Vec<String>, Error> {
 	let params = rpc_params![prefix, count, start_key, at];

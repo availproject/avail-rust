@@ -6,7 +6,7 @@ use subxt_rpcs::{RpcClient, rpc_params};
 pub async fn fetch_events_v1(
 	client: &RpcClient,
 	at: H256,
-	options: Options,
+	options: &Options,
 ) -> Result<Vec<PhaseEvents>, subxt_rpcs::Error> {
 	let params = rpc_params![at, options];
 	let value = client.request("system_fetchEventsV1", params).await?;

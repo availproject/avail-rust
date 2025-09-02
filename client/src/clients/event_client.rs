@@ -163,7 +163,7 @@ impl EventClient {
 
 		let entries = self
 			.client
-			.rpc_api()
+			.rpc()
 			.state_get_storage(EVENTS_STORAGE_ADDRESS, Some(at))
 			.await?;
 		let Some(event_bytes) = entries else {
@@ -269,7 +269,12 @@ impl BlockEventsBuilder {
 		let block_hash = match block_id {
 			HashNumber::Hash(hash) => hash,
 			HashNumber::Number(height) => {
-				let hash = self.client.block_hash_ext(height, self.retry_on_error, false).await?;
+				let hash = self
+					.client
+					.rpc()
+					.retry_on(Some(self.retry_on_error), None)
+					.block_hash(Some(height))
+					.await?;
 				hash.ok_or(avail_rust_core::Error::from("Failed to fetch block hash"))?
 			},
 		};
@@ -281,8 +286,9 @@ impl BlockEventsBuilder {
 		};
 
 		self.client
-			.rpc_api()
-			.system_fetch_events_v1_ext(block_hash, options, self.retry_on_error)
+			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
+			.system_fetch_events(block_hash, options)
 			.await
 	}
 }

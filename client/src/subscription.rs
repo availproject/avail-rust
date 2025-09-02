@@ -140,7 +140,11 @@ impl FinalizedBlockSubscriber {
 
 	async fn run_historical(&mut self, client: &Client) -> Result<BlockRef, CoreError> {
 		let height = self.next_block_height;
-		let hash = client.block_hash_ext(height, self.retry_on_error, false).await?;
+		let hash = client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
+			.block_hash(Some(height))
+			.await?;
 		let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
 
 		Ok(BlockRef { hash, height })
@@ -161,7 +165,11 @@ impl FinalizedBlockSubscriber {
 			}
 
 			let height = self.next_block_height;
-			let hash = client.block_hash_ext(height, true, true).await?;
+			let hash = client
+				.rpc()
+				.retry_on(Some(self.retry_on_error), Some(true))
+				.block_hash(Some(height))
+				.await?;
 			let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
 
 			return Ok(BlockRef { hash, height });
@@ -216,7 +224,11 @@ impl BestBlockSubscriber {
 
 	async fn run_historical(&mut self, client: &Client) -> Result<BlockRef, CoreError> {
 		let height = self.current_block_height;
-		let hash = client.block_hash_ext(height, self.retry_on_error, false).await?;
+		let hash = client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
+			.block_hash(Some(height))
+			.await?;
 		let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
 
 		Ok(BlockRef { hash, height })
@@ -242,7 +254,9 @@ impl BestBlockSubscriber {
 			let no_block_processed_yet = self.block_processed.is_empty();
 			if no_block_processed_yet {
 				let hash = client
-					.block_hash_ext(self.current_block_height, self.retry_on_error, true)
+					.rpc()
+					.retry_on(Some(true), Some(true))
+					.block_hash(Some(self.current_block_height))
 					.await?;
 				let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
 
@@ -250,7 +264,11 @@ impl BestBlockSubscriber {
 			}
 
 			let height = self.current_block_height + 1;
-			let hash = client.block_hash_ext(height, self.retry_on_error, true).await?;
+			let hash = client
+				.rpc()
+				.retry_on(Some(true), Some(true))
+				.block_hash(Some(height))
+				.await?;
 			let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
 
 			return Ok(BlockRef { hash, height });
@@ -302,7 +320,11 @@ impl HeaderSubscription {
 
 	pub async fn next(&mut self) -> Result<Option<AvailHeader>, CoreError> {
 		let info = self.sub.next(&self.client).await?;
-		self.client.block_header_ext(info.hash, self.retry_on_error, true).await
+		self.client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), Some(true))
+			.block_header(Some(info.hash))
+			.await
 	}
 
 	pub fn current_block_height(&self) -> u32 {
@@ -325,7 +347,11 @@ impl BlockSubscription {
 
 	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, CoreError> {
 		let info = self.sub.next(&self.client).await?;
-		self.client.block_ext(info.hash, self.retry_on_error, true).await
+		self.client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), Some(true))
+			.block(Some(info.hash))
+			.await
 	}
 
 	pub fn current_block_height(&self) -> u32 {
@@ -364,11 +390,7 @@ impl GrandpaJustificationSubscription {
 				self.run_head().await?
 			};
 
-			let justification = self
-				.client
-				.rpc_api()
-				.grandpa_block_justification_ext(block_height, true)
-				.await?;
+			let justification = self.client.rpc().grandpa_block_justification(block_height).await?;
 			self.next_block_height += 1;
 
 			let Some(justification) = justification else {
@@ -441,11 +463,7 @@ impl GrandpaJustificationJsonSubscription {
 				self.run_head().await?
 			};
 
-			let justification = self
-				.client
-				.rpc_api()
-				.grandpa_block_justification_json_ext(block_height, true)
-				.await?;
+			let justification = self.client.rpc().grandpa_block_justification_json(block_height).await?;
 			self.next_block_height += 1;
 
 			let Some(justification) = justification else {

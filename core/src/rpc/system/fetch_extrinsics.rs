@@ -6,13 +6,13 @@ use subxt_rpcs::{RpcClient, rpc_params};
 pub async fn fetch_extrinsics_v1(
 	client: &RpcClient,
 	block_id: HashNumber,
-	options: Options,
+	options: &Options,
 ) -> Result<Vec<ExtrinsicInfo>, subxt_rpcs::Error> {
 	let options: RpcOptions = RpcOptions {
 		filter: Filter {
-			transaction: Some(options.transaction_filter),
+			transaction: Some(options.transaction_filter.clone()),
 			signature: SignatureFilter {
-				ss58_address: options.ss58_address,
+				ss58_address: options.ss58_address.clone(),
 				app_id: options.app_id,
 				nonce: options.nonce,
 			},

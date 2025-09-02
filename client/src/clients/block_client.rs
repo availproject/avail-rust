@@ -74,19 +74,8 @@ impl BlockClient {
 	/// A block contains a block header, all the transactions and all the justifications
 	///
 	/// In 99.99% cases `transactions` or `transaction` method is the one that you need/want
-	pub async fn rpc_block(&self, at: H256) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
-		self.client.block(at).await
-	}
-
-	/// Same as `rpc_block` but instead of returning on first error
-	/// it tries it again a couple of time. After 6 failures is returns the original error.
-	pub async fn rpc_block_ext(
-		&self,
-		at: H256,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
-		self.client.block_ext(at, retry_on_error, retry_on_none).await
+	pub async fn rpc_block(&self, at: Option<H256>) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
+		self.client.rpc().block(at).await
 	}
 }
 
@@ -176,8 +165,9 @@ impl BlockTransactionsBuilder {
 
 	pub async fn fetch(&self, block_id: HashNumber) -> Result<Vec<ExtrinsicInfo>, avail_rust_core::Error> {
 		self.client
-			.rpc_api()
-			.system_fetch_extrinsics_v1_ext(block_id, self.options.clone(), self.retry_on_error)
+			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
+			.system_fetch_extrinsics(block_id, self.options.clone())
 			.await
 	}
 }

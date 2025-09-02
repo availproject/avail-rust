@@ -42,7 +42,10 @@ impl SubmittableTransaction {
 		signer: &Keypair,
 		options: Options,
 	) -> Result<SubmittedTransaction, avail_rust_core::Error> {
-		self.client.sign_and_submit_call(signer, &self.call, options).await
+		self.client
+			.rpc()
+			.sign_and_submit_call(signer, &self.call, options)
+			.await
 	}
 
 	pub async fn sign(
@@ -50,7 +53,7 @@ impl SubmittableTransaction {
 		signer: &Keypair,
 		options: Options,
 	) -> Result<avail_rust_core::Transaction, avail_rust_core::Error> {
-		self.client.sign_call(signer, &self.call, options).await
+		self.client.rpc().sign_call(signer, &self.call, options).await
 	}
 
 	pub async fn estimate_call_fees(&self, at: Option<H256>) -> Result<FeeDetails, avail_rust_core::Error> {
@@ -142,7 +145,7 @@ impl TransactionReceipt {
 	}
 
 	pub async fn block_state(&self) -> Result<BlockState, avail_rust_core::Error> {
-		self.client.block_state(self.block_ref).await
+		self.client.rpc().block_state(self.block_ref).await
 	}
 
 	pub async fn tx_events(&self) -> Result<TransactionEvents, avail_rust_core::Error> {
@@ -223,7 +226,7 @@ impl Utils {
 			let info = sub.next(client).await?;
 			current_block_height = sub.current_block_height();
 
-			let state_nonce = client.block_nonce(account_id, info.hash).await?;
+			let state_nonce = client.rpc().block_nonce(account_id, info.hash).await?;
 			if state_nonce > nonce {
 				trace_new_block(nonce, state_nonce, account_id, info, true);
 				return Ok(Some(info));

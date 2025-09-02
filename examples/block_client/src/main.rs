@@ -48,7 +48,7 @@ pub async fn submit_dummy_transactions(client: &Client) -> Result<TransactionRec
 pub async fn block_rpc_example(client: Client, hash: H256) -> Result<(), ClientError> {
 	let blocks = client.block_client();
 
-	let block_w_justification = blocks.rpc_block(hash).await?.expect("Should be there");
+	let block_w_justification = blocks.rpc_block(Some(hash)).await?.expect("Should be there");
 	let block = &block_w_justification.block;
 
 	// Accessing Block Header data

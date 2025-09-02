@@ -38,6 +38,7 @@ impl Options {
 		self,
 		client: &Client,
 		account_id: &AccountId,
+		retry_on_error: bool,
 	) -> Result<RefinedOptions, avail_rust_core::Error> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
@@ -45,8 +46,9 @@ impl Options {
 			Some(x) => x,
 			None => {
 				client
-					.rpc_api()
-					.system_account_next_index(&account_id.to_string())
+					.rpc()
+					.retry_on(Some(retry_on_error), None)
+					.nonce(account_id)
 					.await?
 			},
 		};
