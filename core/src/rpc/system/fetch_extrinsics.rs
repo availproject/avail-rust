@@ -20,7 +20,8 @@ pub async fn fetch_extrinsics_v1(
 		encode_selector: Some(options.encode_as),
 	};
 	let params = rpc_params![block_id, options];
-	let value = client.request("system_fetchExtrinsicsV1", params).await?;
+	let value: Vec<ExtrinsicInformation> = client.request("system_fetchExtrinsicsV1", params).await?;
+	let value: Vec<ExtrinsicInfo> = value.into_iter().map(|x| x.into()).collect();
 	Ok(value)
 }
 
@@ -42,15 +43,28 @@ pub enum EncodeSelector {
 	Extrinsic = 2,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ExtrinsicInfo {
 	// Hex string encoded
-	pub encoded: Option<String>,
+	pub data: Option<String>,
 	pub tx_hash: H256,
 	pub tx_index: u32,
 	pub pallet_id: u8,
-	pub call_id: u8,
+	pub variant_id: u8,
 	pub signature: Option<TransactionSignature>,
+}
+
+impl From<ExtrinsicInformation> for ExtrinsicInfo {
+	fn from(value: ExtrinsicInformation) -> Self {
+		Self {
+			data: value.encoded,
+			tx_hash: value.tx_hash,
+			tx_index: value.tx_index,
+			pallet_id: value.pallet_id,
+			variant_id: value.call_id,
+			signature: value.signature,
+		}
+	}
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,4 +113,15 @@ struct SignatureFilter {
 	pub ss58_address: Option<String>,
 	pub app_id: Option<u32>,
 	pub nonce: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ExtrinsicInformation {
+	// Hex string encoded
+	pub encoded: Option<String>,
+	pub tx_hash: H256,
+	pub tx_index: u32,
+	pub pallet_id: u8,
+	pub call_id: u8,
+	pub signature: Option<TransactionSignature>,
 }

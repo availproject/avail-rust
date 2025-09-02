@@ -9,8 +9,8 @@ use avail_rust_client::prelude::*;
 pub struct CustomTransaction {
 	pub data: Vec<u8>,
 }
-impl HasTxDispatchIndex for CustomTransaction {
-	const DISPATCH_INDEX: (u8, u8) = (29u8, 1u8);
+impl HasHeader for CustomTransaction {
+	const HEADER_INDEX: (u8, u8) = (29u8, 1u8);
 }
 
 #[tokio::main]

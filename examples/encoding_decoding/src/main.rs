@@ -12,8 +12,8 @@ use codec::Encode;
 pub struct CustomTransaction {
 	pub data: Vec<u8>,
 }
-impl HasTxDispatchIndex for CustomTransaction {
-	const DISPATCH_INDEX: (u8, u8) = (29u8, 1u8);
+impl HasHeader for CustomTransaction {
+	const HEADER_INDEX: (u8, u8) = (29u8, 1u8);
 }
 
 // Event Definition
@@ -22,8 +22,8 @@ pub struct CustomEvent {
 	pub who: AccountId,
 	pub data_hash: H256,
 }
-impl HasEventEmittedIndex for CustomEvent {
-	const EMITTED_INDEX: (u8, u8) = (29, 1);
+impl HasHeader for CustomEvent {
+	const HEADER_INDEX: (u8, u8) = (29, 1);
 }
 
 // Storage Definition

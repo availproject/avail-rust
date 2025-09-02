@@ -9,7 +9,10 @@ pub mod transaction;
 pub mod transaction_options;
 pub mod transactions;
 
-pub use clients::{BlockTransactionsBuilder, Client};
+pub use clients::{
+	BlockTransactionsBuilder, Client,
+	event_client::{TransactionEvent, TransactionEvents},
+};
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
@@ -36,11 +39,11 @@ pub use extensions::DefaultPayloadExt;
 
 // Exporting types from ext libraries
 pub use avail_rust_core::{
-	AccountId, AvailHeader, BlockRef, CompactDataLookup, DecodedTransaction, EncodeSelector, HasEventEmittedIndex,
-	HasTxDispatchIndex, HashNumber, HeaderExtension, KateCommitment, MultiAddress, OpaqueTransaction, StorageDoubleMap,
-	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue, Transaction,
-	TransactionAdditional, TransactionCall, TransactionConvertible, TransactionDecodable, TransactionEventDecodable,
-	TransactionEventEncodable, TransactionExtra, TransactionPayload, TransactionSigned, V3HeaderExtension, avail,
+	AccountId, AvailHeader, BlockRef, CompactDataLookup, DecodedTransaction, EncodeSelector, HasHeader, HashNumber,
+	HeaderExtension, KateCommitment, MultiAddress, OpaqueTransaction, StorageDoubleMap, StorageDoubleMapIterator,
+	StorageHasher, StorageMap, StorageMapIterator, StorageValue, Transaction, TransactionAdditional, TransactionCall,
+	TransactionConvertible, TransactionDecodable, TransactionEventDecodable, TransactionEventEncodable,
+	TransactionExtra, TransactionPayload, TransactionSigned, V3HeaderExtension, avail,
 };
 pub use primitive_types::{H256, U256};
 pub use subxt_signer::{SecretUri, sr25519::Keypair};

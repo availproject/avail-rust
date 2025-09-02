@@ -1,10 +1,7 @@
 use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-pub trait HasEventEmittedIndex {
-	// Pallet ID, Variant ID
-	const EMITTED_INDEX: (u8, u8);
-}
+use crate::HasHeader;
 
 pub trait TransactionEventEncodable {
 	/// SCALE encodes the event
@@ -18,26 +15,26 @@ pub trait TransactionEventEncodable {
 	fn encode_as_hex_event(&self) -> String;
 }
 
-pub trait TransactionEventDecodable {
+pub trait TransactionEventDecodable: Sized {
 	/// Decodes the SCALE encoded Event
 	///
 	/// If you need to decode Hex string call `decode_hex_event`
-	fn decode_event(event: &[u8]) -> Option<Box<Self>>;
+	fn decode_event(event: &[u8]) -> Option<Self>;
 
 	/// Decodes the Hex and SCALE encoded Transaction Call
 	/// This is equal to Hex::decode + Self::decode_event
 	///
 	/// If you need to decode bytes call `decode_event`
-	fn decode_hex_event(event: &str) -> Option<Box<Self>>;
+	fn decode_hex_event(event: &str) -> Option<Self>;
 
 	/// Decodes the SCALE encoded Event Data
-	fn decode_event_data(event_data: &[u8]) -> Option<Box<Self>>;
+	fn decode_event_data(event_data: &[u8]) -> Option<Self>;
 }
 
-impl<T: HasEventEmittedIndex + Encode> TransactionEventEncodable for T {
+impl<T: HasHeader + Encode> TransactionEventEncodable for T {
 	fn encode_as_event(&self) -> Vec<u8> {
-		let pallet_id = Self::EMITTED_INDEX.0;
-		let variant_id = Self::EMITTED_INDEX.1;
+		let pallet_id = Self::HEADER_INDEX.0;
+		let variant_id = Self::HEADER_INDEX.1;
 		let mut encoded_event: Vec<u8> = vec![pallet_id, variant_id];
 		Self::encode_to(self, &mut encoded_event);
 
@@ -49,10 +46,10 @@ impl<T: HasEventEmittedIndex + Encode> TransactionEventEncodable for T {
 	}
 }
 
-impl<T: HasEventEmittedIndex + Decode> TransactionEventDecodable for T {
-	fn decode_event(event: &[u8]) -> Option<Box<T>> {
+impl<T: HasHeader + Decode> TransactionEventDecodable for T {
+	fn decode_event(event: &[u8]) -> Option<T> {
 		// This was moved out in order to decrease compilation times
-		if !event_filter_in(event, Self::EMITTED_INDEX) {
+		if !event_filter_in(event, Self::HEADER_INDEX) {
 			return None;
 		}
 
@@ -64,12 +61,12 @@ impl<T: HasEventEmittedIndex + Decode> TransactionEventDecodable for T {
 	}
 
 	#[inline(always)]
-	fn decode_hex_event(event: &str) -> Option<Box<T>> {
+	fn decode_hex_event(event: &str) -> Option<T> {
 		let hex_decoded = const_hex::decode(event.trim_start_matches("0x")).ok()?;
 		Self::decode_event(&hex_decoded)
 	}
 
-	fn decode_event_data(event_data: &[u8]) -> Option<Box<T>> {
+	fn decode_event_data(event_data: &[u8]) -> Option<T> {
 		// This was moved out in order to decrease compilation times
 		try_decode_event_data(event_data)
 	}
@@ -77,8 +74,8 @@ impl<T: HasEventEmittedIndex + Decode> TransactionEventDecodable for T {
 
 // Purely here to decrease compilation times
 #[inline(never)]
-fn try_decode_event_data<T: Decode>(mut event_data: &[u8]) -> Option<Box<T>> {
-	T::decode(&mut event_data).ok().map(Box::new)
+fn try_decode_event_data<T: Decode>(mut event_data: &[u8]) -> Option<T> {
+	T::decode(&mut event_data).ok()
 }
 
 // Purely here to decrease compilation times

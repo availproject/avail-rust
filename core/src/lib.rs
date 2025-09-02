@@ -18,12 +18,12 @@ pub use config::{
 	AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockRef, DispatchIndex, EmittedIndex,
 	HashNumber, MultiAddress, MultiSignature,
 };
-pub use decoded_events::{HasEventEmittedIndex, TransactionEventDecodable, TransactionEventEncodable};
+pub use decoded_events::{TransactionEventDecodable, TransactionEventEncodable};
 pub use decoded_storage::{
 	StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
 };
 pub use decoded_transaction::{
-	DecodedTransaction, HasTxDispatchIndex, OpaqueTransaction, TransactionConvertible, TransactionDecodable,
+	DecodedTransaction, HasHeader, OpaqueTransaction, TransactionConvertible, TransactionDecodable,
 };
 pub use error::Error;
 pub use extrinsics_params::DefaultExtrinsicParams;

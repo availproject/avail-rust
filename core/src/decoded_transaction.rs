@@ -3,9 +3,9 @@ use crate::TransactionCall;
 use codec::{Compact, Decode, Encode, Error, Input};
 use serde::{Deserialize, Serialize};
 
-pub trait HasTxDispatchIndex {
-	// Pallet ID, Call ID
-	const DISPATCH_INDEX: (u8, u8);
+pub trait HasHeader {
+	// Pallet ID, Variant ID
+	const HEADER_INDEX: (u8, u8);
 }
 
 pub trait TransactionConvertible {
@@ -40,13 +40,13 @@ pub trait TransactionDecodable {
 	fn decode_transaction(transaction: &[u8]) -> Option<Box<Self>>;
 }
 
-impl<T: HasTxDispatchIndex + Encode> TransactionConvertible for T {
+impl<T: HasHeader + Encode> TransactionConvertible for T {
 	fn to_call(&self) -> TransactionCall {
-		TransactionCall::new(Self::DISPATCH_INDEX.0, Self::DISPATCH_INDEX.1, self.encode())
+		TransactionCall::new(Self::HEADER_INDEX.0, Self::HEADER_INDEX.1, self.encode())
 	}
 }
 
-impl<T: HasTxDispatchIndex + Decode> TransactionDecodable for T {
+impl<T: HasHeader + Decode> TransactionDecodable for T {
 	#[inline(always)]
 	fn decode_hex_transaction(transaction: &str) -> Option<Box<T>> {
 		let opaque = OpaqueTransaction::try_from(transaction).ok()?;
@@ -67,7 +67,7 @@ impl<T: HasTxDispatchIndex + Decode> TransactionDecodable for T {
 
 	fn decode_call(call: &[u8]) -> Option<Box<T>> {
 		// This was moved out in order to decrease compilation times
-		if !tx_filter_in(call, Self::DISPATCH_INDEX) {
+		if !tx_filter_in(call, Self::HEADER_INDEX) {
 			return None;
 		}
 
@@ -97,8 +97,8 @@ fn tx_filter_in(call: &[u8], dispatch_index: (u8, u8)) -> bool {
 		return false;
 	}
 
-	let (pallet_id, call_id) = (call[0], call[1]);
-	if dispatch_index.0 != pallet_id || dispatch_index.1 != call_id {
+	let (pallet_id, variant_id) = (call[0], call[1]);
+	if dispatch_index.0 != pallet_id || dispatch_index.1 != variant_id {
 		return false;
 	}
 
@@ -243,12 +243,12 @@ impl<'a> Deserialize<'a> for OpaqueTransaction {
 }
 
 #[derive(Debug, Clone)]
-pub struct DecodedTransaction<T: HasTxDispatchIndex + Decode> {
+pub struct DecodedTransaction<T: HasHeader + Decode> {
 	pub signature: Option<TransactionSigned>,
 	pub call: Box<T>,
 }
 
-impl<T: HasTxDispatchIndex + Decode> TryFrom<Vec<u8>> for DecodedTransaction<T> {
+impl<T: HasHeader + Decode> TryFrom<Vec<u8>> for DecodedTransaction<T> {
 	type Error = codec::Error;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -256,7 +256,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<Vec<u8>> for DecodedTransaction<T> 
 	}
 }
 
-impl<T: HasTxDispatchIndex + Decode> TryFrom<&Vec<u8>> for DecodedTransaction<T> {
+impl<T: HasHeader + Decode> TryFrom<&Vec<u8>> for DecodedTransaction<T> {
 	type Error = codec::Error;
 
 	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
@@ -264,7 +264,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<&Vec<u8>> for DecodedTransaction<T>
 	}
 }
 
-impl<T: HasTxDispatchIndex + Decode> TryFrom<&[u8]> for DecodedTransaction<T> {
+impl<T: HasHeader + Decode> TryFrom<&[u8]> for DecodedTransaction<T> {
 	type Error = codec::Error;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
@@ -274,7 +274,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<&[u8]> for DecodedTransaction<T> {
 	}
 }
 
-impl<T: HasTxDispatchIndex + Decode> TryFrom<String> for DecodedTransaction<T> {
+impl<T: HasHeader + Decode> TryFrom<String> for DecodedTransaction<T> {
 	type Error = codec::Error;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -282,7 +282,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<String> for DecodedTransaction<T> {
 	}
 }
 
-impl<T: HasTxDispatchIndex + Decode> TryFrom<&String> for DecodedTransaction<T> {
+impl<T: HasHeader + Decode> TryFrom<&String> for DecodedTransaction<T> {
 	type Error = codec::Error;
 
 	fn try_from(value: &String) -> Result<Self, Self::Error> {
@@ -290,7 +290,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<&String> for DecodedTransaction<T> 
 	}
 }
 
-impl<T: HasTxDispatchIndex + Decode> TryFrom<&str> for DecodedTransaction<T> {
+impl<T: HasHeader + Decode> TryFrom<&str> for DecodedTransaction<T> {
 	type Error = codec::Error;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -300,7 +300,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<&str> for DecodedTransaction<T> {
 	}
 }
 
-impl<T: HasTxDispatchIndex + Decode> TryFrom<OpaqueTransaction> for DecodedTransaction<T> {
+impl<T: HasHeader + Decode> TryFrom<OpaqueTransaction> for DecodedTransaction<T> {
 	type Error = codec::Error;
 
 	fn try_from(value: OpaqueTransaction) -> Result<Self, Self::Error> {
@@ -308,7 +308,7 @@ impl<T: HasTxDispatchIndex + Decode> TryFrom<OpaqueTransaction> for DecodedTrans
 	}
 }
 
-impl<T: HasTxDispatchIndex + Decode> TryFrom<&OpaqueTransaction> for DecodedTransaction<T> {
+impl<T: HasHeader + Decode> TryFrom<&OpaqueTransaction> for DecodedTransaction<T> {
 	type Error = codec::Error;
 
 	fn try_from(value: &OpaqueTransaction) -> Result<Self, Self::Error> {

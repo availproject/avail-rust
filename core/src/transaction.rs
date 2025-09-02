@@ -86,34 +86,34 @@ impl From<Vec<u8>> for AlreadyEncoded {
 #[derive(Debug, Clone)]
 pub struct TransactionCall {
 	pub pallet_id: u8,
-	pub call_id: u8,
+	pub variant_id: u8,
 	pub data: AlreadyEncoded,
 }
 impl TransactionCall {
-	pub fn new(pallet_id: u8, call_id: u8, data: Vec<u8>) -> Self {
-		Self { pallet_id, call_id, data: AlreadyEncoded::from(data) }
+	pub fn new(pallet_id: u8, variant_id: u8, data: Vec<u8>) -> Self {
+		Self { pallet_id, variant_id, data: AlreadyEncoded::from(data) }
 	}
 }
 impl Encode for TransactionCall {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		self.pallet_id.encode_to(dest);
-		self.call_id.encode_to(dest);
+		self.variant_id.encode_to(dest);
 		self.data.encode_to(dest);
 	}
 }
 impl Decode for TransactionCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let pallet_id = Decode::decode(input)?;
-		let call_id = Decode::decode(input)?;
+		let variant_id = Decode::decode(input)?;
 		let data = Decode::decode(input)?;
-		Ok(Self { pallet_id, call_id, data })
+		Ok(Self { pallet_id, variant_id, data })
 	}
 }
 
 #[derive(Debug, Clone)]
 pub struct TransactionCallDecoded<T> {
 	pub pallet_id: u8,
-	pub call_id: u8,
+	pub variant_id: u8,
 	pub data: T,
 }
 

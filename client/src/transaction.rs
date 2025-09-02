@@ -1,7 +1,7 @@
 use crate::{
 	Client,
 	clients::event_client::TransactionEvents,
-	subscription::{HeaderSubscription, SubscriptionBuilder},
+	subscription::SubscriptionBuilder,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
@@ -160,7 +160,6 @@ impl TransactionReceipt {
 
 pub struct Utils;
 impl Utils {
-	/// TODO
 	pub async fn transaction_receipt(
 		client: Client,
 		tx_hash: H256,
@@ -170,7 +169,7 @@ impl Utils {
 		use_best_block: bool,
 	) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
 		let Some(block_ref) =
-			Self::find_block_loc_via_nonce(&client, nonce, account_id, mortality, use_best_block).await?
+			Self::find_correct_block_info(&client, nonce, account_id, mortality, use_best_block).await?
 		else {
 			return Ok(None);
 		};
@@ -189,8 +188,7 @@ impl Utils {
 		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref)))
 	}
 
-	/// TODO
-	pub async fn find_block_loc_via_nonce(
+	pub async fn find_correct_block_info(
 		client: &Client,
 		nonce: u32,
 		account_id: &AccountId,
@@ -199,13 +197,11 @@ impl Utils {
 	) -> Result<Option<BlockRef>, avail_rust_core::Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
-		let sub_builder = SubscriptionBuilder::new().block_height(mortality.block_height);
-		let sub_builder = match use_best_block {
-			true => sub_builder.follow_best_blocks(),
-			false => sub_builder.follow_finalized_blocks(),
-		};
-		let sub = sub_builder.build(client).await?;
-		let mut sub = HeaderSubscription::new(client.clone(), sub);
+		let mut sub = SubscriptionBuilder::new()
+			.block_height(mortality.block_height)
+			.follow(use_best_block)
+			.build(client)
+			.await?;
 		let mut current_block_height = mortality.block_height;
 
 		#[cfg(feature = "tracing")]
@@ -223,21 +219,17 @@ impl Utils {
 		}
 
 		while mortality_ends_height >= current_block_height {
-			let next_header = sub.next().await?;
+			let info = sub.next(client).await?;
 			current_block_height = sub.current_block_height();
 
-			let Some(header) = next_header else {
-				continue;
-			};
-			let block_ref = BlockRef::from((header.hash(), header.number));
-			let state_nonce = client.block_nonce(account_id, block_ref.hash).await?;
+			let state_nonce = client.block_nonce(account_id, info.hash).await?;
 
 			if state_nonce > nonce {
-				trace_new_block(nonce, state_nonce, account_id, block_ref, true);
-				return Ok(Some(block_ref));
+				trace_new_block(nonce, state_nonce, account_id, info, true);
+				return Ok(Some(info));
 			}
 
-			trace_new_block(nonce, state_nonce, account_id, block_ref, false);
+			trace_new_block(nonce, state_nonce, account_id, info, false);
 		}
 
 		Ok(None)

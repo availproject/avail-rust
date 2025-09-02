@@ -1,6 +1,6 @@
 use crate::{
-	AccountId, H256, HasEventEmittedIndex, HasTxDispatchIndex, MultiAddress, StorageHasher, StorageMap, StorageValue,
-	TransactionCall, transaction::AlreadyEncoded,
+	AccountId, H256, HasHeader, MultiAddress, StorageHasher, StorageMap, StorageValue, TransactionCall,
+	transaction::AlreadyEncoded,
 };
 use codec::{Compact, Decode, Encode};
 use scale_decode::DecodeAsType;
@@ -31,123 +31,150 @@ pub enum RuntimeCall {
 	MultisigCancelAsMulti(multisig::tx::CancelAsMulti),
 	DataAvailabilityCreateApplicationKey(data_availability::tx::CreateApplicationKey),
 }
+impl Encode for RuntimeCall {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		match self {
+			RuntimeCall::BalancesTransferAllDeath(x) => x.encode_to(dest),
+			RuntimeCall::BalancesTransferKeepAlive(x) => x.encode_to(dest),
+			RuntimeCall::BalancesTransferAll(x) => x.encode_to(dest),
+			RuntimeCall::UtilityBatch(x) => x.encode_to(dest),
+			RuntimeCall::UtilityBatchAll(x) => x.encode_to(dest),
+			RuntimeCall::UtilityForceBatch(x) => x.encode_to(dest),
+			RuntimeCall::SystemRemark(x) => x.encode_to(dest),
+			RuntimeCall::SystemSetCode(x) => x.encode_to(dest),
+			RuntimeCall::SystemSetCodeWithoutChecks(x) => x.encode_to(dest),
+			RuntimeCall::SystemRemarkWithEvent(x) => x.encode_to(dest),
+			RuntimeCall::ProxyProxy(x) => x.encode_to(dest),
+			RuntimeCall::ProxyAddProxy(x) => x.encode_to(dest),
+			RuntimeCall::ProxyRemoveProxy(x) => x.encode_to(dest),
+			RuntimeCall::ProxyRemoveProxies(x) => x.encode_to(dest),
+			RuntimeCall::ProxyCreatePure(x) => x.encode_to(dest),
+			RuntimeCall::ProxyKillPure(x) => x.encode_to(dest),
+			RuntimeCall::MultisigAsMultiThreshold1(x) => x.encode_to(dest),
+			RuntimeCall::MultisigAsMulti(x) => x.encode_to(dest),
+			RuntimeCall::MultisigApproveAsMulti(x) => x.encode_to(dest),
+			RuntimeCall::MultisigCancelAsMulti(x) => x.encode_to(dest),
+			RuntimeCall::DataAvailabilityCreateApplicationKey(x) => x.encode_to(dest),
+		}
+	}
+}
 impl Decode for RuntimeCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let pallet_id = input.read_byte()?;
-		let call_id = input.read_byte()?;
+		let variant_id = input.read_byte()?;
 
 		if pallet_id == balances::PALLET_ID {
-			if call_id == balances::tx::TransferAllowDeath::DISPATCH_INDEX.1 {
+			if variant_id == balances::tx::TransferAllowDeath::HEADER_INDEX.1 {
 				let call = balances::tx::TransferAllowDeath::decode(input)?;
 				return Ok(RuntimeCall::BalancesTransferAllDeath(call));
 			}
 
-			if call_id == balances::tx::TransferKeepAlive::DISPATCH_INDEX.1 {
+			if variant_id == balances::tx::TransferKeepAlive::HEADER_INDEX.1 {
 				let call = balances::tx::TransferKeepAlive::decode(input)?;
 				return Ok(RuntimeCall::BalancesTransferKeepAlive(call));
 			}
 
-			if call_id == balances::tx::TransferAll::DISPATCH_INDEX.1 {
+			if variant_id == balances::tx::TransferAll::HEADER_INDEX.1 {
 				let call = balances::tx::TransferAll::decode(input)?;
 				return Ok(RuntimeCall::BalancesTransferAll(call));
 			}
 		}
 
 		if pallet_id == utility::PALLET_ID {
-			if call_id == utility::tx::Batch::DISPATCH_INDEX.1 {
+			if variant_id == utility::tx::Batch::HEADER_INDEX.1 {
 				let call = utility::tx::Batch::decode(input)?;
 				return Ok(RuntimeCall::UtilityBatch(call));
 			}
 
-			if call_id == utility::tx::BatchAll::DISPATCH_INDEX.1 {
+			if variant_id == utility::tx::BatchAll::HEADER_INDEX.1 {
 				let call = utility::tx::BatchAll::decode(input)?;
 				return Ok(RuntimeCall::UtilityBatchAll(call));
 			}
 
-			if call_id == utility::tx::ForceBatch::DISPATCH_INDEX.1 {
+			if variant_id == utility::tx::ForceBatch::HEADER_INDEX.1 {
 				let call = utility::tx::ForceBatch::decode(input)?;
 				return Ok(RuntimeCall::UtilityForceBatch(call));
 			}
 		}
 
 		if pallet_id == system::PALLET_ID {
-			if call_id == system::tx::Remark::DISPATCH_INDEX.1 {
+			if variant_id == system::tx::Remark::HEADER_INDEX.1 {
 				let call = system::tx::Remark::decode(input)?;
 				return Ok(RuntimeCall::SystemRemark(call));
 			}
 
-			if call_id == system::tx::SetCode::DISPATCH_INDEX.1 {
+			if variant_id == system::tx::SetCode::HEADER_INDEX.1 {
 				let call = system::tx::SetCode::decode(input)?;
 				return Ok(RuntimeCall::SystemSetCode(call));
 			}
 
-			if call_id == system::tx::SetCodeWithoutChecks::DISPATCH_INDEX.1 {
+			if variant_id == system::tx::SetCodeWithoutChecks::HEADER_INDEX.1 {
 				let call = system::tx::SetCodeWithoutChecks::decode(input)?;
 				return Ok(RuntimeCall::SystemSetCodeWithoutChecks(call));
 			}
 
-			if call_id == system::tx::RemarkWithEvent::DISPATCH_INDEX.1 {
+			if variant_id == system::tx::RemarkWithEvent::HEADER_INDEX.1 {
 				let call = system::tx::RemarkWithEvent::decode(input)?;
 				return Ok(RuntimeCall::SystemRemarkWithEvent(call));
 			}
 		}
 
 		if pallet_id == proxy::PALLET_ID {
-			if call_id == proxy::tx::Proxy::DISPATCH_INDEX.1 {
+			if variant_id == proxy::tx::Proxy::HEADER_INDEX.1 {
 				let call = proxy::tx::Proxy::decode(input)?;
 				return Ok(RuntimeCall::ProxyProxy(call));
 			}
 
-			if call_id == proxy::tx::AddProxy::DISPATCH_INDEX.1 {
+			if variant_id == proxy::tx::AddProxy::HEADER_INDEX.1 {
 				let call = proxy::tx::AddProxy::decode(input)?;
 				return Ok(RuntimeCall::ProxyAddProxy(call));
 			}
 
-			if call_id == proxy::tx::CreatePure::DISPATCH_INDEX.1 {
+			if variant_id == proxy::tx::CreatePure::HEADER_INDEX.1 {
 				let call = proxy::tx::CreatePure::decode(input)?;
 				return Ok(RuntimeCall::ProxyCreatePure(call));
 			}
 
-			if call_id == proxy::tx::KillPure::DISPATCH_INDEX.1 {
+			if variant_id == proxy::tx::KillPure::HEADER_INDEX.1 {
 				let call = proxy::tx::KillPure::decode(input)?;
 				return Ok(RuntimeCall::ProxyKillPure(call));
 			}
 
-			if call_id == proxy::tx::RemoveProxies::DISPATCH_INDEX.1 {
+			if variant_id == proxy::tx::RemoveProxies::HEADER_INDEX.1 {
 				let call = proxy::tx::RemoveProxies::decode(input)?;
 				return Ok(RuntimeCall::ProxyRemoveProxies(call));
 			}
 
-			if call_id == proxy::tx::RemoveProxy::DISPATCH_INDEX.1 {
+			if variant_id == proxy::tx::RemoveProxy::HEADER_INDEX.1 {
 				let call = proxy::tx::RemoveProxy::decode(input)?;
 				return Ok(RuntimeCall::ProxyRemoveProxy(call));
 			}
 		}
 
 		if pallet_id == multisig::PALLET_ID {
-			if call_id == multisig::tx::ApproveAsMulti::DISPATCH_INDEX.1 {
+			if variant_id == multisig::tx::ApproveAsMulti::HEADER_INDEX.1 {
 				let call = multisig::tx::ApproveAsMulti::decode(input)?;
 				return Ok(RuntimeCall::MultisigApproveAsMulti(call));
 			}
 
-			if call_id == multisig::tx::AsMulti::DISPATCH_INDEX.1 {
+			if variant_id == multisig::tx::AsMulti::HEADER_INDEX.1 {
 				let call = multisig::tx::AsMulti::decode(input)?;
 				return Ok(RuntimeCall::MultisigAsMulti(call));
 			}
 
-			if call_id == multisig::tx::AsMultiThreshold1::DISPATCH_INDEX.1 {
+			if variant_id == multisig::tx::AsMultiThreshold1::HEADER_INDEX.1 {
 				let call = multisig::tx::AsMultiThreshold1::decode(input)?;
 				return Ok(RuntimeCall::MultisigAsMultiThreshold1(call));
 			}
 
-			if call_id == multisig::tx::CancelAsMulti::DISPATCH_INDEX.1 {
+			if variant_id == multisig::tx::CancelAsMulti::HEADER_INDEX.1 {
 				let call = multisig::tx::CancelAsMulti::decode(input)?;
 				return Ok(RuntimeCall::MultisigCancelAsMulti(call));
 			}
 		}
 
 		if pallet_id == data_availability::PALLET_ID {
-			if call_id == data_availability::tx::CreateApplicationKey::DISPATCH_INDEX.1 {
+			if variant_id == data_availability::tx::CreateApplicationKey::HEADER_INDEX.1 {
 				let call = data_availability::tx::CreateApplicationKey::decode(input)?;
 				return Ok(RuntimeCall::DataAvailabilityCreateApplicationKey(call));
 			}
@@ -224,8 +251,8 @@ pub mod data_availability {
 			pub owner: AccountId,
 			pub id: u32,
 		}
-		impl HasEventEmittedIndex for ApplicationKeyCreated {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for ApplicationKeyCreated {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 		impl Encode for ApplicationKeyCreated {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -248,8 +275,8 @@ pub mod data_availability {
 			pub who: AccountId,
 			pub data_hash: H256,
 		}
-		impl HasEventEmittedIndex for DataSubmitted {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for DataSubmitted {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 		impl Encode for DataSubmitted {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -284,8 +311,8 @@ pub mod data_availability {
 				Ok(Self { key })
 			}
 		}
-		impl HasTxDispatchIndex for CreateApplicationKey {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for CreateApplicationKey {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
 		#[derive(Debug, Clone)]
@@ -303,8 +330,8 @@ pub mod data_availability {
 				Ok(Self { data })
 			}
 		}
-		impl HasTxDispatchIndex for SubmitData {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for SubmitData {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 	}
 }
@@ -377,8 +404,8 @@ pub mod balances {
 			pub account: AccountId,
 			pub free_balance: u128,
 		}
-		impl HasEventEmittedIndex for Endowed {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for Endowed {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 		impl Decode for Endowed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -395,8 +422,8 @@ pub mod balances {
 			pub account: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for DustLost {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for DustLost {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 		impl Decode for DustLost {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -413,8 +440,8 @@ pub mod balances {
 			pub to: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Transfer {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		impl HasHeader for Transfer {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 		impl Decode for Transfer {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -431,8 +458,8 @@ pub mod balances {
 			pub who: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Reserved {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 4);
+		impl HasHeader for Reserved {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 		impl Decode for Reserved {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -448,8 +475,8 @@ pub mod balances {
 			pub who: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Unreserved {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 5);
+		impl HasHeader for Unreserved {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 		impl Decode for Unreserved {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -465,8 +492,8 @@ pub mod balances {
 			pub who: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Deposit {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 7);
+		impl HasHeader for Deposit {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 7);
 		}
 		impl Decode for Deposit {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -482,8 +509,8 @@ pub mod balances {
 			pub who: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Withdraw {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 8);
+		impl HasHeader for Withdraw {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 8);
 		}
 		impl Decode for Withdraw {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -499,8 +526,8 @@ pub mod balances {
 			pub who: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Slashed {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 9);
+		impl HasHeader for Slashed {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 9);
 		}
 		impl Decode for Slashed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -516,8 +543,8 @@ pub mod balances {
 			pub who: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Locked {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 17);
+		impl HasHeader for Locked {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 17);
 		}
 		impl Decode for Locked {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -533,8 +560,8 @@ pub mod balances {
 			pub who: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Unlocked {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 18);
+		impl HasHeader for Unlocked {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 18);
 		}
 		impl Decode for Unlocked {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -550,8 +577,8 @@ pub mod balances {
 			pub who: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Frozen {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 19);
+		impl HasHeader for Frozen {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 19);
 		}
 		impl Decode for Frozen {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -567,8 +594,8 @@ pub mod balances {
 			pub who: AccountId,
 			pub amount: u128,
 		}
-		impl HasEventEmittedIndex for Thawed {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 20);
+		impl HasHeader for Thawed {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 20);
 		}
 		impl Decode for Thawed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -600,8 +627,8 @@ pub mod balances {
 				Ok(Self { dest, value })
 			}
 		}
-		impl HasTxDispatchIndex for TransferAllowDeath {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for TransferAllowDeath {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
 		#[derive(Debug, Clone)]
@@ -622,8 +649,8 @@ pub mod balances {
 				Ok(Self { dest, value })
 			}
 		}
-		impl HasTxDispatchIndex for TransferKeepAlive {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
+		impl HasHeader for TransferKeepAlive {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
 		#[derive(Debug, Clone)]
@@ -644,8 +671,8 @@ pub mod balances {
 				Ok(Self { dest, keep_alive })
 			}
 		}
-		impl HasTxDispatchIndex for TransferAll {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
+		impl HasHeader for TransferAll {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 	}
 }
@@ -664,8 +691,8 @@ pub mod utility {
 			pub index: u32,
 			pub error: super::system::types::DispatchError,
 		}
-		impl HasEventEmittedIndex for BatchInterrupted {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for BatchInterrupted {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 		impl Decode for BatchInterrupted {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -678,8 +705,8 @@ pub mod utility {
 		/// Batch of dispatches completed fully with no error.
 		#[derive(Debug, Clone)]
 		pub struct BatchCompleted;
-		impl HasEventEmittedIndex for BatchCompleted {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for BatchCompleted {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 		impl Decode for BatchCompleted {
 			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
@@ -690,8 +717,8 @@ pub mod utility {
 		/// Batch of dispatches completed but has error
 		#[derive(Debug, Clone)]
 		pub struct BatchCompletedWithErrors;
-		impl HasEventEmittedIndex for BatchCompletedWithErrors {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		impl HasHeader for BatchCompletedWithErrors {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 		impl Decode for BatchCompletedWithErrors {
 			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
@@ -702,8 +729,8 @@ pub mod utility {
 		/// A single item within a Batch of dispatches has completed with no error
 		#[derive(Debug, Clone)]
 		pub struct ItemCompleted;
-		impl HasEventEmittedIndex for ItemCompleted {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 3);
+		impl HasHeader for ItemCompleted {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 		impl Decode for ItemCompleted {
 			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
@@ -716,8 +743,8 @@ pub mod utility {
 		pub struct ItemFailed {
 			pub error: super::system::types::DispatchError,
 		}
-		impl HasEventEmittedIndex for ItemFailed {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 4);
+		impl HasHeader for ItemFailed {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 		impl Decode for ItemFailed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -731,8 +758,8 @@ pub mod utility {
 		pub struct DispatchedAs {
 			pub result: Result<(), super::system::types::DispatchError>,
 		}
-		impl HasEventEmittedIndex for DispatchedAs {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 5);
+		impl HasHeader for DispatchedAs {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 		impl Decode for DispatchedAs {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -821,8 +848,8 @@ pub mod utility {
 				Ok(Self { length, calls })
 			}
 		}
-		impl HasTxDispatchIndex for Batch {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for Batch {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
 		#[derive(Debug, Default, Clone)]
@@ -901,8 +928,8 @@ pub mod utility {
 				Ok(Self { length, calls })
 			}
 		}
-		impl HasTxDispatchIndex for BatchAll {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
+		impl HasHeader for BatchAll {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
 		#[derive(Debug, Default, Clone)]
@@ -981,8 +1008,8 @@ pub mod utility {
 				Ok(Self { length, calls })
 			}
 		}
-		impl HasTxDispatchIndex for ForceBatch {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
+		impl HasHeader for ForceBatch {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 	}
 }
@@ -1034,8 +1061,8 @@ pub mod proxy {
 		pub struct ProxyExecuted {
 			pub result: Result<(), super::system::types::DispatchError>,
 		}
-		impl HasEventEmittedIndex for ProxyExecuted {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for ProxyExecuted {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 		impl Decode for ProxyExecuted {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1053,8 +1080,8 @@ pub mod proxy {
 			pub proxy_type: super::types::ProxyType,
 			pub disambiguation_index: u16,
 		}
-		impl HasEventEmittedIndex for PureCreated {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for PureCreated {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 		impl Decode for PureCreated {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1073,8 +1100,8 @@ pub mod proxy {
 			pub proxy: AccountId,
 			pub call_hash: H256,
 		}
-		impl HasEventEmittedIndex for Announced {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		impl HasHeader for Announced {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 		impl Decode for Announced {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1093,8 +1120,8 @@ pub mod proxy {
 			pub proxy_type: super::types::ProxyType,
 			pub delay: u32,
 		}
-		impl HasEventEmittedIndex for ProxyAdded {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 3);
+		impl HasHeader for ProxyAdded {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 		impl Decode for ProxyAdded {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1114,8 +1141,8 @@ pub mod proxy {
 			pub proxy_type: super::types::ProxyType,
 			pub delay: u32,
 		}
-		impl HasEventEmittedIndex for ProxyRemoved {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 4);
+		impl HasHeader for ProxyRemoved {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 		impl Decode for ProxyRemoved {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1152,8 +1179,8 @@ pub mod proxy {
 				Ok(Self { id, force_proxy_type, call })
 			}
 		}
-		impl HasTxDispatchIndex for Proxy {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for Proxy {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1177,8 +1204,8 @@ pub mod proxy {
 				Ok(Self { id, proxy_type, delay })
 			}
 		}
-		impl HasTxDispatchIndex for AddProxy {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for AddProxy {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1202,8 +1229,8 @@ pub mod proxy {
 				Ok(Self { delegate, proxy_type, delay })
 			}
 		}
-		impl HasTxDispatchIndex for RemoveProxy {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
+		impl HasHeader for RemoveProxy {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1216,8 +1243,8 @@ pub mod proxy {
 				Ok(Self)
 			}
 		}
-		impl HasTxDispatchIndex for RemoveProxies {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
+		impl HasHeader for RemoveProxies {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1241,8 +1268,8 @@ pub mod proxy {
 				Ok(Self { proxy_type, delay, index })
 			}
 		}
-		impl HasTxDispatchIndex for CreatePure {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
+		impl HasHeader for CreatePure {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1272,8 +1299,8 @@ pub mod proxy {
 				Ok(Self { spawner, proxy_type, index, height, ext_index })
 			}
 		}
-		impl HasTxDispatchIndex for KillPure {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 5);
+		impl HasHeader for KillPure {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 	}
 }
@@ -1316,8 +1343,8 @@ pub mod multisig {
 			pub multisig: AccountId,
 			pub call_hash: H256,
 		}
-		impl HasEventEmittedIndex for NewMultisig {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for NewMultisig {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 		impl Decode for NewMultisig {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1336,8 +1363,8 @@ pub mod multisig {
 			pub multisig: AccountId,
 			pub call_hash: H256,
 		}
-		impl HasEventEmittedIndex for MultisigApproval {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for MultisigApproval {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 		impl Decode for MultisigApproval {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1358,8 +1385,8 @@ pub mod multisig {
 			pub call_hash: H256,
 			pub result: Result<(), super::system::types::DispatchError>,
 		}
-		impl HasEventEmittedIndex for MultisigExecuted {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 2);
+		impl HasHeader for MultisigExecuted {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 		impl Decode for MultisigExecuted {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1380,8 +1407,8 @@ pub mod multisig {
 			pub multisig: AccountId,
 			pub call_hash: H256,
 		}
-		impl HasEventEmittedIndex for MultisigCancelled {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 3);
+		impl HasHeader for MultisigCancelled {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 		impl Decode for MultisigCancelled {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1415,8 +1442,8 @@ pub mod multisig {
 				Ok(Self { other_signatories, call })
 			}
 		}
-		impl HasTxDispatchIndex for AsMultiThreshold1 {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for AsMultiThreshold1 {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1441,19 +1468,21 @@ pub mod multisig {
 				let threshold = Decode::decode(input)?;
 				let other_signatories = Decode::decode(input)?;
 				let maybe_timepoint = Decode::decode(input)?;
-				let call = Decode::decode(input)?;
+				let call = RuntimeCall::decode(input)?;
 				let max_weight = Decode::decode(input)?;
+
+				let encoded_call = call.encode();
 				Ok(Self {
 					threshold,
 					other_signatories,
 					maybe_timepoint,
-					call,
+					call: TransactionCall::decode(&mut encoded_call.as_slice())?,
 					max_weight,
 				})
 			}
 		}
-		impl HasTxDispatchIndex for AsMulti {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for AsMulti {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1489,8 +1518,8 @@ pub mod multisig {
 				})
 			}
 		}
-		impl HasTxDispatchIndex for ApproveAsMulti {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
+		impl HasHeader for ApproveAsMulti {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1517,8 +1546,8 @@ pub mod multisig {
 				Ok(Self { threshold, other_signatories, timepoint, call_hash })
 			}
 		}
-		impl HasTxDispatchIndex for CancelAsMulti {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
+		impl HasHeader for CancelAsMulti {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 	}
 }
@@ -1655,8 +1684,8 @@ pub mod vector {
 				Ok(Self { function_id, input: inputt, output, proof, slot })
 			}
 		}
-		impl HasTxDispatchIndex for FulfillCall {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for FulfillCall {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1683,8 +1712,8 @@ pub mod vector {
 				Ok(Self { slot, addr_message, account_proof, storage_proof })
 			}
 		}
-		impl HasTxDispatchIndex for Execute {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for Execute {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1705,8 +1734,8 @@ pub mod vector {
 				Ok(Self { source_chain_id, frozen })
 			}
 		}
-		impl HasTxDispatchIndex for SourceChainFroze {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
+		impl HasHeader for SourceChainFroze {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1733,8 +1762,8 @@ pub mod vector {
 				Ok(Self { slot, message, to, domain })
 			}
 		}
-		impl HasTxDispatchIndex for SendMessage {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
+		impl HasHeader for SendMessage {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1755,8 +1784,8 @@ pub mod vector {
 				Ok(Self { period, poseidon_hash })
 			}
 		}
-		impl HasTxDispatchIndex for SetPoseidonHash {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 4);
+		impl HasHeader for SetPoseidonHash {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1777,8 +1806,8 @@ pub mod vector {
 				Ok(Self { broadcaster_domain, broadcaster })
 			}
 		}
-		impl HasTxDispatchIndex for SetBroadcaster {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 5);
+		impl HasHeader for SetBroadcaster {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1796,8 +1825,8 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl HasTxDispatchIndex for SetWhitelistedDomains {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 6);
+		impl HasHeader for SetWhitelistedDomains {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 6);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1815,8 +1844,8 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl HasTxDispatchIndex for SetConfiguration {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 7);
+		impl HasHeader for SetConfiguration {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 7);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1834,8 +1863,8 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl HasTxDispatchIndex for SetFunctionIds {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 8);
+		impl HasHeader for SetFunctionIds {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 8);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1853,8 +1882,8 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl HasTxDispatchIndex for SetStepVerificationKey {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 9);
+		impl HasHeader for SetStepVerificationKey {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 9);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1872,8 +1901,8 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl HasTxDispatchIndex for SetRotateVerificationKey {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 10);
+		impl HasHeader for SetRotateVerificationKey {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 10);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1891,8 +1920,8 @@ pub mod vector {
 				Ok(Self { updater })
 			}
 		}
-		impl HasTxDispatchIndex for SetUpdater {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 12);
+		impl HasHeader for SetUpdater {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 12);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1913,8 +1942,8 @@ pub mod vector {
 				Ok(Self { proof, public_values })
 			}
 		}
-		impl HasTxDispatchIndex for Fulfill {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 13);
+		impl HasHeader for Fulfill {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 13);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1932,8 +1961,8 @@ pub mod vector {
 				Ok(Self { sp1_vk })
 			}
 		}
-		impl HasTxDispatchIndex for SetSp1VerificationKey {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 14);
+		impl HasHeader for SetSp1VerificationKey {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 14);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1954,8 +1983,8 @@ pub mod vector {
 				Ok(Self { period, hash })
 			}
 		}
-		impl HasTxDispatchIndex for SetSyncCommitteeHash {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 15);
+		impl HasHeader for SetSyncCommitteeHash {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 15);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1973,8 +2002,8 @@ pub mod vector {
 				Ok(Self { value })
 			}
 		}
-		impl HasTxDispatchIndex for EnableMock {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 16);
+		impl HasHeader for EnableMock {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 16);
 		}
 
 		#[derive(Debug, Clone)]
@@ -1992,8 +2021,8 @@ pub mod vector {
 				Ok(Self { public_values })
 			}
 		}
-		impl HasTxDispatchIndex for MockFulfill {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 17);
+		impl HasHeader for MockFulfill {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 17);
 		}
 	}
 }
@@ -2326,8 +2355,8 @@ pub mod system {
 		pub struct ExtrinsicSuccess {
 			pub dispatch_info: super::types::DispatchInfo,
 		}
-		impl HasEventEmittedIndex for ExtrinsicSuccess {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for ExtrinsicSuccess {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 		impl Decode for ExtrinsicSuccess {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -2341,8 +2370,8 @@ pub mod system {
 			pub dispatch_error: super::types::DispatchError,
 			pub dispatch_info: super::types::DispatchInfo,
 		}
-		impl HasEventEmittedIndex for ExtrinsicFailed {
-			const EMITTED_INDEX: (u8, u8) = (PALLET_ID, 1);
+		impl HasHeader for ExtrinsicFailed {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 		impl Decode for ExtrinsicFailed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -2371,8 +2400,8 @@ pub mod system {
 				Ok(Self { remark })
 			}
 		}
-		impl HasTxDispatchIndex for Remark {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for Remark {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 
 		#[derive(Debug, Clone)]
@@ -2390,8 +2419,8 @@ pub mod system {
 				Ok(Self { code })
 			}
 		}
-		impl HasTxDispatchIndex for SetCode {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 2);
+		impl HasHeader for SetCode {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
 
 		#[derive(Debug, Clone)]
@@ -2409,8 +2438,8 @@ pub mod system {
 				Ok(Self { code })
 			}
 		}
-		impl HasTxDispatchIndex for SetCodeWithoutChecks {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 3);
+		impl HasHeader for SetCodeWithoutChecks {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
 		}
 
 		#[derive(Debug, Clone)]
@@ -2428,8 +2457,8 @@ pub mod system {
 				Ok(Self { remark })
 			}
 		}
-		impl HasTxDispatchIndex for RemarkWithEvent {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 7);
+		impl HasHeader for RemarkWithEvent {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 7);
 		}
 	}
 }
@@ -2476,8 +2505,8 @@ pub mod timestamp {
 				Ok(Self { now })
 			}
 		}
-		impl HasTxDispatchIndex for Set {
-			const DISPATCH_INDEX: (u8, u8) = (PALLET_ID, 0);
+		impl HasHeader for Set {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
 	}
 }

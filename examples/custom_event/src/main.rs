@@ -10,8 +10,8 @@ pub struct CustomEvent {
 	pub who: AccountId,
 	pub data_hash: H256,
 }
-impl HasEventEmittedIndex for CustomEvent {
-	const EMITTED_INDEX: (u8, u8) = (29, 1);
+impl HasHeader for CustomEvent {
+	const HEADER_INDEX: (u8, u8) = (29, 1);
 }
 
 #[tokio::main]
@@ -26,7 +26,7 @@ async fn main() -> Result<(), ClientError> {
 	let event = event_group
 		.events
 		.iter()
-		.find(|x| x.emitted_index == CustomEvent::EMITTED_INDEX)
+		.find(|x| x.emitted_index == CustomEvent::HEADER_INDEX)
 		.expect("Must be there");
 
 	let hex_encoded_event = event.encoded.as_ref().expect("Must be there");

@@ -1,6 +1,6 @@
 use super::Client;
 use avail_rust_core::{
-	DecodedTransaction, EncodeSelector, H256, HasTxDispatchIndex, HashNumber,
+	DecodedTransaction, EncodeSelector, H256, HasHeader, HashNumber,
 	rpc::{
 		BlockWithJustifications,
 		system::fetch_extrinsics::{self, ExtrinsicInfo, TransactionFilter},
@@ -37,7 +37,7 @@ impl BlockClient {
 
 	// Same as transaction but instead of returning encoded data + call information it returns
 	// a fully decoded transaction.
-	pub async fn transaction_static<T: HasTxDispatchIndex + codec::Decode>(
+	pub async fn transaction_static<T: HasHeader + codec::Decode>(
 		&self,
 		block_id: HashNumber,
 		transaction_id: HashNumber,
@@ -54,18 +54,18 @@ impl BlockClient {
 			return Ok(None);
 		}
 		let mut info = result.remove(0);
-		let Some(encoded) = info.encoded.take() else {
-			return Ok(None);
+		let Some(data) = info.data.take() else {
+			return Err("Fetch extrinsics endpoint returned an extrinsic with no data.".into());
 		};
 
-		let Ok(decoded) = DecodedTransaction::<T>::try_from(encoded.as_str()) else {
+		let Ok(decoded) = DecodedTransaction::<T>::try_from(data.as_str()) else {
 			return Ok(None);
 		};
 
 		Ok(Some((decoded, info)))
 	}
 
-	/// TODO
+	/// TODO DOC
 	pub fn builder(&self) -> BlockTransactionsBuilder {
 		BlockTransactionsBuilder::new(self.client.clone())
 	}
