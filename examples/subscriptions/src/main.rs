@@ -28,7 +28,7 @@ async fn main() -> Result<(), ClientError> {
 }
 
 async fn showcase_header_subscription(client: &Client) -> Result<(), ClientError> {
-	let finalized_height = client.finalized_block_height().await?;
+	let finalized_height = client.finalized().block_height().await?;
 	let sub = SubscriptionBuilder::new().build(client).await?;
 	let mut sub = HeaderSubscription::new(client.clone(), sub);
 
@@ -46,7 +46,7 @@ async fn showcase_header_subscription(client: &Client) -> Result<(), ClientError
 }
 
 async fn showcase_block_subscription(client: &Client) -> Result<(), ClientError> {
-	let finalized_height = client.finalized_block_height().await?;
+	let finalized_height = client.finalized().block_height().await?;
 	let sub = SubscriptionBuilder::new().build(client).await?;
 	let mut sub = BlockSubscription::new(client.clone(), sub);
 
@@ -66,7 +66,7 @@ async fn showcase_block_subscription(client: &Client) -> Result<(), ClientError>
 }
 
 async fn showcase_historical_subscription(client: &Client) -> Result<(), ClientError> {
-	let historical_height = client.finalized_block_height().await?.saturating_sub(100);
+	let historical_height = client.finalized().block_height().await?.saturating_sub(100);
 	let sub = SubscriptionBuilder::new()
 		.block_height(historical_height)
 		.build(client)
@@ -89,7 +89,7 @@ async fn showcase_historical_subscription(client: &Client) -> Result<(), ClientE
 }
 
 async fn showcase_best_block_subscription(client: &Client) -> Result<(), ClientError> {
-	let best_block_height = client.best_block_height().await?;
+	let best_block_height = client.best().block_height().await?;
 	let sub = SubscriptionBuilder::new().follow_best_blocks().build(client).await?;
 	let mut sub = BlockSubscription::new(client.clone(), sub);
 

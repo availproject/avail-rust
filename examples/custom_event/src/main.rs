@@ -22,15 +22,8 @@ async fn main() -> Result<(), ClientError> {
 	let submittable = client.tx().data_availability().submit_data(vec![0, 1, 2]);
 	let submitted = submittable.sign_and_submit(&alice(), Options::new(Some(2))).await?;
 	let receipt = submitted.receipt(true).await?.expect("Must be there");
-	let event_group = receipt.tx_events().await?;
-	let event = event_group
-		.events
-		.iter()
-		.find(|x| x.emitted_index == CustomEvent::HEADER_INDEX)
-		.expect("Must be there");
-
-	let hex_encoded_event = event.encoded.as_ref().expect("Must be there");
-	let event = CustomEvent::decode_hex_event(&hex_encoded_event).expect("Must be Ok");
+	let events = receipt.tx_events().await?;
+	let event = events.find::<CustomEvent>().expect("Must be there");
 	println!("Account: {}, Hash: {}", event.who, event.data_hash);
 
 	Ok(())

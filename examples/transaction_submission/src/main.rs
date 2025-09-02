@@ -7,54 +7,62 @@
 //! - Fetching Block Transaction
 //!
 
+use avail::data_availability::{events::DataSubmitted, tx::SubmitData};
 use avail_rust_client::prelude::*;
-use codec::{Compact, Decode, Encode};
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
-	let a = AvailHeader {
-		parent_hash: Default::default(),
-		number: Default::default(),
-		state_root: Default::default(),
-		extrinsics_root: Default::default(),
-		digest: Default::default(),
-		extension: HeaderExtension::V3(V3HeaderExtension {
-			app_lookup: Default::default(),
-			commitment: KateCommitment {
-				rows: 4,
-				cols: 4,
-				commitment: vec![1u8; 1000 * 1000 * 250],
-				data_root: H256::from([5u8; 32]),
-			},
-		}),
+	Client::enable_tracing(false);
+	let client = Client::new(LOCAL_ENDPOINT).await?;
+	let signer = alice();
+
+	// Transaction Creation
+	let submittable_tx = client.tx().data_availability().submit_data(vec![0, 1, 2, 3, 4, 5]);
+
+	// Transaction Submission
+	let submitted_tx = submittable_tx.sign_and_submit(&signer, Options::new(Some(2))).await?;
+	println!(
+		"Tx Hash: {:?}, Account Address: {}, Used Options: {:?}, Used Additional: {:?}",
+		submitted_tx.tx_hash, submitted_tx.account_id, submitted_tx.options, submitted_tx.additional
+	);
+
+	// Fetching Transaction Receipt
+	let receipt = submitted_tx.receipt(false).await?;
+	let Some(receipt) = receipt else {
+		return Err("Transaction got dropped. This should never happen in a local network.".into());
 	};
+	println!(
+		"Block Hash: {:?}, Block Height: {}, Tx Hash: {:?}, Tx Index: {}",
+		receipt.block_ref.hash, receipt.block_ref.height, receipt.tx_ref.hash, receipt.tx_ref.index
+	);
 
-	let mut buffer: Vec<u8> = Vec::new();
-	a.encode_to(&mut buffer);
-	/* 	a.encode_to(&mut buffer);
-	   dbg!(&buffer);
-	   dbg!(buffer.len());
+	// Fetching Block State
+	let block_state = receipt.block_state().await?;
+	match block_state {
+		BlockState::Included => println!("Block is included but not finalized"),
+		BlockState::Finalized => println!("Block is finalized"),
+		BlockState::Discarded => println!("Block is discarded"),
+		BlockState::DoesNotExist => println!("Block does not exist"),
+	}
 
-	   for _ in 0..32 {
-		   buffer.pop();
-	   }
-	   buffer.pop();
-	   buffer.pop();
-	   dbg!(&buffer);
-	   Compact(1000u32 * 1000 * 100).encode_to(&mut buffer);
-	   [1u8; 10_000].encode_to(&mut buffer);
-	*/
-	let mut b = buffer.as_slice();
-	dbg!(b.len());
-	let b = AvailHeader::decode(&mut b)?;
+	// Fetching and displaying Transaction Events
+	let events = receipt.tx_events().await?;
+	for event in events.events {
+		println!("Pallet Index: {}, Variant index: {}", event.pallet_id, event.variant_id);
 
-	/* 	Compact::<u32>(1000 * 1000 * 100).encode_to(&mut buffer);
-	buffer.extend(HeavyStruct { number: 5, image: [1u32; 100], house: [2u8; 8000] }.encode()); */
-	// buffer.extend(HeavyStruct { number: 5, image: [3u32; 100], house: [4u8; 8000] }.encode());
+		if let Some(event) = DataSubmitted::decode_hex_event(&event.data) {
+			println!("Who: {}, Data Hash: {}", event.who, event.data_hash);
+		}
+	}
 
-	/* 	let mut b = buffer.as_slice();
-
-	dbg!(a); */
+	// Fetching the same transaction from the block
+	let block_client = client.block_client();
+	let block_tx = block_client
+		.transaction(receipt.block_ref.into(), receipt.tx_ref.into(), Default::default())
+		.await?
+		.expect("Must be there");
+	let call = SubmitData::decode_hex_call(&block_tx.data.expect("Must be there")).expect("Must be decodable");
+	println!("Call Data: {:?}", call.data);
 
 	Ok(())
 }

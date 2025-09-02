@@ -16,7 +16,7 @@ async fn main() -> Result<(), ClientError> {
 		.expect("Should be there");
 	println!("Account Nonce: {}, Account Free Balance: {}", account_info.nonce, account_info.data.free);
 
-	let mut iter = SystemStorage::Account::iter(client.rpc_client.clone(), client.finalized_block_hash().await?);
+	let mut iter = SystemStorage::Account::iter(client.rpc_client.clone(), client.finalized().block_hash().await?);
 	for _ in 0..10 {
 		// You can fetch just the value...
 		let account_info = iter.next().await?.expect("Must be there");
@@ -37,7 +37,7 @@ async fn main() -> Result<(), ClientError> {
 		.expect("Should be there");
 	println!("AppKey Owner: {}, AppKey Id: {}", app_key.owner, app_key.id);
 
-	let mut iter = DAStorage::AppKeys::iter(client.rpc_client.clone(), client.finalized_block_hash().await?);
+	let mut iter = DAStorage::AppKeys::iter(client.rpc_client.clone(), client.finalized().block_hash().await?);
 	for _ in 0..10 {
 		// You can fetch just the value...
 		let app_key = iter.next().await?.expect("Must be there");

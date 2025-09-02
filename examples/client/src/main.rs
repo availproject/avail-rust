@@ -33,11 +33,11 @@ pub async fn block_header_example(client: &Client) -> Result<(), ClientError> {
 	assert_eq!(block_header.number, 100);
 
 	// Best Block Header
-	let block_header = client.best_block_header().await?;
+	let block_header = client.best().block_header().await?;
 	assert!(block_header.number > 100);
 
 	// Finalized Block Header
-	let block_header = client.finalized_block_header().await?;
+	let block_header = client.finalized().block_header().await?;
 	assert!(block_header.number > 100);
 
 	Ok(())
@@ -45,23 +45,23 @@ pub async fn block_header_example(client: &Client) -> Result<(), ClientError> {
 
 pub async fn block_state_example(client: &Client) -> Result<(), ClientError> {
 	// Custom Block State (unknown block hash)
-	let loc = BlockRef::from((H256::default(), 100u32));
-	let block_state = client.block_state(loc).await?;
+	let info = BlockRef::from((H256::default(), 100u32));
+	let block_state = client.block_state(info).await?;
 	assert_eq!(block_state, BlockState::Discarded);
 
 	// Custom Block State (unknown block height)
-	let loc = BlockRef::from((H256::default(), 50_000_000u32));
-	let block_state = client.block_state(loc).await?;
+	let info = BlockRef::from((H256::default(), 50_000_000u32));
+	let block_state = client.block_state(info).await?;
 	assert_eq!(block_state, BlockState::DoesNotExist);
 
 	// Best Block State
-	let loc = client.best_block_loc().await?;
-	let block_state = client.block_state(loc).await?;
+	let info = client.best().block_info().await?;
+	let block_state = client.block_state(info).await?;
 	assert_eq!(block_state, BlockState::Included);
 
 	// Finalized Block State
-	let loc = client.finalized_block_loc().await?;
-	let block_state = client.block_state(loc).await?;
+	let info = client.finalized().block_info().await?;
+	let block_state = client.block_state(info).await?;
 	assert_eq!(block_state, BlockState::Finalized);
 
 	Ok(())
@@ -73,19 +73,12 @@ pub async fn block_height_example(client: &Client) -> Result<(), ClientError> {
 	let block_height = client.block_height(block_hash).await?.expect("Must be there");
 	assert_eq!(block_height, 100);
 
-	// Block Hash to Block Height (On Failure and None it retries)
-	let block_height = client
-		.block_height_ext(block_hash, true, true)
-		.await?
-		.expect("Must be there");
-	assert_eq!(block_height, 100);
-
 	// Best Block Height
-	let best_height = client.best_block_height().await?;
+	let best_height = client.best().block_height().await?;
 	assert!(best_height > 100);
 
 	// Finalized Block Height
-	let finalized_height = client.finalized_block_height().await?;
+	let finalized_height = client.finalized().block_height().await?;
 	assert!(best_height > finalized_height);
 
 	Ok(())
@@ -107,10 +100,10 @@ pub async fn block_hash_example(client: &Client) -> Result<(), ClientError> {
 	);
 
 	// Best Block Hash
-	let best_hash = client.best_block_hash().await?;
+	let best_hash = client.best().block_hash().await?;
 
 	// Finalized Block Hash
-	let finalized_hash = client.finalized_block_hash().await?;
+	let finalized_hash = client.finalized().block_hash().await?;
 	assert_ne!(best_hash, finalized_hash);
 
 	Ok(())

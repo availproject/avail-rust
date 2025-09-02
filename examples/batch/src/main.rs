@@ -25,9 +25,9 @@ async fn main() -> Result<(), ClientError> {
 
 	// Fetching and displaying Transaction Events
 	let events = receipt.tx_events().await?;
-	for event in events {
-		println!("Pallet Index: {}, Variant index: {}", event.emitted_index.0, event.emitted_index.1,);
-		let encoded_event = const_hex::decode(event.encoded.expect("Must be there"))?;
+	for event in events.events {
+		println!("Pallet Index: {}, Variant index: {}", event.pallet_id, event.variant_id,);
+		let encoded_event = const_hex::decode(event.data)?;
 		if let Some(_e) = UtilityEvents::BatchInterrupted::decode_event(&encoded_event) {
 			println!("Found Utility::BatchInterrupted");
 		}

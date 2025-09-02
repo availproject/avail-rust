@@ -4,14 +4,12 @@
 //! - Fetching and Decoding events from historical blocks
 //!
 
+use crate::avail_rust_core::rpc::system::fetch_events::PhaseEvents;
 use avail::{
 	data_availability::events::DataSubmitted as DataSubmittedEvent,
 	system::events::ExtrinsicSuccess as ExtrinsicSuccessEvent,
 };
-use avail_rust_client::{
-	avail_rust_core::rpc::system::fetch_events_v1_types::{GroupedRuntimeEvents, RuntimeEvent},
-	prelude::*,
-};
+use avail_rust_client::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
@@ -26,29 +24,29 @@ async fn main() -> Result<(), ClientError> {
 	};
 
 	// Fetching transaction events directly via receipt
-	let event_group = receipt.tx_events().await?;
-	print_events(&event_group)?;
+	let events = receipt.tx_events().await?;
+	print_events(&events)?;
 
 	// Find transaction related event
 	let event_client = client.event_client();
-	let Some(event_group) = event_client
+	let Some(events) = event_client
 		.transaction_events(receipt.block_ref.into(), receipt.tx_ref.index)
 		.await?
 	else {
 		return Err("Failed to find events".into());
 	};
 
-	print_events(&event_group)?;
+	print_events(&events)?;
 
 	// Find block related events
-	let block_event_group = event_client
+	let phases_with_events = event_client
 		.builder()
 		.enable_encoding(true)
 		.enable_decoding(true)
 		.fetch(receipt.block_ref.hash.into())
 		.await?;
-	for event_group in block_event_group {
-		print_grouped_events(&event_group)?;
+	for phase_events in phases_with_events {
+		print_phase_events(&phase_events)?;
 	}
 
 	// Fetching historical block events
@@ -57,15 +55,10 @@ async fn main() -> Result<(), ClientError> {
 	Ok(())
 }
 
-fn print_grouped_events(event_group: &GroupedRuntimeEvents) -> Result<(), ClientError> {
-	println!("Phase: {:?}", event_group.phase);
-	print_events(&event_group.events)?;
+fn print_phase_events(events: &PhaseEvents) -> Result<(), ClientError> {
+	println!("Phase: {:?}", events.phase);
 
-	Ok(())
-}
-
-fn print_events(events: &Vec<RuntimeEvent>) -> Result<(), ClientError> {
-	for event in events {
+	for event in &events.events {
 		println!(
 			"Event Index: {}, Pallet Id: {}, Variant id: {}",
 			event.index, event.emitted_index.0, event.emitted_index.1
@@ -85,6 +78,22 @@ fn print_events(events: &Vec<RuntimeEvent>) -> Result<(), ClientError> {
 			println!("Weight: {:?}", e.dispatch_info.weight)
 		}
 		if let Some(e) = DataSubmittedEvent::decode_hex_event(&hex_encoded) {
+			println!("Who: {}, Data Hash: {:?}", e.who, e.data_hash)
+		}
+	}
+
+	Ok(())
+}
+
+fn print_events(events: &TransactionEvents) -> Result<(), ClientError> {
+	for event in &events.events {
+		println!("Event Index: {}, Pallet Id: {}, Variant id: {}", event.index, event.pallet_id, event.variant_id);
+		println!("Event (hex and string) encoded value: 0x{}", event.data);
+
+		if let Some(e) = ExtrinsicSuccessEvent::decode_hex_event(&event.data) {
+			println!("Weight: {:?}", e.dispatch_info.weight)
+		}
+		if let Some(e) = DataSubmittedEvent::decode_hex_event(&event.data) {
 			println!("Who: {}, Data Hash: {:?}", e.who, e.data_hash)
 		}
 	}

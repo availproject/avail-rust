@@ -56,7 +56,7 @@ pub struct ValidatorPrefs {
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
 	let client = Client::new(TURING_ENDPOINT).await?;
-	let block_hash = client.finalized_block_hash().await.unwrap();
+	let block_hash = client.finalized().block_hash().await.unwrap();
 
 	// Fetching Storage Value
 	let value = TimestampNow::fetch(&client.rpc_client, Some(block_hash))
