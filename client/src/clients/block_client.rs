@@ -1,7 +1,10 @@
 use super::Client;
 use avail_rust_core::{
-	DecodedTransaction, EncodeSelector, H256, HasTxDispatchIndex, HashNumber, rpc,
-	rpc::system::fetch_extrinsics_v1_types::{self as Types, ExtrinsicInformation, SignatureFilter, TransactionFilter},
+	DecodedTransaction, EncodeSelector, H256, HasTxDispatchIndex, HashNumber,
+	rpc::{
+		BlockWithJustifications,
+		system::fetch_extrinsics::{self, ExtrinsicInfo, TransactionFilter},
+	},
 };
 
 #[derive(Clone)]
@@ -19,12 +22,9 @@ impl BlockClient {
 		&self,
 		block_id: HashNumber,
 		transaction_id: HashNumber,
-		encode_as: Option<EncodeSelector>,
-	) -> Result<Option<Types::ExtrinsicInformation>, avail_rust_core::Error> {
-		let mut builder = self
-			.builder()
-			.encode_as(encode_as.unwrap_or_default())
-			.retry_on_error(true);
+		encode_as: EncodeSelector,
+	) -> Result<Option<ExtrinsicInfo>, avail_rust_core::Error> {
+		let mut builder = self.builder().encode_as(encode_as).retry_on_error(true);
 
 		builder = match transaction_id {
 			HashNumber::Hash(item) => builder.tx_hash(item),
@@ -41,7 +41,7 @@ impl BlockClient {
 		&self,
 		block_id: HashNumber,
 		transaction_id: HashNumber,
-	) -> Result<Option<(DecodedTransaction<T>, ExtrinsicInformation)>, avail_rust_core::Error> {
+	) -> Result<Option<(DecodedTransaction<T>, ExtrinsicInfo)>, avail_rust_core::Error> {
 		let mut builder = self.builder().encode_as(EncodeSelector::Extrinsic).retry_on_error(true);
 
 		builder = match transaction_id {
@@ -74,7 +74,7 @@ impl BlockClient {
 	/// A block contains a block header, all the transactions and all the justifications
 	///
 	/// In 99.99% cases `transactions` or `transaction` method is the one that you need/want
-	pub async fn rpc_block(&self, at: H256) -> Result<Option<rpc::BlockWithJustifications>, avail_rust_core::Error> {
+	pub async fn rpc_block(&self, at: H256) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
 		self.client.block(at).await
 	}
 
@@ -85,7 +85,7 @@ impl BlockClient {
 		at: H256,
 		retry_on_error: bool,
 		retry_on_none: bool,
-	) -> Result<Option<rpc::BlockWithJustifications>, avail_rust_core::Error> {
+	) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
 		self.client.block_ext(at, retry_on_error, retry_on_none).await
 	}
 }
@@ -93,38 +93,23 @@ impl BlockClient {
 #[derive(Clone)]
 pub struct BlockTransactionsBuilder {
 	client: Client,
-	transaction_filter: TransactionFilter,
-	signature_filter: SignatureFilter,
-	encode_as: EncodeSelector,
+	options: fetch_extrinsics::Options,
 	retry_on_error: bool,
 }
 
 impl BlockTransactionsBuilder {
 	pub fn new(client: Client) -> Self {
-		Self {
-			client,
-			transaction_filter: Default::default(),
-			signature_filter: Default::default(),
-			encode_as: Default::default(),
-			retry_on_error: false,
-		}
+		Self { client, options: Default::default(), retry_on_error: false }
 	}
 
 	pub fn reset(mut self) -> Self {
-		self.transaction_filter = Default::default();
-		self.signature_filter = Default::default();
-		self.encode_as = Default::default();
+		self.options = Default::default();
 		self.retry_on_error = false;
 		self
 	}
 
-	pub fn transaction_filter(mut self, value: TransactionFilter) -> Self {
-		self.transaction_filter = value;
-		self
-	}
-
-	pub fn signature_filter(mut self, value: SignatureFilter) -> Self {
-		self.signature_filter = value;
+	pub fn tx_filter(mut self, value: TransactionFilter) -> Self {
+		self.options.transaction_filter = value;
 		self
 	}
 
@@ -133,7 +118,7 @@ impl BlockTransactionsBuilder {
 	}
 
 	pub fn tx_hashes(mut self, value: Vec<H256>) -> Self {
-		self.transaction_filter = TransactionFilter::TxHash(value);
+		self.options.transaction_filter = TransactionFilter::TxHash(value);
 		self
 	}
 
@@ -142,7 +127,7 @@ impl BlockTransactionsBuilder {
 	}
 
 	pub fn tx_indexes(mut self, value: Vec<u32>) -> Self {
-		self.transaction_filter = TransactionFilter::TxIndex(value);
+		self.options.transaction_filter = TransactionFilter::TxIndex(value);
 		self
 	}
 
@@ -151,7 +136,7 @@ impl BlockTransactionsBuilder {
 	}
 
 	pub fn pallets(mut self, value: Vec<u8>) -> Self {
-		self.transaction_filter = TransactionFilter::Pallet(value);
+		self.options.transaction_filter = TransactionFilter::Pallet(value);
 		self
 	}
 
@@ -160,27 +145,27 @@ impl BlockTransactionsBuilder {
 	}
 
 	pub fn calls(mut self, value: Vec<(u8, u8)>) -> Self {
-		self.transaction_filter = TransactionFilter::PalletCall(value);
+		self.options.transaction_filter = TransactionFilter::PalletCall(value);
 		self
 	}
 
 	pub fn ss58_address(mut self, value: Option<String>) -> Self {
-		self.signature_filter.ss58_address = value;
+		self.options.ss58_address = value;
 		self
 	}
 
-	pub fn none(mut self, value: Option<u32>) -> Self {
-		self.signature_filter.nonce = value;
+	pub fn nonce(mut self, value: Option<u32>) -> Self {
+		self.options.nonce = value;
 		self
 	}
 
 	pub fn app_id(mut self, value: Option<u32>) -> Self {
-		self.signature_filter.app_id = value;
+		self.options.app_id = value;
 		self
 	}
 
 	pub fn encode_as(mut self, value: EncodeSelector) -> Self {
-		self.encode_as = value;
+		self.options.encode_as = value;
 		self
 	}
 
@@ -189,16 +174,10 @@ impl BlockTransactionsBuilder {
 		self
 	}
 
-	pub async fn fetch(&self, block_id: HashNumber) -> Result<Types::Output, avail_rust_core::Error> {
-		let filter = Types::Filter {
-			signature: Some(self.signature_filter.clone()),
-			transaction: Some(self.transaction_filter.clone()),
-		};
-		let options = Types::Options { filter: Some(filter), encode_selector: Some(self.encode_as) };
-
+	pub async fn fetch(&self, block_id: HashNumber) -> Result<Vec<ExtrinsicInfo>, avail_rust_core::Error> {
 		self.client
 			.rpc_api()
-			.system_fetch_extrinsics_v1_ext(block_id, options.clone(), self.retry_on_error)
+			.system_fetch_extrinsics_v1_ext(block_id, self.options.clone(), self.retry_on_error)
 			.await
 	}
 }

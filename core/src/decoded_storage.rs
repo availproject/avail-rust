@@ -86,17 +86,17 @@ pub trait StorageValue {
 	/// This is equal to Hex::decode + Self::decode
 	///
 	/// If you need to decode bytes call `decode`
-	fn hex_decode(value: &str) -> Result<Self::VALUE, codec::Error> {
+	fn decode_hex_storage_value(value: &str) -> Result<Self::VALUE, codec::Error> {
 		let Ok(hex_decoded) = const_hex::decode(value.trim_start_matches("0x")) else {
 			return Err("Failed to hex decode storage".into());
 		};
-		Self::decode(&mut hex_decoded.as_slice())
+		Self::decode_storage_value(&mut hex_decoded.as_slice())
 	}
 
 	/// Decodes the SCALE encoded Storage Value
 	///
 	/// If you need to decode Hex string call `hex_decode`
-	fn decode(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
+	fn decode_storage_value(value: &mut &[u8]) -> Result<Self::VALUE, codec::Error> {
 		Self::VALUE::decode(value)
 	}
 
@@ -115,7 +115,7 @@ pub trait StorageValue {
 				return Ok(None);
 			};
 
-			let storage_value = Self::decode(&mut storage_value.as_slice())?;
+			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())?;
 			Ok(Some(storage_value))
 		}
 	}

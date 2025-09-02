@@ -1,15 +1,15 @@
 use crate::{
 	Client,
+	clients::event_client::TransactionEvents,
 	subscription::{HeaderSubscription, SubscriptionBuilder},
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockRef, H256, TransactionConvertible,
+	AccountId, BlockRef, EncodeSelector, H256, TransactionConvertible,
 	config::TxRef,
 	ext::codec::Encode,
 	from_substrate::FeeDetails,
-	rpc::system::fetch_events_v1_types::RuntimeEvent,
 	transaction::{TransactionAdditional, TransactionCall},
 };
 #[cfg(feature = "tracing")]
@@ -145,7 +145,7 @@ impl TransactionReceipt {
 		self.client.block_state(self.block_ref).await
 	}
 
-	pub async fn tx_events(&self) -> Result<Vec<RuntimeEvent>, avail_rust_core::Error> {
+	pub async fn tx_events(&self) -> Result<TransactionEvents, avail_rust_core::Error> {
 		let events_client = self.client.event_client();
 		let Some(events) = events_client
 			.transaction_events(self.block_ref.into(), self.tx_ref.index)
@@ -177,7 +177,7 @@ impl Utils {
 
 		let block_client = client.block_client();
 		let tx = block_client
-			.transaction(block_ref.hash.into(), tx_hash.into(), None)
+			.transaction(block_ref.hash.into(), tx_hash.into(), EncodeSelector::None)
 			.await?;
 
 		let Some(tx) = tx else {
@@ -212,11 +212,11 @@ impl Utils {
 		{
 			match use_best_block {
 				true => {
-					let id = client.best_block_loc_ext(true, false).await?;
+					let id = client.best().block_info().await?;
 					info!(target: "lib", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, id.height, mortality_ends_height);
 				},
 				false => {
-					let id = client.finalized_block_loc_ext(true, false).await?;
+					let id = client.finalized().block_info().await?;
 					info!(target: "lib", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, id.height, mortality_ends_height);
 				},
 			};

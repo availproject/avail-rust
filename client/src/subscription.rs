@@ -56,10 +56,8 @@ impl SubscriptionBuilder {
 		let block_height = match self.block_height {
 			Some(x) => x,
 			None => match self.kind {
-				SubscriptionKind::BestBlock => client.best_block_height_ext(self.retry_on_error).await?,
-				SubscriptionKind::FinalizedBlock => {
-					client.finalized_block_height_ext(self.retry_on_error, true).await?
-				},
+				SubscriptionKind::BestBlock => client.best().block_height().await?,
+				SubscriptionKind::FinalizedBlock => client.finalized().block_height().await?,
 			},
 		};
 
@@ -131,7 +129,7 @@ impl FinalizedBlockSubscriber {
 		}
 
 		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = client.finalized_block_height_ext(self.retry_on_error, true).await?;
+		let latest_finalized_height = client.finalized().block_height().await?;
 		self.latest_finalized_height = Some(latest_finalized_height);
 		Ok(latest_finalized_height)
 	}
@@ -146,7 +144,7 @@ impl FinalizedBlockSubscriber {
 
 	async fn run_head(&mut self, client: &Client) -> Result<(u32, H256), CoreError> {
 		loop {
-			let head = client.finalized_block_loc_ext(self.retry_on_error, true).await?;
+			let head = client.finalized().block_info().await?;
 			if self.next_block_height > head.height {
 				sleep(self.poll_rate).await;
 				continue;
@@ -204,7 +202,7 @@ impl BestBlockSubscriber {
 		}
 
 		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = client.finalized_block_height_ext(self.retry_on_error, true).await?;
+		let latest_finalized_height = client.finalized().block_height().await?;
 		self.latest_finalized_height = Some(latest_finalized_height);
 		Ok(latest_finalized_height)
 	}
@@ -220,13 +218,13 @@ impl BestBlockSubscriber {
 
 	async fn run_head(&mut self, client: &Client) -> Result<(u32, H256), CoreError> {
 		loop {
-			let head_hash = client.best_block_hash_ext(self.retry_on_error, true).await?;
+			let head_hash = client.best().block_hash().await?;
 			if self.block_processed.contains(&head_hash) {
 				sleep(self.poll_rate).await;
 				continue;
 			}
 
-			let head_height = client.block_height_ext(head_hash, self.retry_on_error, true).await?;
+			let head_height = client.block_height(head_hash).await?;
 			let Some(head_height) = head_height else {
 				return Err(CoreError::from("Failed to fetch block height"));
 			};
@@ -423,7 +421,7 @@ impl GrandpaJustificationSubscription {
 		}
 
 		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = self.client.finalized_block_height_ext(true, true).await?;
+		let latest_finalized_height = self.client.finalized().block_height().await?;
 		self.latest_finalized_height = Some(latest_finalized_height);
 		Ok(latest_finalized_height)
 	}
@@ -434,7 +432,7 @@ impl GrandpaJustificationSubscription {
 
 	async fn run_head(&mut self) -> Result<u32, CoreError> {
 		loop {
-			let head = self.client.finalized_block_loc_ext(true, true).await?;
+			let head = self.client.finalized().block_info().await?;
 			if self.next_block_height > head.height {
 				sleep(self.poll_rate).await;
 				continue;
@@ -500,7 +498,7 @@ impl GrandpaJustificationJsonSubscription {
 		}
 
 		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = self.client.finalized_block_height_ext(true, true).await?;
+		let latest_finalized_height = self.client.finalized().block_height().await?;
 		self.latest_finalized_height = Some(latest_finalized_height);
 		Ok(latest_finalized_height)
 	}
@@ -511,7 +509,7 @@ impl GrandpaJustificationJsonSubscription {
 
 	async fn run_head(&mut self) -> Result<u32, CoreError> {
 		loop {
-			let head = self.client.finalized_block_loc_ext(true, true).await?;
+			let head = self.client.finalized().block_info().await?;
 			if self.next_block_height > head.height {
 				sleep(self.poll_rate).await;
 				continue;

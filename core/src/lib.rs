@@ -29,7 +29,7 @@ pub use error::Error;
 pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
 pub use primitive_types::{H256, U256};
-pub use rpc::{EncodeSelector, FetchEventsV1Options, FetchExtrinsicsV1Options};
+pub use rpc::EncodeSelector;
 pub use transaction::{
 	Era, Transaction, TransactionAdditional, TransactionCall, TransactionExtra, TransactionPayload, TransactionSigned,
 };

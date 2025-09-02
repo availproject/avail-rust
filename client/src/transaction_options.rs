@@ -98,7 +98,7 @@ impl RefinedMortality {
 	}
 
 	pub async fn from_period(client: &Client, period: u64) -> Result<Self, avail_rust_core::Error> {
-		let header = client.finalized_block_header().await?;
+		let header = client.finalized().block_header().await?;
 		let (block_hash, block_height) = (header.hash(), header.number());
 		Ok(Self { period, block_hash, block_height })
 	}

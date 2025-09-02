@@ -14,7 +14,10 @@ use avail::{
 	balances::types::AccountData,
 	system::{storage as SystemStorage, types::AccountInfo},
 };
-use avail_rust_core::{AccountId, AvailHeader, BlockRef, H256, StorageMap, rpc::BlockWithJustifications};
+use avail_rust_core::{
+	AccountId, AvailHeader, BlockRef, H256, StorageMap,
+	rpc::{self, BlockWithJustifications},
+};
 use std::time::Duration;
 
 #[cfg(feature = "subxt")]
@@ -119,53 +122,6 @@ impl Client {
 		}
 	}
 
-	pub async fn best_block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
-		let block_header = self.rpc_api().chain_get_header(None).await?;
-		let Some(block_header) = block_header else {
-			return Err("Failed to find best block header.".into());
-		};
-
-		Ok(block_header)
-	}
-
-	pub async fn best_block_header_ext(
-		&self,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<AvailHeader, avail_rust_core::Error> {
-		let block_hash = self.best_block_hash_ext(retry_on_error, retry_on_none).await?;
-		let block_header = self.block_header_ext(block_hash, retry_on_error, retry_on_none).await?;
-		let Some(block_header) = block_header else {
-			return Err("Failed to fetch best block header".into());
-		};
-
-		Ok(block_header)
-	}
-
-	pub async fn finalized_block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
-		let block_hash = self.finalized_block_hash().await?;
-		let block_header = self.block_header(block_hash).await?;
-		let Some(block_header) = block_header else {
-			return Err("Failed to find finalized block header.".into());
-		};
-
-		Ok(block_header)
-	}
-
-	pub async fn finalized_block_header_ext(
-		&self,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<AvailHeader, avail_rust_core::Error> {
-		let block_hash = self.finalized_block_hash_ext(retry_on_error).await?;
-		let block_header = self.block_header_ext(block_hash, retry_on_error, retry_on_none).await?;
-		let Some(block_header) = block_header else {
-			return Err("Failed to find finalized block header.".into());
-		};
-
-		Ok(block_header)
-	}
-
 	// (RPC) Block
 	pub async fn block(&self, at: H256) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
 		self.rpc_api().chain_get_block(Some(at)).await
@@ -205,54 +161,6 @@ impl Client {
 		}
 	}
 
-	pub async fn best_block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
-		let block_hash = self.best_block_hash().await?;
-		let block = self.block(block_hash).await?;
-		let Some(block) = block else {
-			return Err("Best block not found".into());
-		};
-
-		Ok(block)
-	}
-
-	pub async fn best_block_ext(
-		&self,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<BlockWithJustifications, avail_rust_core::Error> {
-		let block_hash = self.best_block_hash_ext(retry_on_error, retry_on_none).await?;
-		let block = self.block_ext(block_hash, retry_on_error, retry_on_none).await?;
-		let Some(block) = block else {
-			return Err("Best block not found".into());
-		};
-
-		Ok(block)
-	}
-
-	pub async fn finalized_block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
-		let block_hash = self.finalized_block_hash().await?;
-		let block = self.block(block_hash).await?;
-		let Some(block) = block else {
-			return Err("Finalized block not found".into());
-		};
-
-		Ok(block)
-	}
-
-	pub async fn finalized_block_ext(
-		&self,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<BlockWithJustifications, avail_rust_core::Error> {
-		let block_hash = self.finalized_block_hash_ext(retry_on_error).await?;
-		let block = self.block_ext(block_hash, retry_on_error, retry_on_none).await?;
-		let Some(block) = block else {
-			return Err("Finalized block not found".into());
-		};
-
-		Ok(block)
-	}
-
 	// Block Hash
 	pub async fn block_hash(&self, block_height: u32) -> Result<Option<H256>, avail_rust_core::Error> {
 		self.rpc_api().chain_get_block_hash(Some(block_height)).await
@@ -269,134 +177,6 @@ impl Client {
 			.await
 	}
 
-	pub async fn best_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
-		let result = self.rpc_api().chain_get_block_hash(None).await?;
-		let Some(result) = result else {
-			return Err("Failed to fetch best block hash".into());
-		};
-
-		Ok(result)
-	}
-
-	pub async fn best_block_hash_ext(
-		&self,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<H256, avail_rust_core::Error> {
-		let result = self
-			.rpc_api()
-			.chain_get_block_hash_ext(None, retry_on_error, retry_on_none)
-			.await?;
-		let Some(result) = result else {
-			return Err("Failed to fetch best block hash".into());
-		};
-
-		Ok(result)
-	}
-
-	pub async fn finalized_block_hash(&self) -> Result<H256, avail_rust_core::Error> {
-		self.rpc_api().chain_get_finalized_head().await
-	}
-
-	pub async fn finalized_block_hash_ext(&self, retry_on_error: bool) -> Result<H256, avail_rust_core::Error> {
-		self.rpc_api().chain_get_finalized_head_ext(retry_on_error).await
-	}
-
-	// Block Height
-	pub async fn block_height(&self, block_hash: H256) -> Result<Option<u32>, avail_rust_core::Error> {
-		let header = self.block_header(block_hash).await?;
-		Ok(header.map(|x| x.number))
-	}
-
-	pub async fn block_height_ext(
-		&self,
-		block_hash: H256,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<Option<u32>, avail_rust_core::Error> {
-		const MESSAGE: &str = "Failed to fetch block height";
-
-		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
-		loop {
-			match self.block_height(block_hash).await {
-				Ok(Some(x)) => return Ok(Some(x)),
-				Ok(None) if !retry_on_none => {
-					return Ok(None);
-				},
-				Ok(None) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Ok(None);
-					};
-					sleep_on_retry(duration, MESSAGE, "Option<None>").await;
-				},
-				Err(err) if !retry_on_error => {
-					return Err(err);
-				},
-				Err(err) => {
-					let Some(duration) = sleep_duration.pop() else {
-						return Err(err);
-					};
-					sleep_on_retry(duration, MESSAGE, &err.to_string()).await;
-				},
-			};
-		}
-	}
-
-	pub async fn best_block_height(&self) -> Result<u32, avail_rust_core::Error> {
-		Ok(self.rpc_api().system_sync_state_ext(false).await?.current_block)
-	}
-
-	pub async fn best_block_height_ext(&self, retry_on_error: bool) -> Result<u32, avail_rust_core::Error> {
-		Ok(self
-			.rpc_api()
-			.system_sync_state_ext(retry_on_error)
-			.await?
-			.current_block)
-	}
-
-	pub async fn finalized_block_height(&self) -> Result<u32, avail_rust_core::Error> {
-		self.finalized_block_header().await.map(|x| x.number)
-	}
-
-	pub async fn finalized_block_height_ext(
-		&self,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<u32, avail_rust_core::Error> {
-		self.finalized_block_header_ext(retry_on_error, retry_on_none)
-			.await
-			.map(|x| x.number)
-	}
-
-	// Block Id
-	pub async fn best_block_loc(&self) -> Result<BlockRef, avail_rust_core::Error> {
-		let header = self.best_block_header().await?;
-		Ok(BlockRef::from((header.hash(), header.number)))
-	}
-
-	pub async fn best_block_loc_ext(
-		&self,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<BlockRef, avail_rust_core::Error> {
-		let header = self.best_block_header_ext(retry_on_error, retry_on_none).await?;
-		Ok(BlockRef::from((header.hash(), header.number)))
-	}
-
-	pub async fn finalized_block_loc(&self) -> Result<BlockRef, avail_rust_core::Error> {
-		let header = self.finalized_block_header().await?;
-		Ok(BlockRef::from((header.hash(), header.number)))
-	}
-
-	pub async fn finalized_block_loc_ext(
-		&self,
-		retry_on_error: bool,
-		retry_on_none: bool,
-	) -> Result<BlockRef, avail_rust_core::Error> {
-		let header = self.finalized_block_header_ext(retry_on_error, retry_on_none).await?;
-		Ok(BlockRef::from((header.hash(), header.number)))
-	}
-
 	// Nonce
 	pub async fn nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
 		self.rpc_api()
@@ -408,25 +188,9 @@ impl Client {
 		self.account_info(account_id, block_hash).await.map(|x| x.nonce)
 	}
 
-	pub async fn best_block_nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
-		self.best_block_account_info(account_id).await.map(|v| v.nonce)
-	}
-
-	pub async fn finalized_block_nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
-		self.finalized_block_account_info(account_id).await.map(|v| v.nonce)
-	}
-
 	// Balance
 	pub async fn balance(&self, account_id: &AccountId, at: H256) -> Result<AccountData, avail_rust_core::Error> {
 		self.account_info(account_id, at).await.map(|x| x.data)
-	}
-
-	pub async fn best_block_balance(&self, account_id: &AccountId) -> Result<AccountData, avail_rust_core::Error> {
-		self.best_block_account_info(account_id).await.map(|x| x.data)
-	}
-
-	pub async fn finalized_block_balance(&self, account_id: &AccountId) -> Result<AccountData, avail_rust_core::Error> {
-		self.finalized_block_account_info(account_id).await.map(|x| x.data)
 	}
 
 	// Account Info (nonce, balance, ...)
@@ -436,19 +200,6 @@ impl Client {
 			.map(|x| x.unwrap_or_default())
 	}
 
-	pub async fn best_block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, avail_rust_core::Error> {
-		let at = self.best_block_hash().await?;
-		Self::account_info(self, account_id, at).await
-	}
-
-	pub async fn finalized_block_account_info(
-		&self,
-		account_id: &AccountId,
-	) -> Result<AccountInfo, avail_rust_core::Error> {
-		let at = self.finalized_block_hash().await?;
-		Self::account_info(self, account_id, at).await
-	}
-
 	// Block State
 	pub async fn block_state(&self, block_ref: BlockRef) -> Result<BlockState, avail_rust_core::Error> {
 		let real_block_hash = self.block_hash(block_ref.height).await?;
@@ -456,7 +207,7 @@ impl Client {
 			return Ok(BlockState::DoesNotExist);
 		};
 
-		let finalized_block_height = self.finalized_block_height().await?;
+		let finalized_block_height = self.finalized().block_height().await?;
 		if block_ref.height > finalized_block_height {
 			return Ok(BlockState::Included);
 		}
@@ -589,6 +340,12 @@ impl Client {
 		}
 	}
 
+	pub async fn block_height(&self, at: H256) -> Result<Option<u32>, avail_rust_core::Error> {
+		rpc::system::get_block_number(&self.rpc_client, at)
+			.await
+			.map_err(|e| e.into())
+	}
+
 	// Mini Clients
 	pub fn event_client(&self) -> EventClient {
 		EventClient::new(self.clone())
@@ -622,6 +379,14 @@ impl Client {
 	#[cfg(feature = "subxt")]
 	pub fn subxt_constants_client(&self) -> AConstantsClient {
 		self.online_client.constants()
+	}
+
+	pub fn best(&self) -> Best {
+		Best::new(self.clone())
+	}
+
+	pub fn finalized(&self) -> Finalized {
+		Finalized::new(self.clone())
 	}
 
 	// Api
@@ -673,4 +438,164 @@ pub(crate) async fn sleep_on_retry(duration: u64, message: &str, value: &str) {
 #[cfg(not(feature = "tracing"))]
 pub(crate) async fn sleep_on_retry(duration: u64, _message: &str, _value: &str) {
 	sleep(Duration::from_secs(duration)).await;
+}
+
+pub struct Best {
+	client: Client,
+	retry_on_error: Option<bool>,
+	retry_on_none: Option<bool>,
+}
+impl Best {
+	pub fn new(client: Client) -> Self {
+		Self { client, retry_on_error: None, retry_on_none: None }
+	}
+
+	pub fn retry_on(mut self, error: Option<bool>, none: Option<bool>) -> Self {
+		self.retry_on_error = error;
+		self.retry_on_none = none;
+		self
+	}
+
+	pub async fn block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
+		let retry_on_error = self.retry_on_error.unwrap_or(true);
+		let retry_on_none = self.retry_on_none.unwrap_or(false);
+
+		let block_hash = self.block_hash().await?;
+		let block_header = self
+			.client
+			.block_header_ext(block_hash, retry_on_error, retry_on_none)
+			.await?;
+		let Some(block_header) = block_header else {
+			return Err("Failed to fetch best block header".into());
+		};
+
+		Ok(block_header)
+	}
+
+	pub async fn block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
+		let retry_on_error = self.retry_on_error.unwrap_or(true);
+		let retry_on_none = self.retry_on_none.unwrap_or(false);
+
+		let block_hash = self.block_hash().await?;
+		let block = self.client.block_ext(block_hash, retry_on_error, retry_on_none).await?;
+		let Some(block) = block else {
+			return Err("Best block not found".into());
+		};
+
+		Ok(block)
+	}
+
+	pub async fn block_hash(&self) -> Result<H256, avail_rust_core::Error> {
+		let retry_on_error = self.retry_on_error.unwrap_or(true);
+		let retry_on_none = self.retry_on_none.unwrap_or(true);
+
+		let api = self.client.rpc_api();
+		let result = api
+			.chain_get_block_hash_ext(None, retry_on_error, retry_on_none)
+			.await?;
+		let Some(result) = result else {
+			return Err("Failed to fetch best block hash".into());
+		};
+
+		Ok(result)
+	}
+
+	pub async fn block_nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
+		self.block_account_info(account_id).await.map(|v| v.nonce)
+	}
+
+	pub async fn block_balance(&self, account_id: &AccountId) -> Result<AccountData, avail_rust_core::Error> {
+		self.block_account_info(account_id).await.map(|x| x.data)
+	}
+
+	pub async fn block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, avail_rust_core::Error> {
+		let at = self.block_hash().await?;
+		self.client.account_info(account_id, at).await
+	}
+
+	pub async fn block_info(&self) -> Result<BlockRef, avail_rust_core::Error> {
+		rpc::system::latest_block_info(&self.client.rpc_client, true)
+			.await
+			.map_err(|e| e.into())
+	}
+
+	pub async fn block_height(&self) -> Result<u32, avail_rust_core::Error> {
+		self.block_info().await.map(|x| x.height)
+	}
+}
+
+pub struct Finalized {
+	client: Client,
+	retry_on_error: Option<bool>,
+	retry_on_none: Option<bool>,
+}
+
+impl Finalized {
+	pub fn new(client: Client) -> Self {
+		Self { client, retry_on_error: None, retry_on_none: None }
+	}
+
+	pub fn retry_on(mut self, error: Option<bool>, none: Option<bool>) -> Self {
+		self.retry_on_error = error;
+		self.retry_on_none = none;
+		self
+	}
+
+	pub async fn block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
+		let retry_on_error = self.retry_on_error.unwrap_or(true);
+		let retry_on_none = self.retry_on_none.unwrap_or(false);
+
+		let block_hash = self.block_hash().await?;
+		let block_header = self
+			.client
+			.block_header_ext(block_hash, retry_on_error, retry_on_none)
+			.await?;
+		let Some(block_header) = block_header else {
+			return Err("Failed to find finalized block header.".into());
+		};
+
+		Ok(block_header)
+	}
+
+	pub async fn block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
+		let retry_on_error = self.retry_on_error.unwrap_or(true);
+		let retry_on_none = self.retry_on_none.unwrap_or(false);
+
+		let block_hash = self.block_hash().await?;
+		let block = self.client.block_ext(block_hash, retry_on_error, retry_on_none).await?;
+		let Some(block) = block else {
+			return Err("Finalized block not found".into());
+		};
+
+		Ok(block)
+	}
+
+	pub async fn block_hash(&self) -> Result<H256, avail_rust_core::Error> {
+		let retry_on_error = self.retry_on_error.unwrap_or(true);
+
+		self.client.rpc_api().chain_get_finalized_head_ext(retry_on_error).await
+	}
+
+	pub async fn block_nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
+		self.block_account_info(account_id).await.map(|v| v.nonce)
+	}
+
+	pub async fn block_balance(&self, account_id: &AccountId) -> Result<AccountData, avail_rust_core::Error> {
+		self.block_account_info(account_id).await.map(|x| x.data)
+	}
+
+	pub async fn block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, avail_rust_core::Error> {
+		let at = self.block_hash().await?;
+		self.client.account_info(account_id, at).await
+	}
+
+	pub async fn block_info(&self) -> Result<BlockRef, avail_rust_core::Error> {
+		rpc::system::latest_block_info(&self.client.rpc_client, false)
+			.await
+			.map_err(|e| e.into())
+	}
+
+	pub async fn block_height(&self) -> Result<u32, avail_rust_core::Error> {
+		self.block_info().await.map(|x| x.height)
+	}
 }

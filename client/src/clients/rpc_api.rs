@@ -14,7 +14,7 @@ use avail_rust_core::{
 		author::SessionKeys,
 		kate::{BlockLength, Cell, GDataProof, GRow, ProofResponse},
 		rpc_methods::RpcMethods,
-		system::{NodeRole, PeerInfo, SyncState, SystemProperties, fetch_events_v1_types, fetch_extrinsics_v1_types},
+		system::{self, NodeRole, PeerInfo, SyncState, SystemProperties},
 	},
 };
 
@@ -37,47 +37,47 @@ impl RpcAPI {
 	}
 
 	pub async fn system_account_next_index(&self, address: &str) -> Result<u32, avail_rust_core::Error> {
-		Ok(rpc::system::account_next_index(&self.client.rpc_client, address).await?)
+		Ok(system::account_next_index(&self.client.rpc_client, address).await?)
 	}
 
 	pub async fn system_chain(&self) -> Result<String, avail_rust_core::Error> {
-		Ok(rpc::system::chain(&self.client.rpc_client).await?)
+		Ok(system::chain(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_chain_type(&self) -> Result<String, avail_rust_core::Error> {
-		Ok(rpc::system::chain_type(&self.client.rpc_client).await?)
+		Ok(system::chain_type(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_health(&self) -> Result<SystemHealth, avail_rust_core::Error> {
-		Ok(rpc::system::health(&self.client.rpc_client).await?)
+		Ok(system::health(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_local_listen_addresses(&self) -> Result<Vec<String>, avail_rust_core::Error> {
-		Ok(rpc::system::local_listen_addresses(&self.client.rpc_client).await?)
+		Ok(system::local_listen_addresses(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_local_peer_id(&self) -> Result<String, avail_rust_core::Error> {
-		Ok(rpc::system::local_peer_id(&self.client.rpc_client).await?)
+		Ok(system::local_peer_id(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_name(&self) -> Result<String, avail_rust_core::Error> {
-		Ok(rpc::system::name(&self.client.rpc_client).await?)
+		Ok(system::name(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_node_roles(&self) -> Result<Vec<NodeRole>, avail_rust_core::Error> {
-		Ok(rpc::system::node_roles(&self.client.rpc_client).await?)
+		Ok(system::node_roles(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_peers(&self) -> Result<Vec<PeerInfo>, avail_rust_core::Error> {
-		Ok(rpc::system::peers(&self.client.rpc_client).await?)
+		Ok(system::peers(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_properties(&self) -> Result<SystemProperties, avail_rust_core::Error> {
-		Ok(rpc::system::properties(&self.client.rpc_client).await?)
+		Ok(system::properties(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_sync_state(&self) -> Result<SyncState, avail_rust_core::Error> {
-		Ok(rpc::system::sync_state(&self.client.rpc_client).await?)
+		Ok(system::sync_state(&self.client.rpc_client).await?)
 	}
 
 	pub async fn system_sync_state_ext(&self, retry_on_error: bool) -> Result<SyncState, avail_rust_core::Error> {
@@ -85,7 +85,7 @@ impl RpcAPI {
 
 		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
 		loop {
-			match rpc::system::sync_state(&self.client.rpc_client).await {
+			match system::sync_state(&self.client.rpc_client).await {
 				Ok(x) => return Ok(x),
 				Err(err) if !retry_on_error => {
 					return Err(err.into());
@@ -101,7 +101,7 @@ impl RpcAPI {
 	}
 
 	pub async fn system_version(&self) -> Result<String, avail_rust_core::Error> {
-		Ok(rpc::system::version(&self.client.rpc_client).await?)
+		Ok(system::version(&self.client.rpc_client).await?)
 	}
 
 	pub async fn chain_get_block(
@@ -352,17 +352,17 @@ impl RpcAPI {
 	pub async fn system_fetch_events_v1(
 		&self,
 		at: H256,
-		options: fetch_events_v1_types::Options,
-	) -> Result<fetch_events_v1_types::Output, avail_rust_core::Error> {
-		Ok(rpc::system::fetch_events_v1(&self.client.rpc_client, at, Some(options)).await?)
+		options: system::fetch_events::Options,
+	) -> Result<Vec<system::fetch_events::PhaseEvents>, avail_rust_core::Error> {
+		Ok(system::fetch_events_v1(&self.client.rpc_client, at, options).await?)
 	}
 
 	pub async fn system_fetch_events_v1_ext(
 		&self,
 		at: H256,
-		options: fetch_events_v1_types::Options,
+		options: system::fetch_events::Options,
 		retry_on_error: bool,
-	) -> Result<fetch_events_v1_types::Output, avail_rust_core::Error> {
+	) -> Result<Vec<system::fetch_events::PhaseEvents>, avail_rust_core::Error> {
 		const MESSAGE: &str = "Failed to execute RPC: system_FetchEventsV1";
 
 		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];
@@ -385,17 +385,17 @@ impl RpcAPI {
 	pub async fn system_fetch_extrinsics_v1(
 		&self,
 		block_id: HashNumber,
-		options: fetch_extrinsics_v1_types::Options,
-	) -> Result<fetch_extrinsics_v1_types::Output, avail_rust_core::Error> {
-		Ok(rpc::system::fetch_extrinsics_v1(&self.client.rpc_client, block_id, Some(options)).await?)
+		options: system::fetch_extrinsics::Options,
+	) -> Result<Vec<system::fetch_extrinsics::ExtrinsicInfo>, avail_rust_core::Error> {
+		Ok(system::fetch_extrinsics_v1(&self.client.rpc_client, block_id, options).await?)
 	}
 
 	pub async fn system_fetch_extrinsics_v1_ext(
 		&self,
 		block_id: HashNumber,
-		options: fetch_extrinsics_v1_types::Options,
+		options: system::fetch_extrinsics::Options,
 		retry_on_error: bool,
-	) -> Result<fetch_extrinsics_v1_types::Output, avail_rust_core::Error> {
+	) -> Result<Vec<system::fetch_extrinsics::ExtrinsicInfo>, avail_rust_core::Error> {
 		const MESSAGE: &str = "Failed to execute RPC: system_FetchExtrinsicsV1";
 
 		let mut sleep_duration: Vec<u64> = vec![8, 5, 3, 2, 1];

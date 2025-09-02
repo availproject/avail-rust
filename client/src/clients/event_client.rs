@@ -1,17 +1,28 @@
 use crate::{clients::Client, subxt_core::events::Phase};
-use avail_rust_core::{H256, HashNumber, decoded_events::OpaqueEvent, rpc::system::fetch_events_v1_types as Types};
+use avail_rust_core::{H256, HashNumber, decoded_events::OpaqueEvent, rpc::system::fetch_events};
 
 pub const EVENTS_STORAGE_ADDRESS: &str = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
 
+pub struct TransactionEvent {
+	pub index: u32,
+	pub pallet_id: u8,
+	pub variant_id: u8,
+	pub data: String,
+}
+
+pub struct TransactionEvents {
+	pub events: Vec<TransactionEvent>,
+}
+
 #[derive(Debug, Clone)]
-pub struct Event {
+pub struct HistoricalEvent {
 	pub phase: Phase,
 	// [Pallet_index, Variant_index, Event_data...]
 	pub bytes: OpaqueEvent,
 	pub topics: Vec<H256>,
 }
 
-impl Event {
+impl HistoricalEvent {
 	pub fn emitted_index(&self) -> (u8, u8) {
 		(self.bytes.pallet_index(), self.bytes.variant_index())
 	}
@@ -48,7 +59,7 @@ impl EventClient {
 		&self,
 		block_id: HashNumber,
 		tx_index: u32,
-	) -> Result<Option<Vec<Types::RuntimeEvent>>, avail_rust_core::Error> {
+	) -> Result<Option<TransactionEvents>, avail_rust_core::Error> {
 		let builder = self
 			.builder()
 			.tx_index(tx_index)
@@ -57,7 +68,24 @@ impl EventClient {
 			.retry_on_error(true);
 
 		let result = builder.fetch(block_id).await?;
-		Ok(result.first().map(|x| x.events.clone()))
+		let Some(first) = result.first() else {
+			return Ok(None);
+		};
+
+		let mut tx_events = Vec::with_capacity(first.events.len());
+		for event in &first.events {
+			let Some(data) = &event.encoded else {
+				return Err("Fetch events endpoint returned with an event without data.".into());
+			};
+			tx_events.push(TransactionEvent {
+				data: data.clone(),
+				index: event.index,
+				pallet_id: event.emitted_index.0,
+				variant_id: event.emitted_index.1,
+			});
+		}
+
+		Ok(Some(TransactionEvents { events: tx_events }))
 	}
 
 	/// Function to fetch blocks events in a efficient manner.
@@ -68,7 +96,7 @@ impl EventClient {
 	/// Use this function in case where `transaction_events` or `block_events` do not work.
 	/// Both mentioned functions require the runtime to have a specific runtime api available which
 	/// older blocks (runtime) do not have.
-	pub async fn historical_block_events(&self, at: H256) -> Result<Vec<Event>, avail_rust_core::Error> {
+	pub async fn historical_block_events(&self, at: H256) -> Result<Vec<HistoricalEvent>, avail_rust_core::Error> {
 		use crate::{config::AvailConfig, subxt_core::events::Events};
 
 		let entries = self
@@ -80,7 +108,7 @@ impl EventClient {
 			return Ok(Vec::new());
 		};
 
-		let mut result: Vec<Event> = Vec::with_capacity(5);
+		let mut result: Vec<HistoricalEvent> = Vec::with_capacity(5);
 		let raw_events = Events::<AvailConfig>::decode_from(event_bytes, self.client.online_client().metadata());
 		for raw in raw_events.iter() {
 			let Ok(raw) = raw else {
@@ -95,7 +123,7 @@ impl EventClient {
 				continue;
 			};
 
-			let value = Event { phase: raw.phase(), bytes, topics: raw.topics().to_vec() };
+			let value = HistoricalEvent { phase: raw.phase(), bytes, topics: raw.topics().to_vec() };
 			result.push(value);
 		}
 
@@ -106,7 +134,7 @@ impl EventClient {
 #[derive(Clone)]
 pub struct BlockEventsBuilder {
 	client: Client,
-	filter: Types::Filter,
+	filter: fetch_events::Filter,
 	enable_encoding: bool,
 	enable_decoding: bool,
 	retry_on_error: bool,
@@ -131,23 +159,23 @@ impl BlockEventsBuilder {
 		self
 	}
 
-	pub fn filter(mut self, value: Types::Filter) -> Self {
+	pub fn filter(mut self, value: fetch_events::Filter) -> Self {
 		self.filter = value;
 		self
 	}
 
 	pub fn all(mut self) -> Self {
-		self.filter = Types::Filter::All;
+		self.filter = fetch_events::Filter::All;
 		self
 	}
 
 	pub fn only_extrinsics(mut self) -> Self {
-		self.filter = Types::Filter::OnlyExtrinsics;
+		self.filter = fetch_events::Filter::OnlyExtrinsics;
 		self
 	}
 
 	pub fn no_extrinsics(mut self) -> Self {
-		self.filter = Types::Filter::OnlyNonExtrinsics;
+		self.filter = fetch_events::Filter::OnlyNonExtrinsics;
 		self
 	}
 
@@ -156,7 +184,7 @@ impl BlockEventsBuilder {
 	}
 
 	pub fn tx_indexes(mut self, value: Vec<u32>) -> Self {
-		self.filter = Types::Filter::Only(value);
+		self.filter = fetch_events::Filter::Only(value);
 		self
 	}
 
@@ -175,7 +203,7 @@ impl BlockEventsBuilder {
 		self
 	}
 
-	pub async fn fetch(&self, block_id: HashNumber) -> Result<Types::Output, avail_rust_core::Error> {
+	pub async fn fetch(&self, block_id: HashNumber) -> Result<Vec<fetch_events::PhaseEvents>, avail_rust_core::Error> {
 		let block_hash = match block_id {
 			HashNumber::Hash(hash) => hash,
 			HashNumber::Number(height) => {
@@ -184,7 +212,7 @@ impl BlockEventsBuilder {
 			},
 		};
 
-		let options = Types::Options {
+		let options = fetch_events::Options {
 			filter: Some(self.filter.clone()),
 			enable_encoding: Some(self.enable_encoding),
 			enable_decoding: Some(self.enable_encoding),
@@ -192,7 +220,7 @@ impl BlockEventsBuilder {
 
 		self.client
 			.rpc_api()
-			.system_fetch_events_v1_ext(block_hash, options.clone(), self.retry_on_error)
+			.system_fetch_events_v1_ext(block_hash, options, self.retry_on_error)
 			.await
 	}
 }

@@ -1250,16 +1250,16 @@ pub mod proxy {
 			pub spawner: MultiAddress,
 			pub proxy_type: super::types::ProxyType,
 			pub index: u16,
-			pub height: Compact<u32>,
-			pub ext_index: Compact<u32>,
+			pub height: u32,    // Compact
+			pub ext_index: u32, // Compact
 		}
 		impl Encode for KillPure {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				dest.write(&self.spawner.encode());
-				dest.write(&self.proxy_type.encode());
-				dest.write(&self.index.encode());
-				dest.write(&self.height.encode());
-				dest.write(&self.ext_index.encode());
+				self.spawner.encode_to(dest);
+				self.proxy_type.encode_to(dest);
+				self.index.encode_to(dest);
+				Compact::<u32>(self.height).encode_to(dest);
+				Compact::<u32>(self.ext_index).encode_to(dest);
 			}
 		}
 		impl Decode for KillPure {
@@ -1267,8 +1267,8 @@ pub mod proxy {
 				let spawner = Decode::decode(input)?;
 				let proxy_type = Decode::decode(input)?;
 				let index = Decode::decode(input)?;
-				let height = Decode::decode(input)?;
-				let ext_index = Decode::decode(input)?;
+				let height = Compact::<u32>::decode(input)?.0;
+				let ext_index = Compact::<u32>::decode(input)?.0;
 				Ok(Self { spawner, proxy_type, index, height, ext_index })
 			}
 		}
