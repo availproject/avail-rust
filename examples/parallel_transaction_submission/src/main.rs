@@ -27,7 +27,7 @@ async fn task(account: Keypair) -> Result<(), ClientError> {
 	// Transaction Submission
 	let message = String::from("It works").as_bytes().to_vec();
 	let tx = client.tx().data_availability().submit_data(message);
-	let st = tx.sign_and_submit(&account, Options::new(None)).await?;
+	let st = tx.sign_and_submit(&account, Options::default()).await?;
 
 	// Fetching Transaction Receipt
 	let Some(receipt) = st.receipt(false).await? else {

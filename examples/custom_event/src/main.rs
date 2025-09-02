@@ -20,7 +20,7 @@ async fn main() -> Result<(), ClientError> {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let submittable = client.tx().data_availability().submit_data(vec![0, 1, 2]);
-	let submitted = submittable.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+	let submitted = submittable.sign_and_submit(&alice(), Options::new(2)).await?;
 	let receipt = submitted.receipt(true).await?.expect("Must be there");
 	let events = receipt.tx_events().await?;
 	let event = events.find::<CustomEvent>().expect("Must be there");

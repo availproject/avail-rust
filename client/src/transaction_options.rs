@@ -10,8 +10,8 @@ pub struct Options {
 }
 
 impl Options {
-	pub fn new(app_id: Option<u32>) -> Self {
-		Self { app_id, ..Default::default() }
+	pub fn new(app_id: u32) -> Self {
+		Self { app_id: Some(app_id), ..Default::default() }
 	}
 
 	pub fn app_id(mut self, value: u32) -> Self {

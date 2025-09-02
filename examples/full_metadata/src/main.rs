@@ -8,7 +8,7 @@ async fn main() -> Result<(), ClientError> {
 
 	let data = BoundedVec(vec![0, 1, 2]);
 	let payload = avail_generated::tx().data_availability().submit_data(data);
-	let options = Options::new(Some(2));
+	let options = Options::new(2);
 
 	// Payload can be converted to SubmittableTransaction
 	let st = payload.to_submittable_transaction(client.clone())?;

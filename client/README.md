@@ -29,7 +29,7 @@ async fn main() -> Result<(), ClientError> {
     let submittable_tx = client.tx().data_availability().submit_data(vec![0, 1, 2, 3, 4, 5]);
 
     // Transaction Submission
-    let submitted_tx = submittable_tx.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+    let submitted_tx = submittable_tx.sign_and_submit(&alice(), Options::new(2)).await?;
 
     // Fetching Transaction Receipt
     let receipt = submitted_tx.receipt(false).await?;
@@ -173,7 +173,7 @@ async fn main() -> Result<(), ClientError> {
 
     let custom_tx = CustomTransaction { data: vec![0, 1, 2, 3] };
     let submittable = custom_tx.to_submittable(client.clone());
-    let submitted = submittable.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+    let submitted = submittable.sign_and_submit(&alice(), Options::new(2)).await?;
     let receipt = submitted.receipt(true).await?.expect("Must be there");
 }
 ```

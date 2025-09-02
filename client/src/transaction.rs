@@ -169,7 +169,7 @@ impl Utils {
 		use_best_block: bool,
 	) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
 		let Some(block_ref) =
-			Self::find_correct_block_info(&client, nonce, account_id, mortality, use_best_block).await?
+			Self::find_correct_block_info(&client, nonce, tx_hash, account_id, mortality, use_best_block).await?
 		else {
 			return Ok(None);
 		};
@@ -191,6 +191,7 @@ impl Utils {
 	pub async fn find_correct_block_info(
 		client: &Client,
 		nonce: u32,
+		tx_hash: H256,
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
 		use_best_block: bool,
@@ -208,12 +209,12 @@ impl Utils {
 		{
 			match use_best_block {
 				true => {
-					let id = client.best().block_info().await?;
-					info!(target: "lib", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, id.height, mortality_ends_height);
+					let info = client.best().block_info().await?;
+					info!(target: "lib", "Nonce: {} Account address: {} Current Best Height: {} Mortality End Height: {}", nonce, account_id, info.height, mortality_ends_height);
 				},
 				false => {
-					let id = client.finalized().block_info().await?;
-					info!(target: "lib", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, id.height, mortality_ends_height);
+					let info = client.finalized().block_info().await?;
+					info!(target: "lib", "Nonce: {} Account address: {} Current Finalized Height: {} Mortality End Height: {}", nonce, account_id, info.height, mortality_ends_height);
 				},
 			};
 		}
@@ -223,10 +224,20 @@ impl Utils {
 			current_block_height = sub.current_block_height();
 
 			let state_nonce = client.block_nonce(account_id, info.hash).await?;
-
 			if state_nonce > nonce {
 				trace_new_block(nonce, state_nonce, account_id, info, true);
 				return Ok(Some(info));
+			}
+			if state_nonce == 0 {
+				let transaction = client
+					.block_client()
+					.transaction(info.hash.into(), tx_hash.into(), EncodeSelector::None)
+					.await?;
+
+				if transaction.is_some() {
+					trace_new_block(nonce, state_nonce, account_id, info, true);
+					return Ok(Some(info));
+				}
 			}
 
 			trace_new_block(nonce, state_nonce, account_id, info, false);
@@ -236,16 +247,18 @@ impl Utils {
 	}
 }
 
-#[cfg(feature = "tracing")]
-fn trace_new_block(nonce: u32, state_nonce: u32, account_id: &AccountId, block_ref: BlockRef, search_done: bool) {
-	if search_done {
-		info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done", nonce, account_id, block_ref.height, block_ref.hash, state_nonce);
-	} else {
-		info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}.", nonce, account_id, block_ref.height, block_ref.hash, state_nonce);
+fn trace_new_block(nonce: u32, state_nonce: u32, account_id: &AccountId, block_info: BlockRef, search_done: bool) {
+	#[cfg(feature = "tracing")]
+	{
+		if search_done {
+			info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}. Search is done", nonce, account_id, block_info.height, block_info.hash, state_nonce);
+		} else {
+			info!(target: "lib", "Account ({}, {}). At block ({}, {:?}) found nonce: {}.", nonce, account_id, block_info.height, block_info.hash, state_nonce);
+		}
 	}
-}
 
-#[cfg(not(feature = "tracing"))]
-fn trace_new_block(_nonce: u32, _state_nonce: u32, _account_id: &AccountId, _block_loc: BlockRef, _search_done: bool) {
-	return;
+	#[cfg(not(feature = "tracing"))]
+	{
+		let _ = (nonce, state_nonce, account_id, block_info, search_done);
+	}
 }

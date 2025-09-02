@@ -1,5 +1,5 @@
 use crate::subxt_signer::{SecretUri, sr25519::Keypair};
-use avail_rust_core::{AccountId, H256};
+use avail_rust_core::{AccountId, H256, ext::subxt_core::utils::AccountId32};
 
 #[cfg(feature = "generated_metadata")]
 use crate::subxt_core::tx::payload::DefaultPayload;
@@ -43,6 +43,7 @@ impl H256Ext for H256 {
 pub trait AccountIdExt {
 	fn from_str(value: &str) -> Result<AccountId, String>;
 	fn from_slice(value: &[u8]) -> Result<AccountId, String>;
+	fn default() -> AccountId;
 }
 
 impl AccountIdExt for AccountId {
@@ -57,6 +58,10 @@ impl AccountIdExt for AccountId {
 		};
 
 		Ok(AccountId { 0: account_id })
+	}
+
+	fn default() -> AccountId {
+		AccountId32([0u8; 32])
 	}
 }
 

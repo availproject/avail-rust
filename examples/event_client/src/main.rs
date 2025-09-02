@@ -18,7 +18,7 @@ async fn main() -> Result<(), ClientError> {
 
 	// Submit transaction
 	let tx = client.tx().data_availability().submit_data(vec![b'a']);
-	let submitted = tx.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+	let submitted = tx.sign_and_submit(&alice(), Options::new(2)).await?;
 	let Some(receipt) = submitted.receipt(true).await? else {
 		return Err("Transaction was dropped".into());
 	};

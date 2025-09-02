@@ -33,7 +33,7 @@ async fn main() -> Result<(), ClientError> {
 
 pub async fn submit_dummy_transactions(client: &Client) -> Result<TransactionReceipt, ClientError> {
 	let tx = client.tx().data_availability().submit_data(vec![0, 1, 2]);
-	let submitted = tx.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+	let submitted = tx.sign_and_submit(&alice(), Options::new(2)).await?;
 	let receipt = submitted.receipt(true).await?.expect("Should be there");
 	Ok(receipt)
 }

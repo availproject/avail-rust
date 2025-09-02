@@ -15,7 +15,7 @@ async fn main() -> Result<(), ClientError> {
 		.call;
 
 	let tx = client.tx().utility().batch_all(vec![c1, c2]);
-	let st = tx.sign_and_submit(&alice(), Options::new(None)).await?;
+	let st = tx.sign_and_submit(&alice(), Options::default()).await?;
 	let Some(receipt) = st.receipt(false).await? else {
 		return Err("Transaction got dropped. This should never happen in a local network.".into());
 	};

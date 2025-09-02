@@ -20,7 +20,7 @@ async fn main() -> Result<(), ClientError> {
 	let submittable_tx = client.tx().data_availability().submit_data(vec![0, 1, 2, 3, 4, 5]);
 
 	// Transaction Submission
-	let submitted_tx = submittable_tx.sign_and_submit(&signer, Options::new(Some(2))).await?;
+	let submitted_tx = submittable_tx.sign_and_submit(&signer, Options::new(2)).await?;
 	println!(
 		"Tx Hash: {:?}, Account Address: {}, Used Options: {:?}, Used Additional: {:?}",
 		submitted_tx.tx_hash, submitted_tx.account_id, submitted_tx.options, submitted_tx.additional

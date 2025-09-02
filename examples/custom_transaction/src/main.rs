@@ -43,7 +43,7 @@ async fn main() -> Result<(), ClientError> {
 	let submittable = CustomTransaction { data: vec![0, 1, 2] }.to_submittable(client.clone());
 
 	// Submitting
-	let submitted = submittable.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+	let submitted = submittable.sign_and_submit(&alice(), Options::new(2)).await?;
 	let receipt = submitted.receipt(true).await?.expect("Must be there");
 	println!("Block Hash: {:?}", receipt.block_ref.hash);
 
