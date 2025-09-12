@@ -9,8 +9,8 @@ use avail_rust_core::{
 	AccountId, BlockRef, EncodeSelector, H256, TransactionConvertible,
 	config::TxRef,
 	ext::codec::Encode,
+	extrinsic::{ExtrinsicAdditional, ExtrinsicCall},
 	from_substrate::FeeDetails,
-	transaction::{TransactionAdditional, TransactionCall},
 };
 #[cfg(feature = "tracing")]
 use tracing::info;
@@ -29,11 +29,11 @@ impl<T: TransactionConvertible> SubmittableTransactionLike for T {
 #[derive(Clone)]
 pub struct SubmittableTransaction {
 	client: Client,
-	pub call: TransactionCall,
+	pub call: ExtrinsicCall,
 }
 
 impl SubmittableTransaction {
-	pub fn new(client: Client, call: TransactionCall) -> Self {
+	pub fn new(client: Client, call: ExtrinsicCall) -> Self {
 		Self { client, call }
 	}
 
@@ -52,7 +52,7 @@ impl SubmittableTransaction {
 		&self,
 		signer: &Keypair,
 		options: Options,
-	) -> Result<avail_rust_core::Transaction, avail_rust_core::Error> {
+	) -> Result<avail_rust_core::GenericExtrinsic, avail_rust_core::Error> {
 		self.client.rpc().sign_call(signer, &self.call, options).await
 	}
 
@@ -79,24 +79,13 @@ impl SubmittableTransaction {
 	}
 }
 
-#[derive(Clone, Copy)]
-pub enum ReceiptMethod {
-	Default { use_best_block: bool },
-}
-
-impl Default for ReceiptMethod {
-	fn default() -> Self {
-		Self::Default { use_best_block: false }
-	}
-}
-
 #[derive(Clone)]
 pub struct SubmittedTransaction {
 	client: Client,
 	pub tx_hash: H256,
 	pub account_id: AccountId,
 	pub options: RefinedOptions,
-	pub additional: TransactionAdditional,
+	pub additional: ExtrinsicAdditional,
 }
 
 impl SubmittedTransaction {
@@ -105,7 +94,7 @@ impl SubmittedTransaction {
 		tx_hash: H256,
 		account_id: AccountId,
 		options: RefinedOptions,
-		additional: TransactionAdditional,
+		additional: ExtrinsicAdditional,
 	) -> Self {
 		Self { client, tx_hash, account_id, options, additional }
 	}

@@ -1,6 +1,6 @@
 use super::Client;
 use avail_rust_core::{
-	DecodedTransaction, EncodeSelector, H256, HasHeader, HashNumber,
+	EncodeSelector, Extrinsic, H256, HasHeader, HashNumber,
 	rpc::{
 		BlockWithJustifications,
 		system::fetch_extrinsics::{self, ExtrinsicInfo, TransactionFilter},
@@ -41,7 +41,7 @@ impl BlockClient {
 		&self,
 		block_id: HashNumber,
 		transaction_id: HashNumber,
-	) -> Result<Option<(DecodedTransaction<T>, ExtrinsicInfo)>, avail_rust_core::Error> {
+	) -> Result<Option<(Extrinsic<T>, ExtrinsicInfo)>, avail_rust_core::Error> {
 		let mut builder = self.builder().encode_as(EncodeSelector::Extrinsic).retry_on_error(true);
 
 		builder = match transaction_id {
@@ -58,7 +58,7 @@ impl BlockClient {
 			return Err("Fetch extrinsics endpoint returned an extrinsic with no data.".into());
 		};
 
-		let Ok(decoded) = DecodedTransaction::<T>::try_from(data.as_str()) else {
+		let Ok(decoded) = Extrinsic::<T>::try_from(data.as_str()) else {
 			return Ok(None);
 		};
 

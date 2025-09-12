@@ -1,6 +1,6 @@
 use crate::{
-	AccountId, H256, HasHeader, MultiAddress, StorageHasher, StorageMap, StorageValue, TransactionCall,
-	transaction::AlreadyEncoded,
+	AccountId, ExtrinsicCall, H256, HasHeader, MultiAddress, StorageHasher, StorageMap, StorageValue,
+	extrinsic::decode_already_decoded,
 };
 use codec::{Compact, Decode, Encode};
 use scale_decode::DecodeAsType;
@@ -801,13 +801,13 @@ pub mod utility {
 				Ok(runtime_calls)
 			}
 
-			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
+			pub fn add_calls(&mut self, value: Vec<ExtrinsicCall>) {
 				for v in value {
 					self.add_call(v);
 				}
 			}
 
-			pub fn add_call(&mut self, value: TransactionCall) {
+			pub fn add_call(&mut self, value: ExtrinsicCall) {
 				self.length += 1;
 				value.encode_to(&mut self.calls);
 			}
@@ -844,7 +844,7 @@ pub mod utility {
 		impl Decode for Batch {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let length = Compact::<u32>::decode(input)?.0;
-				let calls = AlreadyEncoded::decode(input)?.0;
+				let calls = decode_already_decoded(input)?;
 				Ok(Self { length, calls })
 			}
 		}
@@ -881,13 +881,13 @@ pub mod utility {
 				Ok(runtime_calls)
 			}
 
-			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
+			pub fn add_calls(&mut self, value: Vec<ExtrinsicCall>) {
 				for v in value {
 					self.add_call(v);
 				}
 			}
 
-			pub fn add_call(&mut self, value: TransactionCall) {
+			pub fn add_call(&mut self, value: ExtrinsicCall) {
 				self.length += 1;
 				value.encode_to(&mut self.calls);
 			}
@@ -924,7 +924,7 @@ pub mod utility {
 		impl Decode for BatchAll {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let length = Compact::<u32>::decode(input)?.0;
-				let calls = AlreadyEncoded::decode(input)?.0;
+				let calls = decode_already_decoded(input)?;
 				Ok(Self { length, calls })
 			}
 		}
@@ -961,13 +961,13 @@ pub mod utility {
 				Ok(runtime_calls)
 			}
 
-			pub fn add_calls(&mut self, value: Vec<TransactionCall>) {
+			pub fn add_calls(&mut self, value: Vec<ExtrinsicCall>) {
 				for v in value {
 					self.add_call(v);
 				}
 			}
 
-			pub fn add_call(&mut self, value: TransactionCall) {
+			pub fn add_call(&mut self, value: ExtrinsicCall) {
 				self.length += 1;
 				value.encode_to(&mut self.calls);
 			}
@@ -1004,7 +1004,7 @@ pub mod utility {
 		impl Decode for ForceBatch {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let length = Compact::<u32>::decode(input)?.0;
-				let calls = AlreadyEncoded::decode(input)?.0;
+				let calls = decode_already_decoded(input)?;
 				Ok(Self { length, calls })
 			}
 		}
@@ -1162,7 +1162,7 @@ pub mod proxy {
 		pub struct Proxy {
 			pub id: MultiAddress,
 			pub force_proxy_type: Option<super::types::ProxyType>,
-			pub call: TransactionCall,
+			pub call: ExtrinsicCall,
 		}
 		impl Encode for Proxy {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -1427,7 +1427,7 @@ pub mod multisig {
 		#[derive(Debug, Clone)]
 		pub struct AsMultiThreshold1 {
 			pub other_signatories: Vec<AccountId>,
-			pub call: TransactionCall,
+			pub call: ExtrinsicCall,
 		}
 		impl Encode for AsMultiThreshold1 {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -1451,7 +1451,7 @@ pub mod multisig {
 			pub threshold: u16,
 			pub other_signatories: Vec<AccountId>,
 			pub maybe_timepoint: Option<super::types::Timepoint>,
-			pub call: TransactionCall,
+			pub call: ExtrinsicCall,
 			pub max_weight: super::types::Weight,
 		}
 		impl Encode for AsMulti {
@@ -1476,7 +1476,7 @@ pub mod multisig {
 					threshold,
 					other_signatories,
 					maybe_timepoint,
-					call: TransactionCall::decode(&mut encoded_call.as_slice())?,
+					call: ExtrinsicCall::decode(&mut encoded_call.as_slice())?,
 					max_weight,
 				})
 			}

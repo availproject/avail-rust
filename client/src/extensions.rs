@@ -6,7 +6,7 @@ use crate::subxt_core::tx::payload::DefaultPayload;
 #[cfg(feature = "generated_metadata")]
 use crate::{Client, SubmittableTransaction};
 #[cfg(feature = "generated_metadata")]
-use avail_rust_core::TransactionCall;
+use avail_rust_core::ExtrinsicCall;
 
 pub trait H256Ext {
 	fn from_str(s: &str) -> Result<H256, String>;
@@ -94,13 +94,13 @@ impl KeypairExt for Keypair {
 
 #[cfg(feature = "generated_metadata")]
 pub trait DefaultPayloadExt {
-	fn to_transaction_call(&self, client: &Client) -> Result<TransactionCall, String>;
+	fn to_transaction_call(&self, client: &Client) -> Result<ExtrinsicCall, String>;
 	fn to_submittable_transaction(&self, client: Client) -> Result<SubmittableTransaction, String>;
 }
 
 #[cfg(feature = "generated_metadata")]
 impl<CallData: crate::codec::Encode> DefaultPayloadExt for DefaultPayload<CallData> {
-	fn to_transaction_call(&self, client: &Client) -> Result<TransactionCall, String> {
+	fn to_transaction_call(&self, client: &Client) -> Result<ExtrinsicCall, String> {
 		let pallet_name = self.pallet_name();
 		let call_name = self.call_name();
 
@@ -116,7 +116,7 @@ impl<CallData: crate::codec::Encode> DefaultPayloadExt for DefaultPayload<CallDa
 		let call_index = call_variant.index;
 		let call_data = self.call_data().encode();
 
-		let value = TransactionCall::new(pallet_index, call_index, call_data);
+		let value = ExtrinsicCall::new(pallet_index, call_index, call_data);
 
 		Ok(value)
 	}

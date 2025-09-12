@@ -5,10 +5,10 @@ use crate::{
 		runtime_api::RuntimeApi,
 		utils::{with_retry_on_error, with_retry_on_error_and_none},
 	},
+	extrinsic::SubmittedTransaction,
 	subscription::{self, Subscription},
 	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
-	transaction::SubmittedTransaction,
 	transaction_options::Options,
 	transactions::Transactions,
 };
@@ -278,12 +278,12 @@ impl Rpc {
 	}
 
 	// Sign and submit
-	pub async fn submit(&self, tx: &avail_rust_core::Transaction<'_>) -> Result<H256, avail_rust_core::Error> {
+	pub async fn submit(&self, tx: &avail_rust_core::GenericExtrinsic<'_>) -> Result<H256, avail_rust_core::Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let encoded = tx.encode();
 		#[cfg(feature = "tracing")]
-		if let Some(signed) = &tx.signed {
+		if let Some(signed) = &tx.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
 				tracing::info!(target: "tx", "Submitting Transaction. Address: {}, Nonce: {}, App Id: {}", account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
 			}
@@ -294,7 +294,7 @@ impl Rpc {
 		let tx_hash = with_retry_on_error(f, retry_on_error, "").await?;
 
 		#[cfg(feature = "tracing")]
-		if let Some(signed) = &tx.signed {
+		if let Some(signed) = &tx.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
 				tracing::info!(target: "tx", "Transaction Submitted.  Address: {}, Nonce: {}, App Id: {}, Tx Hash: {:?},", account_id, signed.tx_extra.nonce, signed.tx_extra.app_id, tx_hash);
 			}
@@ -306,13 +306,13 @@ impl Rpc {
 	pub async fn sign_payload<'a>(
 		&self,
 		signer: &Keypair,
-		tx_payload: avail_rust_core::TransactionPayload<'a>,
-	) -> avail_rust_core::Transaction<'a> {
-		use avail_rust_core::Transaction;
+		tx_payload: avail_rust_core::ExtrinsicPayload<'a>,
+	) -> avail_rust_core::GenericExtrinsic<'a> {
+		use avail_rust_core::GenericExtrinsic;
 
 		let account_id = signer.public_key().to_account_id();
 		let signature = tx_payload.sign(signer);
-		let tx = Transaction::new(account_id, signature, tx_payload);
+		let tx = GenericExtrinsic::new(account_id, signature, tx_payload);
 
 		tx
 	}
@@ -320,35 +320,35 @@ impl Rpc {
 	pub async fn sign_call<'a>(
 		&self,
 		signer: &Keypair,
-		tx_call: &'a avail_rust_core::TransactionCall,
+		tx_call: &'a avail_rust_core::ExtrinsicCall,
 		options: Options,
-	) -> Result<avail_rust_core::Transaction<'a>, avail_rust_core::Error> {
+	) -> Result<avail_rust_core::GenericExtrinsic<'a>, avail_rust_core::Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, retry_on_error).await?;
 
-		let tx_extra = avail_rust_core::TransactionExtra::from(&refined_options);
-		let tx_additional = avail_rust_core::TransactionAdditional {
+		let tx_extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
+		let tx_additional = avail_rust_core::ExtrinsicAdditional {
 			spec_version: self.client.online_client.spec_version(),
 			tx_version: self.client.online_client.transaction_version(),
 			genesis_hash: self.client.online_client.genesis_hash(),
 			fork_hash: refined_options.mortality.block_hash,
 		};
 
-		let tx_payload = avail_rust_core::TransactionPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
+		let tx_payload = avail_rust_core::ExtrinsicPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
 		Ok(self.sign_payload(signer, tx_payload).await)
 	}
 
 	pub async fn sign_and_submit_payload(
 		&self,
 		signer: &Keypair,
-		tx_payload: avail_rust_core::TransactionPayload<'_>,
+		tx_payload: avail_rust_core::ExtrinsicPayload<'_>,
 	) -> Result<H256, avail_rust_core::Error> {
-		use avail_rust_core::Transaction;
+		use avail_rust_core::GenericExtrinsic;
 
 		let account_id = signer.public_key().to_account_id();
 		let signature = tx_payload.sign(signer);
-		let tx = Transaction::new(account_id, signature, tx_payload);
+		let tx = GenericExtrinsic::new(account_id, signature, tx_payload);
 		let tx_hash = self.submit(&tx).await?;
 
 		Ok(tx_hash)
@@ -357,22 +357,22 @@ impl Rpc {
 	pub async fn sign_and_submit_call(
 		&self,
 		signer: &Keypair,
-		tx_call: &avail_rust_core::TransactionCall,
+		tx_call: &avail_rust_core::ExtrinsicCall,
 		options: Options,
 	) -> Result<SubmittedTransaction, avail_rust_core::Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, retry_on_error).await?;
 
-		let tx_extra = avail_rust_core::TransactionExtra::from(&refined_options);
-		let tx_additional = avail_rust_core::TransactionAdditional {
+		let tx_extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
+		let tx_additional = avail_rust_core::ExtrinsicAdditional {
 			spec_version: self.client.online_client.spec_version(),
 			tx_version: self.client.online_client.transaction_version(),
 			genesis_hash: self.client.online_client.genesis_hash(),
 			fork_hash: refined_options.mortality.block_hash,
 		};
 
-		let tx_payload = avail_rust_core::TransactionPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
+		let tx_payload = avail_rust_core::ExtrinsicPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
 		let tx_hash = self.sign_and_submit_payload(signer, tx_payload).await?;
 
 		let value = SubmittedTransaction::new(self.client.clone(), tx_hash, account_id, refined_options, tx_additional);

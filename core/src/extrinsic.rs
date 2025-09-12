@@ -16,7 +16,7 @@ pub use subxt_core::utils::Era;
 pub const EXTRINSIC_FORMAT_VERSION: u8 = 4;
 
 #[derive(Debug, Clone, Encode, Decode, PartialEq, Eq)]
-pub struct TransactionExtra {
+pub struct ExtrinsicExtra {
 	pub era: Era,
 	#[codec(compact)]
 	pub nonce: u32,
@@ -27,13 +27,13 @@ pub struct TransactionExtra {
 }
 
 #[derive(Debug, Clone)]
-pub struct TransactionAdditional {
+pub struct ExtrinsicAdditional {
 	pub spec_version: u32,
 	pub tx_version: u32,
 	pub genesis_hash: H256,
 	pub fork_hash: H256,
 }
-impl Encode for TransactionAdditional {
+impl Encode for ExtrinsicAdditional {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		self.spec_version.encode_to(dest);
 		self.tx_version.encode_to(dest);
@@ -41,7 +41,7 @@ impl Encode for TransactionAdditional {
 		self.fork_hash.encode_to(dest);
 	}
 }
-impl Decode for TransactionAdditional {
+impl Decode for ExtrinsicAdditional {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let spec_version = Decode::decode(input)?;
 		let tx_version = Decode::decode(input)?;
@@ -51,67 +51,48 @@ impl Decode for TransactionAdditional {
 	}
 }
 
-#[derive(Debug, Clone)]
-pub struct AlreadyEncoded(pub Vec<u8>);
-impl Encode for AlreadyEncoded {
-	fn size_hint(&self) -> usize {
-		self.0.len()
+pub fn decode_already_decoded<I: codec::Input>(input: &mut I) -> Result<Vec<u8>, codec::Error> {
+	let length = input.remaining_len()?;
+	let Some(length) = length else {
+		return Err("Failed to decode transaction".into());
+	};
+	if length == 0 {
+		return Ok(Vec::new());
 	}
-
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		dest.write(&self.0);
-	}
-}
-impl Decode for AlreadyEncoded {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let length = input.remaining_len()?;
-		let Some(length) = length else {
-			return Err("Failed to decode transaction".into());
-		};
-		if length == 0 {
-			return Ok(Self(Vec::new()));
-		}
-		let mut value = vec![0u8; length];
-		input.read(&mut value)?;
-		Ok(Self(value))
-	}
-}
-
-impl From<Vec<u8>> for AlreadyEncoded {
-	fn from(value: Vec<u8>) -> Self {
-		AlreadyEncoded(value)
-	}
+	let mut value = vec![0u8; length];
+	input.read(&mut value)?;
+	Ok(value)
 }
 
 #[derive(Debug, Clone)]
-pub struct TransactionCall {
+pub struct ExtrinsicCall {
 	pub pallet_id: u8,
 	pub variant_id: u8,
-	pub data: AlreadyEncoded,
+	pub data: Vec<u8>,
 }
-impl TransactionCall {
+impl ExtrinsicCall {
 	pub fn new(pallet_id: u8, variant_id: u8, data: Vec<u8>) -> Self {
-		Self { pallet_id, variant_id, data: AlreadyEncoded::from(data) }
+		Self { pallet_id, variant_id, data }
 	}
 }
-impl Encode for TransactionCall {
+impl Encode for ExtrinsicCall {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		self.pallet_id.encode_to(dest);
 		self.variant_id.encode_to(dest);
-		self.data.encode_to(dest);
+		dest.write(&self.data);
 	}
 }
-impl Decode for TransactionCall {
+impl Decode for ExtrinsicCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let pallet_id = Decode::decode(input)?;
 		let variant_id = Decode::decode(input)?;
-		let data = Decode::decode(input)?;
+		let data = decode_already_decoded(input)?;
 		Ok(Self { pallet_id, variant_id, data })
 	}
 }
 
 #[derive(Debug, Clone)]
-pub struct TransactionCallDecoded<T> {
+pub struct DecodedExtrinsicCall<T> {
 	pub pallet_id: u8,
 	pub variant_id: u8,
 	pub data: T,
@@ -119,18 +100,18 @@ pub struct TransactionCallDecoded<T> {
 
 // There is no need for Encode and Decode
 #[derive(Debug, Clone)]
-pub struct TransactionPayload<'a> {
-	pub call: Cow<'a, TransactionCall>,
-	pub extra: TransactionExtra,
-	pub additional: TransactionAdditional,
+pub struct ExtrinsicPayload<'a> {
+	pub call: Cow<'a, ExtrinsicCall>,
+	pub extra: ExtrinsicExtra,
+	pub additional: ExtrinsicAdditional,
 }
 
-impl<'a> TransactionPayload<'a> {
-	pub fn new(call: TransactionCall, extra: TransactionExtra, additional: TransactionAdditional) -> Self {
+impl<'a> ExtrinsicPayload<'a> {
+	pub fn new(call: ExtrinsicCall, extra: ExtrinsicExtra, additional: ExtrinsicAdditional) -> Self {
 		Self { call: Cow::Owned(call), extra, additional }
 	}
 
-	pub fn new_borrowed(call: &'a TransactionCall, extra: TransactionExtra, additional: TransactionAdditional) -> Self {
+	pub fn new_borrowed(call: &'a ExtrinsicCall, extra: ExtrinsicExtra, additional: ExtrinsicAdditional) -> Self {
 		Self { call: Cow::Borrowed(call), extra, additional }
 	}
 
@@ -153,19 +134,19 @@ impl<'a> TransactionPayload<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct TransactionSigned {
+pub struct SignedExtra {
 	pub address: MultiAddress,
 	pub signature: MultiSignature,
-	pub tx_extra: TransactionExtra,
+	pub tx_extra: ExtrinsicExtra,
 }
-impl Encode for TransactionSigned {
+impl Encode for SignedExtra {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		self.address.encode_to(dest);
 		self.signature.encode_to(dest);
 		self.tx_extra.encode_to(dest);
 	}
 }
-impl Decode for TransactionSigned {
+impl Decode for SignedExtra {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let address = Decode::decode(input)?;
 		let signature = Decode::decode(input)?;
@@ -175,24 +156,23 @@ impl Decode for TransactionSigned {
 }
 
 #[derive(Debug, Clone)]
-pub struct Transaction<'a> {
-	pub signed: Option<TransactionSigned>,
-	pub call: Cow<'a, TransactionCall>,
+pub struct GenericExtrinsic<'a> {
+	pub signature: Option<SignedExtra>,
+	pub call: Cow<'a, ExtrinsicCall>,
 }
 
-impl<'a> Transaction<'a> {
-	pub fn new(account_id: AccountId, signature: [u8; 64], payload: TransactionPayload<'a>) -> Self {
+impl<'a> GenericExtrinsic<'a> {
+	pub fn new(account_id: AccountId, signature: [u8; 64], payload: ExtrinsicPayload<'a>) -> Self {
 		let address = MultiAddress::Id(account_id);
 		let signature = MultiSignature::Sr25519(signature);
+		let signature = Some(SignedExtra { address, signature, tx_extra: payload.extra.clone() });
 
-		let signed = Some(TransactionSigned { address, signature, tx_extra: payload.extra.clone() });
-
-		Self { signed, call: payload.call }
+		Self { signature, call: payload.call }
 	}
 
 	pub fn encode(&self) -> Vec<u8> {
 		let mut encoded_tx_inner = Vec::new();
-		if let Some(signed) = &self.signed {
+		if let Some(signed) = &self.signature {
 			0x84u8.encode_to(&mut encoded_tx_inner);
 			signed.address.encode_to(&mut encoded_tx_inner);
 			signed.signature.encode_to(&mut encoded_tx_inner);
@@ -215,7 +195,7 @@ impl<'a> Transaction<'a> {
 	}
 }
 
-impl TryFrom<&Vec<u8>> for Transaction<'_> {
+impl TryFrom<&Vec<u8>> for GenericExtrinsic<'_> {
 	type Error = codec::Error;
 
 	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
@@ -223,7 +203,7 @@ impl TryFrom<&Vec<u8>> for Transaction<'_> {
 	}
 }
 
-impl TryFrom<&[u8]> for Transaction<'_> {
+impl TryFrom<&[u8]> for GenericExtrinsic<'_> {
 	type Error = codec::Error;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
@@ -232,7 +212,7 @@ impl TryFrom<&[u8]> for Transaction<'_> {
 	}
 }
 
-impl Decode for Transaction<'_> {
+impl Decode for GenericExtrinsic<'_> {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		// This is a little more complicated than usual since the binary format must be compatible
 		// with SCALE's generic `Vec<u8>` type. Basically this just means accepting that there
@@ -248,8 +228,8 @@ impl Decode for Transaction<'_> {
 			return Err("Invalid transaction version".into());
 		}
 
-		let signed = is_signed.then(|| TransactionSigned::decode(input)).transpose()?;
-		let call = TransactionCall::decode(input)?;
+		let signed = is_signed.then(|| SignedExtra::decode(input)).transpose()?;
+		let call = ExtrinsicCall::decode(input)?;
 
 		if let Some((before_length, after_length)) = input.remaining_len()?.and_then(|a| before_length.map(|b| (b, a)))
 		{
@@ -260,11 +240,11 @@ impl Decode for Transaction<'_> {
 			}
 		}
 
-		Ok(Self { signed, call: Cow::Owned(call) })
+		Ok(Self { signature: signed, call: Cow::Owned(call) })
 	}
 }
 
-impl Serialize for Transaction<'_> {
+impl Serialize for GenericExtrinsic<'_> {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -274,7 +254,7 @@ impl Serialize for Transaction<'_> {
 	}
 }
 
-impl<'a> Deserialize<'a> for Transaction<'_> {
+impl<'a> Deserialize<'a> for GenericExtrinsic<'_> {
 	fn deserialize<D>(de: D) -> Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'a>,

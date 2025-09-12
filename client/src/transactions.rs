@@ -1,5 +1,5 @@
 use crate::{Client, SubmittableTransaction, SubmittableTransactionLike};
-use avail_rust_core::{AccountId, H256, TransactionCall, avail};
+use avail_rust_core::{AccountId, ExtrinsicCall, H256, avail};
 
 pub struct Transactions(pub(crate) Client);
 impl Transactions {
@@ -56,19 +56,19 @@ impl Balances {
 
 pub struct Utility(Client);
 impl Utility {
-	pub fn batch(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
+	pub fn batch(&self, calls: Vec<ExtrinsicCall>) -> SubmittableTransaction {
 		let mut batch = avail::utility::tx::Batch::new();
 		batch.add_calls(calls);
 		batch.to_submittable(self.0.clone())
 	}
 
-	pub fn batch_all(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
+	pub fn batch_all(&self, calls: Vec<ExtrinsicCall>) -> SubmittableTransaction {
 		let mut batch = avail::utility::tx::BatchAll::new();
 		batch.add_calls(calls);
 		batch.to_submittable(self.0.clone())
 	}
 
-	pub fn force_batch(&self, calls: Vec<TransactionCall>) -> SubmittableTransaction {
+	pub fn force_batch(&self, calls: Vec<ExtrinsicCall>) -> SubmittableTransaction {
 		let mut batch = avail::utility::tx::ForceBatch::new();
 		batch.add_calls(calls);
 		batch.to_submittable(self.0.clone())
@@ -81,7 +81,7 @@ impl Proxy {
 		&self,
 		id: AccountId,
 		force_proxy_type: Option<avail::proxy::types::ProxyType>,
-		call: TransactionCall,
+		call: ExtrinsicCall,
 	) -> SubmittableTransaction {
 		avail::proxy::tx::Proxy { id: id.into(), force_proxy_type, call }.to_submittable(self.0.clone())
 	}

@@ -1,5 +1,5 @@
 use crate::{Client, subxt_core::config::Header};
-use avail_rust_core::{AccountId, Era, H256, TransactionExtra};
+use avail_rust_core::{AccountId, Era, ExtrinsicExtra, H256};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Options {
@@ -70,10 +70,10 @@ pub struct RefinedOptions {
 	pub tip: u128,
 }
 
-impl From<&RefinedOptions> for TransactionExtra {
+impl From<&RefinedOptions> for ExtrinsicExtra {
 	fn from(value: &RefinedOptions) -> Self {
 		let era = Era::mortal(value.mortality.period, value.mortality.block_height as u64);
-		TransactionExtra {
+		ExtrinsicExtra {
 			era,
 			nonce: value.nonce,
 			tip: value.tip,

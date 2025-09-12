@@ -3,9 +3,9 @@ pub mod config;
 pub mod constants;
 pub mod error;
 pub mod extensions;
+pub mod extrinsic;
 pub mod platform;
 pub mod subscription;
-pub mod transaction;
 pub mod transaction_options;
 pub mod transactions;
 
@@ -18,9 +18,8 @@ pub use constants::{
 };
 pub use error::ClientError;
 pub use extensions::{AccountIdExt, H256Ext, KeypairExt, SecretUriExt};
-pub use transaction::{
-	BlockState, ReceiptMethod, SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction,
-	TransactionReceipt,
+pub use extrinsic::{
+	BlockState, SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction, TransactionReceipt,
 };
 pub use transaction_options::{MortalityOption, Options, RefinedMortality, RefinedOptions};
 
@@ -39,11 +38,11 @@ pub use extensions::DefaultPayloadExt;
 
 // Exporting types from ext libraries
 pub use avail_rust_core::{
-	AccountId, AvailHeader, BlockRef, CompactDataLookup, DecodedTransaction, EncodeSelector, HasHeader, HashNumber,
-	HeaderExtension, KateCommitment, MultiAddress, OpaqueTransaction, StorageDoubleMap, StorageDoubleMapIterator,
-	StorageHasher, StorageMap, StorageMapIterator, StorageValue, Transaction, TransactionAdditional, TransactionCall,
-	TransactionConvertible, TransactionDecodable, TransactionEventDecodable, TransactionEventEncodable,
-	TransactionExtra, TransactionPayload, TransactionSigned, V3HeaderExtension, avail,
+	AccountId, AvailHeader, BlockRef, CompactDataLookup, EncodeSelector, Extrinsic, ExtrinsicAdditional, ExtrinsicCall,
+	ExtrinsicExtra, ExtrinsicPayload, GenericExtrinsic, HasHeader, HashNumber, HeaderExtension, KateCommitment,
+	MultiAddress, RawExtrinsic, SignedExtra, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap,
+	StorageMapIterator, StorageValue, TransactionConvertible, TransactionDecodable, TransactionEventDecodable,
+	TransactionEventEncodable, V3HeaderExtension, avail,
 };
 pub use primitive_types::{H256, U256};
 pub use subxt_signer::{SecretUri, sr25519::Keypair};
