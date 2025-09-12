@@ -14,6 +14,8 @@ pub enum Error {
 	TransactionNotAllowed(String) = 4,
 	#[error("{0}")]
 	Codec(codec::Error) = 5,
+	#[error("{0}")]
+	FromHex(const_hex::FromHexError) = 6,
 }
 
 impl From<subxt_core::Error> for Error {
@@ -50,5 +52,11 @@ impl From<&str> for Error {
 impl From<codec::Error> for Error {
 	fn from(value: codec::Error) -> Self {
 		Self::Codec(value)
+	}
+}
+
+impl From<const_hex::FromHexError> for Error {
+	fn from(value: const_hex::FromHexError) -> Self {
+		Self::FromHex(value)
 	}
 }

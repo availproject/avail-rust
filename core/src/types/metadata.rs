@@ -1,6 +1,7 @@
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use subxt_core::utils::AccountId32;
 
 pub type AccountId = AccountId32;
@@ -44,9 +45,6 @@ impl From<AccountId> for MultiAddress {
 
 #[derive(Debug, Clone, Copy, Default, Encode, Decode, Eq, PartialEq)]
 pub struct AppId(#[codec(compact)] pub u32);
-
-pub type DispatchIndex = (u8, u8);
-pub type EmittedIndex = (u8, u8);
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct BlockRef {
@@ -111,5 +109,119 @@ impl From<H256> for HashNumber {
 impl From<u32> for HashNumber {
 	fn from(value: u32) -> Self {
 		Self::Number(value)
+	}
+}
+
+impl TryFrom<&str> for HashNumber {
+	type Error = super::super::Error;
+
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		Ok(Self::Hash(H256::from_str(value).map_err(|e| e.to_string())?))
+	}
+}
+
+impl TryFrom<String> for HashNumber {
+	type Error = super::super::Error;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		HashNumber::try_from(value.as_str())
+	}
+}
+
+impl TryFrom<HashStringNumber> for HashNumber {
+	type Error = super::super::Error;
+
+	fn try_from(value: HashStringNumber) -> Result<Self, Self::Error> {
+		let v = match value {
+			HashStringNumber::Hash(x) => Self::Hash(x),
+			HashStringNumber::String(x) => {
+				let hash = H256::from_str(&x).map_err(|x| x.to_string())?;
+				Self::Hash(hash)
+			},
+			HashStringNumber::Number(x) => Self::Number(x),
+		};
+		Ok(v)
+	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum HashStringNumber {
+	Hash(H256),
+	String(String),
+	Number(u32),
+}
+
+impl From<BlockRef> for HashStringNumber {
+	fn from(value: BlockRef) -> Self {
+		Self::Hash(value.hash)
+	}
+}
+
+impl From<HashNumber> for HashStringNumber {
+	fn from(value: HashNumber) -> Self {
+		match value {
+			HashNumber::Hash(x) => Self::Hash(x),
+			HashNumber::Number(x) => Self::Number(x),
+		}
+	}
+}
+
+impl From<TxRef> for HashStringNumber {
+	fn from(value: TxRef) -> Self {
+		Self::Number(value.index)
+	}
+}
+
+impl From<H256> for HashStringNumber {
+	fn from(value: H256) -> Self {
+		Self::Hash(value)
+	}
+}
+
+impl From<u32> for HashStringNumber {
+	fn from(value: u32) -> Self {
+		Self::Number(value)
+	}
+}
+
+impl From<&str> for HashStringNumber {
+	fn from(value: &str) -> Self {
+		Self::String(value.to_owned())
+	}
+}
+
+impl From<String> for HashStringNumber {
+	fn from(value: String) -> Self {
+		Self::String(value)
+	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum StringOrBytes<'a> {
+	String(&'a str),
+	Bytes(&'a [u8]),
+}
+
+impl<'a> From<&'a String> for StringOrBytes<'a> {
+	fn from(value: &'a String) -> Self {
+		Self::String(value.as_str())
+	}
+}
+
+impl<'a> From<&'a str> for StringOrBytes<'a> {
+	fn from(value: &'a str) -> Self {
+		Self::String(value)
+	}
+}
+
+impl<'a> From<&'a Vec<u8>> for StringOrBytes<'a> {
+	fn from(value: &'a Vec<u8>) -> Self {
+		Self::Bytes(value.as_slice())
+	}
+}
+
+impl<'a> From<&'a [u8]> for StringOrBytes<'a> {
+	fn from(value: &'a [u8]) -> Self {
+		Self::Bytes(value)
 	}
 }

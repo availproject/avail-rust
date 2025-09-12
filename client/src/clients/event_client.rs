@@ -1,86 +1,13 @@
-use crate::{clients::Client, subxt_core::events::Phase};
-use avail_rust_core::{
-	H256, HasHeader, HashNumber, TransactionEventDecodable, avail, decoded_events::OpaqueEvent,
-	rpc::system::fetch_events,
-};
+use crate::{ExtrinsicEvent, ExtrinsicEvents, clients::Client, subxt_core::events::Phase};
+use avail_rust_core::{H256, HashNumber, decoded_events::RawEvent, rpc::system::fetch_events};
 
 pub const EVENTS_STORAGE_ADDRESS: &str = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
-
-pub struct TransactionEvent {
-	pub index: u32,
-	pub pallet_id: u8,
-	pub variant_id: u8,
-	pub data: String,
-}
-
-pub struct TransactionEvents {
-	pub events: Vec<TransactionEvent>,
-}
-
-impl TransactionEvents {
-	pub fn new(events: Vec<TransactionEvent>) -> Self {
-		Self { events }
-	}
-
-	pub fn find<T: HasHeader + codec::Decode>(&self) -> Option<T> {
-		let event = self
-			.events
-			.iter()
-			.find(|x| x.pallet_id == T::HEADER_INDEX.0 && x.variant_id == T::HEADER_INDEX.1);
-		let Some(event) = event else {
-			return None;
-		};
-
-		T::decode_hex_event(&event.data)
-	}
-
-	pub fn is_extrinsic_success_present(&self) -> bool {
-		self.is_present::<avail::system::events::ExtrinsicSuccess>()
-	}
-
-	pub fn is_extrinsic_failed_present(&self) -> bool {
-		self.is_present::<avail::system::events::ExtrinsicFailed>()
-	}
-
-	pub fn proxy_executed_successfully(&self) -> Option<bool> {
-		let executed = self.find::<avail::proxy::events::ProxyExecuted>()?;
-		return Some(executed.result.is_ok());
-	}
-
-	pub fn multisig_executed_successfully(&self) -> Option<bool> {
-		let executed = self.find::<avail::multisig::events::MultisigExecuted>()?;
-		return Some(executed.result.is_ok());
-	}
-
-	pub fn is_present<T: HasHeader>(&self) -> bool {
-		self.count::<T>() > 0
-	}
-
-	pub fn is_present_parts(&self, pallet_id: u8, variant_id: u8) -> bool {
-		self.count_parts(pallet_id, variant_id) > 0
-	}
-
-	pub fn count<T: HasHeader>(&self) -> u32 {
-		self.count_parts(T::HEADER_INDEX.0, T::HEADER_INDEX.1)
-	}
-
-	pub fn count_parts(&self, pallet_id: u8, variant_id: u8) -> u32 {
-		let mut count = 0;
-		self.events.iter().for_each(|x| {
-			if x.pallet_id == pallet_id && x.variant_id == variant_id {
-				count += 1
-			}
-		});
-
-		count
-	}
-}
 
 #[derive(Debug, Clone)]
 pub struct HistoricalEvent {
 	pub phase: Phase,
 	// [Pallet_index, Variant_index, Event_data...]
-	pub bytes: OpaqueEvent,
+	pub bytes: RawEvent,
 	pub topics: Vec<H256>,
 }
 
@@ -121,7 +48,7 @@ impl EventClient {
 		&self,
 		block_id: HashNumber,
 		tx_index: u32,
-	) -> Result<Option<TransactionEvents>, avail_rust_core::Error> {
+	) -> Result<Option<ExtrinsicEvents>, avail_rust_core::Error> {
 		let builder = self
 			.builder()
 			.tx_index(tx_index)
@@ -139,7 +66,7 @@ impl EventClient {
 			let Some(data) = &event.encoded else {
 				return Err("Fetch events endpoint returned with an event without data.".into());
 			};
-			tx_events.push(TransactionEvent {
+			tx_events.push(ExtrinsicEvent {
 				data: data.clone(),
 				index: event.index,
 				pallet_id: event.emitted_index.0,
@@ -147,7 +74,7 @@ impl EventClient {
 			});
 		}
 
-		Ok(Some(TransactionEvents::new(tx_events)))
+		Ok(Some(ExtrinsicEvents::new(tx_events)))
 	}
 
 	/// Function to fetch blocks events in a efficient manner.
@@ -181,7 +108,7 @@ impl EventClient {
 			bytes.push(raw.variant_index());
 			bytes.append(&mut raw.field_bytes().to_vec());
 
-			let Ok(bytes) = OpaqueEvent::try_from(bytes) else {
+			let Ok(bytes) = RawEvent::try_from(bytes) else {
 				continue;
 			};
 

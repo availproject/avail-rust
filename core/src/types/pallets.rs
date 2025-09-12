@@ -189,8 +189,7 @@ pub mod data_availability {
 	pub const PALLET_ID: u8 = 29;
 
 	pub mod storage {
-		use super::*;
-		use crate::chain_types::system::types::DispatchFeeModifier;
+		use super::{system::types::DispatchFeeModifier, *};
 
 		pub struct NextAppId;
 		impl StorageValue for NextAppId {
@@ -1311,7 +1310,7 @@ pub mod multisig {
 
 	pub mod types {
 		use super::*;
-		pub use crate::from_substrate::Weight;
+		pub use crate::types::substrate::Weight;
 
 		#[derive(Debug, Clone, Copy)]
 		pub struct Timepoint {
@@ -1558,7 +1557,7 @@ pub mod vector {
 
 	pub mod types {
 		use super::*;
-		pub use crate::from_substrate::Weight;
+		pub use crate::types::substrate::Weight;
 
 		/// Message type used to bridge between Avail & other chains
 		#[derive(Debug, Clone, Serialize, Deserialize)]
@@ -2032,7 +2031,7 @@ pub mod system {
 	pub const PALLET_ID: u8 = 0;
 
 	pub mod types {
-		use crate::from_substrate::{DispatchClass, Weight};
+		use crate::types::substrate::{DispatchClass, Weight};
 
 		use super::*;
 		#[derive(Debug, Clone, Default, DecodeAsType, EncodeAsType)]
@@ -2334,8 +2333,7 @@ pub mod system {
 	}
 
 	pub mod storage {
-		use super::*;
-		use crate::chain_types::system::types::AccountInfo;
+		use super::{system::types::AccountInfo, *};
 
 		pub struct Account;
 		impl StorageMap for Account {

@@ -1,7 +1,7 @@
 use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-use crate::HasHeader;
+use crate::{HasHeader, types::metadata::StringOrBytes};
 
 pub trait TransactionEventEncodable {
 	/// SCALE encodes the event
@@ -19,16 +19,10 @@ pub trait TransactionEventDecodable: Sized {
 	/// Decodes the SCALE encoded Event
 	///
 	/// If you need to decode Hex string call `decode_hex_event`
-	fn decode_event(event: &[u8]) -> Option<Self>;
-
-	/// Decodes the Hex and SCALE encoded Transaction Call
-	/// This is equal to Hex::decode + Self::decode_event
-	///
-	/// If you need to decode bytes call `decode_event`
-	fn decode_hex_event(event: &str) -> Option<Self>;
+	fn decode_event<'a>(event: impl Into<StringOrBytes<'a>>) -> Option<Self>;
 
 	/// Decodes the SCALE encoded Event Data
-	fn decode_event_data(event_data: &[u8]) -> Option<Self>;
+	fn decode_event_data<'a>(event_data: impl Into<StringOrBytes<'a>>) -> Option<Self>;
 }
 
 impl<T: HasHeader + Encode> TransactionEventEncodable for T {
@@ -47,28 +41,39 @@ impl<T: HasHeader + Encode> TransactionEventEncodable for T {
 }
 
 impl<T: HasHeader + Decode> TransactionEventDecodable for T {
-	fn decode_event(event: &[u8]) -> Option<T> {
-		// This was moved out in order to decrease compilation times
-		if !event_filter_in(event, Self::HEADER_INDEX) {
-			return None;
+	fn decode_event<'a>(event: impl Into<StringOrBytes<'a>>) -> Option<T> {
+		fn inner<T: HasHeader + Decode>(event: StringOrBytes) -> Option<T> {
+			let event = match event {
+				StringOrBytes::String(s) => &const_hex::decode(s.trim_start_matches("0x")).ok()?,
+				StringOrBytes::Bytes(b) => b,
+			};
+
+			// This was moved out in order to decrease compilation times
+			if !event_filter_in(event, T::HEADER_INDEX) {
+				return None;
+			}
+
+			if event.len() <= 2 {
+				try_decode_event_data(&[])
+			} else {
+				try_decode_event_data(&event[2..])
+			}
 		}
 
-		if event.len() <= 2 {
-			try_decode_event_data(&[])
-		} else {
-			try_decode_event_data(&event[2..])
+		inner(event.into())
+	}
+
+	fn decode_event_data<'a>(event_data: impl Into<StringOrBytes<'a>>) -> Option<T> {
+		fn inner<T: HasHeader + Decode>(event_data: StringOrBytes) -> Option<T> {
+			let event_data = match event_data {
+				StringOrBytes::String(s) => &const_hex::decode(s.trim_start_matches("0x")).ok()?,
+				StringOrBytes::Bytes(b) => b,
+			};
+
+			try_decode_event_data(event_data)
 		}
-	}
 
-	#[inline(always)]
-	fn decode_hex_event(event: &str) -> Option<T> {
-		let hex_decoded = const_hex::decode(event.trim_start_matches("0x")).ok()?;
-		Self::decode_event(&hex_decoded)
-	}
-
-	fn decode_event_data(event_data: &[u8]) -> Option<T> {
-		// This was moved out in order to decrease compilation times
-		try_decode_event_data(event_data)
+		inner(event_data.into())
 	}
 }
 
@@ -95,9 +100,9 @@ fn event_filter_in(event: &[u8], emitted_index: (u8, u8)) -> bool {
 
 /// Contains only the event body. Phase and topics are not included here.
 #[derive(Debug, Clone)]
-pub struct OpaqueEvent(pub Vec<u8>);
+pub struct RawEvent(pub Vec<u8>);
 
-impl OpaqueEvent {
+impl RawEvent {
 	pub fn pallet_index(&self) -> u8 {
 		self.0[0]
 	}
@@ -111,7 +116,7 @@ impl OpaqueEvent {
 	}
 }
 
-impl TryFrom<String> for OpaqueEvent {
+impl TryFrom<String> for RawEvent {
 	type Error = String;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -119,7 +124,7 @@ impl TryFrom<String> for OpaqueEvent {
 	}
 }
 
-impl TryFrom<&String> for OpaqueEvent {
+impl TryFrom<&String> for RawEvent {
 	type Error = String;
 
 	fn try_from(value: &String) -> Result<Self, Self::Error> {
@@ -127,7 +132,7 @@ impl TryFrom<&String> for OpaqueEvent {
 	}
 }
 
-impl TryFrom<&str> for OpaqueEvent {
+impl TryFrom<&str> for RawEvent {
 	type Error = String;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -136,7 +141,7 @@ impl TryFrom<&str> for OpaqueEvent {
 	}
 }
 
-impl TryFrom<Vec<u8>> for OpaqueEvent {
+impl TryFrom<Vec<u8>> for RawEvent {
 	type Error = String;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -144,7 +149,7 @@ impl TryFrom<Vec<u8>> for OpaqueEvent {
 	}
 }
 
-impl TryFrom<&Vec<u8>> for OpaqueEvent {
+impl TryFrom<&Vec<u8>> for RawEvent {
 	type Error = String;
 
 	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
@@ -152,7 +157,7 @@ impl TryFrom<&Vec<u8>> for OpaqueEvent {
 	}
 }
 
-impl TryFrom<&[u8]> for OpaqueEvent {
+impl TryFrom<&[u8]> for RawEvent {
 	type Error = String;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
@@ -160,7 +165,7 @@ impl TryFrom<&[u8]> for OpaqueEvent {
 			return Err("Event must have more than one byte".into());
 		}
 
-		Ok(OpaqueEvent(value.to_owned()))
+		Ok(RawEvent(value.to_owned()))
 	}
 }
 

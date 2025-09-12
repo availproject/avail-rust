@@ -3,7 +3,7 @@ use avail_rust_core::{
 	EncodeSelector, Extrinsic, H256, HasHeader, HashNumber,
 	rpc::{
 		BlockWithJustifications,
-		system::fetch_extrinsics::{self, ExtrinsicInfo, TransactionFilter},
+		system::fetch_extrinsics::{self, ExtrinsicFilter, ExtrinsicInfo},
 	},
 };
 
@@ -97,7 +97,7 @@ impl BlockTransactionsBuilder {
 		self
 	}
 
-	pub fn tx_filter(mut self, value: TransactionFilter) -> Self {
+	pub fn tx_filter(mut self, value: ExtrinsicFilter) -> Self {
 		self.options.transaction_filter = value;
 		self
 	}
@@ -107,7 +107,7 @@ impl BlockTransactionsBuilder {
 	}
 
 	pub fn tx_hashes(mut self, value: Vec<H256>) -> Self {
-		self.options.transaction_filter = TransactionFilter::TxHash(value);
+		self.options.transaction_filter = ExtrinsicFilter::TxHash(value);
 		self
 	}
 
@@ -116,7 +116,7 @@ impl BlockTransactionsBuilder {
 	}
 
 	pub fn tx_indexes(mut self, value: Vec<u32>) -> Self {
-		self.options.transaction_filter = TransactionFilter::TxIndex(value);
+		self.options.transaction_filter = ExtrinsicFilter::TxIndex(value);
 		self
 	}
 
@@ -125,7 +125,7 @@ impl BlockTransactionsBuilder {
 	}
 
 	pub fn pallets(mut self, value: Vec<u8>) -> Self {
-		self.options.transaction_filter = TransactionFilter::Pallet(value);
+		self.options.transaction_filter = ExtrinsicFilter::Pallet(value);
 		self
 	}
 
@@ -134,7 +134,7 @@ impl BlockTransactionsBuilder {
 	}
 
 	pub fn calls(mut self, value: Vec<(u8, u8)>) -> Self {
-		self.options.transaction_filter = TransactionFilter::PalletCall(value);
+		self.options.transaction_filter = ExtrinsicFilter::PalletCall(value);
 		self
 	}
 

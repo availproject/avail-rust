@@ -1,3 +1,4 @@
+pub mod block;
 pub mod clients;
 pub mod config;
 pub mod constants;
@@ -9,10 +10,8 @@ pub mod subscription;
 pub mod transaction_options;
 pub mod transactions;
 
-pub use clients::{
-	BlockTransactionsBuilder, Client,
-	event_client::{TransactionEvent, TransactionEvents},
-};
+pub use block::{ExtrinsicEvent, ExtrinsicEvents};
+pub use clients::{BlockTransactionsBuilder, Client};
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };

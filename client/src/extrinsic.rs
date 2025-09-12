@@ -1,16 +1,15 @@
 use crate::{
 	Client,
-	clients::event_client::TransactionEvents,
+	block::ExtrinsicEvents,
 	subscription::SubscriptionBuilder,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
 	AccountId, BlockRef, EncodeSelector, H256, TransactionConvertible,
-	config::TxRef,
 	ext::codec::Encode,
 	extrinsic::{ExtrinsicAdditional, ExtrinsicCall},
-	from_substrate::FeeDetails,
+	types::{metadata::TxRef, substrate::FeeDetails},
 };
 #[cfg(feature = "tracing")]
 use tracing::info;
@@ -137,7 +136,7 @@ impl TransactionReceipt {
 		self.client.rpc().block_state(self.block_ref).await
 	}
 
-	pub async fn tx_events(&self) -> Result<TransactionEvents, avail_rust_core::Error> {
+	pub async fn tx_events(&self) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
 		let events_client = self.client.event_client();
 		let Some(events) = events_client
 			.transaction_events(self.block_ref.into(), self.tx_ref.index)
@@ -175,7 +174,7 @@ impl Utils {
 			return Ok(None);
 		};
 
-		let tx_ref = TxRef::from((tx.tx_hash, tx.tx_index));
+		let tx_ref = TxRef::from((tx.ext_hash, tx.ext_index));
 
 		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref)))
 	}

@@ -1,4 +1,4 @@
-use crate::config::TxRef;
+use crate::types::metadata::TxRef;
 
 use super::AvailHeader;
 use primitive_types::H256;

@@ -27,19 +27,19 @@ pub async fn fetch_extrinsics_v1(
 
 #[derive(Clone, Default)]
 pub struct Options {
-	pub transaction_filter: TransactionFilter,
+	pub transaction_filter: ExtrinsicFilter,
 	pub ss58_address: Option<String>,
 	pub app_id: Option<u32>,
 	pub nonce: Option<u32>,
 	pub encode_as: EncodeSelector,
 }
 
-#[derive(Clone, Default, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Copy, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum EncodeSelector {
 	None = 0,
-	#[default]
 	Call = 1,
+	#[default]
 	Extrinsic = 2,
 }
 
@@ -47,36 +47,36 @@ pub enum EncodeSelector {
 pub struct ExtrinsicInfo {
 	// Hex string encoded
 	pub data: Option<String>,
-	pub tx_hash: H256,
-	pub tx_index: u32,
+	pub ext_hash: H256,
+	pub ext_index: u32,
 	pub pallet_id: u8,
 	pub variant_id: u8,
-	pub signature: Option<TransactionSignature>,
+	pub signer_payload: Option<SignerPayload>,
 }
 
 impl From<ExtrinsicInformation> for ExtrinsicInfo {
 	fn from(value: ExtrinsicInformation) -> Self {
 		Self {
 			data: value.encoded,
-			tx_hash: value.tx_hash,
-			tx_index: value.tx_index,
+			ext_hash: value.tx_hash,
+			ext_index: value.tx_index,
 			pallet_id: value.pallet_id,
 			variant_id: value.call_id,
-			signature: value.signature,
+			signer_payload: value.signature,
 		}
 	}
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TransactionSignature {
+pub struct SignerPayload {
 	pub ss58_address: Option<String>,
 	pub nonce: u32,
 	pub app_id: u32,
 	pub mortality: Option<(u64, u64)>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub enum TransactionFilter {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ExtrinsicFilter {
 	All,
 	TxHash(Vec<H256>),
 	TxIndex(Vec<u32>),
@@ -84,13 +84,13 @@ pub enum TransactionFilter {
 	PalletCall(Vec<(u8, u8)>),
 }
 
-impl TransactionFilter {
+impl ExtrinsicFilter {
 	pub fn new() -> Self {
 		Self::default()
 	}
 }
 
-impl Default for TransactionFilter {
+impl Default for ExtrinsicFilter {
 	fn default() -> Self {
 		Self::All
 	}
@@ -104,7 +104,7 @@ struct RpcOptions {
 
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct Filter {
-	pub transaction: Option<TransactionFilter>,
+	pub transaction: Option<ExtrinsicFilter>,
 	pub signature: SignatureFilter,
 }
 
@@ -123,5 +123,5 @@ struct ExtrinsicInformation {
 	pub tx_index: u32,
 	pub pallet_id: u8,
 	pub call_id: u8,
-	pub signature: Option<TransactionSignature>,
+	pub signature: Option<SignerPayload>,
 }

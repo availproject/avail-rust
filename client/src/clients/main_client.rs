@@ -1,10 +1,7 @@
 use super::{block_client::BlockClient, event_client::EventClient, online_client::OnlineClientT};
 use crate::{
 	BlockState, avail,
-	clients::{
-		runtime_api::RuntimeApi,
-		utils::{with_retry_on_error, with_retry_on_error_and_none},
-	},
+	clients::utils::{with_retry_on_error, with_retry_on_error_and_none},
 	extrinsic::SubmittedTransaction,
 	subscription::{self, Subscription},
 	subxt_rpcs::RpcClient,
@@ -19,7 +16,11 @@ use avail::{
 use avail_rust_core::{
 	AccountId, AvailHeader, BlockRef, H256, HashNumber, StorageMap,
 	grandpa::GrandpaJustification,
-	rpc::{self, BlockWithJustifications, system},
+	rpc::{self, BlockWithJustifications, runtime_api, system},
+	types::{
+		metadata::HashStringNumber,
+		substrate::{FeeDetails, RuntimeDispatchInfo},
+	},
 };
 use codec::Decode;
 use std::time::Duration;
@@ -426,14 +427,22 @@ impl Rpc {
 
 	pub async fn system_fetch_extrinsics(
 		&self,
-		block_id: HashNumber,
-		options: system::fetch_extrinsics::Options,
+		block_id: impl Into<HashStringNumber>,
+		opts: system::fetch_extrinsics::Options,
 	) -> Result<Vec<system::fetch_extrinsics::ExtrinsicInfo>, avail_rust_core::Error> {
-		let retry_on_error = self.retry_on_error.unwrap_or(true);
-		let opt = &options;
+		async fn inner(
+			client: &Client,
+			block_id: HashStringNumber,
+			opts: &system::fetch_extrinsics::Options,
+			retry_on_error: bool,
+		) -> Result<Vec<system::fetch_extrinsics::ExtrinsicInfo>, avail_rust_core::Error> {
+			let block_id: HashNumber = block_id.try_into()?;
+			let f = || async move { system::fetch_extrinsics_v1(&client.rpc_client, block_id, opts).await };
+			with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		}
 
-		let f = || async move { system::fetch_extrinsics_v1(&self.client.rpc_client, block_id, opt).await };
-		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		let retry_on_error = self.retry_on_error.unwrap_or(true);
+		inner(&self.client, block_id.into(), &opts, retry_on_error).await
 	}
 
 	pub async fn system_fetch_events(
@@ -660,5 +669,57 @@ impl Finalized {
 
 	pub async fn block_height(&self) -> Result<u32, avail_rust_core::Error> {
 		self.block_info().await.map(|x| x.height)
+	}
+}
+
+#[derive(Clone)]
+pub struct RuntimeApi {
+	client: Client,
+}
+
+impl RuntimeApi {
+	pub fn new(client: Client) -> Self {
+		Self { client }
+	}
+
+	pub async fn call<T: codec::Decode>(
+		&self,
+		method: &str,
+		data: &[u8],
+		at: Option<H256>,
+	) -> Result<T, avail_rust_core::Error> {
+		runtime_api::call_raw(&self.client.rpc_client, method, data, at).await
+	}
+
+	pub async fn transaction_payment_query_info(
+		&self,
+		extrinsic: Vec<u8>,
+		at: Option<H256>,
+	) -> Result<RuntimeDispatchInfo, avail_rust_core::Error> {
+		runtime_api::api_transaction_payment_query_info(&self.client.rpc_client, extrinsic, at).await
+	}
+
+	pub async fn transaction_payment_query_fee_details(
+		&self,
+		extrinsic: Vec<u8>,
+		at: Option<H256>,
+	) -> Result<FeeDetails, avail_rust_core::Error> {
+		runtime_api::api_transaction_payment_query_fee_details(&self.client.rpc_client, extrinsic, at).await
+	}
+
+	pub async fn transaction_payment_query_call_info(
+		&self,
+		call: Vec<u8>,
+		at: Option<H256>,
+	) -> Result<RuntimeDispatchInfo, avail_rust_core::Error> {
+		runtime_api::api_transaction_payment_query_call_info(&self.client.rpc_client, call, at).await
+	}
+
+	pub async fn transaction_payment_query_call_fee_details(
+		&self,
+		call: Vec<u8>,
+		at: Option<H256>,
+	) -> Result<FeeDetails, avail_rust_core::Error> {
+		runtime_api::api_transaction_payment_query_call_fee_details(&self.client.rpc_client, call, at).await
 	}
 }

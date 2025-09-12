@@ -1,23 +1,16 @@
-pub mod chain_types;
 #[cfg(feature = "generated_metadata")]
 pub mod chain_types_generated;
-pub mod config;
 pub mod decoded_events;
 pub mod decoded_storage;
 pub mod decoded_transaction;
 pub mod error;
 pub mod extrinsic;
 pub mod extrinsics_params;
-pub mod from_substrate;
 pub mod grandpa;
 pub mod header;
 pub mod rpc;
-pub mod runtime_api;
+pub mod types;
 
-pub use config::{
-	AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockRef, DispatchIndex, EmittedIndex,
-	HashNumber, MultiAddress, MultiSignature,
-};
 pub use decoded_events::{TransactionEventDecodable, TransactionEventEncodable};
 pub use decoded_storage::{
 	StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
@@ -29,10 +22,16 @@ pub use extrinsic::{
 };
 pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
-pub use primitive_types::{H256, U256};
 pub use rpc::EncodeSelector;
+pub use types::{
+	H256, U256,
+	metadata::{
+		AccountId, AccountIndex, AppId, BlakeTwo256, BlockHash, BlockHeight, BlockRef, HashNumber, MultiAddress,
+		MultiSignature,
+	},
+	pallets as avail,
+};
 
-pub use chain_types as avail;
 #[cfg(feature = "generated_metadata")]
 pub use chain_types_generated::api as avail_generated;
 

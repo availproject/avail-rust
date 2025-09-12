@@ -4,6 +4,7 @@ pub mod chainspec;
 pub mod grandpa;
 pub mod kate;
 pub mod rpc_methods;
+pub mod runtime_api;
 pub mod state;
 pub mod system;
 
