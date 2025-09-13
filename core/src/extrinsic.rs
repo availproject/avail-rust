@@ -91,13 +91,6 @@ impl Decode for ExtrinsicCall {
 	}
 }
 
-#[derive(Debug, Clone)]
-pub struct DecodedExtrinsicCall<T> {
-	pub pallet_id: u8,
-	pub variant_id: u8,
-	pub data: T,
-}
-
 // There is no need for Encode and Decode
 #[derive(Debug, Clone)]
 pub struct ExtrinsicPayload<'a> {
