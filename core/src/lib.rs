@@ -18,7 +18,7 @@ pub use decoded_storage::{
 pub use decoded_transaction::{Extrinsic, HasHeader, RawExtrinsic, TransactionConvertible, TransactionDecodable};
 pub use error::Error;
 pub use extrinsic::{
-	Era, ExtrinsicAdditional, ExtrinsicCall, ExtrinsicExtra, ExtrinsicPayload, GenericExtrinsic, SignedExtra,
+	Era, ExtrinsicAdditional, ExtrinsicCall, ExtrinsicExtra, ExtrinsicPayload, ExtrinsicSignature, GenericExtrinsic,
 };
 pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};

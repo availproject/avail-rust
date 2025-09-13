@@ -113,7 +113,7 @@ impl From<u32> for HashNumber {
 }
 
 impl TryFrom<&str> for HashNumber {
-	type Error = super::super::Error;
+	type Error = crate::Error;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
 		Ok(Self::Hash(H256::from_str(value).map_err(|e| e.to_string())?))
@@ -121,7 +121,7 @@ impl TryFrom<&str> for HashNumber {
 }
 
 impl TryFrom<String> for HashNumber {
-	type Error = super::super::Error;
+	type Error = crate::Error;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
 		HashNumber::try_from(value.as_str())
@@ -129,7 +129,7 @@ impl TryFrom<String> for HashNumber {
 }
 
 impl TryFrom<HashStringNumber> for HashNumber {
-	type Error = super::super::Error;
+	type Error = crate::Error;
 
 	fn try_from(value: HashStringNumber) -> Result<Self, Self::Error> {
 		let v = match value {

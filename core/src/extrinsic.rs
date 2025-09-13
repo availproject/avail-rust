@@ -134,19 +134,19 @@ impl<'a> ExtrinsicPayload<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct SignedExtra {
+pub struct ExtrinsicSignature {
 	pub address: MultiAddress,
 	pub signature: MultiSignature,
 	pub tx_extra: ExtrinsicExtra,
 }
-impl Encode for SignedExtra {
+impl Encode for ExtrinsicSignature {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		self.address.encode_to(dest);
 		self.signature.encode_to(dest);
 		self.tx_extra.encode_to(dest);
 	}
 }
-impl Decode for SignedExtra {
+impl Decode for ExtrinsicSignature {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let address = Decode::decode(input)?;
 		let signature = Decode::decode(input)?;
@@ -157,7 +157,7 @@ impl Decode for SignedExtra {
 
 #[derive(Debug, Clone)]
 pub struct GenericExtrinsic<'a> {
-	pub signature: Option<SignedExtra>,
+	pub signature: Option<ExtrinsicSignature>,
 	pub call: Cow<'a, ExtrinsicCall>,
 }
 
@@ -165,7 +165,7 @@ impl<'a> GenericExtrinsic<'a> {
 	pub fn new(account_id: AccountId, signature: [u8; 64], payload: ExtrinsicPayload<'a>) -> Self {
 		let address = MultiAddress::Id(account_id);
 		let signature = MultiSignature::Sr25519(signature);
-		let signature = Some(SignedExtra { address, signature, tx_extra: payload.extra.clone() });
+		let signature = Some(ExtrinsicSignature { address, signature, tx_extra: payload.extra.clone() });
 
 		Self { signature, call: payload.call }
 	}
@@ -228,7 +228,7 @@ impl Decode for GenericExtrinsic<'_> {
 			return Err("Invalid transaction version".into());
 		}
 
-		let signed = is_signed.then(|| SignedExtra::decode(input)).transpose()?;
+		let signed = is_signed.then(|| ExtrinsicSignature::decode(input)).transpose()?;
 		let call = ExtrinsicCall::decode(input)?;
 
 		if let Some((before_length, after_length)) = input.remaining_len()?.and_then(|a| before_length.map(|b| (b, a)))

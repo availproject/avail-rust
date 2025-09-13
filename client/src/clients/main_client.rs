@@ -1,4 +1,4 @@
-use super::{block_client::BlockClient, event_client::EventClient, online_client::OnlineClientT};
+use super::online_client::OnlineClientT;
 use crate::{
 	BlockState, avail,
 	clients::utils::{with_retry_on_error, with_retry_on_error_and_none},
@@ -86,15 +86,6 @@ impl Client {
 		} else {
 			builder.finish().init();
 		}
-	}
-
-	// Mini Clients
-	pub fn event_client(&self) -> EventClient {
-		EventClient::new(self.clone())
-	}
-
-	pub fn block_client(&self) -> BlockClient {
-		BlockClient::new(self.clone())
 	}
 
 	#[cfg(not(feature = "subxt"))]
@@ -723,3 +714,86 @@ impl RuntimeApi {
 		runtime_api::api_transaction_payment_query_call_fee_details(&self.client.rpc_client, call, at).await
 	}
 }
+
+// use crate::{ExtrinsicEvent, ExtrinsicEvents, clients::Client, subxt_core::events::Phase};
+// use avail_rust_core::{H256, HashNumber, decoded_events::RawEvent, rpc::system::fetch_events};
+
+// pub const EVENTS_STORAGE_ADDRESS: &str = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
+
+// #[derive(Debug, Clone)]
+// pub struct HistoricalEvent {
+// 	pub phase: Phase,
+// 	// [Pallet_index, Variant_index, Event_data...]
+// 	pub bytes: RawEvent,
+// 	pub topics: Vec<H256>,
+// }
+
+// impl HistoricalEvent {
+// 	pub fn emitted_index(&self) -> (u8, u8) {
+// 		(self.bytes.pallet_index(), self.bytes.variant_index())
+// 	}
+
+// 	pub fn pallet_index(&self) -> u8 {
+// 		self.bytes.pallet_index()
+// 	}
+
+// 	pub fn variant_index(&self) -> u8 {
+// 		self.bytes.variant_index()
+// 	}
+
+// 	pub fn event_bytes(&self) -> &[u8] {
+// 		&self.bytes.0
+// 	}
+
+// 	pub fn event_data(&self) -> &[u8] {
+// 		self.bytes.event_data()
+// 	}
+// }
+
+// #[derive(Clone)]
+// pub struct EventClient {
+// 	client: Client,
+// }
+
+// impl EventClient {
+// 	pub fn new(client: Client) -> Self {
+// 		Self { client }
+// 	}
+
+// 	/// Use this function in case where `transaction_events` or `block_events` do not work.
+// 	/// Both mentioned functions require the runtime to have a specific runtime api available which
+// 	/// older blocks (runtime) do not have.
+// 	pub async fn historical_block_events(&self, at: H256) -> Result<Vec<HistoricalEvent>, avail_rust_core::Error> {
+// 		use crate::{config::AvailConfig, subxt_core::events::Events};
+
+// 		let entries = self
+// 			.client
+// 			.rpc()
+// 			.state_get_storage(EVENTS_STORAGE_ADDRESS, Some(at))
+// 			.await?;
+// 		let Some(event_bytes) = entries else {
+// 			return Ok(Vec::new());
+// 		};
+
+// 		let mut result: Vec<HistoricalEvent> = Vec::with_capacity(5);
+// 		let raw_events = Events::<AvailConfig>::decode_from(event_bytes, self.client.online_client().metadata());
+// 		for raw in raw_events.iter() {
+// 			let Ok(raw) = raw else {
+// 				continue;
+// 			};
+// 			let mut bytes: Vec<u8> = Vec::with_capacity(raw.field_bytes().len() + 2);
+// 			bytes.push(raw.pallet_index());
+// 			bytes.push(raw.variant_index());
+// 			bytes.append(&mut raw.field_bytes().to_vec());
+
+// 			let Ok(bytes) = RawEvent::try_from(bytes) else {
+// 				continue;
+// 			};
+
+// 			let value = HistoricalEvent { phase: raw.phase(), bytes, topics: raw.topics().to_vec() };
+// 			result.push(value);
+// 		}
+
+// 		Ok(result)
+// 	}
+// }

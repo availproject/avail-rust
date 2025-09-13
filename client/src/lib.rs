@@ -11,7 +11,7 @@ pub mod transaction_options;
 pub mod transactions;
 
 pub use block::{ExtrinsicEvent, ExtrinsicEvents};
-pub use clients::{BlockTransactionsBuilder, Client};
+pub use clients::Client;
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
@@ -38,8 +38,8 @@ pub use extensions::DefaultPayloadExt;
 // Exporting types from ext libraries
 pub use avail_rust_core::{
 	AccountId, AvailHeader, BlockRef, CompactDataLookup, EncodeSelector, Extrinsic, ExtrinsicAdditional, ExtrinsicCall,
-	ExtrinsicExtra, ExtrinsicPayload, GenericExtrinsic, HasHeader, HashNumber, HeaderExtension, KateCommitment,
-	MultiAddress, RawExtrinsic, SignedExtra, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap,
+	ExtrinsicExtra, ExtrinsicPayload, ExtrinsicSignature, GenericExtrinsic, HasHeader, HashNumber, HeaderExtension,
+	KateCommitment, MultiAddress, RawExtrinsic, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap,
 	StorageMapIterator, StorageValue, TransactionConvertible, TransactionDecodable, TransactionEventDecodable,
 	TransactionEventEncodable, V3HeaderExtension, avail,
 };

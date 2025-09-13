@@ -6,7 +6,7 @@ use crate::{
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockRef, EncodeSelector, H256, TransactionConvertible,
+	AccountId, BlockRef, H256, TransactionConvertible,
 	ext::codec::Encode,
 	extrinsic::{ExtrinsicAdditional, ExtrinsicCall},
 	types::{metadata::TxRef, substrate::FeeDetails},
@@ -136,16 +136,8 @@ impl TransactionReceipt {
 		self.client.rpc().block_state(self.block_ref).await
 	}
 
-	pub async fn tx_events(&self) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
-		let events_client = self.client.event_client();
-		let Some(events) = events_client
-			.transaction_events(self.block_ref.into(), self.tx_ref.index)
-			.await?
-		else {
-			return Err("Failed to to find events".into());
-		};
-
-		Ok(events)
+	pub async fn events(&self) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
+		todo!()
 	}
 }
 
@@ -164,8 +156,9 @@ impl Utils {
 		else {
 			return Ok(None);
 		};
+		todo!()
 
-		let block_client = client.block_client();
+		/* 		let block_client = client.block_client();
 		let tx = block_client
 			.transaction(block_ref.hash.into(), tx_hash.into(), EncodeSelector::None)
 			.await?;
@@ -176,7 +169,7 @@ impl Utils {
 
 		let tx_ref = TxRef::from((tx.ext_hash, tx.ext_index));
 
-		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref)))
+		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref))) */
 	}
 
 	pub async fn find_correct_block_info(
@@ -220,7 +213,8 @@ impl Utils {
 				return Ok(Some(info));
 			}
 			if state_nonce == 0 {
-				let transaction = client
+				todo!()
+				/* 				let transaction = client
 					.block_client()
 					.transaction(info.hash.into(), tx_hash.into(), EncodeSelector::None)
 					.await?;
@@ -228,7 +222,7 @@ impl Utils {
 				if transaction.is_some() {
 					trace_new_block(nonce, state_nonce, account_id, info, true);
 					return Ok(Some(info));
-				}
+				} */
 			}
 
 			trace_new_block(nonce, state_nonce, account_id, info, false);

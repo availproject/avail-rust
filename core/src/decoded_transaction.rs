@@ -1,4 +1,4 @@
-use super::extrinsic::{EXTRINSIC_FORMAT_VERSION, SignedExtra};
+use super::extrinsic::{EXTRINSIC_FORMAT_VERSION, ExtrinsicSignature};
 use crate::{ExtrinsicCall, extrinsic::decode_already_decoded, types::metadata::StringOrBytes};
 use codec::{Compact, Decode, Encode, Error, Input};
 use serde::{Deserialize, Serialize};
@@ -93,7 +93,7 @@ pub struct RawExtrinsic {
 	/// The signature, address, number of extrinsics have come before from
 	/// the same signer and an era describing the longevity of this transaction,
 	/// if this is a signed extrinsic.
-	pub signature: Option<SignedExtra>,
+	pub signature: Option<ExtrinsicSignature>,
 	/// The function that should be called.
 	pub call: Vec<u8>,
 }
@@ -228,7 +228,7 @@ impl<'a> Deserialize<'a> for RawExtrinsic {
 
 #[derive(Debug, Clone)]
 pub struct SignedExtrinsic<T: HasHeader + Decode + Sized> {
-	pub signature: SignedExtra,
+	pub signature: ExtrinsicSignature,
 	pub call: T,
 }
 
@@ -315,7 +315,7 @@ impl<T: HasHeader + Decode> TryFrom<&RawExtrinsic> for SignedExtrinsic<T> {
 
 #[derive(Debug, Clone)]
 pub struct Extrinsic<T: HasHeader + Decode + Sized> {
-	pub signature: Option<SignedExtra>,
+	pub signature: Option<ExtrinsicSignature>,
 	pub call: T,
 }
 
@@ -407,7 +407,7 @@ pub mod test {
 
 	use crate::{
 		Extrinsic, ExtrinsicExtra, MultiAddress, MultiSignature, avail::data_availability::tx::SubmitData,
-		decoded_transaction::RawExtrinsic, extrinsic::SignedExtra,
+		decoded_transaction::RawExtrinsic, extrinsic::ExtrinsicSignature,
 	};
 
 	/* 	#[test]

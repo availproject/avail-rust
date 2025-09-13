@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::HashNumber;
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
@@ -93,6 +95,55 @@ impl ExtrinsicFilter {
 impl Default for ExtrinsicFilter {
 	fn default() -> Self {
 		Self::All
+	}
+}
+
+impl TryFrom<String> for ExtrinsicFilter {
+	type Error = crate::Error;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_str())
+	}
+}
+
+impl TryFrom<&String> for ExtrinsicFilter {
+	type Error = crate::Error;
+
+	fn try_from(value: &String) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_str())
+	}
+}
+
+impl TryFrom<&str> for ExtrinsicFilter {
+	type Error = crate::Error;
+
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		let h256 = H256::from_str(value).map_err(|x| x.to_string())?;
+		Ok(Self::TxHash(vec![h256]))
+	}
+}
+
+impl From<H256> for ExtrinsicFilter {
+	fn from(value: H256) -> Self {
+		Self::TxHash(vec![value])
+	}
+}
+
+impl From<u32> for ExtrinsicFilter {
+	fn from(value: u32) -> Self {
+		Self::TxIndex(vec![value])
+	}
+}
+
+impl From<u8> for ExtrinsicFilter {
+	fn from(value: u8) -> Self {
+		Self::Pallet(vec![value])
+	}
+}
+
+impl From<(u8, u8)> for ExtrinsicFilter {
+	fn from(value: (u8, u8)) -> Self {
+		Self::PalletCall(vec![value])
 	}
 }
 
