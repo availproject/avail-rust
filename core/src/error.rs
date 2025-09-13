@@ -1,29 +1,29 @@
+use crate::rpc;
+
 #[derive(thiserror::Error, Debug)]
 #[repr(u8)]
 pub enum Error {
+	#[error("{0}")]
+	Rpc(rpc::Error),
 	#[cfg(feature = "subxt")]
 	#[error("{0}")]
-	Subxt(subxt::Error) = 0,
-	#[error("{0}")]
-	SubxtCore(subxt_core::Error) = 1,
-	#[error("{0}")]
-	SubxtRpcs(subxt_rpcs::Error) = 2,
-	#[error("{0}")]
-	Custom(String) = 3,
+	Subxt(subxt::Error),
 	#[error("Transaction is not allowed. {0}")]
-	TransactionNotAllowed(String) = 4,
-	#[error("{0}")]
-	Codec(codec::Error) = 5,
-	#[error("{0}")]
-	FromHex(const_hex::FromHexError) = 6,
+	TransactionNotAllowed(String),
 }
 
-impl From<subxt_core::Error> for Error {
+impl From<rpc::Error> for Error {
+	fn from(value: rpc::Error) -> Self {
+		Self::Rpc(value)
+	}
+}
+
+/* impl From<subxt_core::Error> for Error {
 	fn from(value: subxt_core::Error) -> Self {
 		Self::SubxtCore(value)
 	}
 }
-
+ */
 #[cfg(feature = "subxt")]
 impl From<subxt::Error> for Error {
 	fn from(value: subxt::Error) -> Self {
@@ -31,13 +31,13 @@ impl From<subxt::Error> for Error {
 	}
 }
 
-impl From<subxt_rpcs::Error> for Error {
+/* impl From<subxt_rpcs::Error> for Error {
 	fn from(value: subxt_rpcs::Error) -> Self {
-		Self::SubxtRpcs(value)
+		Self::Rpc(value)
 	}
-}
+} */
 
-impl From<String> for Error {
+/* impl From<String> for Error {
 	fn from(value: String) -> Self {
 		Self::Custom(value)
 	}
@@ -60,3 +60,4 @@ impl From<const_hex::FromHexError> for Error {
 		Self::FromHex(value)
 	}
 }
+ */

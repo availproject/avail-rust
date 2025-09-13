@@ -1,4 +1,4 @@
-use crate::{AccountId, AvailHeader};
+use crate::{AvailHeader, types::AccountId};
 use codec::{Codec, Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};

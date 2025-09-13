@@ -1,5 +1,9 @@
-use super::extrinsic::{EXTRINSIC_FORMAT_VERSION, ExtrinsicSignature};
-use crate::{ExtrinsicCall, extrinsic::decode_already_decoded, types::metadata::StringOrBytes};
+use super::substrate::extrinsic::EXTRINSIC_FORMAT_VERSION;
+use crate::{
+	substrate::extrinsic::ExtrinsicCall,
+	types::{ExtrinsicSignature, metadata::StringOrBytes},
+	utils::decode_already_decoded,
+};
 use codec::{Compact, Decode, Encode, Error, Input};
 use serde::{Deserialize, Serialize};
 
@@ -14,8 +18,6 @@ pub trait TransactionConvertible {
 
 pub trait TransactionDecodable: Sized {
 	fn decode_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Option<Self>;
-	fn decode_call_data<'a>(call_data: impl Into<StringOrBytes<'a>>) -> Option<Self>;
-	fn decode_extrinsic<'a>(transaction: impl Into<StringOrBytes<'a>>) -> Option<Self>;
 }
 
 impl<T: HasHeader + Encode> TransactionConvertible for T {
@@ -25,12 +27,6 @@ impl<T: HasHeader + Encode> TransactionConvertible for T {
 }
 
 impl<T: HasHeader + Decode> TransactionDecodable for T {
-	fn decode_extrinsic<'a>(transaction: impl Into<StringOrBytes<'a>>) -> Option<T> {
-		let transaction: StringOrBytes = transaction.into();
-		let opaque = RawExtrinsic::try_from(transaction).ok()?;
-		Self::decode_call(&opaque.call)
-	}
-
 	fn decode_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Option<T> {
 		fn inner<T: HasHeader + Decode>(call: StringOrBytes) -> Option<T> {
 			let call = match call {
@@ -44,44 +40,26 @@ impl<T: HasHeader + Decode> TransactionDecodable for T {
 			}
 
 			if call.len() <= 2 {
-				try_decode_transaction(&[])
+				let mut data: &[u8] = &[];
+				T::decode(&mut data).ok()
 			} else {
-				try_decode_transaction(&call[2..])
+				let mut data = &call[2..];
+				T::decode(&mut data).ok()
 			}
 		}
 
 		inner(call.into())
 	}
-
-	fn decode_call_data<'a>(call_data: impl Into<StringOrBytes<'a>>) -> Option<Self> {
-		fn inner<T: HasHeader + Decode>(call_data: StringOrBytes) -> Option<T> {
-			let call_data = match call_data {
-				StringOrBytes::String(s) => &const_hex::decode(s.trim_start_matches("0x")).ok()?,
-				StringOrBytes::Bytes(b) => b,
-			};
-
-			try_decode_transaction(call_data)
-		}
-
-		inner(call_data.into())
-	}
 }
 
-// Purely here to decrease compilation times
 #[inline(never)]
-fn try_decode_transaction<T: Decode>(mut event_data: &[u8]) -> Option<T> {
-	T::decode(&mut event_data).ok()
-}
-
-// Purely here to decrease compilation times
-#[inline(never)]
-fn tx_filter_in(call: &[u8], dispatch_index: (u8, u8)) -> bool {
+fn tx_filter_in(call: &[u8], header: (u8, u8)) -> bool {
 	if call.len() < 3 {
 		return false;
 	}
 
 	let (pallet_id, variant_id) = (call[0], call[1]);
-	if dispatch_index.0 != pallet_id || dispatch_index.1 != variant_id {
+	if header.0 != pallet_id || header.1 != variant_id {
 		return false;
 	}
 
@@ -399,17 +377,6 @@ impl<T: HasHeader + Decode> TryFrom<&RawExtrinsic> for Extrinsic<T> {
 
 #[cfg(test)]
 pub mod test {
-	use super::TransactionConvertible;
-	use std::borrow::Cow;
-
-	use codec::Encode;
-	use subxt_core::utils::{AccountId32, Era};
-
-	use crate::{
-		Extrinsic, ExtrinsicExtra, MultiAddress, MultiSignature, avail::data_availability::tx::SubmitData,
-		decoded_transaction::RawExtrinsic, extrinsic::ExtrinsicSignature,
-	};
-
 	/* 	#[test]
 	fn test_encoding_decoding() {
 		let call = SubmitData { data: vec![0, 1, 2, 3] }.to_call();

@@ -1,13 +1,9 @@
-use crate::decoded_events::RuntimePhase;
+use crate::{rpc::Error, types::RuntimePhase};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use subxt_rpcs::{RpcClient, rpc_params};
 
-pub async fn fetch_events_v1(
-	client: &RpcClient,
-	at: H256,
-	opts: &Options,
-) -> Result<Vec<BlockPhaseEvent>, subxt_rpcs::Error> {
+pub async fn fetch_events_v1(client: &RpcClient, at: H256, opts: &Options) -> Result<Vec<BlockPhaseEvent>, Error> {
 	let params = rpc_params![at, opts];
 	let value: Vec<RpcPhaseEvents> = client.request("system_fetchEventsV1", params).await?;
 	Ok(value.into_iter().map(BlockPhaseEvent::from).collect())

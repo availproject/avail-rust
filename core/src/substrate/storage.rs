@@ -1,6 +1,5 @@
-use crate::{Error, rpc};
+use crate::{Error, rpc, types::H256};
 use codec::{Decode, Encode};
-use primitive_types::H256;
 use std::marker::PhantomData;
 use subxt_rpcs::RpcClient;
 

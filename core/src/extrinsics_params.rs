@@ -2,7 +2,7 @@
 // This file is dual-licensed as Apache-2.0 or GPL-3.0.
 // see LICENSE for license details.
 
-use crate::Era;
+use crate::types::Era;
 use codec::{Compact, Encode};
 use scale_info::PortableRegistry;
 use subxt_core::{
@@ -11,7 +11,7 @@ use subxt_core::{
 	error::ExtrinsicParamsError,
 };
 
-use crate::AppId;
+use crate::types::metadata::AppId;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct CheckAppId(pub AppId);

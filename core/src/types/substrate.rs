@@ -1,5 +1,91 @@
+use super::H256;
 use codec::{Decode, Encode};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+pub use subxt_core::utils::Era;
+
+// Chain Config
+pub type AccountId = subxt_core::utils::AccountId32;
+pub type AccountIndex = u32;
+pub type BlockHeight = u32;
+pub type BlockHash = H256;
+pub type Signature = MultiSignature;
+pub type BlakeTwo256 = subxt_core::config::substrate::BlakeTwo256;
+
+/// A phase of a block's execution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+pub enum RuntimePhase {
+	/// Applying an extrinsic.
+	ApplyExtrinsic(u32),
+	/// Finalizing the block.
+	Finalization,
+	/// Initializing the block.
+	Initialization,
+}
+
+#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq)]
+pub struct ExtrinsicExtra {
+	pub era: Era,
+	#[codec(compact)]
+	pub nonce: u32,
+	#[codec(compact)]
+	pub tip: u128,
+	#[codec(compact)]
+	pub app_id: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExtrinsicSignature {
+	pub address: MultiAddress,
+	pub signature: MultiSignature,
+	pub tx_extra: ExtrinsicExtra,
+}
+impl Encode for ExtrinsicSignature {
+	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+		self.address.encode_to(dest);
+		self.signature.encode_to(dest);
+		self.tx_extra.encode_to(dest);
+	}
+}
+impl Decode for ExtrinsicSignature {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let address = Decode::decode(input)?;
+		let signature = Decode::decode(input)?;
+		let tx_extra = Decode::decode(input)?;
+		Ok(Self { address, signature, tx_extra })
+	}
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, scale_info::TypeInfo)]
+#[repr(u8)]
+pub enum MultiSignature {
+	/// An Ed25519 signature.
+	Ed25519([u8; 64]) = 0,
+	/// An Sr25519 signature.
+	Sr25519([u8; 64]) = 1,
+	/// An ECDSA/SECP256k1 signature (a 512-bit value, plus 8 bits for recovery ID).
+	Ecdsa([u8; 65]) = 2,
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, scale_info::TypeInfo)]
+#[repr(u8)]
+pub enum MultiAddress {
+	/// It's an account ID (pubkey).
+	Id(AccountId) = 0,
+	/// It's an account index.
+	Index(#[codec(compact)] u32) = 1,
+	/// It's some arbitrary raw bytes.
+	Raw(Vec<u8>) = 2,
+	/// It's a 32 byte representation.
+	Address32([u8; 32]) = 3,
+	/// Its a 20 byte representation.
+	Address20([u8; 20]) = 4,
+}
+
+impl From<AccountId> for MultiAddress {
+	fn from(a: AccountId) -> Self {
+		Self::Id(a)
+	}
+}
 
 /// The base fee and adjusted weight and length fees constitute the _inclusion fee_.
 #[derive(Clone, Debug, PartialEq, Deserialize, Decode)]

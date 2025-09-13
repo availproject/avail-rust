@@ -1,15 +1,14 @@
-use std::str::FromStr;
-
-use crate::HashNumber;
+use crate::{HashNumber, rpc::Error};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use subxt_rpcs::{RpcClient, rpc_params};
 
 pub async fn fetch_extrinsics_v1(
 	client: &RpcClient,
 	block_id: HashNumber,
 	options: &Options,
-) -> Result<Vec<ExtrinsicInfo>, subxt_rpcs::Error> {
+) -> Result<Vec<ExtrinsicInfo>, Error> {
 	let options: RpcOptions = RpcOptions {
 		filter: Filter {
 			transaction: Some(options.transaction_filter.clone()),
@@ -99,7 +98,7 @@ impl Default for ExtrinsicFilter {
 }
 
 impl TryFrom<String> for ExtrinsicFilter {
-	type Error = crate::Error;
+	type Error = String;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_str())
@@ -107,7 +106,7 @@ impl TryFrom<String> for ExtrinsicFilter {
 }
 
 impl TryFrom<&String> for ExtrinsicFilter {
-	type Error = crate::Error;
+	type Error = String;
 
 	fn try_from(value: &String) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_str())
@@ -115,7 +114,7 @@ impl TryFrom<&String> for ExtrinsicFilter {
 }
 
 impl TryFrom<&str> for ExtrinsicFilter {
-	type Error = crate::Error;
+	type Error = String;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
 		let h256 = H256::from_str(value).map_err(|x| x.to_string())?;

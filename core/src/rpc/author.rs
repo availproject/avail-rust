@@ -1,4 +1,4 @@
-use crate::error::Error;
+use super::Error;
 use primitive_types::H256;
 use std::array::TryFromSliceError;
 use subxt_rpcs::{RpcClient, rpc_params};
@@ -32,11 +32,11 @@ impl TryFrom<&[u8]> for SessionKeys {
 pub async fn rotate_keys(client: &RpcClient) -> Result<SessionKeys, Error> {
 	let params = rpc_params![];
 	let value: Vec<u8> = client.request("author_rotateKeys", params).await?;
-	let keys = SessionKeys::try_from(value.as_slice())?;
+	let keys = SessionKeys::try_from(value.as_slice()).map_err(|e| Error::MalformedResponse(e.to_string()))?;
 	Ok(keys)
 }
 
-pub async fn submit_extrinsic(client: &RpcClient, extrinsic: &[u8]) -> Result<H256, subxt_rpcs::Error> {
+pub async fn submit_extrinsic(client: &RpcClient, extrinsic: &[u8]) -> Result<H256, Error> {
 	let ext = std::format!("0x{}", const_hex::encode(extrinsic));
 	let params = rpc_params![ext];
 	let value: H256 = client.request("author_submitExtrinsic", params).await?;

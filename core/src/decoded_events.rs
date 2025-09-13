@@ -1,7 +1,5 @@
-use codec::{Decode, Encode};
-use serde::{Deserialize, Serialize};
-
 use crate::{HasHeader, types::metadata::StringOrBytes};
+use codec::{Decode, Encode};
 
 pub trait TransactionEventEncodable {
 	/// SCALE encodes the event
@@ -98,7 +96,7 @@ fn event_filter_in(event: &[u8], emitted_index: (u8, u8)) -> bool {
 	true
 }
 
-/// Contains only the event body. Phase and topics are not included here.
+/* /// Contains only the event body. Phase and topics are not included here.
 #[derive(Debug, Clone)]
 pub struct RawEvent(pub Vec<u8>);
 
@@ -168,14 +166,4 @@ impl TryFrom<&[u8]> for RawEvent {
 		Ok(RawEvent(value.to_owned()))
 	}
 }
-
-/// A phase of a block's execution.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
-pub enum RuntimePhase {
-	/// Applying an extrinsic.
-	ApplyExtrinsic(u32),
-	/// Finalizing the block.
-	Finalization,
-	/// Initializing the block.
-	Initialization,
-}
+ */

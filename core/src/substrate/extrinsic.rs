@@ -1,12 +1,9 @@
-use super::{AccountId, MultiAddress, MultiSignature};
+use crate::types::{AccountId, ExtrinsicExtra, ExtrinsicSignature, H256, MultiAddress, MultiSignature};
 use codec::{Compact, Decode, Encode};
-use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use subxt_core::config::{Hasher, substrate::BlakeTwo256};
 use subxt_signer::sr25519::Keypair;
-
-pub use subxt_core::utils::Era;
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
 ///
@@ -14,17 +11,6 @@ pub use subxt_core::utils::Era;
 /// It ensures that if the representation is changed and the format is not known,
 /// the decoding fails.
 pub const EXTRINSIC_FORMAT_VERSION: u8 = 4;
-
-#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq)]
-pub struct ExtrinsicExtra {
-	pub era: Era,
-	#[codec(compact)]
-	pub nonce: u32,
-	#[codec(compact)]
-	pub tip: u128,
-	#[codec(compact)]
-	pub app_id: u32,
-}
 
 #[derive(Debug, Clone)]
 pub struct ExtrinsicAdditional {
@@ -51,19 +37,6 @@ impl Decode for ExtrinsicAdditional {
 	}
 }
 
-pub fn decode_already_decoded<I: codec::Input>(input: &mut I) -> Result<Vec<u8>, codec::Error> {
-	let length = input.remaining_len()?;
-	let Some(length) = length else {
-		return Err("Failed to decode transaction".into());
-	};
-	if length == 0 {
-		return Ok(Vec::new());
-	}
-	let mut value = vec![0u8; length];
-	input.read(&mut value)?;
-	Ok(value)
-}
-
 #[derive(Debug, Clone)]
 pub struct ExtrinsicCall {
 	pub pallet_id: u8,
@@ -86,7 +59,7 @@ impl Decode for ExtrinsicCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let pallet_id = Decode::decode(input)?;
 		let variant_id = Decode::decode(input)?;
-		let data = decode_already_decoded(input)?;
+		let data = crate::utils::decode_already_decoded(input)?;
 		Ok(Self { pallet_id, variant_id, data })
 	}
 }
@@ -123,28 +96,6 @@ impl<'a> ExtrinsicPayload<'a> {
 		} else {
 			signer.sign(&data).0
 		}
-	}
-}
-
-#[derive(Debug, Clone)]
-pub struct ExtrinsicSignature {
-	pub address: MultiAddress,
-	pub signature: MultiSignature,
-	pub tx_extra: ExtrinsicExtra,
-}
-impl Encode for ExtrinsicSignature {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		self.address.encode_to(dest);
-		self.signature.encode_to(dest);
-		self.tx_extra.encode_to(dest);
-	}
-}
-impl Decode for ExtrinsicSignature {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let address = Decode::decode(input)?;
-		let signature = Decode::decode(input)?;
-		let tx_extra = Decode::decode(input)?;
-		Ok(Self { address, signature, tx_extra })
 	}
 }
 

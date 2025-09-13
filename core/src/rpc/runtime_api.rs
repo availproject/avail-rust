@@ -1,7 +1,5 @@
-use crate::{
-	error::Error,
-	types::substrate::{FeeDetails, RuntimeDispatchInfo},
-};
+use super::Error;
+use crate::types::substrate::{FeeDetails, RuntimeDispatchInfo};
 use primitive_types::H256;
 use subxt_rpcs::RpcClient;
 
@@ -12,8 +10,8 @@ pub async fn call_raw<T: codec::Decode>(
 	at: Option<H256>,
 ) -> Result<T, Error> {
 	let result: String = super::state::call(client, method, data, at).await?;
-	let result = const_hex::decode(result.trim_start_matches("0x")).map_err(|e| e.to_string())?;
-	let result = T::decode(&mut result.as_slice()).map_err(|e| e.to_string())?;
+	let result = const_hex::decode(result.trim_start_matches("0x")).map_err(Error::from)?;
+	let result = T::decode(&mut result.as_slice()).map_err(|e| Error::DecodingFailed(e.to_string()))?;
 
 	Ok(result)
 }
