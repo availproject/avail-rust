@@ -1,4 +1,4 @@
-use crate::{Error, rpc, types::H256};
+use crate::{rpc, rpc::Error, types::H256};
 use codec::{Decode, Encode};
 use std::marker::PhantomData;
 use subxt_rpcs::RpcClient;
@@ -114,7 +114,8 @@ pub trait StorageValue {
 				return Ok(None);
 			};
 
-			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())?;
+			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())
+				.map_err(|x| Error::DecodingFailed(x.to_string()))?;
 			Ok(Some(storage_value))
 		}
 	}
@@ -215,7 +216,8 @@ pub trait StorageMap {
 				return Ok(None);
 			};
 
-			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())?;
+			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())
+				.map_err(|x| Error::DecodingFailed(x.to_string()))?;
 			Ok(Some(storage_value))
 		}
 	}
@@ -336,7 +338,8 @@ pub trait StorageDoubleMap {
 				return Ok(None);
 			};
 
-			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())?;
+			let storage_value = Self::decode_storage_value(&mut storage_value.as_slice())
+				.map_err(|x| Error::DecodingFailed(x.to_string()))?;
 			Ok(Some(storage_value))
 		}
 	}
@@ -391,8 +394,9 @@ impl<T: StorageMap> StorageMapIterator<T> {
 			return Ok(None);
 		};
 
-		let key = const_hex::decode(storage_key.trim_start_matches("0x")).map_err(|x| x.to_string())?;
-		let key = T::decode_storage_key(&mut key.as_slice())?;
+		let key = const_hex::decode(storage_key.trim_start_matches("0x"))
+			.map_err(|x| Error::DecodingFailed(x.to_string()))?;
+		let key = T::decode_storage_key(&mut key.as_slice()).map_err(|x| Error::DecodingFailed(x.to_string()))?;
 
 		self.last_key = Some(storage_key.clone());
 		self.fetched_keys.pop();
@@ -447,7 +451,8 @@ impl<T: StorageMap> StorageMapIterator<T> {
 		let Some(storage_value) = storage_value else {
 			return Ok(None);
 		};
-		let storage_value = T::decode_storage_value(&mut storage_value.as_slice())?;
+		let storage_value =
+			T::decode_storage_value(&mut storage_value.as_slice()).map_err(|x| Error::DecodingFailed(x.to_string()))?;
 
 		Ok(Some(storage_value))
 	}
@@ -496,8 +501,11 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 			return Ok(None);
 		};
 
-		let key = const_hex::decode(storage_key.trim_start_matches("0x")).map_err(|x| x.to_string())?;
-		let (key1, key2) = T::decode_storage_key(&mut key.as_slice())?;
+		let key = const_hex::decode(storage_key.trim_start_matches("0x"))
+			.map_err(|x| x.to_string())
+			.map_err(|x| Error::DecodingFailed(x.to_string()))?;
+		let (key1, key2) =
+			T::decode_storage_key(&mut key.as_slice()).map_err(|x| Error::DecodingFailed(x.to_string()))?;
 
 		self.last_key = Some(storage_key.clone());
 		self.fetched_keys.pop();
@@ -552,7 +560,8 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 		let Some(storage_value) = storage_value else {
 			return Ok(None);
 		};
-		let storage_value = T::decode_storage_value(&mut storage_value.as_slice())?;
+		let storage_value =
+			T::decode_storage_value(&mut storage_value.as_slice()).map_err(|x| Error::DecodingFailed(x.to_string()))?;
 
 		Ok(Some(storage_value))
 	}
