@@ -1,6 +1,8 @@
 use crate::{
 	Client,
-	block::{BEvent, BRxt, BSxt, Block, BlockRawExtrinsic, BlockSignedExtrinsic, ExtrinsicEvents},
+	block::{
+		BEvent, BExt, BRxt, BSxt, Block, BlockExtrinsic, BlockRawExtrinsic, BlockSignedExtrinsic, ExtrinsicEvents,
+	},
 	subscription::SubscriptionBuilder,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
@@ -150,8 +152,18 @@ impl TransactionReceipt {
 		Ok(tx)
 	}
 
+	pub async fn ext<T: HasHeader + Decode>(&self) -> Result<BlockExtrinsic<T>, avail_rust_core::Error> {
+		let block = BExt::new(self.client.clone(), self.block_ref.height);
+		let ext: Option<BlockExtrinsic<T>> = block.get(self.tx_ref.index).await?;
+		let Some(ext) = ext else {
+			return Err("Failed to find extrinsic".into());
+		};
+
+		Ok(ext)
+	}
+
 	pub async fn call<T: HasHeader + Decode>(&self) -> Result<T, avail_rust_core::Error> {
-		let block = BSxt::new(self.client.clone(), self.block_ref.height);
+		let block = BExt::new(self.client.clone(), self.block_ref.height);
 		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
 			return Err("Failed to find transaction".into());

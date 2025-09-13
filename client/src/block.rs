@@ -644,7 +644,7 @@ impl ExtrinsicEvents {
 		Self { events }
 	}
 
-	pub fn find<T: HasHeader + codec::Decode>(&self) -> Option<T> {
+	pub fn first<T: HasHeader + codec::Decode>(&self) -> Option<T> {
 		let event = self
 			.events
 			.iter()
@@ -665,12 +665,12 @@ impl ExtrinsicEvents {
 	}
 
 	pub fn proxy_executed_successfully(&self) -> Option<bool> {
-		let executed = self.find::<avail::proxy::events::ProxyExecuted>()?;
+		let executed = self.first::<avail::proxy::events::ProxyExecuted>()?;
 		return Some(executed.result.is_ok());
 	}
 
 	pub fn multisig_executed_successfully(&self) -> Option<bool> {
-		let executed = self.find::<avail::multisig::events::MultisigExecuted>()?;
+		let executed = self.first::<avail::multisig::events::MultisigExecuted>()?;
 		return Some(executed.result.is_ok());
 	}
 

@@ -46,7 +46,7 @@ impl From<AccountId> for MultiAddress {
 #[derive(Debug, Clone, Copy, Default, Encode, Decode, Eq, PartialEq)]
 pub struct AppId(#[codec(compact)] pub u32);
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct BlockRef {
 	pub hash: H256,
 	pub height: u32,
@@ -64,7 +64,7 @@ impl From<BlockRef> for H256 {
 	}
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct TxRef {
 	pub hash: H256,
 	pub index: u32,
