@@ -144,7 +144,56 @@ impl TryFrom<HashStringNumber> for HashNumber {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+impl TryFrom<HashString> for HashNumber {
+	type Error = crate::Error;
+
+	fn try_from(value: HashString) -> Result<Self, Self::Error> {
+		Self::try_from(HashStringNumber::from(value))
+	}
+}
+
+#[derive(Debug, Clone)]
+pub enum HashString {
+	Hash(H256),
+	String(String),
+}
+
+impl TryInto<H256> for HashString {
+	type Error = crate::Error;
+
+	fn try_into(self) -> Result<H256, Self::Error> {
+		match self {
+			HashString::Hash(x) => Ok(x),
+			HashString::String(x) => Ok(H256::from_str(&x).map_err(|x| x.to_string())?),
+		}
+	}
+}
+
+impl From<H256> for HashString {
+	fn from(value: H256) -> Self {
+		Self::Hash(value)
+	}
+}
+
+impl From<&str> for HashString {
+	fn from(value: &str) -> Self {
+		Self::String(value.to_owned())
+	}
+}
+
+impl From<&String> for HashString {
+	fn from(value: &String) -> Self {
+		Self::String(value.clone())
+	}
+}
+
+impl From<String> for HashString {
+	fn from(value: String) -> Self {
+		Self::String(value)
+	}
+}
+
+#[derive(Debug, Clone)]
 pub enum HashStringNumber {
 	Hash(H256),
 	String(String),
@@ -154,6 +203,15 @@ pub enum HashStringNumber {
 impl From<BlockRef> for HashStringNumber {
 	fn from(value: BlockRef) -> Self {
 		Self::Hash(value.hash)
+	}
+}
+
+impl From<HashString> for HashStringNumber {
+	fn from(value: HashString) -> Self {
+		match value {
+			HashString::Hash(x) => Self::Hash(x),
+			HashString::String(x) => Self::String(x),
+		}
 	}
 }
 
@@ -190,13 +248,19 @@ impl From<&str> for HashStringNumber {
 	}
 }
 
+impl From<&String> for HashStringNumber {
+	fn from(value: &String) -> Self {
+		Self::String(value.clone())
+	}
+}
+
 impl From<String> for HashStringNumber {
 	fn from(value: String) -> Self {
 		Self::String(value)
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum StringOrBytes<'a> {
 	String(&'a str),
 	Bytes(&'a [u8]),

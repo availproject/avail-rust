@@ -6,11 +6,11 @@ use subxt_rpcs::{RpcClient, rpc_params};
 pub async fn fetch_events_v1(
 	client: &RpcClient,
 	at: H256,
-	options: &Options,
-) -> Result<Vec<PhaseEvents>, subxt_rpcs::Error> {
-	let params = rpc_params![at, options];
-	let value = client.request("system_fetchEventsV1", params).await?;
-	Ok(value)
+	opts: &Options,
+) -> Result<Vec<BlockPhaseEvent>, subxt_rpcs::Error> {
+	let params = rpc_params![at, opts];
+	let value: Vec<RpcPhaseEvents> = client.request("system_fetchEventsV1", params).await?;
+	Ok(value.into_iter().map(BlockPhaseEvent::from).collect())
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -41,14 +41,62 @@ impl Default for Filter {
 	}
 }
 
+impl From<u32> for Filter {
+	fn from(value: u32) -> Self {
+		Self::Only(vec![value])
+	}
+}
+
+impl From<Vec<u32>> for Filter {
+	fn from(value: Vec<u32>) -> Self {
+		Self::Only(value)
+	}
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct BlockPhaseEvent {
+	pub phase: RuntimePhase,
+	pub events: Vec<PhaseEvent>,
+}
+
+impl From<RpcPhaseEvents> for BlockPhaseEvent {
+	fn from(value: RpcPhaseEvents) -> Self {
+		Self {
+			phase: value.phase,
+			events: value.events.into_iter().map(PhaseEvent::from).collect(),
+		}
+	}
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PhaseEvent {
+	pub index: u32,
+	pub pallet_id: u8,
+	pub variant_id: u8,
+	pub encoded_data: Option<String>,
+	pub decoded_data: Option<String>,
+}
+
+impl From<RuntimeEvent> for PhaseEvent {
+	fn from(value: RuntimeEvent) -> Self {
+		Self {
+			index: value.index,
+			pallet_id: value.emitted_index.0,
+			variant_id: value.emitted_index.1,
+			encoded_data: value.encoded,
+			decoded_data: value.decoded,
+		}
+	}
+}
+
 #[derive(Clone, Debug, PartialEq, Deserialize)]
-pub struct PhaseEvents {
+struct RpcPhaseEvents {
 	pub phase: RuntimePhase,
 	pub events: Vec<RuntimeEvent>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
-pub struct RuntimeEvent {
+struct RuntimeEvent {
 	pub index: u32,
 	// (Pallet Id, Event Id)
 	pub emitted_index: (u8, u8),

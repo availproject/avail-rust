@@ -1,10 +1,7 @@
 use crate::Client;
 use avail_rust_core::{
 	EncodeSelector, Extrinsic, ExtrinsicSignature, H256, HasHeader, MultiAddress, TransactionEventDecodable, avail,
-	rpc::{
-		self,
-		system::fetch_extrinsics::{ExtrinsicFilter, SignerPayload},
-	},
+	rpc::{self, ExtrinsicFilter, SignerPayload},
 	types::metadata::HashStringNumber,
 };
 use codec::Decode;
@@ -19,7 +16,12 @@ pub struct Block {
 impl Block {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
 		fn inner(client: Client, block_id: HashStringNumber) -> Block {
-			Block { sxt: todo!(), ext: todo!(), rxt: todo!(), event: todo!() }
+			Block {
+				rxt: BRxt::new(client.clone(), block_id.clone()),
+				ext: BExt::new(client.clone(), block_id.clone()),
+				sxt: BSxt::new(client.clone(), block_id.clone()),
+				event: BEvent::new(client.clone(), block_id.clone()),
+			}
 		}
 
 		inner(client, block_id.into())
@@ -33,33 +35,31 @@ pub struct BRxt {
 
 impl BRxt {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		fn inner(client: Client, block_id: HashStringNumber) -> BRxt {
-			BRxt { client, block_id }
-		}
-
-		inner(client, block_id.into())
+		Self { client, block_id: block_id.into() }
 	}
 
 	pub async fn get(
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
-		opts: BlockExtOptions2,
+		encode_as: EncodeSelector,
 	) -> Result<Option<BlockRawExtrinsic>, avail_rust_core::Error> {
 		async fn inner(
 			s: &BRxt,
 			extrinsic_id: HashStringNumber,
-			opts: BlockExtOptions2,
+			encode_as: EncodeSelector,
 		) -> Result<Option<BlockRawExtrinsic>, avail_rust_core::Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
 				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x)?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
-			let filter = Some(filter);
-			s.first(BlockExtOptions2 { filter, ..opts }).await
+			let mut opts = BlockExtOptions2::default();
+			opts.filter = Some(filter);
+			opts.encode_as = Some(encode_as);
+			s.first(opts).await
 		}
 
-		inner(&self, extrinsic_id.into(), opts).await
+		inner(&self, extrinsic_id.into(), encode_as).await
 	}
 
 	pub async fn first(&self, mut opts: BlockExtOptions2) -> Result<Option<BlockRawExtrinsic>, avail_rust_core::Error> {
@@ -67,13 +67,13 @@ impl BRxt {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
 
-		let result = self
+		let mut result = self
 			.client
 			.rpc()
 			.system_fetch_extrinsics(self.block_id.clone(), opts.into())
 			.await?;
 
-		let Some(first) = result.first().cloned() else {
+		let Some(first) = result.first_mut() else {
 			return Ok(None);
 		};
 
@@ -84,7 +84,7 @@ impl BRxt {
 			first.variant_id,
 			self.block_id.clone(),
 		);
-		let ext = BlockRawExtrinsic::new(first.data, metadata, first.signer_payload);
+		let ext = BlockRawExtrinsic::new(first.data.take(), metadata, first.signer_payload.take());
 
 		Ok(Some(ext))
 	}
@@ -100,7 +100,7 @@ impl BRxt {
 			.system_fetch_extrinsics(self.block_id.clone(), opts.into())
 			.await?;
 
-		let Some(last) = result.pop() else {
+		let Some(last) = result.last_mut() else {
 			return Ok(None);
 		};
 
@@ -111,7 +111,7 @@ impl BRxt {
 			last.variant_id,
 			self.block_id.clone(),
 		);
-		let ext = BlockRawExtrinsic::new(last.data, metadata, last.signer_payload);
+		let ext = BlockRawExtrinsic::new(last.data.take(), metadata, last.signer_payload.take());
 
 		Ok(Some(ext))
 	}
@@ -164,15 +164,17 @@ pub struct BExt {
 }
 
 impl BExt {
+	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
+		Self { rxt: BRxt::new(client, block_id) }
+	}
+
 	pub async fn get<T: HasHeader + Decode>(
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
-		opts: BlockExtOptions1,
 	) -> Result<Option<BlockExtrinsic<T>>, avail_rust_core::Error> {
 		async fn inner<T: HasHeader + Decode>(
 			s: &BExt,
 			extrinsic_id: HashStringNumber,
-			opts: BlockExtOptions1,
 		) -> Result<Option<BlockExtrinsic<T>>, avail_rust_core::Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
@@ -180,10 +182,10 @@ impl BExt {
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let filter = Some(filter);
-			s.first::<T>(BlockExtOptions1 { filter, ..opts }).await
+			s.first::<T>(BlockExtOptions1 { filter, ..Default::default() }).await
 		}
 
-		inner::<T>(&self, extrinsic_id.into(), opts).await
+		inner::<T>(&self, extrinsic_id.into()).await
 	}
 
 	pub async fn first<T: HasHeader + Decode>(
@@ -265,15 +267,17 @@ pub struct BSxt {
 }
 
 impl BSxt {
+	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
+		Self { ext: BExt::new(client, block_id) }
+	}
+
 	pub async fn get<T: HasHeader + Decode>(
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
-		opts: BlockExtOptions1,
 	) -> Result<Option<BlockSignedExtrinsic<T>>, avail_rust_core::Error> {
 		async fn inner<T: HasHeader + Decode>(
 			s: &BSxt,
 			extrinsic_id: HashStringNumber,
-			opts: BlockExtOptions1,
 		) -> Result<Option<BlockSignedExtrinsic<T>>, avail_rust_core::Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
@@ -281,10 +285,10 @@ impl BSxt {
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let filter = Some(filter);
-			s.first::<T>(BlockExtOptions1 { filter, ..opts }).await
+			s.first::<T>(BlockExtOptions1 { filter, ..Default::default() }).await
 		}
 
-		inner::<T>(&self, extrinsic_id.into(), opts).await
+		inner::<T>(&self, extrinsic_id.into()).await
 	}
 
 	pub async fn first<T: HasHeader + Decode>(
@@ -332,28 +336,91 @@ impl BSxt {
 	}
 }
 
-pub struct BEvent {}
+pub struct BEvent {
+	client: Client,
+	block_id: HashStringNumber,
+}
+
+impl BEvent {
+	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
+		BEvent { client, block_id: block_id.into() }
+	}
+
+	pub async fn ext(&self, tx_index: u32) -> Result<Option<ExtrinsicEvents>, avail_rust_core::Error> {
+		let mut events = self
+			.block(BlockEventsOptions {
+				filter: Some(tx_index.into()),
+				enable_encoding: Some(true),
+				enable_decoding: Some(false),
+			})
+			.await?;
+
+		let Some(first) = events.first_mut() else {
+			return Ok(None);
+		};
+
+		let mut result: Vec<ExtrinsicEvent> = Vec::with_capacity(first.events.len());
+		for phase_event in &mut first.events {
+			let Some(data) = phase_event.encoded_data.take() else {
+				return Err(avail_rust_core::Error::from("No data was provided from event"));
+			};
+			let ext_event = ExtrinsicEvent {
+				index: phase_event.index,
+				pallet_id: phase_event.pallet_id,
+				variant_id: phase_event.variant_id,
+				data,
+			};
+			result.push(ext_event);
+		}
+
+		Ok(Some(ExtrinsicEvents::new(result)))
+	}
+
+	pub async fn block(&self, opts: BlockEventsOptions) -> Result<Vec<rpc::BlockPhaseEvent>, avail_rust_core::Error> {
+		self.client
+			.rpc()
+			.system_fetch_events(self.block_id.clone(), opts.into())
+			.await
+	}
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct BlockEventsOptions {
+	filter: Option<rpc::EventFilter>,
+	enable_encoding: Option<bool>,
+	enable_decoding: Option<bool>,
+}
+
+impl Into<rpc::EventOpts> for BlockEventsOptions {
+	fn into(self) -> rpc::EventOpts {
+		rpc::EventOpts {
+			filter: self.filter,
+			enable_encoding: self.enable_encoding,
+			enable_decoding: self.enable_decoding,
+		}
+	}
+}
 
 #[derive(Debug, Default, Clone)]
 pub struct BlockExtOptions1 {
-	filter: Option<ExtrinsicFilter>,
-	ss58_address: Option<String>,
-	app_id: Option<u32>,
-	nonce: Option<u32>,
+	pub filter: Option<ExtrinsicFilter>,
+	pub ss58_address: Option<String>,
+	pub app_id: Option<u32>,
+	pub nonce: Option<u32>,
 }
 
 #[derive(Debug, Default, Clone)]
 pub struct BlockExtOptions2 {
-	filter: Option<ExtrinsicFilter>,
-	ss58_address: Option<String>,
-	app_id: Option<u32>,
-	nonce: Option<u32>,
-	encode_as: Option<EncodeSelector>,
+	pub filter: Option<ExtrinsicFilter>,
+	pub ss58_address: Option<String>,
+	pub app_id: Option<u32>,
+	pub nonce: Option<u32>,
+	pub encode_as: Option<EncodeSelector>,
 }
 
-impl Into<rpc::system::fetch_extrinsics::Options> for BlockExtOptions2 {
-	fn into(self) -> rpc::system::fetch_extrinsics::Options {
-		rpc::system::fetch_extrinsics::Options {
+impl Into<rpc::ExtrinsicOpts> for BlockExtOptions2 {
+	fn into(self) -> rpc::ExtrinsicOpts {
+		rpc::ExtrinsicOpts {
 			transaction_filter: self.filter.unwrap_or_default(),
 			ss58_address: self.ss58_address,
 			app_id: self.app_id,
@@ -402,8 +469,23 @@ impl BlockRawExtrinsic {
 		Self { data, metadata, signer_payload }
 	}
 
-	pub async fn events() -> Result<ExtrinsicEvents, avail_rust_core::Error> {
-		todo!()
+	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
+		let events = BEvent::new(client, self.metadata.block_id.clone())
+			.ext(self.ext_index())
+			.await?;
+		let Some(events) = events else {
+			return Err(avail_rust_core::Error::from("No events found for extrinsic"));
+		};
+
+		Ok(events)
+	}
+
+	pub fn ext_index(&self) -> u32 {
+		self.metadata.ext_index
+	}
+
+	pub fn ext_hash(&self) -> H256 {
+		self.metadata.ext_hash
 	}
 
 	pub fn app_id(&self) -> Option<u32> {
@@ -431,8 +513,23 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 		Self { signature, call, metadata }
 	}
 
-	pub async fn events() -> Result<ExtrinsicEvents, avail_rust_core::Error> {
-		todo!()
+	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
+		let events = BEvent::new(client, self.metadata.block_id.clone())
+			.ext(self.ext_index())
+			.await?;
+		let Some(events) = events else {
+			return Err(avail_rust_core::Error::from("No events found for extrinsic"));
+		};
+
+		Ok(events)
+	}
+
+	pub fn ext_index(&self) -> u32 {
+		self.metadata.ext_index
+	}
+
+	pub fn ext_hash(&self) -> H256 {
+		self.metadata.ext_hash
 	}
 
 	pub fn app_id(&self) -> Option<u32> {
@@ -480,8 +577,23 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 		Self { signature, call, metadata }
 	}
 
-	pub async fn events() -> Result<ExtrinsicEvents, avail_rust_core::Error> {
-		todo!()
+	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
+		let events = BEvent::new(client, self.metadata.block_id.clone())
+			.ext(self.ext_index())
+			.await?;
+		let Some(events) = events else {
+			return Err(avail_rust_core::Error::from("No events found for extrinsic"));
+		};
+
+		Ok(events)
+	}
+
+	pub fn ext_index(&self) -> u32 {
+		self.metadata.ext_index
+	}
+
+	pub fn ext_hash(&self) -> H256 {
+		self.metadata.ext_hash
 	}
 
 	pub fn app_id(&self) -> u32 {

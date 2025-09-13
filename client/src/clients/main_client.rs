@@ -1,6 +1,7 @@
 use super::online_client::OnlineClientT;
 use crate::{
 	BlockState, avail,
+	block::Block,
 	clients::utils::{with_retry_on_error, with_retry_on_error_and_none},
 	extrinsic::SubmittedTransaction,
 	subscription::{self, Subscription},
@@ -16,7 +17,7 @@ use avail::{
 use avail_rust_core::{
 	AccountId, AvailHeader, BlockRef, H256, HashNumber, StorageMap,
 	grandpa::GrandpaJustification,
-	rpc::{self, BlockWithJustifications, runtime_api, system},
+	rpc::{self, BlockPhaseEvent, BlockWithJustifications, ExtrinsicInfo, runtime_api},
 	types::{
 		metadata::HashStringNumber,
 		substrate::{FeeDetails, RuntimeDispatchInfo},
@@ -114,6 +115,10 @@ impl Client {
 		self.online_client.constants()
 	}
 
+	pub fn block(&self, block_id: impl Into<HashStringNumber>) -> Block {
+		Block::new(self.clone(), block_id)
+	}
+
 	pub fn rpc(&self) -> Rpc {
 		Rpc::new(self.clone())
 	}
@@ -207,7 +212,9 @@ impl Rpc {
 	pub async fn nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
-		let f = || async move { system::account_next_index(&self.client.rpc_client, &std::format!("{}", account_id)).await };
+		let f = || async move {
+			rpc::system::account_next_index(&self.client.rpc_client, &std::format!("{}", account_id)).await
+		};
 		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
 	}
 
@@ -419,16 +426,16 @@ impl Rpc {
 	pub async fn system_fetch_extrinsics(
 		&self,
 		block_id: impl Into<HashStringNumber>,
-		opts: system::fetch_extrinsics::Options,
-	) -> Result<Vec<system::fetch_extrinsics::ExtrinsicInfo>, avail_rust_core::Error> {
+		opts: rpc::ExtrinsicOpts,
+	) -> Result<Vec<ExtrinsicInfo>, avail_rust_core::Error> {
 		async fn inner(
 			client: &Client,
 			block_id: HashStringNumber,
-			opts: &system::fetch_extrinsics::Options,
+			opts: &rpc::ExtrinsicOpts,
 			retry_on_error: bool,
-		) -> Result<Vec<system::fetch_extrinsics::ExtrinsicInfo>, avail_rust_core::Error> {
+		) -> Result<Vec<ExtrinsicInfo>, avail_rust_core::Error> {
 			let block_id: HashNumber = block_id.try_into()?;
-			let f = || async move { system::fetch_extrinsics_v1(&client.rpc_client, block_id, opts).await };
+			let f = || async move { rpc::system::fetch_extrinsics_v1(&client.rpc_client, block_id, opts).await };
 			with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
 		}
 
@@ -438,14 +445,30 @@ impl Rpc {
 
 	pub async fn system_fetch_events(
 		&self,
-		at: H256,
-		options: system::fetch_events::Options,
-	) -> Result<Vec<system::fetch_events::PhaseEvents>, avail_rust_core::Error> {
-		let retry_on_error = self.retry_on_error.unwrap_or(true);
-		let opt = &options;
+		at: impl Into<HashStringNumber>,
+		opts: rpc::EventOpts,
+	) -> Result<Vec<BlockPhaseEvent>, avail_rust_core::Error> {
+		async fn inner(
+			c: &Rpc,
+			block_id: HashStringNumber,
+			opts: &rpc::EventOpts,
+			retry_on_error: bool,
+		) -> Result<Vec<BlockPhaseEvent>, avail_rust_core::Error> {
+			let block_id: HashNumber = HashNumber::try_from(block_id)?;
+			let at = match block_id {
+				HashNumber::Hash(x) => x,
+				HashNumber::Number(x) => {
+					let hash = c.block_hash(Some(x)).await?;
+					hash.ok_or(avail_rust_core::Error::from("Failed to fetch block height"))?
+				},
+			};
 
-		let f = || async move { system::fetch_events_v1(&self.client.rpc_client, at, opt).await };
-		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+			let f = || async move { rpc::system::fetch_events_v1(&c.client.rpc_client, at, opts).await };
+			with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		}
+
+		let retry_on_error = self.retry_on_error.unwrap_or(true);
+		inner(&self, at.into(), &opts, retry_on_error).await
 	}
 
 	pub async fn grandpa_block_justification(

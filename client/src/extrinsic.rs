@@ -1,16 +1,20 @@
 use crate::{
 	Client,
-	block::ExtrinsicEvents,
+	block::{BEvent, BRxt, BSxt, Block, BlockRawExtrinsic, BlockSignedExtrinsic, ExtrinsicEvents},
 	subscription::SubscriptionBuilder,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockRef, H256, TransactionConvertible,
+	AccountId, BlockRef, EncodeSelector, H256, HasHeader, TransactionConvertible,
 	ext::codec::Encode,
 	extrinsic::{ExtrinsicAdditional, ExtrinsicCall},
-	types::{metadata::TxRef, substrate::FeeDetails},
+	types::{
+		metadata::{HashString, TxRef},
+		substrate::FeeDetails,
+	},
 };
+use codec::Decode;
 #[cfg(feature = "tracing")]
 use tracing::info;
 
@@ -136,8 +140,76 @@ impl TransactionReceipt {
 		self.client.rpc().block_state(self.block_ref).await
 	}
 
+	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockSignedExtrinsic<T>, avail_rust_core::Error> {
+		let block = BSxt::new(self.client.clone(), self.block_ref.height);
+		let tx = block.get(self.tx_ref.index).await?;
+		let Some(tx) = tx else {
+			return Err("Failed to find transaction".into());
+		};
+
+		Ok(tx)
+	}
+
+	pub async fn call<T: HasHeader + Decode>(&self) -> Result<T, avail_rust_core::Error> {
+		let block = BSxt::new(self.client.clone(), self.block_ref.height);
+		let tx = block.get(self.tx_ref.index).await?;
+		let Some(tx) = tx else {
+			return Err("Failed to find transaction".into());
+		};
+
+		Ok(tx.call)
+	}
+
+	pub async fn raw_ext(&self, encode_as: EncodeSelector) -> Result<BlockRawExtrinsic, avail_rust_core::Error> {
+		let block = BRxt::new(self.client.clone(), self.block_ref.height);
+		let ext = block.get(self.tx_ref.index, encode_as).await?;
+		let Some(ext) = ext else {
+			return Err("Failed to find extrinsic".into());
+		};
+
+		Ok(ext)
+	}
+
 	pub async fn events(&self) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
-		todo!()
+		let block = BEvent::new(self.client.clone(), self.block_ref.hash);
+		let events = block.ext(self.tx_ref.index).await?;
+		let Some(events) = events else {
+			return Err("No events were found".into());
+		};
+		Ok(events)
+	}
+
+	pub async fn from_range(
+		client: Client,
+		tx_hash: impl Into<HashString>,
+		block_start: u32,
+		block_end: u32,
+		use_best_block: bool,
+	) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
+		if block_start > block_end {
+			return Err("Block Start cannot start after Block End".into());
+		}
+		let tx_hash: HashString = tx_hash.into();
+		let mut sub = SubscriptionBuilder::default()
+			.follow(use_best_block)
+			.block_height(block_start)
+			.build(&client)
+			.await?;
+
+		loop {
+			let block_ref = sub.next(&client).await?;
+
+			let block = BRxt::new(client.clone(), block_ref.height);
+			let ext = block.get(tx_hash.clone(), EncodeSelector::None).await?;
+			if let Some(ext) = ext {
+				let tr = TransactionReceipt::new(client.clone(), block_ref, (ext.ext_hash(), ext.ext_index()).into());
+				return Ok(Some(tr));
+			}
+
+			if block_ref.height >= block_end {
+				return Ok(None);
+			}
+		}
 	}
 }
 
@@ -156,20 +228,16 @@ impl Utils {
 		else {
 			return Ok(None);
 		};
-		todo!()
 
-		/* 		let block_client = client.block_client();
-		let tx = block_client
-			.transaction(block_ref.hash.into(), tx_hash.into(), EncodeSelector::None)
-			.await?;
+		let block = Block::new(client.clone(), block_ref.hash);
+		let ext = block.rxt.get(tx_hash, EncodeSelector::None).await?;
 
-		let Some(tx) = tx else {
+		let Some(ext) = ext else {
 			return Ok(None);
 		};
 
-		let tx_ref = TxRef::from((tx.ext_hash, tx.ext_index));
-
-		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref))) */
+		let tx_ref = TxRef::from((ext.ext_hash(), ext.ext_index()));
+		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref)))
 	}
 
 	pub async fn find_correct_block_info(
@@ -213,16 +281,12 @@ impl Utils {
 				return Ok(Some(info));
 			}
 			if state_nonce == 0 {
-				todo!()
-				/* 				let transaction = client
-					.block_client()
-					.transaction(info.hash.into(), tx_hash.into(), EncodeSelector::None)
-					.await?;
-
-				if transaction.is_some() {
+				let block = Block::new(client.clone(), info.hash);
+				let ext = block.rxt.get(tx_hash, EncodeSelector::None).await?;
+				if ext.is_some() {
 					trace_new_block(nonce, state_nonce, account_id, info, true);
 					return Ok(Some(info));
-				} */
+				}
 			}
 
 			trace_new_block(nonce, state_nonce, account_id, info, false);
