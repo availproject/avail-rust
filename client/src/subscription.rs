@@ -1,7 +1,5 @@
 use crate::{AvailHeader, Client, platform::sleep};
-use avail_rust_core::{
-	BlockRef, Error as CoreError, H256, grandpa::GrandpaJustification, rpc::BlockWithJustifications,
-};
+use avail_rust_core::{BlockRef, H256, RpcError, grandpa::GrandpaJustification, rpc::BlockWithJustifications};
 use std::time::Duration;
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -63,7 +61,7 @@ impl SubscriptionBuilder {
 		self
 	}
 
-	pub async fn build(&self, client: &Client) -> Result<Subscription, CoreError> {
+	pub async fn build(&self, client: &Client) -> Result<Subscription, RpcError> {
 		let block_height = match self.block_height {
 			Some(x) => x,
 			None => match self.kind {
@@ -111,7 +109,7 @@ pub struct FinalizedBlockSubscriber {
 }
 
 impl FinalizedBlockSubscriber {
-	pub async fn run(&mut self, client: &Client) -> Result<BlockRef, CoreError> {
+	pub async fn run(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
 
 		let result = if latest_finalized_height >= self.next_block_height {
@@ -128,7 +126,7 @@ impl FinalizedBlockSubscriber {
 		self.next_block_height.saturating_sub(1)
 	}
 
-	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, CoreError> {
+	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, RpcError> {
 		if let Some(height) = self.latest_finalized_height.as_ref() {
 			return Ok(*height);
 		}
@@ -138,19 +136,19 @@ impl FinalizedBlockSubscriber {
 		Ok(latest_finalized_height)
 	}
 
-	async fn run_historical(&mut self, client: &Client) -> Result<BlockRef, CoreError> {
+	async fn run_historical(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		let height = self.next_block_height;
 		let hash = client
 			.rpc()
 			.retry_on(Some(self.retry_on_error), None)
 			.block_hash(Some(height))
 			.await?;
-		let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
+		let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
 		Ok(BlockRef { hash, height })
 	}
 
-	async fn run_head(&mut self, client: &Client) -> Result<BlockRef, CoreError> {
+	async fn run_head(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		loop {
 			let head = client.finalized().block_info().await?;
 
@@ -170,7 +168,7 @@ impl FinalizedBlockSubscriber {
 				.retry_on(Some(self.retry_on_error), Some(true))
 				.block_hash(Some(height))
 				.await?;
-			let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
+			let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
 			return Ok(BlockRef { hash, height });
 		}
@@ -187,7 +185,7 @@ pub struct BestBlockSubscriber {
 }
 
 impl BestBlockSubscriber {
-	pub async fn run(&mut self, client: &Client) -> Result<BlockRef, CoreError> {
+	pub async fn run(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
 
 		// Dealing with historical blocks
@@ -212,7 +210,7 @@ impl BestBlockSubscriber {
 		self.current_block_height
 	}
 
-	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, CoreError> {
+	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, RpcError> {
 		if let Some(height) = self.latest_finalized_height.as_ref() {
 			return Ok(*height);
 		}
@@ -222,19 +220,19 @@ impl BestBlockSubscriber {
 		Ok(latest_finalized_height)
 	}
 
-	async fn run_historical(&mut self, client: &Client) -> Result<BlockRef, CoreError> {
+	async fn run_historical(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		let height = self.current_block_height;
 		let hash = client
 			.rpc()
 			.retry_on(Some(self.retry_on_error), None)
 			.block_hash(Some(height))
 			.await?;
-		let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
+		let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
 		Ok(BlockRef { hash, height })
 	}
 
-	async fn run_head(&mut self, client: &Client) -> Result<BlockRef, CoreError> {
+	async fn run_head(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		loop {
 			let head = client.best().block_info().await?;
 
@@ -258,7 +256,7 @@ impl BestBlockSubscriber {
 					.retry_on(Some(true), Some(true))
 					.block_hash(Some(self.current_block_height))
 					.await?;
-				let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
+				let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
 				return Ok(BlockRef { hash, height: self.current_block_height });
 			}
@@ -269,7 +267,7 @@ impl BestBlockSubscriber {
 				.retry_on(Some(true), Some(true))
 				.block_hash(Some(height))
 				.await?;
-			let hash = hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
+			let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
 			return Ok(BlockRef { hash, height });
 		}
@@ -283,7 +281,7 @@ pub enum Subscription {
 }
 
 impl Subscription {
-	pub async fn next(&mut self, client: &Client) -> Result<BlockRef, CoreError> {
+	pub async fn next(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		match self {
 			Self::BestBlock(s) => s.run(client).await,
 			Self::FinalizedBlock(s) => s.run(client).await,
@@ -318,7 +316,7 @@ impl HeaderSubscription {
 		Self { client, sub, retry_on_error }
 	}
 
-	pub async fn next(&mut self) -> Result<Option<AvailHeader>, CoreError> {
+	pub async fn next(&mut self) -> Result<Option<AvailHeader>, RpcError> {
 		let info = self.sub.next(&self.client).await?;
 		self.client
 			.rpc()
@@ -345,7 +343,7 @@ impl BlockSubscription {
 		Self { client, sub, retry_on_error }
 	}
 
-	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, CoreError> {
+	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, RpcError> {
 		let info = self.sub.next(&self.client).await?;
 		self.client
 			.rpc()
@@ -379,7 +377,7 @@ impl GrandpaJustificationSubscription {
 		}
 	}
 
-	pub async fn next(&mut self) -> Result<GrandpaJustification, CoreError> {
+	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
@@ -401,7 +399,7 @@ impl GrandpaJustificationSubscription {
 		}
 	}
 
-	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, CoreError> {
+	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, RpcError> {
 		if self.stopwatch.elapsed().as_secs() > 300 {
 			self.latest_finalized_height = None
 		}
@@ -420,7 +418,7 @@ impl GrandpaJustificationSubscription {
 		self.next_block_height
 	}
 
-	async fn run_head(&mut self) -> Result<u32, CoreError> {
+	async fn run_head(&mut self) -> Result<u32, RpcError> {
 		loop {
 			let head = self.client.finalized().block_info().await?;
 			if self.next_block_height > head.height {
@@ -452,7 +450,7 @@ impl GrandpaJustificationJsonSubscription {
 		}
 	}
 
-	pub async fn next(&mut self) -> Result<GrandpaJustification, CoreError> {
+	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
@@ -474,7 +472,7 @@ impl GrandpaJustificationJsonSubscription {
 		}
 	}
 
-	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, CoreError> {
+	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, RpcError> {
 		if self.stopwatch.elapsed().as_secs() > 300 {
 			self.latest_finalized_height = None
 		}
@@ -493,7 +491,7 @@ impl GrandpaJustificationJsonSubscription {
 		self.next_block_height
 	}
 
-	async fn run_head(&mut self) -> Result<u32, CoreError> {
+	async fn run_head(&mut self) -> Result<u32, RpcError> {
 		loop {
 			let head = self.client.finalized().block_info().await?;
 			if self.next_block_height > head.height {

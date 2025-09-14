@@ -1,16 +1,17 @@
 use crate::{
-	Client,
+	Client, Error, UserError,
 	block::{
-		BEvent, BExt, BRxt, BSxt, Block, BlockExtrinsic, BlockRawExtrinsic, BlockSignedExtrinsic, ExtrinsicEvents,
+		Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockSignedExtrinsic, BlockWithExt, BlockWithRawExt,
+		BlockWithTx, ExtrinsicEvents,
 	},
 	subscription::SubscriptionBuilder,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockRef, EncodeSelector, H256, HasHeader, TransactionConvertible,
+	AccountId, BlockRef, EncodeSelector, H256, HasHeader, RpcError,
 	ext::codec::Encode,
-	extrinsic::{ExtrinsicAdditional, ExtrinsicCall},
+	substrate::extrinsic::{ExtrinsicAdditional, ExtrinsicCall, GenericExtrinsic},
 	types::{
 		metadata::{HashString, TxRef},
 		substrate::FeeDetails,
@@ -19,17 +20,6 @@ use avail_rust_core::{
 use codec::Decode;
 #[cfg(feature = "tracing")]
 use tracing::info;
-
-pub trait SubmittableTransactionLike {
-	fn to_submittable(&self, client: Client) -> SubmittableTransaction;
-}
-
-impl<T: TransactionConvertible> SubmittableTransactionLike for T {
-	fn to_submittable(&self, client: Client) -> SubmittableTransaction {
-		let call = self.to_call();
-		SubmittableTransaction::new(client, call)
-	}
-}
 
 #[derive(Clone)]
 pub struct SubmittableTransaction {
@@ -42,26 +32,18 @@ impl SubmittableTransaction {
 		Self { client, call }
 	}
 
-	pub async fn sign_and_submit(
-		&self,
-		signer: &Keypair,
-		options: Options,
-	) -> Result<SubmittedTransaction, avail_rust_core::Error> {
+	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, RpcError> {
 		self.client
 			.rpc()
 			.sign_and_submit_call(signer, &self.call, options)
 			.await
 	}
 
-	pub async fn sign(
-		&self,
-		signer: &Keypair,
-		options: Options,
-	) -> Result<avail_rust_core::GenericExtrinsic, avail_rust_core::Error> {
+	pub async fn sign(&self, signer: &Keypair, options: Options) -> Result<GenericExtrinsic, RpcError> {
 		self.client.rpc().sign_call(signer, &self.call, options).await
 	}
 
-	pub async fn estimate_call_fees(&self, at: Option<H256>) -> Result<FeeDetails, avail_rust_core::Error> {
+	pub async fn estimate_call_fees(&self, at: Option<H256>) -> Result<FeeDetails, RpcError> {
 		let call = self.call.encode();
 		self.client
 			.runtime_api()
@@ -74,13 +56,18 @@ impl SubmittableTransaction {
 		signer: &Keypair,
 		options: Options,
 		at: Option<H256>,
-	) -> Result<FeeDetails, avail_rust_core::Error> {
+	) -> Result<FeeDetails, RpcError> {
 		let transaction = self.sign(signer, options).await?;
 		let transaction = transaction.encode();
 		self.client
 			.runtime_api()
 			.transaction_payment_query_fee_details(transaction, at)
 			.await
+	}
+
+	pub fn from_encodable<T: HasHeader + Encode>(client: Client, value: T) -> SubmittableTransaction {
+		let call = ExtrinsicCall::new(T::HEADER_INDEX.0, T::HEADER_INDEX.1, value.encode());
+		SubmittableTransaction::new(client, call)
 	}
 }
 
@@ -104,7 +91,7 @@ impl SubmittedTransaction {
 		Self { client, tx_hash, account_id, options, additional }
 	}
 
-	pub async fn receipt(&self, use_best_block: bool) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
+	pub async fn receipt(&self, use_best_block: bool) -> Result<Option<TransactionReceipt>, Error> {
 		Utils::transaction_receipt(
 			self.client.clone(),
 			self.tx_hash,
@@ -138,55 +125,55 @@ impl TransactionReceipt {
 		Self { client, block_ref, tx_ref }
 	}
 
-	pub async fn block_state(&self) -> Result<BlockState, avail_rust_core::Error> {
+	pub async fn block_state(&self) -> Result<BlockState, RpcError> {
 		self.client.rpc().block_state(self.block_ref).await
 	}
 
-	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockSignedExtrinsic<T>, avail_rust_core::Error> {
-		let block = BSxt::new(self.client.clone(), self.block_ref.height);
+	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockSignedExtrinsic<T>, Error> {
+		let block = BlockWithTx::new(self.client.clone(), self.block_ref.height);
 		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
-			return Err("Failed to find transaction".into());
+			return Err(RpcError::ExpectedData("No transaction was found.".into()).into());
 		};
 
 		Ok(tx)
 	}
 
-	pub async fn ext<T: HasHeader + Decode>(&self) -> Result<BlockExtrinsic<T>, avail_rust_core::Error> {
-		let block = BExt::new(self.client.clone(), self.block_ref.height);
+	pub async fn ext<T: HasHeader + Decode>(&self) -> Result<BlockExtrinsic<T>, Error> {
+		let block = BlockWithExt::new(self.client.clone(), self.block_ref.height);
 		let ext: Option<BlockExtrinsic<T>> = block.get(self.tx_ref.index).await?;
 		let Some(ext) = ext else {
-			return Err("Failed to find extrinsic".into());
+			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
 		};
 
 		Ok(ext)
 	}
 
-	pub async fn call<T: HasHeader + Decode>(&self) -> Result<T, avail_rust_core::Error> {
-		let block = BExt::new(self.client.clone(), self.block_ref.height);
+	pub async fn call<T: HasHeader + Decode>(&self) -> Result<T, Error> {
+		let block = BlockWithExt::new(self.client.clone(), self.block_ref.height);
 		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
-			return Err("Failed to find transaction".into());
+			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
 		};
 
 		Ok(tx.call)
 	}
 
-	pub async fn raw_ext(&self, encode_as: EncodeSelector) -> Result<BlockRawExtrinsic, avail_rust_core::Error> {
-		let block = BRxt::new(self.client.clone(), self.block_ref.height);
+	pub async fn raw_ext(&self, encode_as: EncodeSelector) -> Result<BlockRawExtrinsic, Error> {
+		let block = BlockWithRawExt::new(self.client.clone(), self.block_ref.height);
 		let ext = block.get(self.tx_ref.index, encode_as).await?;
 		let Some(ext) = ext else {
-			return Err("Failed to find extrinsic".into());
+			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
 		};
 
 		Ok(ext)
 	}
 
-	pub async fn events(&self) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
-		let block = BEvent::new(self.client.clone(), self.block_ref.hash);
+	pub async fn events(&self) -> Result<ExtrinsicEvents, Error> {
+		let block = BlockEvents::new(self.client.clone(), self.block_ref.hash);
 		let events = block.ext(self.tx_ref.index).await?;
 		let Some(events) = events else {
-			return Err("No events were found".into());
+			return Err(RpcError::ExpectedData("No events was found.".into()).into());
 		};
 		Ok(events)
 	}
@@ -197,9 +184,9 @@ impl TransactionReceipt {
 		block_start: u32,
 		block_end: u32,
 		use_best_block: bool,
-	) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
+	) -> Result<Option<TransactionReceipt>, Error> {
 		if block_start > block_end {
-			return Err("Block Start cannot start after Block End".into());
+			return Err(UserError::ValidationFailed("Block Start cannot start after Block End".into()).into());
 		}
 		let tx_hash: HashString = tx_hash.into();
 		let mut sub = SubscriptionBuilder::default()
@@ -211,7 +198,7 @@ impl TransactionReceipt {
 		loop {
 			let block_ref = sub.next(&client).await?;
 
-			let block = BRxt::new(client.clone(), block_ref.height);
+			let block = BlockWithRawExt::new(client.clone(), block_ref.height);
 			let ext = block.get(tx_hash.clone(), EncodeSelector::None).await?;
 			if let Some(ext) = ext {
 				let tr = TransactionReceipt::new(client.clone(), block_ref, (ext.ext_hash(), ext.ext_index()).into());
@@ -234,7 +221,7 @@ impl Utils {
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
 		use_best_block: bool,
-	) -> Result<Option<TransactionReceipt>, avail_rust_core::Error> {
+	) -> Result<Option<TransactionReceipt>, Error> {
 		let Some(block_ref) =
 			Self::find_correct_block_info(&client, nonce, tx_hash, account_id, mortality, use_best_block).await?
 		else {
@@ -242,7 +229,7 @@ impl Utils {
 		};
 
 		let block = Block::new(client.clone(), block_ref.hash);
-		let ext = block.rxt.get(tx_hash, EncodeSelector::None).await?;
+		let ext = block.raw_ext.get(tx_hash, EncodeSelector::None).await?;
 
 		let Some(ext) = ext else {
 			return Ok(None);
@@ -259,7 +246,7 @@ impl Utils {
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
 		use_best_block: bool,
-	) -> Result<Option<BlockRef>, avail_rust_core::Error> {
+	) -> Result<Option<BlockRef>, Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
 		let mut sub = SubscriptionBuilder::new()
@@ -294,7 +281,7 @@ impl Utils {
 			}
 			if state_nonce == 0 {
 				let block = Block::new(client.clone(), info.hash);
-				let ext = block.rxt.get(tx_hash, EncodeSelector::None).await?;
+				let ext = block.raw_ext.get(tx_hash, EncodeSelector::None).await?;
 				if ext.is_some() {
 					trace_new_block(nonce, state_nonce, account_id, info, true);
 					return Ok(Some(info));

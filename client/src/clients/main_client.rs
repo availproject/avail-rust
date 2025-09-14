@@ -1,6 +1,6 @@
 use super::online_client::OnlineClientT;
 use crate::{
-	BlockState, avail,
+	BlockState, Error, UserError, avail,
 	block::Block,
 	clients::utils::{with_retry_on_error, with_retry_on_error_and_none},
 	extrinsic::SubmittedTransaction,
@@ -17,7 +17,7 @@ use avail::{
 use avail_rust_core::{
 	AccountId, AvailHeader, BlockRef, H256, HashNumber, StorageMap,
 	grandpa::GrandpaJustification,
-	rpc::{self, BlockPhaseEvent, BlockWithJustifications, ExtrinsicInfo, runtime_api},
+	rpc::{self, BlockPhaseEvent, BlockWithJustifications, Error as RpcError, ExtrinsicInfo, runtime_api},
 	types::{
 		metadata::HashStringNumber,
 		substrate::{FeeDetails, RuntimeDispatchInfo},
@@ -26,49 +26,31 @@ use avail_rust_core::{
 use codec::Decode;
 use std::time::Duration;
 
-#[cfg(feature = "subxt")]
-use crate::config::{ABlocksClient, AConstantsClient, AStorageClient};
-
 #[derive(Clone)]
 pub struct Client {
-	#[cfg(not(feature = "subxt"))]
 	online_client: super::online_client::OnlineClient,
-	#[cfg(feature = "subxt")]
-	online_client: crate::config::AOnlineClient,
 	pub rpc_client: RpcClient,
 }
 
 impl Client {
 	#[cfg(feature = "reqwest")]
-	pub async fn new(endpoint: &str) -> Result<Client, avail_rust_core::Error> {
+	pub async fn new(endpoint: &str) -> Result<Client, RpcError> {
 		let rpc_client = super::reqwest_client::ReqwestClient::new(endpoint);
 		let rpc_client = RpcClient::new(rpc_client);
 
 		Self::new_rpc_client(rpc_client).await
 	}
 
-	pub async fn new_rpc_client(rpc_client: RpcClient) -> Result<Client, avail_rust_core::Error> {
-		#[cfg(not(feature = "subxt"))]
+	pub async fn new_rpc_client(rpc_client: RpcClient) -> Result<Client, RpcError> {
 		let online_client = super::online_client::SimpleOnlineClient::new(&rpc_client).await?;
-		#[cfg(feature = "subxt")]
-		let online_client = crate::config::AOnlineClient::from_rpc_client(rpc_client.clone()).await?;
 
 		Self::new_custom(rpc_client, online_client.into()).await
 	}
 
-	#[cfg(not(feature = "subxt"))]
 	pub async fn new_custom(
 		rpc_client: RpcClient,
 		online_client: super::online_client::OnlineClient,
-	) -> Result<Client, avail_rust_core::Error> {
-		Ok(Self { online_client, rpc_client })
-	}
-
-	#[cfg(feature = "subxt")]
-	pub async fn new_custom(
-		rpc_client: RpcClient,
-		online_client: crate::config::AOnlineClient,
-	) -> Result<Client, avail_rust_core::Error> {
+	) -> Result<Client, RpcError> {
 		Ok(Self { online_client, rpc_client })
 	}
 
@@ -89,30 +71,8 @@ impl Client {
 		}
 	}
 
-	#[cfg(not(feature = "subxt"))]
 	pub fn online_client(&self) -> super::online_client::OnlineClient {
 		self.online_client.clone()
-	}
-
-	#[cfg(feature = "subxt")]
-	pub fn online_client(&self) -> crate::config::AOnlineClient {
-		self.online_client.clone()
-	}
-
-	// Subxt
-	#[cfg(feature = "subxt")]
-	pub fn subxt_blocks_client(&self) -> ABlocksClient {
-		self.online_client.blocks()
-	}
-
-	#[cfg(feature = "subxt")]
-	pub fn subxt_storage_client(&self) -> AStorageClient {
-		self.online_client.storage()
-	}
-
-	#[cfg(feature = "subxt")]
-	pub fn subxt_constants_client(&self) -> AConstantsClient {
-		self.online_client.constants()
 	}
 
 	pub fn block(&self, block_id: impl Into<HashStringNumber>) -> Block {
@@ -178,7 +138,7 @@ impl Rpc {
 		self
 	}
 
-	pub async fn block_hash(&self, block_height: Option<u32>) -> Result<Option<H256>, avail_rust_core::Error> {
+	pub async fn block_hash(&self, block_height: Option<u32>) -> Result<Option<H256>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
@@ -188,7 +148,7 @@ impl Rpc {
 			.map_err(|e| e.into())
 	}
 
-	pub async fn block_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, avail_rust_core::Error> {
+	pub async fn block_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
@@ -198,7 +158,7 @@ impl Rpc {
 			.map_err(|e| e.into())
 	}
 
-	pub async fn block(&self, at: Option<H256>) -> Result<Option<BlockWithJustifications>, avail_rust_core::Error> {
+	pub async fn block(&self, at: Option<H256>) -> Result<Option<BlockWithJustifications>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
@@ -209,7 +169,7 @@ impl Rpc {
 	}
 
 	// Nonce
-	pub async fn nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
+	pub async fn nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move {
@@ -218,17 +178,17 @@ impl Rpc {
 		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
 	}
 
-	pub async fn block_nonce(&self, account_id: &AccountId, block_hash: H256) -> Result<u32, avail_rust_core::Error> {
+	pub async fn block_nonce(&self, account_id: &AccountId, block_hash: H256) -> Result<u32, RpcError> {
 		self.account_info(account_id, block_hash).await.map(|x| x.nonce)
 	}
 
 	// Balance
-	pub async fn balance(&self, account_id: &AccountId, at: H256) -> Result<AccountData, avail_rust_core::Error> {
+	pub async fn balance(&self, account_id: &AccountId, at: H256) -> Result<AccountData, RpcError> {
 		self.account_info(account_id, at).await.map(|x| x.data)
 	}
 
 	// Account Info (nonce, balance, ...)
-	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, avail_rust_core::Error> {
+	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move {
@@ -240,7 +200,7 @@ impl Rpc {
 	}
 
 	// Block State
-	pub async fn block_state(&self, block_ref: BlockRef) -> Result<BlockState, avail_rust_core::Error> {
+	pub async fn block_state(&self, block_ref: BlockRef) -> Result<BlockState, RpcError> {
 		let real_block_hash = self.block_hash(Some(block_ref.height)).await?;
 		let Some(real_block_hash) = real_block_hash else {
 			return Ok(BlockState::DoesNotExist);
@@ -259,7 +219,7 @@ impl Rpc {
 	}
 
 	// Block Height
-	pub async fn block_height(&self, at: H256) -> Result<Option<u32>, avail_rust_core::Error> {
+	pub async fn block_height(&self, at: H256) -> Result<Option<u32>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
@@ -269,7 +229,7 @@ impl Rpc {
 			.map_err(|e| e.into())
 	}
 
-	pub async fn block_info(&self, use_best_block: bool) -> Result<BlockRef, avail_rust_core::Error> {
+	pub async fn block_info(&self, use_best_block: bool) -> Result<BlockRef, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move { rpc::system::latest_block_info(&self.client.rpc_client, use_best_block).await };
@@ -277,7 +237,7 @@ impl Rpc {
 	}
 
 	// Sign and submit
-	pub async fn submit(&self, tx: &avail_rust_core::GenericExtrinsic<'_>) -> Result<H256, avail_rust_core::Error> {
+	pub async fn submit(&self, tx: &avail_rust_core::GenericExtrinsic<'_>) -> Result<H256, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let encoded = tx.encode();
@@ -321,7 +281,7 @@ impl Rpc {
 		signer: &Keypair,
 		tx_call: &'a avail_rust_core::ExtrinsicCall,
 		options: Options,
-	) -> Result<avail_rust_core::GenericExtrinsic<'a>, avail_rust_core::Error> {
+	) -> Result<avail_rust_core::GenericExtrinsic<'a>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, retry_on_error).await?;
@@ -342,7 +302,7 @@ impl Rpc {
 		&self,
 		signer: &Keypair,
 		tx_payload: avail_rust_core::ExtrinsicPayload<'_>,
-	) -> Result<H256, avail_rust_core::Error> {
+	) -> Result<H256, RpcError> {
 		use avail_rust_core::GenericExtrinsic;
 
 		let account_id = signer.public_key().to_account_id();
@@ -358,7 +318,7 @@ impl Rpc {
 		signer: &Keypair,
 		tx_call: &avail_rust_core::ExtrinsicCall,
 		options: Options,
-	) -> Result<SubmittedTransaction, avail_rust_core::Error> {
+	) -> Result<SubmittedTransaction, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, retry_on_error).await?;
@@ -379,30 +339,21 @@ impl Rpc {
 	}
 
 	// Rest
-	pub async fn state_call(
-		&self,
-		method: &str,
-		data: &[u8],
-		at: Option<H256>,
-	) -> Result<String, avail_rust_core::Error> {
+	pub async fn state_call(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<String, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move { rpc::state::call(&self.client.rpc_client, method, data, at).await };
 		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
 	}
 
-	pub async fn state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, avail_rust_core::Error> {
+	pub async fn state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move { rpc::state::get_metadata(&self.client.rpc_client, at).await };
 		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
 	}
 
-	pub async fn state_get_storage(
-		&self,
-		key: &str,
-		at: Option<H256>,
-	) -> Result<Option<Vec<u8>>, avail_rust_core::Error> {
+	pub async fn state_get_storage(&self, key: &str, at: Option<H256>) -> Result<Option<Vec<u8>>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move { rpc::state::get_storage(&self.client.rpc_client, key, at).await };
@@ -415,7 +366,7 @@ impl Rpc {
 		count: u32,
 		start_key: Option<&str>,
 		at: Option<H256>,
-	) -> Result<Vec<String>, avail_rust_core::Error> {
+	) -> Result<Vec<String>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f =
@@ -427,14 +378,14 @@ impl Rpc {
 		&self,
 		block_id: impl Into<HashStringNumber>,
 		opts: rpc::ExtrinsicOpts,
-	) -> Result<Vec<ExtrinsicInfo>, avail_rust_core::Error> {
+	) -> Result<Vec<ExtrinsicInfo>, Error> {
 		async fn inner(
 			client: &Client,
 			block_id: HashStringNumber,
 			opts: &rpc::ExtrinsicOpts,
 			retry_on_error: bool,
-		) -> Result<Vec<ExtrinsicInfo>, avail_rust_core::Error> {
-			let block_id: HashNumber = block_id.try_into()?;
+		) -> Result<Vec<ExtrinsicInfo>, Error> {
+			let block_id: HashNumber = block_id.try_into().map_err(|x| UserError::Decoding(x))?;
 			let f = || async move { rpc::system::fetch_extrinsics_v1(&client.rpc_client, block_id, opts).await };
 			with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
 		}
@@ -447,19 +398,19 @@ impl Rpc {
 		&self,
 		at: impl Into<HashStringNumber>,
 		opts: rpc::EventOpts,
-	) -> Result<Vec<BlockPhaseEvent>, avail_rust_core::Error> {
+	) -> Result<Vec<BlockPhaseEvent>, Error> {
 		async fn inner(
 			c: &Rpc,
 			block_id: HashStringNumber,
 			opts: &rpc::EventOpts,
 			retry_on_error: bool,
-		) -> Result<Vec<BlockPhaseEvent>, avail_rust_core::Error> {
-			let block_id: HashNumber = HashNumber::try_from(block_id)?;
+		) -> Result<Vec<BlockPhaseEvent>, Error> {
+			let block_id: HashNumber = block_id.try_into().map_err(|x| UserError::Decoding(x))?;
 			let at = match block_id {
 				HashNumber::Hash(x) => x,
 				HashNumber::Number(x) => {
 					let hash = c.block_hash(Some(x)).await?;
-					hash.ok_or(avail_rust_core::Error::from("Failed to fetch block height"))?
+					hash.ok_or(RpcError::ExpectedData("Failed to fetch block height".into()))?
 				},
 			};
 
@@ -471,10 +422,7 @@ impl Rpc {
 		inner(&self, at.into(), &opts, retry_on_error).await
 	}
 
-	pub async fn grandpa_block_justification(
-		&self,
-		at: u32,
-	) -> Result<Option<GrandpaJustification>, avail_rust_core::Error> {
+	pub async fn grandpa_block_justification(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let f = || async move { rpc::grandpa::block_justification(&self.client.rpc_client, at).await };
 		let result = with_retry_on_error(f, retry_on_error, "").await?;
@@ -484,16 +432,14 @@ impl Rpc {
 		};
 
 		let justification = const_hex::decode(result.trim_start_matches("0x"))
-			.map_err(|x| avail_rust_core::Error::from(x.to_string()))?;
+			.map_err(|x| RpcError::MalformedResponse(x.to_string()))?;
 
-		let justification = GrandpaJustification::decode(&mut justification.as_slice()).map_err(|e| e.to_string())?;
+		let justification = GrandpaJustification::decode(&mut justification.as_slice());
+		let justification = justification.map_err(|e| RpcError::MalformedResponse(e.to_string()))?;
 		Ok(Some(justification))
 	}
 
-	pub async fn grandpa_block_justification_json(
-		&self,
-		at: u32,
-	) -> Result<Option<GrandpaJustification>, avail_rust_core::Error> {
+	pub async fn grandpa_block_justification_json(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let f = || async move { rpc::grandpa::block_justification_json(&self.client.rpc_client, at).await };
 		let result = with_retry_on_error(f, retry_on_error, "").await?;
@@ -502,7 +448,9 @@ impl Rpc {
 			return Ok(None);
 		};
 
-		let justification: GrandpaJustification = serde_json::from_str(result.as_str()).map_err(|e| e.to_string())?;
+		let justification: Result<GrandpaJustification, _> = serde_json::from_str(result.as_str());
+		let justification: GrandpaJustification =
+			justification.map_err(|e| RpcError::MalformedResponse(e.to_string()))?;
 		Ok(Some(justification))
 	}
 }
@@ -523,7 +471,7 @@ impl Best {
 		self
 	}
 
-	pub async fn block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
+	pub async fn block_header(&self) -> Result<AvailHeader, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(true);
 
@@ -535,13 +483,13 @@ impl Best {
 			.block_header(Some(block_hash))
 			.await?;
 		let Some(block_header) = block_header else {
-			return Err("Failed to fetch best block header".into());
+			return Err(RpcError::ExpectedData("Failed to fetch best block header".into()));
 		};
 
 		Ok(block_header)
 	}
 
-	pub async fn block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
+	pub async fn block(&self) -> Result<BlockWithJustifications, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(true);
 
@@ -553,21 +501,21 @@ impl Best {
 			.block(Some(block_hash))
 			.await?;
 		let Some(block) = block else {
-			return Err("Best block not found".into());
+			return Err(RpcError::ExpectedData("Failed to fetch best block".into()));
 		};
 
 		Ok(block)
 	}
 
-	pub async fn block_nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
+	pub async fn block_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
 		self.block_account_info(account_id).await.map(|v| v.nonce)
 	}
 
-	pub async fn block_balance(&self, account_id: &AccountId) -> Result<AccountData, avail_rust_core::Error> {
+	pub async fn block_balance(&self, account_id: &AccountId) -> Result<AccountData, RpcError> {
 		self.block_account_info(account_id).await.map(|x| x.data)
 	}
 
-	pub async fn block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, avail_rust_core::Error> {
+	pub async fn block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let at = self.block_hash().await?;
@@ -578,7 +526,7 @@ impl Best {
 			.await
 	}
 
-	pub async fn block_info(&self) -> Result<BlockRef, avail_rust_core::Error> {
+	pub async fn block_info(&self) -> Result<BlockRef, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		self.client
 			.rpc()
@@ -587,11 +535,11 @@ impl Best {
 			.await
 	}
 
-	pub async fn block_hash(&self) -> Result<H256, avail_rust_core::Error> {
+	pub async fn block_hash(&self) -> Result<H256, RpcError> {
 		self.block_info().await.map(|x| x.hash)
 	}
 
-	pub async fn block_height(&self) -> Result<u32, avail_rust_core::Error> {
+	pub async fn block_height(&self) -> Result<u32, RpcError> {
 		self.block_info().await.map(|x| x.height)
 	}
 }
@@ -613,7 +561,7 @@ impl Finalized {
 		self
 	}
 
-	pub async fn block_header(&self) -> Result<AvailHeader, avail_rust_core::Error> {
+	pub async fn block_header(&self) -> Result<AvailHeader, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(true);
 
@@ -625,13 +573,13 @@ impl Finalized {
 			.block_header(Some(block_hash))
 			.await?;
 		let Some(block_header) = block_header else {
-			return Err("Failed to fetch best block header".into());
+			return Err(RpcError::ExpectedData("Failed to fetch finalized block header".into()));
 		};
 
 		Ok(block_header)
 	}
 
-	pub async fn block(&self) -> Result<BlockWithJustifications, avail_rust_core::Error> {
+	pub async fn block(&self) -> Result<BlockWithJustifications, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(true);
 
@@ -643,21 +591,21 @@ impl Finalized {
 			.block(Some(block_hash))
 			.await?;
 		let Some(block) = block else {
-			return Err("Best block not found".into());
+			return Err(RpcError::ExpectedData("Failed to fetch finalized block".into()));
 		};
 
 		Ok(block)
 	}
 
-	pub async fn block_nonce(&self, account_id: &AccountId) -> Result<u32, avail_rust_core::Error> {
+	pub async fn block_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
 		self.block_account_info(account_id).await.map(|v| v.nonce)
 	}
 
-	pub async fn block_balance(&self, account_id: &AccountId) -> Result<AccountData, avail_rust_core::Error> {
+	pub async fn block_balance(&self, account_id: &AccountId) -> Result<AccountData, RpcError> {
 		self.block_account_info(account_id).await.map(|x| x.data)
 	}
 
-	pub async fn block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, avail_rust_core::Error> {
+	pub async fn block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let at = self.block_hash().await?;
@@ -668,7 +616,7 @@ impl Finalized {
 			.await
 	}
 
-	pub async fn block_info(&self) -> Result<BlockRef, avail_rust_core::Error> {
+	pub async fn block_info(&self) -> Result<BlockRef, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		self.client
 			.rpc()
@@ -677,11 +625,11 @@ impl Finalized {
 			.await
 	}
 
-	pub async fn block_hash(&self) -> Result<H256, avail_rust_core::Error> {
+	pub async fn block_hash(&self) -> Result<H256, RpcError> {
 		self.block_info().await.map(|x| x.hash)
 	}
 
-	pub async fn block_height(&self) -> Result<u32, avail_rust_core::Error> {
+	pub async fn block_height(&self) -> Result<u32, RpcError> {
 		self.block_info().await.map(|x| x.height)
 	}
 }
@@ -696,12 +644,7 @@ impl RuntimeApi {
 		Self { client }
 	}
 
-	pub async fn call<T: codec::Decode>(
-		&self,
-		method: &str,
-		data: &[u8],
-		at: Option<H256>,
-	) -> Result<T, avail_rust_core::Error> {
+	pub async fn call<T: codec::Decode>(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<T, RpcError> {
 		runtime_api::call_raw(&self.client.rpc_client, method, data, at).await
 	}
 
@@ -709,7 +652,7 @@ impl RuntimeApi {
 		&self,
 		extrinsic: Vec<u8>,
 		at: Option<H256>,
-	) -> Result<RuntimeDispatchInfo, avail_rust_core::Error> {
+	) -> Result<RuntimeDispatchInfo, RpcError> {
 		runtime_api::api_transaction_payment_query_info(&self.client.rpc_client, extrinsic, at).await
 	}
 
@@ -717,7 +660,7 @@ impl RuntimeApi {
 		&self,
 		extrinsic: Vec<u8>,
 		at: Option<H256>,
-	) -> Result<FeeDetails, avail_rust_core::Error> {
+	) -> Result<FeeDetails, RpcError> {
 		runtime_api::api_transaction_payment_query_fee_details(&self.client.rpc_client, extrinsic, at).await
 	}
 
@@ -725,7 +668,7 @@ impl RuntimeApi {
 		&self,
 		call: Vec<u8>,
 		at: Option<H256>,
-	) -> Result<RuntimeDispatchInfo, avail_rust_core::Error> {
+	) -> Result<RuntimeDispatchInfo, RpcError> {
 		runtime_api::api_transaction_payment_query_call_info(&self.client.rpc_client, call, at).await
 	}
 
@@ -733,7 +676,7 @@ impl RuntimeApi {
 		&self,
 		call: Vec<u8>,
 		at: Option<H256>,
-	) -> Result<FeeDetails, avail_rust_core::Error> {
+	) -> Result<FeeDetails, RpcError> {
 		runtime_api::api_transaction_payment_query_call_fee_details(&self.client.rpc_client, call, at).await
 	}
 }
@@ -786,7 +729,7 @@ impl RuntimeApi {
 // 	/// Use this function in case where `transaction_events` or `block_events` do not work.
 // 	/// Both mentioned functions require the runtime to have a specific runtime api available which
 // 	/// older blocks (runtime) do not have.
-// 	pub async fn historical_block_events(&self, at: H256) -> Result<Vec<HistoricalEvent>, avail_rust_core::Error> {
+// 	pub async fn historical_block_events(&self, at: H256) -> Result<Vec<HistoricalEvent>, RpcError> {
 // 		use crate::{config::AvailConfig, subxt_core::events::Events};
 
 // 		let entries = self

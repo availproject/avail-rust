@@ -75,19 +75,6 @@ After that, you are free to choose one or all of the following feature flags:
 - `tracing`: Enables logging/tracing, which is useful when dealing with nonce
   and other transaction-related issues. The logging output can be set to JSON
   format if needed.
-- `subxt`: Provides access to the entire external Subxt library. This can be
-  useful when you need to fetch and manage storage and constants-related data.
-- `generated_metadata`: Provides access to all possible extrinsics, events, and
-  other chain-related metadata types. By default, a subset of metadata types is
-  already available, but if necessary, this feature flag gives access to
-  everything. Use this feature with caution—it significantly increases
-  compilation time (by over 10 seconds) and may cause rust-analyzer to stop
-  analyzing your code. If a metadata type isn’t available, it’s best to define
-  it manually, as shown in the
-  [custom transaction](https://github.com/availproject/avail-rust/tree/main/examples/custom_transaction)
-  and
-  [custom event](https://github.com/availproject/avail-rust/tree/main/examples/custom_event)
-  examples.
 
 ## Examples
 
@@ -146,8 +133,7 @@ RUST_LOG=info cargo run
 ## Custom Transactions and Events
 
 Sometimes you need a specific transaction or event type not included in the
-default metadata. However, enabling the `generated_metadata` feature flag may
-greatly increase compile time. In such cases, you can define a custom
+default metadata. In such cases, you can define a custom
 transaction or event and use it just like any predefined type. Both are simple
 to implement and use.
 

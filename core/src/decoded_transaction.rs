@@ -1,6 +1,5 @@
 use super::substrate::extrinsic::EXTRINSIC_FORMAT_VERSION;
 use crate::{
-	substrate::extrinsic::ExtrinsicCall,
 	types::{ExtrinsicSignature, metadata::StringOrBytes},
 	utils::decode_already_decoded,
 };
@@ -12,39 +11,30 @@ pub trait HasHeader {
 	const HEADER_INDEX: (u8, u8);
 }
 
-pub trait TransactionConvertible {
-	fn to_call(&self) -> ExtrinsicCall;
-}
-
 pub trait TransactionDecodable: Sized {
-	fn decode_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Option<Self>;
-}
-
-impl<T: HasHeader + Encode> TransactionConvertible for T {
-	fn to_call(&self) -> ExtrinsicCall {
-		ExtrinsicCall::new(Self::HEADER_INDEX.0, Self::HEADER_INDEX.1, self.encode())
-	}
+	fn decode_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Result<Self, String>;
 }
 
 impl<T: HasHeader + Decode> TransactionDecodable for T {
-	fn decode_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Option<T> {
-		fn inner<T: HasHeader + Decode>(call: StringOrBytes) -> Option<T> {
+	fn decode_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Result<T, String> {
+		fn inner<T: HasHeader + Decode>(call: StringOrBytes) -> Result<T, String> {
 			let call = match call {
-				StringOrBytes::String(s) => &const_hex::decode(s.trim_start_matches("0x")).ok()?,
+				StringOrBytes::String(s) => {
+					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
+				},
 				StringOrBytes::Bytes(b) => b,
 			};
 
-			// This was moved out in order to decrease compilation times
 			if !tx_filter_in(call, T::HEADER_INDEX) {
-				return None;
+				return Err("Failed to decode extrinsic. TODO".into());
 			}
 
 			if call.len() <= 2 {
 				let mut data: &[u8] = &[];
-				T::decode(&mut data).ok()
+				Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
 			} else {
 				let mut data = &call[2..];
-				T::decode(&mut data).ok()
+				Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
 			}
 		}
 
@@ -77,7 +67,7 @@ pub struct RawExtrinsic {
 }
 
 impl<'a> TryFrom<StringOrBytes<'a>> for RawExtrinsic {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: StringOrBytes<'a>) -> Result<Self, Self::Error> {
 		match value {
@@ -88,7 +78,7 @@ impl<'a> TryFrom<StringOrBytes<'a>> for RawExtrinsic {
 }
 
 impl TryFrom<Vec<u8>> for RawExtrinsic {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_slice())
@@ -96,7 +86,7 @@ impl TryFrom<Vec<u8>> for RawExtrinsic {
 }
 
 impl TryFrom<&Vec<u8>> for RawExtrinsic {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_slice())
@@ -104,16 +94,16 @@ impl TryFrom<&Vec<u8>> for RawExtrinsic {
 }
 
 impl TryFrom<&[u8]> for RawExtrinsic {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let mut value = value;
-		Self::decode(&mut value)
+		Self::decode(&mut value).map_err(|x| x.to_string())
 	}
 }
 
 impl TryFrom<String> for RawExtrinsic {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_str())
@@ -121,14 +111,14 @@ impl TryFrom<String> for RawExtrinsic {
 }
 
 impl TryFrom<&str> for RawExtrinsic {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
 		let Ok(hex_decoded) = const_hex::decode(value.trim_start_matches("0x")) else {
 			return Err("Failed to hex decode transaction".into());
 		};
 
-		Self::decode(&mut hex_decoded.as_slice())
+		Self::try_from(hex_decoded.as_slice())
 	}
 }
 
@@ -211,7 +201,7 @@ pub struct SignedExtrinsic<T: HasHeader + Decode + Sized> {
 }
 
 impl<'a, T: HasHeader + Decode> TryFrom<StringOrBytes<'a>> for SignedExtrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: StringOrBytes<'a>) -> Result<Self, Self::Error> {
 		match value {
@@ -222,7 +212,7 @@ impl<'a, T: HasHeader + Decode> TryFrom<StringOrBytes<'a>> for SignedExtrinsic<T
 }
 
 impl<T: HasHeader + Decode> TryFrom<Vec<u8>> for SignedExtrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_slice())
@@ -230,7 +220,7 @@ impl<T: HasHeader + Decode> TryFrom<Vec<u8>> for SignedExtrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<&Vec<u8>> for SignedExtrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_slice())
@@ -238,7 +228,7 @@ impl<T: HasHeader + Decode> TryFrom<&Vec<u8>> for SignedExtrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<&[u8]> for SignedExtrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let ext = RawExtrinsic::try_from(value)?;
@@ -247,7 +237,7 @@ impl<T: HasHeader + Decode> TryFrom<&[u8]> for SignedExtrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<String> for SignedExtrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_str())
@@ -255,7 +245,7 @@ impl<T: HasHeader + Decode> TryFrom<String> for SignedExtrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<&String> for SignedExtrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &String) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_str())
@@ -263,7 +253,7 @@ impl<T: HasHeader + Decode> TryFrom<&String> for SignedExtrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<&str> for SignedExtrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
 		let ext = RawExtrinsic::try_from(value)?;
@@ -272,21 +262,21 @@ impl<T: HasHeader + Decode> TryFrom<&str> for SignedExtrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<RawExtrinsic> for SignedExtrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: RawExtrinsic) -> Result<Self, Self::Error> {
 		let signature = value.signature.ok_or("Extrinsic has no signature")?;
-		let call = T::decode_call(&value.call).ok_or(codec::Error::from("Failed to decode call"))?;
+		let call = T::decode_call(&value.call)?;
 		Ok(Self { signature, call })
 	}
 }
 
 impl<T: HasHeader + Decode> TryFrom<&RawExtrinsic> for SignedExtrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &RawExtrinsic) -> Result<Self, Self::Error> {
 		let signature = value.signature.as_ref().ok_or("Extrinsic has no signature")?.clone();
-		let call = T::decode_call(&value.call).ok_or(codec::Error::from("Failed to decode call"))?;
+		let call = T::decode_call(&value.call)?;
 		Ok(Self { signature, call })
 	}
 }
@@ -298,7 +288,7 @@ pub struct Extrinsic<T: HasHeader + Decode + Sized> {
 }
 
 impl<'a, T: HasHeader + Decode> TryFrom<StringOrBytes<'a>> for Extrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: StringOrBytes<'a>) -> Result<Self, Self::Error> {
 		match value {
@@ -309,7 +299,7 @@ impl<'a, T: HasHeader + Decode> TryFrom<StringOrBytes<'a>> for Extrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<Vec<u8>> for Extrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_slice())
@@ -317,7 +307,7 @@ impl<T: HasHeader + Decode> TryFrom<Vec<u8>> for Extrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<&Vec<u8>> for Extrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_slice())
@@ -325,7 +315,7 @@ impl<T: HasHeader + Decode> TryFrom<&Vec<u8>> for Extrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<&[u8]> for Extrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let ext = RawExtrinsic::try_from(value)?;
@@ -334,7 +324,7 @@ impl<T: HasHeader + Decode> TryFrom<&[u8]> for Extrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<String> for Extrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_str())
@@ -342,7 +332,7 @@ impl<T: HasHeader + Decode> TryFrom<String> for Extrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<&String> for Extrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &String) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_str())
@@ -350,7 +340,7 @@ impl<T: HasHeader + Decode> TryFrom<&String> for Extrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<&str> for Extrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
 		let ext = RawExtrinsic::try_from(value)?;
@@ -359,7 +349,7 @@ impl<T: HasHeader + Decode> TryFrom<&str> for Extrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<RawExtrinsic> for Extrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: RawExtrinsic) -> Result<Self, Self::Error> {
 		Self::try_from(&value)
@@ -367,10 +357,10 @@ impl<T: HasHeader + Decode> TryFrom<RawExtrinsic> for Extrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<&RawExtrinsic> for Extrinsic<T> {
-	type Error = codec::Error;
+	type Error = String;
 
 	fn try_from(value: &RawExtrinsic) -> Result<Self, Self::Error> {
-		let call = T::decode_call(&value.call).ok_or(codec::Error::from("Failed to decode call"))?;
+		let call = T::decode_call(&value.call)?;
 		Ok(Self { signature: value.signature.clone(), call })
 	}
 }

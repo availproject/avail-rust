@@ -29,23 +29,14 @@ subxt-core = { workspace = true }
 subxt-signer = {workspace = true }
 subxt-rpcs = { workspace = true }
 
-# Enabled with Subxt
-subxt = { workspace = true, optional = true }
-
 [features]
 default = ["native"]
-generated_metadata = []
-subxt = [
-	"dep:subxt",
-]
 native = [
-	"subxt?/native",
 	"subxt-core/std",
 	"subxt-signer/std",
 	"subxt-rpcs/native",
 ]
 wasm = [
-	"subxt?/web",
 	"subxt-signer/web",
 	"subxt-rpcs/web",
 ]

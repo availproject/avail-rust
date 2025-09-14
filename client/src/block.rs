@@ -1,26 +1,27 @@
-use crate::Client;
+use crate::{Client, Error, UserError};
 use avail_rust_core::{
-	EncodeSelector, Extrinsic, ExtrinsicSignature, H256, HasHeader, MultiAddress, TransactionEventDecodable, avail,
+	EncodeSelector, Extrinsic, ExtrinsicSignature, H256, HasHeader, MultiAddress, RpcError, TransactionEventDecodable,
+	avail,
 	rpc::{self, ExtrinsicFilter, SignerPayload},
-	types::metadata::HashStringNumber,
+	types::HashStringNumber,
 };
 use codec::Decode;
 
 pub struct Block {
-	pub rxt: BRxt,
-	pub ext: BExt,
-	pub sxt: BSxt,
-	pub event: BEvent,
+	pub tx: BlockWithTx,
+	pub ext: BlockWithExt,
+	pub raw_ext: BlockWithRawExt,
+	pub event: BlockEvents,
 }
 
 impl Block {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
 		fn inner(client: Client, block_id: HashStringNumber) -> Block {
 			Block {
-				rxt: BRxt::new(client.clone(), block_id.clone()),
-				ext: BExt::new(client.clone(), block_id.clone()),
-				sxt: BSxt::new(client.clone(), block_id.clone()),
-				event: BEvent::new(client.clone(), block_id.clone()),
+				tx: BlockWithTx::new(client.clone(), block_id.clone()),
+				ext: BlockWithExt::new(client.clone(), block_id.clone()),
+				raw_ext: BlockWithRawExt::new(client.clone(), block_id.clone()),
+				event: BlockEvents::new(client.clone(), block_id.clone()),
 			}
 		}
 
@@ -28,12 +29,12 @@ impl Block {
 	}
 }
 
-pub struct BRxt {
+pub struct BlockWithRawExt {
 	client: Client,
 	block_id: HashStringNumber,
 }
 
-impl BRxt {
+impl BlockWithRawExt {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
 		Self { client, block_id: block_id.into() }
 	}
@@ -42,27 +43,27 @@ impl BRxt {
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
 		encode_as: EncodeSelector,
-	) -> Result<Option<BlockRawExtrinsic>, avail_rust_core::Error> {
+	) -> Result<Option<BlockRawExtrinsic>, Error> {
 		async fn inner(
-			s: &BRxt,
+			s: &BlockWithRawExt,
 			extrinsic_id: HashStringNumber,
 			encode_as: EncodeSelector,
-		) -> Result<Option<BlockRawExtrinsic>, avail_rust_core::Error> {
+		) -> Result<Option<BlockRawExtrinsic>, Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
-				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x)?,
+				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(|x| UserError::Decoding(x))?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let mut opts = BlockExtOptions2::default();
 			opts.filter = Some(filter);
 			opts.encode_as = Some(encode_as);
-			s.first(opts).await
+			Ok(s.first(opts).await?)
 		}
 
 		inner(&self, extrinsic_id.into(), encode_as).await
 	}
 
-	pub async fn first(&self, mut opts: BlockExtOptions2) -> Result<Option<BlockRawExtrinsic>, avail_rust_core::Error> {
+	pub async fn first(&self, mut opts: BlockExtOptions2) -> Result<Option<BlockRawExtrinsic>, Error> {
 		if opts.encode_as.is_none() {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
@@ -89,7 +90,7 @@ impl BRxt {
 		Ok(Some(ext))
 	}
 
-	pub async fn last(&self, mut opts: BlockExtOptions2) -> Result<Option<BlockRawExtrinsic>, avail_rust_core::Error> {
+	pub async fn last(&self, mut opts: BlockExtOptions2) -> Result<Option<BlockRawExtrinsic>, Error> {
 		if opts.encode_as.is_none() {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
@@ -116,7 +117,7 @@ impl BRxt {
 		Ok(Some(ext))
 	}
 
-	pub async fn all(&self, mut opts: BlockExtOptions2) -> Result<Vec<BlockRawExtrinsic>, avail_rust_core::Error> {
+	pub async fn all(&self, mut opts: BlockExtOptions2) -> Result<Vec<BlockRawExtrinsic>, Error> {
 		if opts.encode_as.is_none() {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
@@ -144,14 +145,14 @@ impl BRxt {
 		Ok(result)
 	}
 
-	pub async fn count(&self, mut opts: BlockExtOptions2) -> Result<usize, avail_rust_core::Error> {
+	pub async fn count(&self, mut opts: BlockExtOptions2) -> Result<usize, Error> {
 		opts.encode_as = Some(EncodeSelector::None);
 
 		let result = self.all(opts).await?;
 		Ok(result.len())
 	}
 
-	pub async fn exists(&self, mut opts: BlockExtOptions2) -> Result<bool, avail_rust_core::Error> {
+	pub async fn exists(&self, mut opts: BlockExtOptions2) -> Result<bool, Error> {
 		opts.encode_as = Some(EncodeSelector::None);
 
 		let result = self.first(opts).await?;
@@ -159,30 +160,30 @@ impl BRxt {
 	}
 }
 
-pub struct BExt {
-	rxt: BRxt,
+pub struct BlockWithExt {
+	rxt: BlockWithRawExt,
 }
 
-impl BExt {
+impl BlockWithExt {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		Self { rxt: BRxt::new(client, block_id) }
+		Self { rxt: BlockWithRawExt::new(client, block_id) }
 	}
 
 	pub async fn get<T: HasHeader + Decode>(
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
-	) -> Result<Option<BlockExtrinsic<T>>, avail_rust_core::Error> {
+	) -> Result<Option<BlockExtrinsic<T>>, Error> {
 		async fn inner<T: HasHeader + Decode>(
-			s: &BExt,
+			s: &BlockWithExt,
 			extrinsic_id: HashStringNumber,
-		) -> Result<Option<BlockExtrinsic<T>>, avail_rust_core::Error> {
+		) -> Result<Option<BlockExtrinsic<T>>, Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
-				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x)?,
+				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(|x| UserError::Decoding(x))?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let filter = Some(filter);
-			s.first::<T>(BlockExtOptions1 { filter, ..Default::default() }).await
+			Ok(s.first::<T>(BlockExtOptions1 { filter, ..Default::default() }).await?)
 		}
 
 		inner::<T>(&self, extrinsic_id.into()).await
@@ -191,7 +192,7 @@ impl BExt {
 	pub async fn first<T: HasHeader + Decode>(
 		&self,
 		opts: BlockExtOptions1,
-	) -> Result<Option<BlockExtrinsic<T>>, avail_rust_core::Error> {
+	) -> Result<Option<BlockExtrinsic<T>>, Error> {
 		let mut opts: BlockExtOptions2 = opts.into();
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
@@ -201,14 +202,21 @@ impl BExt {
 		let Some(first) = first else {
 			return Ok(None);
 		};
-		let ext = BlockExtrinsic::<T>::try_from(first)?;
+
+		let Some(data) = first.data else {
+			return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
+		};
+
+		let ext = Extrinsic::<T>::try_from(data.as_str()).map_err(|x| UserError::Decoding(x))?;
+		let ext = BlockExtrinsic::new(ext.signature, ext.call, first.metadata);
+
 		Ok(Some(ext))
 	}
 
 	pub async fn last<T: HasHeader + Decode>(
 		&self,
 		opts: BlockExtOptions1,
-	) -> Result<Option<BlockExtrinsic<T>>, avail_rust_core::Error> {
+	) -> Result<Option<BlockExtrinsic<T>>, Error> {
 		let mut opts: BlockExtOptions2 = opts.into();
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
@@ -219,73 +227,80 @@ impl BExt {
 			return Ok(None);
 		};
 
-		let ext = BlockExtrinsic::<T>::try_from(last)?;
+		let Some(data) = last.data else {
+			return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
+		};
+
+		let ext = Extrinsic::<T>::try_from(data.as_str()).map_err(|x| UserError::Decoding(x))?;
+		let ext = BlockExtrinsic::new(ext.signature, ext.call, last.metadata);
 		Ok(Some(ext))
 	}
 
-	pub async fn all<T: HasHeader + Decode>(
-		&self,
-		opts: BlockExtOptions1,
-	) -> Result<Vec<BlockExtrinsic<T>>, avail_rust_core::Error> {
+	pub async fn all<T: HasHeader + Decode>(&self, opts: BlockExtOptions1) -> Result<Vec<BlockExtrinsic<T>>, Error> {
 		let mut opts: BlockExtOptions2 = opts.into();
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
 
 		let all = self.rxt.all(opts).await?;
-		let result: Result<Vec<BlockExtrinsic<T>>, avail_rust_core::Error> =
-			all.into_iter().map(|x| BlockExtrinsic::try_from(x)).collect();
+		let mut result = Vec::with_capacity(all.len());
+		for raw_ext in all {
+			let Some(data) = raw_ext.data else {
+				return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
+			};
+			let ext = Extrinsic::<T>::try_from(data.as_str()).map_err(|x| UserError::Decoding(x))?;
+			let ext = BlockExtrinsic::new(ext.signature, ext.call, raw_ext.metadata);
+			result.push(ext);
+		}
 
-		Ok(result?)
+		Ok(result)
 	}
 
-	pub async fn count<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<usize, avail_rust_core::Error> {
+	pub async fn count<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<usize, Error> {
 		let mut opts: BlockExtOptions2 = opts.into();
 		opts.encode_as = Some(EncodeSelector::None);
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
 
-		let result = self.rxt.all(opts).await?;
-		Ok(result.len())
+		return self.rxt.count(opts).await;
 	}
 
-	pub async fn exists<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<bool, avail_rust_core::Error> {
+	pub async fn exists<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<bool, Error> {
 		let mut opts: BlockExtOptions2 = opts.into();
 		opts.encode_as = Some(EncodeSelector::None);
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
 
-		let result = self.rxt.first(opts).await?;
-		Ok(result.is_some())
+		return self.rxt.exists(opts).await;
 	}
 }
 
-pub struct BSxt {
-	ext: BExt,
+pub struct BlockWithTx {
+	ext: BlockWithExt,
 }
 
-impl BSxt {
+impl BlockWithTx {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		Self { ext: BExt::new(client, block_id) }
+		Self { ext: BlockWithExt::new(client, block_id) }
 	}
 
 	pub async fn get<T: HasHeader + Decode>(
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
-	) -> Result<Option<BlockSignedExtrinsic<T>>, avail_rust_core::Error> {
+	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
 		async fn inner<T: HasHeader + Decode>(
-			s: &BSxt,
+			s: &BlockWithTx,
 			extrinsic_id: HashStringNumber,
-		) -> Result<Option<BlockSignedExtrinsic<T>>, avail_rust_core::Error> {
+		) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
-				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x)?,
+				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(|x| UserError::Decoding(x))?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let filter = Some(filter);
-			s.first::<T>(BlockExtOptions1 { filter, ..Default::default() }).await
+			Ok(s.first::<T>(BlockExtOptions1 { filter, ..Default::default() }).await?)
 		}
 
 		inner::<T>(&self, extrinsic_id.into()).await
@@ -294,59 +309,73 @@ impl BSxt {
 	pub async fn first<T: HasHeader + Decode>(
 		&self,
 		opts: BlockExtOptions1,
-	) -> Result<Option<BlockSignedExtrinsic<T>>, avail_rust_core::Error> {
-		let first = self.ext.first(opts).await?;
-		let Some(first) = first else {
+	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+		let ext = self.ext.first(opts).await?;
+		let Some(ext) = ext else {
 			return Ok(None);
 		};
-		let ext = BlockSignedExtrinsic::<T>::try_from(first)?;
+
+		let Some(signature) = ext.signature else {
+			todo!()
+		};
+
+		let ext = BlockSignedExtrinsic::new(signature, ext.call, ext.metadata);
 		Ok(Some(ext))
 	}
 
 	pub async fn last<T: HasHeader + Decode>(
 		&self,
 		opts: BlockExtOptions1,
-	) -> Result<Option<BlockSignedExtrinsic<T>>, avail_rust_core::Error> {
-		let last = self.ext.last(opts).await?;
-		let Some(last) = last else {
+	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+		let ext = self.ext.last(opts).await?;
+		let Some(ext) = ext else {
 			return Ok(None);
 		};
 
-		let ext = BlockSignedExtrinsic::<T>::try_from(last)?;
+		let Some(signature) = ext.signature else {
+			todo!()
+		};
+
+		let ext = BlockSignedExtrinsic::new(signature, ext.call, ext.metadata);
 		Ok(Some(ext))
 	}
 
 	pub async fn all<T: HasHeader + Decode>(
 		&self,
 		opts: BlockExtOptions1,
-	) -> Result<Vec<BlockSignedExtrinsic<T>>, avail_rust_core::Error> {
+	) -> Result<Vec<BlockSignedExtrinsic<T>>, Error> {
 		let all = self.ext.all::<T>(opts).await?;
-		let result: Result<Vec<BlockSignedExtrinsic<T>>, avail_rust_core::Error> =
-			all.into_iter().map(|x| BlockSignedExtrinsic::try_from(x)).collect();
+		let mut result = Vec::with_capacity(all.len());
+		for ext in all {
+			let Some(signature) = ext.signature else {
+				todo!()
+			};
+			result.push(BlockSignedExtrinsic::new(signature, ext.call, ext.metadata));
+		}
 
-		Ok(result?)
+		Ok(result)
 	}
 
-	pub async fn count<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<usize, avail_rust_core::Error> {
+	pub async fn count<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<usize, Error> {
 		self.ext.count::<T>(opts).await
 	}
 
-	pub async fn exists<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<bool, avail_rust_core::Error> {
+	pub async fn exists<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<bool, Error> {
 		self.ext.exists::<T>(opts).await
 	}
 }
 
-pub struct BEvent {
+pub struct BlockEvents {
 	client: Client,
 	block_id: HashStringNumber,
 }
 
-impl BEvent {
+impl BlockEvents {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		BEvent { client, block_id: block_id.into() }
+		BlockEvents { client, block_id: block_id.into() }
 	}
 
-	pub async fn ext(&self, tx_index: u32) -> Result<Option<ExtrinsicEvents>, avail_rust_core::Error> {
+	pub async fn ext(&self, tx_index: u32) -> Result<Option<ExtrinsicEvents>, Error> {
 		let mut events = self
 			.block(BlockEventsOptions {
 				filter: Some(tx_index.into()),
@@ -362,7 +391,7 @@ impl BEvent {
 		let mut result: Vec<ExtrinsicEvent> = Vec::with_capacity(first.events.len());
 		for phase_event in &mut first.events {
 			let Some(data) = phase_event.encoded_data.take() else {
-				return Err(avail_rust_core::Error::from("No data was provided from event"));
+				return Err(RpcError::ExpectedData("No data was provided from event".into()).into());
 			};
 			let ext_event = ExtrinsicEvent {
 				index: phase_event.index,
@@ -376,7 +405,7 @@ impl BEvent {
 		Ok(Some(ExtrinsicEvents::new(result)))
 	}
 
-	pub async fn block(&self, opts: BlockEventsOptions) -> Result<Vec<rpc::BlockPhaseEvent>, avail_rust_core::Error> {
+	pub async fn block(&self, opts: BlockEventsOptions) -> Result<Vec<rpc::BlockPhaseEvent>, Error> {
 		self.client
 			.rpc()
 			.system_fetch_events(self.block_id.clone(), opts.into())
@@ -469,12 +498,12 @@ impl BlockRawExtrinsic {
 		Self { data, metadata, signer_payload }
 	}
 
-	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
-		let events = BEvent::new(client, self.metadata.block_id.clone())
+	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, Error> {
+		let events = BlockEvents::new(client, self.metadata.block_id.clone())
 			.ext(self.ext_index())
 			.await?;
 		let Some(events) = events else {
-			return Err(avail_rust_core::Error::from("No events found for extrinsic"));
+			return Err(RpcError::ExpectedData("No events found for extrinsic".into()).into());
 		};
 
 		Ok(events)
@@ -513,12 +542,12 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 		Self { signature, call, metadata }
 	}
 
-	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
-		let events = BEvent::new(client, self.metadata.block_id.clone())
+	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, Error> {
+		let events = BlockEvents::new(client, self.metadata.block_id.clone())
 			.ext(self.ext_index())
 			.await?;
 		let Some(events) = events else {
-			return Err(avail_rust_core::Error::from("No events found for extrinsic"));
+			return Err(RpcError::ExpectedData("No events found for extrinsic".into()).into());
 		};
 
 		Ok(events)
@@ -553,7 +582,7 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<BlockRawExtrinsic> for BlockExtrinsic<T> {
-	type Error = avail_rust_core::Error;
+	type Error = String;
 
 	fn try_from(value: BlockRawExtrinsic) -> Result<Self, Self::Error> {
 		let Some(data) = &value.data else {
@@ -577,12 +606,12 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 		Self { signature, call, metadata }
 	}
 
-	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, avail_rust_core::Error> {
-		let events = BEvent::new(client, self.metadata.block_id.clone())
+	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, Error> {
+		let events = BlockEvents::new(client, self.metadata.block_id.clone())
 			.ext(self.ext_index())
 			.await?;
 		let Some(events) = events else {
-			return Err(avail_rust_core::Error::from("No events found for extrinsic"));
+			return Err(RpcError::ExpectedData("No events found for extrinsic".into()).into());
 		};
 
 		Ok(events)
@@ -617,7 +646,7 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 }
 
 impl<T: HasHeader + Decode> TryFrom<BlockExtrinsic<T>> for BlockSignedExtrinsic<T> {
-	type Error = avail_rust_core::Error;
+	type Error = String;
 
 	fn try_from(value: BlockExtrinsic<T>) -> Result<Self, Self::Error> {
 		let Some(signature) = value.signature else {

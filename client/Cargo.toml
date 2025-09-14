@@ -46,12 +46,6 @@ tracing = [
 reqwest = [
 	"dep:reqwest"
 ]
-generated_metadata = [
-	"avail-rust-core/generated_metadata"
-]
-subxt = [
-	"avail-rust-core/subxt"
-]
 native = [
 	"avail-rust-core/native"
 ]

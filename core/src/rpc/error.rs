@@ -3,20 +3,12 @@
 pub enum Error {
 	#[error("{0}")]
 	Rpc(subxt_rpcs::Error),
-	#[error("RPC error: cannot decode some part of the response: {0}")]
+	#[error("RPC error: cannot decode some part of the response. Response might be malformed: {0}")]
 	MalformedResponse(String),
 	#[error("RPC error: cannot decode some part of the response: {0}")]
 	DecodingFailed(String),
-}
-
-impl Error {
-	pub fn malformed_response(value: impl Into<String>) -> Self {
-		Self::MalformedResponse(value.into())
-	}
-
-	pub fn decoding_failed(value: impl Into<String>) -> Self {
-		Self::DecodingFailed(value.into())
-	}
+	#[error("RPC error: expected to receive data but not data was received: {0}")]
+	ExpectedData(String),
 }
 
 impl From<subxt_rpcs::Error> for Error {

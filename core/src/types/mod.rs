@@ -8,6 +8,7 @@ pub use substrate::{AccountId, AccountIndex, BlakeTwo256, BlockHash, BlockHeight
 pub use substrate::{Era, ExtrinsicExtra, ExtrinsicSignature, MultiAddress, MultiSignature, RuntimePhase};
 
 // Unnamed
+pub use metadata::{HashNumber, HashString, HashStringNumber};
 pub use pallets::RuntimeCall;
 
 // Others

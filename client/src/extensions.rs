@@ -1,13 +1,6 @@
 use crate::subxt_signer::{SecretUri, sr25519::Keypair};
 use avail_rust_core::{AccountId, H256, ext::subxt_core::utils::AccountId32};
 
-#[cfg(feature = "generated_metadata")]
-use crate::subxt_core::tx::payload::DefaultPayload;
-#[cfg(feature = "generated_metadata")]
-use crate::{Client, SubmittableTransaction};
-#[cfg(feature = "generated_metadata")]
-use avail_rust_core::ExtrinsicCall;
-
 pub trait H256Ext {
 	fn from_str(s: &str) -> Result<H256, String>;
 }
@@ -89,42 +82,5 @@ impl KeypairExt for Keypair {
 
 	fn account_id(&self) -> AccountId {
 		self.public_key().to_account_id()
-	}
-}
-
-#[cfg(feature = "generated_metadata")]
-pub trait DefaultPayloadExt {
-	fn to_transaction_call(&self, client: &Client) -> Result<ExtrinsicCall, String>;
-	fn to_submittable_transaction(&self, client: Client) -> Result<SubmittableTransaction, String>;
-}
-
-#[cfg(feature = "generated_metadata")]
-impl<CallData: crate::codec::Encode> DefaultPayloadExt for DefaultPayload<CallData> {
-	fn to_transaction_call(&self, client: &Client) -> Result<ExtrinsicCall, String> {
-		let pallet_name = self.pallet_name();
-		let call_name = self.call_name();
-
-		let metadata = client.online_client().metadata();
-		let Some(pallet) = metadata.pallet_by_name(pallet_name) else {
-			return Err("Failed to find pallet index".into());
-		};
-		let Some(call_variant) = pallet.call_variant_by_name(call_name) else {
-			return Err("Failed to find call index".into());
-		};
-
-		let pallet_index = pallet.index();
-		let call_index = call_variant.index;
-		let call_data = self.call_data().encode();
-
-		let value = ExtrinsicCall::new(pallet_index, call_index, call_data);
-
-		Ok(value)
-	}
-
-	fn to_submittable_transaction(&self, client: Client) -> Result<SubmittableTransaction, String> {
-		let call = self.to_transaction_call(&client)?;
-		let value = SubmittableTransaction::new(client, call);
-
-		Ok(value)
 	}
 }

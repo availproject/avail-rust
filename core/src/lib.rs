@@ -1,8 +1,5 @@
-#[cfg(feature = "generated_metadata")]
-pub mod chain_types_generated;
 pub mod decoded_events;
 pub mod decoded_transaction;
-pub mod error;
 pub mod extrinsics_params;
 pub mod grandpa;
 pub mod header;
@@ -13,23 +10,20 @@ pub mod utils;
 
 pub use decoded_events::{TransactionEventDecodable, TransactionEventEncodable};
 pub use substrate::{
-	StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
+	EXTRINSIC_FORMAT_VERSION, ExtrinsicAdditional, ExtrinsicCall, ExtrinsicPayload, GenericExtrinsic, StorageDoubleMap,
+	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
 };
 
-pub use decoded_transaction::{Extrinsic, HasHeader, RawExtrinsic, TransactionConvertible, TransactionDecodable};
-pub use error::Error;
-
+pub use decoded_transaction::{Extrinsic, HasHeader, RawExtrinsic, TransactionDecodable};
 pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
-pub use rpc::EncodeSelector;
+pub use rpc::{EncodeSelector, Error as RpcError};
 pub use types::{
-	H256, U256,
+	AccountId, BlakeTwo256, BlockHash, Era, ExtrinsicExtra, ExtrinsicSignature, H256, MultiAddress, MultiSignature,
+	U256,
 	metadata::{BlockRef, HashNumber},
 	pallets as avail,
 };
-
-#[cfg(feature = "generated_metadata")]
-pub use chain_types_generated::api as avail_generated;
 
 pub mod ext {
 	pub use codec;
@@ -37,8 +31,6 @@ pub mod ext {
 	pub use primitive_types;
 	pub use scale_info;
 	pub use sp_crypto_hashing;
-	#[cfg(feature = "subxt")]
-	pub use subxt;
 	pub use subxt_core;
 	pub use subxt_rpcs;
 	pub use subxt_signer;

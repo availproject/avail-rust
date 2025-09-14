@@ -1,5 +1,5 @@
 use crate::{Client, subxt_core::config::Header};
-use avail_rust_core::{AccountId, Era, ExtrinsicExtra, H256};
+use avail_rust_core::{AccountId, Era, ExtrinsicExtra, H256, RpcError};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Options {
@@ -39,7 +39,7 @@ impl Options {
 		client: &Client,
 		account_id: &AccountId,
 		retry_on_error: bool,
-	) -> Result<RefinedOptions, avail_rust_core::Error> {
+	) -> Result<RefinedOptions, RpcError> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {
@@ -99,7 +99,7 @@ impl RefinedMortality {
 		Self { period, block_hash, block_height }
 	}
 
-	pub async fn from_period(client: &Client, period: u64) -> Result<Self, avail_rust_core::Error> {
+	pub async fn from_period(client: &Client, period: u64) -> Result<Self, RpcError> {
 		let header = client.finalized().block_header().await?;
 		let (block_hash, block_height) = (header.hash(), header.number());
 		Ok(Self { period, block_hash, block_height })
