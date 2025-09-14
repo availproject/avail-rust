@@ -1,5 +1,4 @@
 #[derive(thiserror::Error, Debug)]
-#[repr(u8)]
 pub enum Error {
 	#[error("{0}")]
 	Rpc(subxt_rpcs::Error),

@@ -407,6 +407,12 @@ pub mod balances {
 		impl HasHeader for Endowed {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
+		impl Encode for Endowed {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.account.encode_to(dest);
+				self.free_balance.encode_to(dest);
+			}
+		}
 		impl Decode for Endowed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let account = Decode::decode(input)?;
@@ -424,6 +430,12 @@ pub mod balances {
 		}
 		impl HasHeader for DustLost {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Encode for DustLost {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.account.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
 		}
 		impl Decode for DustLost {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -443,6 +455,13 @@ pub mod balances {
 		impl HasHeader for Transfer {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
+		impl Encode for Transfer {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.from.encode_to(dest);
+				self.to.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
 		impl Decode for Transfer {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let from = Decode::decode(input)?;
@@ -461,6 +480,12 @@ pub mod balances {
 		impl HasHeader for Reserved {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
 		}
+		impl Encode for Reserved {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
 		impl Decode for Reserved {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let who = Decode::decode(input)?;
@@ -477,6 +502,12 @@ pub mod balances {
 		}
 		impl HasHeader for Unreserved {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 5);
+		}
+		impl Encode for Unreserved {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
 		}
 		impl Decode for Unreserved {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -495,6 +526,12 @@ pub mod balances {
 		impl HasHeader for Deposit {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 7);
 		}
+		impl Encode for Deposit {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
 		impl Decode for Deposit {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let who = Decode::decode(input)?;
@@ -511,6 +548,12 @@ pub mod balances {
 		}
 		impl HasHeader for Withdraw {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 8);
+		}
+		impl Encode for Withdraw {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
 		}
 		impl Decode for Withdraw {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -529,6 +572,12 @@ pub mod balances {
 		impl HasHeader for Slashed {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 9);
 		}
+		impl Encode for Slashed {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
 		impl Decode for Slashed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let who = Decode::decode(input)?;
@@ -545,6 +594,12 @@ pub mod balances {
 		}
 		impl HasHeader for Locked {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 17);
+		}
+		impl Encode for Locked {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
 		}
 		impl Decode for Locked {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -563,6 +618,12 @@ pub mod balances {
 		impl HasHeader for Unlocked {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 18);
 		}
+		impl Encode for Unlocked {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
 		impl Decode for Unlocked {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let who = Decode::decode(input)?;
@@ -580,6 +641,12 @@ pub mod balances {
 		impl HasHeader for Frozen {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 19);
 		}
+		impl Encode for Frozen {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
 		impl Decode for Frozen {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let who = Decode::decode(input)?;
@@ -596,6 +663,12 @@ pub mod balances {
 		}
 		impl HasHeader for Thawed {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 20);
+		}
+		impl Encode for Thawed {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
 		}
 		impl Decode for Thawed {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {

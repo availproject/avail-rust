@@ -1,12 +1,16 @@
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum UserError {
+	#[error("{0}")]
 	Decoding(String),
+	#[error("{0}")]
 	ValidationFailed(String),
 }
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
+	#[error("{0}")]
 	RpcError(avail_rust_core::rpc::Error),
+	#[error("{0}")]
 	User(UserError),
 }
 

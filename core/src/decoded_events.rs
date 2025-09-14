@@ -5,26 +5,18 @@ pub trait TransactionEventEncodable {
 	/// SCALE encodes the event
 	///
 	/// If you need to Hex and SCALE encode then call `encode_as_hex_event`
-	fn encode_as_event(&self) -> Vec<u8>;
-
-	/// Hex and SCALE encodes the event
-	///
-	/// If you need to just SCALE encode then call `encode_as_event`
-	fn encode_as_hex_event(&self) -> String;
+	fn to_event(&self) -> Vec<u8>;
 }
 
 pub trait TransactionEventDecodable: Sized {
 	/// Decodes the SCALE encoded Event
 	///
 	/// If you need to decode Hex string call `decode_hex_event`
-	fn decode_event<'a>(event: impl Into<StringOrBytes<'a>>) -> Option<Self>;
-
-	/// Decodes the SCALE encoded Event Data
-	fn decode_event_data<'a>(event_data: impl Into<StringOrBytes<'a>>) -> Option<Self>;
+	fn from_event<'a>(event: impl Into<StringOrBytes<'a>>) -> Result<Self, String>;
 }
 
 impl<T: HasHeader + Encode> TransactionEventEncodable for T {
-	fn encode_as_event(&self) -> Vec<u8> {
+	fn to_event(&self) -> Vec<u8> {
 		let pallet_id = Self::HEADER_INDEX.0;
 		let variant_id = Self::HEADER_INDEX.1;
 		let mut encoded_event: Vec<u8> = vec![pallet_id, variant_id];
@@ -32,57 +24,40 @@ impl<T: HasHeader + Encode> TransactionEventEncodable for T {
 
 		encoded_event
 	}
-
-	fn encode_as_hex_event(&self) -> String {
-		std::format!("0x{}", const_hex::encode(Self::encode_as_event(self)))
-	}
 }
 
 impl<T: HasHeader + Decode> TransactionEventDecodable for T {
-	fn decode_event<'a>(event: impl Into<StringOrBytes<'a>>) -> Option<T> {
-		fn inner<T: HasHeader + Decode>(event: StringOrBytes) -> Option<T> {
+	fn from_event<'a>(event: impl Into<StringOrBytes<'a>>) -> Result<Self, String> {
+		fn inner<T: HasHeader + Decode>(event: StringOrBytes) -> Result<T, String> {
 			let event = match event {
-				StringOrBytes::String(s) => &const_hex::decode(s.trim_start_matches("0x")).ok()?,
+				StringOrBytes::StringRef(s) => {
+					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
+				},
+				StringOrBytes::String(s) => {
+					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
+				},
 				StringOrBytes::Bytes(b) => b,
 			};
 
 			// This was moved out in order to decrease compilation times
 			if !event_filter_in(event, T::HEADER_INDEX) {
-				return None;
+				return Err("Failed to decode event. TODO".into());
 			}
 
 			if event.len() <= 2 {
-				try_decode_event_data(&[])
+				let mut data: &[u8] = &[];
+				Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
 			} else {
-				try_decode_event_data(&event[2..])
+				let mut data = &event[2..];
+				Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
 			}
 		}
 
 		inner(event.into())
 	}
-
-	fn decode_event_data<'a>(event_data: impl Into<StringOrBytes<'a>>) -> Option<T> {
-		fn inner<T: HasHeader + Decode>(event_data: StringOrBytes) -> Option<T> {
-			let event_data = match event_data {
-				StringOrBytes::String(s) => &const_hex::decode(s.trim_start_matches("0x")).ok()?,
-				StringOrBytes::Bytes(b) => b,
-			};
-
-			try_decode_event_data(event_data)
-		}
-
-		inner(event_data.into())
-	}
 }
 
 // Purely here to decrease compilation times
-#[inline(never)]
-fn try_decode_event_data<T: Decode>(mut event_data: &[u8]) -> Option<T> {
-	T::decode(&mut event_data).ok()
-}
-
-// Purely here to decrease compilation times
-#[inline(never)]
 fn event_filter_in(event: &[u8], emitted_index: (u8, u8)) -> bool {
 	if event.len() < 2 {
 		return false;

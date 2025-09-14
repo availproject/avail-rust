@@ -15,7 +15,7 @@ pub use clients::Client;
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
-pub use error::{Error, UserError};
+pub(crate) use error::{Error, UserError};
 pub use extensions::{AccountIdExt, H256Ext, KeypairExt, SecretUriExt};
 pub use extrinsic::{BlockState, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
 pub use transaction_options::{MortalityOption, Options, RefinedMortality, RefinedOptions};

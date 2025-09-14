@@ -682,7 +682,21 @@ impl ExtrinsicEvents {
 			return None;
 		};
 
-		T::decode_event(&event.data)
+		T::from_event(&event.data).ok()
+	}
+
+	pub fn all<T: HasHeader + codec::Decode>(&self) -> Result<Vec<T>, String> {
+		let mut result = Vec::new();
+		for event in &self.events {
+			if event.pallet_id != T::HEADER_INDEX.0 || event.variant_id != T::HEADER_INDEX.1 {
+				continue;
+			}
+
+			let decoded = T::from_event(event.data.as_str())?;
+			result.push(decoded);
+		}
+
+		Ok(result)
 	}
 
 	pub fn is_extrinsic_success_present(&self) -> bool {

@@ -41,6 +41,12 @@ pub trait AccountIdExt {
 
 impl AccountIdExt for AccountId {
 	fn from_str(value: &str) -> Result<AccountId, String> {
+		if value.starts_with("0x") {
+			// Cannot be in SS58 format
+			let decoded = const_hex::decode(value.trim_start_matches("0x")).map_err(|e| e.to_string())?;
+			return Self::from_slice(&decoded);
+		}
+
 		value.parse().map_err(|e| std::format!("{:?}", e))
 	}
 

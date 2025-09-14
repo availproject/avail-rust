@@ -223,19 +223,26 @@ impl From<String> for HashStringNumber {
 
 #[derive(Debug, Clone)]
 pub enum StringOrBytes<'a> {
-	String(&'a str),
+	StringRef(&'a str),
+	String(String),
 	Bytes(&'a [u8]),
+}
+
+impl<'a> From<String> for StringOrBytes<'a> {
+	fn from(value: String) -> Self {
+		Self::String(value)
+	}
 }
 
 impl<'a> From<&'a String> for StringOrBytes<'a> {
 	fn from(value: &'a String) -> Self {
-		Self::String(value.as_str())
+		Self::StringRef(value.as_str())
 	}
 }
 
 impl<'a> From<&'a str> for StringOrBytes<'a> {
 	fn from(value: &'a str) -> Self {
-		Self::String(value)
+		Self::StringRef(value)
 	}
 }
 
