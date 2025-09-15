@@ -61,21 +61,21 @@ impl Balances {
 
 pub struct Utility(Client);
 impl Utility {
-	pub fn batch(&self, calls: Vec<ExtrinsicCall>) -> SubmittableTransaction {
+	pub fn batch(&self, calls: Vec<impl Into<ExtrinsicCall>>) -> SubmittableTransaction {
 		let mut batch = avail::utility::tx::Batch::new();
-		batch.add_calls(calls);
+		batch.add_calls(calls.into_iter().map(|x| x.into()).collect());
 		SubmittableTransaction::from_encodable(self.0.clone(), batch)
 	}
 
-	pub fn batch_all(&self, calls: Vec<ExtrinsicCall>) -> SubmittableTransaction {
+	pub fn batch_all(&self, calls: Vec<impl Into<ExtrinsicCall>>) -> SubmittableTransaction {
 		let mut batch = avail::utility::tx::BatchAll::new();
-		batch.add_calls(calls);
+		batch.add_calls(calls.into_iter().map(|x| x.into()).collect());
 		SubmittableTransaction::from_encodable(self.0.clone(), batch)
 	}
 
-	pub fn force_batch(&self, calls: Vec<ExtrinsicCall>) -> SubmittableTransaction {
+	pub fn force_batch(&self, calls: Vec<impl Into<ExtrinsicCall>>) -> SubmittableTransaction {
 		let mut batch = avail::utility::tx::ForceBatch::new();
-		batch.add_calls(calls);
+		batch.add_calls(calls.into_iter().map(|x| x.into()).collect());
 		SubmittableTransaction::from_encodable(self.0.clone(), batch)
 	}
 }
@@ -275,3 +275,39 @@ impl System {
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 }
+
+/* pub enum ExtrinsicCallLike {
+	Call(ExtrinsicCall),
+}
+
+impl From<SubmittableTransaction> for ExtrinsicCallLike {
+	fn from(value: SubmittableTransaction) -> Self {
+		Self::from(value.call)
+	}
+}
+
+impl From<&SubmittableTransaction> for ExtrinsicCallLike {
+	fn from(value: &SubmittableTransaction) -> Self {
+		Self::from(&value.call)
+	}
+}
+
+impl From<ExtrinsicCall> for ExtrinsicCallLike {
+	fn from(value: ExtrinsicCall) -> Self {
+		Self::Call(value)
+	}
+}
+
+impl From<&ExtrinsicCall> for ExtrinsicCallLike {
+	fn from(value: &ExtrinsicCall) -> Self {
+		Self::Call(value.clone())
+	}
+}
+
+impl<T: HasHeader + Encode> From<T> for ExtrinsicCallLike {
+	fn from(value: T) -> Self {
+		let call = ExtrinsicCall::new(T::HEADER_INDEX.0, T::HEADER_INDEX.1, value.encode());
+		Self::from(call)
+	}
+}
+ */

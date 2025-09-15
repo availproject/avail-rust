@@ -1,4 +1,7 @@
-use crate::types::{AccountId, ExtrinsicExtra, ExtrinsicSignature, H256, MultiAddress, MultiSignature};
+use crate::{
+	HasHeader,
+	types::{AccountId, ExtrinsicExtra, ExtrinsicSignature, H256, MultiAddress, MultiSignature},
+};
 use codec::{Compact, Decode, Encode};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
@@ -61,6 +64,16 @@ impl Decode for ExtrinsicCall {
 		let variant_id = Decode::decode(input)?;
 		let data = crate::utils::decode_already_decoded(input)?;
 		Ok(Self { pallet_id, variant_id, data })
+	}
+}
+
+impl<T: HasHeader + Encode> From<&T> for ExtrinsicCall {
+	fn from(value: &T) -> Self {
+		Self {
+			pallet_id: T::HEADER_INDEX.0,
+			variant_id: T::HEADER_INDEX.1,
+			data: value.encode(),
+		}
 	}
 }
 

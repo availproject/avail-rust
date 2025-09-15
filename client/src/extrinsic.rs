@@ -4,7 +4,7 @@ use crate::{
 		Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockSignedExtrinsic, BlockWithExt, BlockWithRawExt,
 		BlockWithTx, ExtrinsicEvents,
 	},
-	subscription::SubscriptionBuilder,
+	subscription::SubBuilder,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
@@ -46,7 +46,7 @@ impl SubmittableTransaction {
 	pub async fn estimate_call_fees(&self, at: Option<H256>) -> Result<FeeDetails, RpcError> {
 		let call = self.call.encode();
 		self.client
-			.runtime_api()
+			.rpc()
 			.transaction_payment_query_call_fee_details(call, at)
 			.await
 	}
@@ -60,7 +60,7 @@ impl SubmittableTransaction {
 		let transaction = self.sign(signer, options).await?;
 		let transaction = transaction.encode();
 		self.client
-			.runtime_api()
+			.rpc()
 			.transaction_payment_query_fee_details(transaction, at)
 			.await
 	}
@@ -68,6 +68,18 @@ impl SubmittableTransaction {
 	pub fn from_encodable<T: HasHeader + Encode>(client: Client, value: T) -> SubmittableTransaction {
 		let call = ExtrinsicCall::new(T::HEADER_INDEX.0, T::HEADER_INDEX.1, value.encode());
 		SubmittableTransaction::new(client, call)
+	}
+}
+
+impl Into<ExtrinsicCall> for SubmittableTransaction {
+	fn into(self) -> ExtrinsicCall {
+		self.call
+	}
+}
+
+impl Into<ExtrinsicCall> for &SubmittableTransaction {
+	fn into(self) -> ExtrinsicCall {
+		self.call.clone()
 	}
 }
 
@@ -189,7 +201,7 @@ impl TransactionReceipt {
 			return Err(UserError::ValidationFailed("Block Start cannot start after Block End".into()).into());
 		}
 		let tx_hash: HashString = tx_hash.into();
-		let mut sub = SubscriptionBuilder::default()
+		let mut sub = SubBuilder::default()
 			.follow(use_best_block)
 			.block_height(block_start)
 			.build(&client)
@@ -249,7 +261,7 @@ impl Utils {
 	) -> Result<Option<BlockRef>, Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
-		let mut sub = SubscriptionBuilder::new()
+		let mut sub = SubBuilder::new()
 			.block_height(mortality.block_height)
 			.follow(use_best_block)
 			.build(client)

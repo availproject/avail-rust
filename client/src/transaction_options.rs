@@ -48,7 +48,7 @@ impl Options {
 				client
 					.rpc()
 					.retry_on(Some(retry_on_error), None)
-					.nonce(account_id)
+					.account_nonce(account_id)
 					.await?
 			},
 		};

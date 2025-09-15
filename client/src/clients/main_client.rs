@@ -1,10 +1,9 @@
-use super::online_client::OnlineClientT;
+use super::online_client::OnlineClient;
 use crate::{
 	BlockState, Error, UserError, avail,
 	block::Block,
 	clients::utils::{with_retry_on_error, with_retry_on_error_and_none},
 	extrinsic::SubmittedTransaction,
-	subscription::{self, Subscription},
 	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::Options,
@@ -24,33 +23,31 @@ use avail_rust_core::{
 	},
 };
 use codec::Decode;
-use std::time::Duration;
 
 #[derive(Clone)]
 pub struct Client {
-	online_client: super::online_client::OnlineClient,
+	online_client: OnlineClient,
 	pub rpc_client: RpcClient,
 }
 
 impl Client {
 	#[cfg(feature = "reqwest")]
 	pub async fn new(endpoint: &str) -> Result<Client, RpcError> {
-		let rpc_client = super::reqwest_client::ReqwestClient::new(endpoint);
+		use super::reqwest_client::ReqwestClient;
+
+		let rpc_client = ReqwestClient::new(endpoint);
 		let rpc_client = RpcClient::new(rpc_client);
 
 		Self::new_rpc_client(rpc_client).await
 	}
 
 	pub async fn new_rpc_client(rpc_client: RpcClient) -> Result<Client, RpcError> {
-		let online_client = super::online_client::SimpleOnlineClient::new(&rpc_client).await?;
+		let online_client = OnlineClient::new(&rpc_client).await?;
 
 		Self::new_custom(rpc_client, online_client.into()).await
 	}
 
-	pub async fn new_custom(
-		rpc_client: RpcClient,
-		online_client: super::online_client::OnlineClient,
-	) -> Result<Client, RpcError> {
+	pub async fn new_custom(rpc_client: RpcClient, online_client: OnlineClient) -> Result<Client, RpcError> {
 		Ok(Self { online_client, rpc_client })
 	}
 
@@ -71,7 +68,7 @@ impl Client {
 		}
 	}
 
-	pub fn online_client(&self) -> super::online_client::OnlineClient {
+	pub fn online_client(&self) -> OnlineClient {
 		self.online_client.clone()
 	}
 
@@ -89,36 +86,6 @@ impl Client {
 
 	pub fn finalized(&self) -> Finalized {
 		Finalized::new(self.clone())
-	}
-
-	// Api
-	pub fn runtime_api(&self) -> RuntimeApi {
-		RuntimeApi::new(self.clone())
-	}
-
-	// Subscription
-	pub fn subscription_block_header(&self, sub: Subscription) -> subscription::HeaderSubscription {
-		subscription::HeaderSubscription::new(self.clone(), sub)
-	}
-
-	pub fn subscription_block(&self, sub: Subscription) -> subscription::BlockSubscription {
-		subscription::BlockSubscription::new(self.clone(), sub)
-	}
-
-	pub fn subscription_grandpa_justification(
-		&self,
-		block_height: u32,
-		poll_rate: Duration,
-	) -> subscription::GrandpaJustificationSubscription {
-		subscription::GrandpaJustificationSubscription::new(self.clone(), poll_rate, block_height)
-	}
-
-	pub fn subscription_grandpa_json_justification(
-		&self,
-		block_height: u32,
-		poll_rate: Duration,
-	) -> subscription::GrandpaJustificationJsonSubscription {
-		subscription::GrandpaJustificationJsonSubscription::new(self.clone(), poll_rate, block_height)
 	}
 }
 
@@ -158,7 +125,10 @@ impl Rpc {
 			.map_err(|e| e.into())
 	}
 
-	pub async fn block(&self, at: Option<H256>) -> Result<Option<BlockWithJustifications>, RpcError> {
+	pub async fn block_with_justification(
+		&self,
+		at: Option<H256>,
+	) -> Result<Option<BlockWithJustifications>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
@@ -169,7 +139,7 @@ impl Rpc {
 	}
 
 	// Nonce
-	pub async fn nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
+	pub async fn account_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move {
@@ -183,7 +153,7 @@ impl Rpc {
 	}
 
 	// Balance
-	pub async fn balance(&self, account_id: &AccountId, at: H256) -> Result<AccountData, RpcError> {
+	pub async fn account_balance(&self, account_id: &AccountId, at: H256) -> Result<AccountData, RpcError> {
 		self.account_info(account_id, at).await.map(|x| x.data)
 	}
 
@@ -453,6 +423,42 @@ impl Rpc {
 			justification.map_err(|e| RpcError::MalformedResponse(e.to_string()))?;
 		Ok(Some(justification))
 	}
+
+	pub async fn call<T: codec::Decode>(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<T, RpcError> {
+		runtime_api::call_raw(&self.client.rpc_client, method, data, at).await
+	}
+
+	pub async fn transaction_payment_query_info(
+		&self,
+		extrinsic: Vec<u8>,
+		at: Option<H256>,
+	) -> Result<RuntimeDispatchInfo, RpcError> {
+		runtime_api::api_transaction_payment_query_info(&self.client.rpc_client, extrinsic, at).await
+	}
+
+	pub async fn transaction_payment_query_fee_details(
+		&self,
+		extrinsic: Vec<u8>,
+		at: Option<H256>,
+	) -> Result<FeeDetails, RpcError> {
+		runtime_api::api_transaction_payment_query_fee_details(&self.client.rpc_client, extrinsic, at).await
+	}
+
+	pub async fn transaction_payment_query_call_info(
+		&self,
+		call: Vec<u8>,
+		at: Option<H256>,
+	) -> Result<RuntimeDispatchInfo, RpcError> {
+		runtime_api::api_transaction_payment_query_call_info(&self.client.rpc_client, call, at).await
+	}
+
+	pub async fn transaction_payment_query_call_fee_details(
+		&self,
+		call: Vec<u8>,
+		at: Option<H256>,
+	) -> Result<FeeDetails, RpcError> {
+		runtime_api::api_transaction_payment_query_call_fee_details(&self.client.rpc_client, call, at).await
+	}
 }
 
 pub struct Best {
@@ -489,33 +495,20 @@ impl Best {
 		Ok(block_header)
 	}
 
-	pub async fn block(&self) -> Result<BlockWithJustifications, RpcError> {
-		let retry_on_error = self.retry_on_error.unwrap_or(true);
-		let retry_on_none = self.retry_on_none.unwrap_or(true);
-
+	pub async fn block(&self) -> Result<Block, Error> {
 		let block_hash = self.block_hash().await?;
-		let block = self
-			.client
-			.rpc()
-			.retry_on(Some(retry_on_error), Some(retry_on_none))
-			.block(Some(block_hash))
-			.await?;
-		let Some(block) = block else {
-			return Err(RpcError::ExpectedData("Failed to fetch best block".into()));
-		};
-
-		Ok(block)
+		Ok(Block::new(self.client.clone(), block_hash))
 	}
 
-	pub async fn block_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
-		self.block_account_info(account_id).await.map(|v| v.nonce)
+	pub async fn account_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
+		self.account_info(account_id).await.map(|v| v.nonce)
 	}
 
-	pub async fn block_balance(&self, account_id: &AccountId) -> Result<AccountData, RpcError> {
-		self.block_account_info(account_id).await.map(|x| x.data)
+	pub async fn account_balance(&self, account_id: &AccountId) -> Result<AccountData, RpcError> {
+		self.account_info(account_id).await.map(|x| x.data)
 	}
 
-	pub async fn block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+	pub async fn account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let at = self.block_hash().await?;
@@ -579,33 +572,20 @@ impl Finalized {
 		Ok(block_header)
 	}
 
-	pub async fn block(&self) -> Result<BlockWithJustifications, RpcError> {
-		let retry_on_error = self.retry_on_error.unwrap_or(true);
-		let retry_on_none = self.retry_on_none.unwrap_or(true);
-
+	pub async fn block(&self) -> Result<Block, Error> {
 		let block_hash = self.block_hash().await?;
-		let block = self
-			.client
-			.rpc()
-			.retry_on(Some(retry_on_error), Some(retry_on_none))
-			.block(Some(block_hash))
-			.await?;
-		let Some(block) = block else {
-			return Err(RpcError::ExpectedData("Failed to fetch finalized block".into()));
-		};
-
-		Ok(block)
+		Ok(Block::new(self.client.clone(), block_hash))
 	}
 
-	pub async fn block_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
-		self.block_account_info(account_id).await.map(|v| v.nonce)
+	pub async fn account_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
+		self.account_info(account_id).await.map(|v| v.nonce)
 	}
 
-	pub async fn block_balance(&self, account_id: &AccountId) -> Result<AccountData, RpcError> {
-		self.block_account_info(account_id).await.map(|x| x.data)
+	pub async fn account_balance(&self, account_id: &AccountId) -> Result<AccountData, RpcError> {
+		self.account_info(account_id).await.map(|x| x.data)
 	}
 
-	pub async fn block_account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+	pub async fn account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let at = self.block_hash().await?;
@@ -631,53 +611,6 @@ impl Finalized {
 
 	pub async fn block_height(&self) -> Result<u32, RpcError> {
 		self.block_info().await.map(|x| x.height)
-	}
-}
-
-#[derive(Clone)]
-pub struct RuntimeApi {
-	client: Client,
-}
-
-impl RuntimeApi {
-	pub fn new(client: Client) -> Self {
-		Self { client }
-	}
-
-	pub async fn call<T: codec::Decode>(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<T, RpcError> {
-		runtime_api::call_raw(&self.client.rpc_client, method, data, at).await
-	}
-
-	pub async fn transaction_payment_query_info(
-		&self,
-		extrinsic: Vec<u8>,
-		at: Option<H256>,
-	) -> Result<RuntimeDispatchInfo, RpcError> {
-		runtime_api::api_transaction_payment_query_info(&self.client.rpc_client, extrinsic, at).await
-	}
-
-	pub async fn transaction_payment_query_fee_details(
-		&self,
-		extrinsic: Vec<u8>,
-		at: Option<H256>,
-	) -> Result<FeeDetails, RpcError> {
-		runtime_api::api_transaction_payment_query_fee_details(&self.client.rpc_client, extrinsic, at).await
-	}
-
-	pub async fn transaction_payment_query_call_info(
-		&self,
-		call: Vec<u8>,
-		at: Option<H256>,
-	) -> Result<RuntimeDispatchInfo, RpcError> {
-		runtime_api::api_transaction_payment_query_call_info(&self.client.rpc_client, call, at).await
-	}
-
-	pub async fn transaction_payment_query_call_fee_details(
-		&self,
-		call: Vec<u8>,
-		at: Option<H256>,
-	) -> Result<FeeDetails, RpcError> {
-		runtime_api::api_transaction_payment_query_call_fee_details(&self.client.rpc_client, call, at).await
 	}
 }
 

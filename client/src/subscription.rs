@@ -1,43 +1,34 @@
-use crate::{AvailHeader, Client, platform::sleep};
-use avail_rust_core::{BlockRef, H256, RpcError, grandpa::GrandpaJustification, rpc::BlockWithJustifications};
-use std::time::Duration;
-
-#[derive(Debug, Default, Clone, Copy)]
-pub enum SubscriptionKind {
-	BestBlock,
-	#[default]
-	FinalizedBlock,
-}
+use crate::{
+	AvailHeader, Client,
+	block::{
+		BlockEvents, BlockEventsOptions, BlockExtOptionsExpanded, BlockExtOptionsSimple, BlockExtrinsic,
+		BlockRawExtrinsic, BlockSignedExtrinsic, BlockWithExt, BlockWithRawExt, BlockWithTx,
+	},
+	platform::sleep,
+};
+use avail_rust_core::{
+	BlockRef, H256, HasHeader, RpcError,
+	grandpa::GrandpaJustification,
+	rpc::{BlockPhaseEvent, BlockWithJustifications},
+};
+use codec::Decode;
+use std::{marker::PhantomData, time::Duration};
 
 #[derive(Clone)]
-pub struct SubscriptionBuilder {
-	kind: SubscriptionKind,
+pub struct SubBuilder {
+	use_best_block: bool,
 	block_height: Option<u32>,
 	poll_rate: Duration,
 	retry_on_error: bool,
 }
 
-impl SubscriptionBuilder {
+impl SubBuilder {
 	pub fn new() -> Self {
 		Self::default()
 	}
 
 	pub fn follow(mut self, best_block: bool) -> Self {
-		if best_block {
-			self.kind = SubscriptionKind::BestBlock;
-		} else {
-			self.kind = SubscriptionKind::FinalizedBlock;
-		}
-		self
-	}
-
-	pub fn follow_best_blocks(mut self) -> Self {
-		self.kind = SubscriptionKind::BestBlock;
-		self
-	}
-
-	pub fn follow_finalized_blocks(mut self) -> Self {
-		self.kind = SubscriptionKind::FinalizedBlock;
+		self.use_best_block = best_block;
 		self
 	}
 
@@ -51,34 +42,29 @@ impl SubscriptionBuilder {
 		self
 	}
 
-	pub fn kind(mut self, value: SubscriptionKind) -> Self {
-		self.kind = value;
-		self
-	}
-
 	pub fn retry_on_error(mut self, value: bool) -> Self {
 		self.retry_on_error = value;
 		self
 	}
 
-	pub async fn build(&self, client: &Client) -> Result<Subscription, RpcError> {
+	pub async fn build(&self, client: &Client) -> Result<Sub, RpcError> {
 		let block_height = match self.block_height {
 			Some(x) => x,
-			None => match self.kind {
-				SubscriptionKind::BestBlock => client.best().block_height().await?,
-				SubscriptionKind::FinalizedBlock => client.finalized().block_height().await?,
+			None => match self.use_best_block {
+				true => client.best().block_height().await?,
+				false => client.finalized().block_height().await?,
 			},
 		};
 
-		let sub = match self.kind {
-			SubscriptionKind::BestBlock => Subscription::BestBlock(BestBlockSubscriber {
+		let sub = match self.use_best_block {
+			true => Sub::BestBlock(BestBlockSub {
 				poll_rate: self.poll_rate,
 				current_block_height: block_height,
 				block_processed: Vec::new(),
 				retry_on_error: self.retry_on_error,
 				latest_finalized_height: None,
 			}),
-			SubscriptionKind::FinalizedBlock => Subscription::FinalizedBlock(FinalizedBlockSubscriber {
+			false => Sub::FinalizedBlock(FinalizedBlockSub {
 				poll_rate: self.poll_rate,
 				next_block_height: block_height,
 				retry_on_error: self.retry_on_error,
@@ -89,10 +75,10 @@ impl SubscriptionBuilder {
 	}
 }
 
-impl Default for SubscriptionBuilder {
+impl Default for SubBuilder {
 	fn default() -> Self {
 		Self {
-			kind: Default::default(),
+			use_best_block: false,
 			block_height: Default::default(),
 			poll_rate: Duration::from_secs(3),
 			retry_on_error: true,
@@ -101,14 +87,14 @@ impl Default for SubscriptionBuilder {
 }
 
 #[derive(Clone)]
-pub struct FinalizedBlockSubscriber {
+pub struct FinalizedBlockSub {
 	poll_rate: Duration,
 	next_block_height: u32,
 	retry_on_error: bool,
 	latest_finalized_height: Option<u32>,
 }
 
-impl FinalizedBlockSubscriber {
+impl FinalizedBlockSub {
 	pub async fn run(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
 
@@ -176,7 +162,7 @@ impl FinalizedBlockSubscriber {
 }
 
 #[derive(Clone)]
-pub struct BestBlockSubscriber {
+pub struct BestBlockSub {
 	poll_rate: Duration,
 	current_block_height: u32,
 	block_processed: Vec<H256>,
@@ -184,7 +170,7 @@ pub struct BestBlockSubscriber {
 	latest_finalized_height: Option<u32>,
 }
 
-impl BestBlockSubscriber {
+impl BestBlockSub {
 	pub async fn run(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
 
@@ -275,12 +261,12 @@ impl BestBlockSubscriber {
 }
 
 #[derive(Clone)]
-pub enum Subscription {
-	BestBlock(BestBlockSubscriber),
-	FinalizedBlock(FinalizedBlockSubscriber),
+pub enum Sub {
+	BestBlock(BestBlockSub),
+	FinalizedBlock(FinalizedBlockSub),
 }
 
-impl Subscription {
+impl Sub {
 	pub async fn next(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		match self {
 			Self::BestBlock(s) => s.run(client).await,
@@ -304,14 +290,160 @@ impl Subscription {
 }
 
 #[derive(Clone)]
-pub struct HeaderSubscription {
+pub struct BlockWithJustSub {
 	client: Client,
-	sub: Subscription,
+	sub: Sub,
 	retry_on_error: bool,
 }
 
-impl HeaderSubscription {
-	pub fn new(client: Client, sub: Subscription) -> Self {
+impl BlockWithJustSub {
+	pub fn new(client: Client, sub: Sub) -> Self {
+		let retry_on_error = sub.retry_on_error();
+		Self { client, sub, retry_on_error }
+	}
+
+	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, RpcError> {
+		let info = self.sub.next(&self.client).await?;
+		self.client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), Some(true))
+			.block_with_justification(Some(info.hash))
+			.await
+	}
+}
+
+#[derive(Clone)]
+pub struct BlockSub {
+	client: Client,
+	sub: Sub,
+}
+
+impl BlockSub {
+	pub fn new(client: Client, sub: Sub) -> Self {
+		Self { client, sub }
+	}
+
+	pub async fn next(&mut self) -> Result<crate::block::Block, RpcError> {
+		let info = self.sub.next(&self.client).await?;
+		Ok(crate::block::Block::new(self.client.clone(), info.hash))
+	}
+}
+
+#[derive(Clone)]
+pub struct TransactionSub<T: HasHeader + Decode> {
+	client: Client,
+	sub: Sub,
+	opts: BlockExtOptionsSimple,
+	_phantom: PhantomData<T>,
+}
+
+impl<T: HasHeader + Decode> TransactionSub<T> {
+	pub fn new(client: Client, sub: Sub, opts: BlockExtOptionsSimple) -> Self {
+		Self { client, sub, opts, _phantom: Default::default() }
+	}
+
+	pub async fn next(&mut self) -> Result<Vec<BlockSignedExtrinsic<T>>, crate::Error> {
+		loop {
+			let info = self.sub.next(&self.client).await?;
+			let block = BlockWithTx::new(self.client.clone(), info.hash);
+			let txs = block.all::<T>(self.opts.clone()).await?;
+			if txs.is_empty() {
+				continue;
+			}
+
+			return Ok(txs);
+		}
+	}
+}
+
+#[derive(Clone)]
+pub struct ExtrinsicSub<T: HasHeader + Decode> {
+	client: Client,
+	sub: Sub,
+	opts: BlockExtOptionsSimple,
+	_phantom: PhantomData<T>,
+}
+
+impl<T: HasHeader + Decode> ExtrinsicSub<T> {
+	pub fn new(client: Client, sub: Sub, opts: BlockExtOptionsSimple) -> Self {
+		Self { client, sub, opts, _phantom: Default::default() }
+	}
+
+	pub async fn next(&mut self) -> Result<Vec<BlockExtrinsic<T>>, crate::Error> {
+		loop {
+			let info = self.sub.next(&self.client).await?;
+			let block = BlockWithExt::new(self.client.clone(), info.hash);
+			let txs = block.all::<T>(self.opts.clone()).await?;
+			if txs.is_empty() {
+				continue;
+			}
+
+			return Ok(txs);
+		}
+	}
+}
+
+#[derive(Clone)]
+pub struct RawExtrinsicSub {
+	client: Client,
+	sub: Sub,
+	opts: BlockExtOptionsExpanded,
+}
+
+impl RawExtrinsicSub {
+	pub fn new(client: Client, sub: Sub, opts: BlockExtOptionsExpanded) -> Self {
+		Self { client, sub, opts }
+	}
+
+	pub async fn next(&mut self) -> Result<Vec<BlockRawExtrinsic>, crate::Error> {
+		loop {
+			let info = self.sub.next(&self.client).await?;
+			let block = BlockWithRawExt::new(self.client.clone(), info.hash);
+			let txs = block.all(self.opts.clone()).await?;
+			if txs.is_empty() {
+				continue;
+			}
+
+			return Ok(txs);
+		}
+	}
+}
+
+#[derive(Clone)]
+pub struct EventsSub {
+	client: Client,
+	sub: Sub,
+	opts: BlockEventsOptions,
+}
+
+impl EventsSub {
+	pub fn new(client: Client, sub: Sub, opts: BlockEventsOptions) -> Self {
+		Self { client, sub, opts }
+	}
+
+	pub async fn next(&mut self) -> Result<Vec<BlockPhaseEvent>, crate::Error> {
+		loop {
+			let info = self.sub.next(&self.client).await?;
+			let block = BlockEvents::new(self.client.clone(), info.hash);
+			let events = block.block(self.opts.clone()).await?;
+			if events.is_empty() {
+				continue;
+			}
+
+			return Ok(events);
+		}
+	}
+}
+
+#[derive(Clone)]
+pub struct BlockHeaderSub {
+	client: Client,
+	sub: Sub,
+	retry_on_error: bool,
+}
+
+impl BlockHeaderSub {
+	pub fn new(client: Client, sub: Sub) -> Self {
 		let retry_on_error = sub.retry_on_error();
 		Self { client, sub, retry_on_error }
 	}
@@ -324,41 +456,10 @@ impl HeaderSubscription {
 			.block_header(Some(info.hash))
 			.await
 	}
-
-	pub fn current_block_height(&self) -> u32 {
-		self.sub.current_block_height()
-	}
 }
 
 #[derive(Clone)]
-pub struct BlockSubscription {
-	client: Client,
-	sub: Subscription,
-	retry_on_error: bool,
-}
-
-impl BlockSubscription {
-	pub fn new(client: Client, sub: Subscription) -> Self {
-		let retry_on_error = sub.retry_on_error();
-		Self { client, sub, retry_on_error }
-	}
-
-	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, RpcError> {
-		let info = self.sub.next(&self.client).await?;
-		self.client
-			.rpc()
-			.retry_on(Some(self.retry_on_error), Some(true))
-			.block(Some(info.hash))
-			.await
-	}
-
-	pub fn current_block_height(&self) -> u32 {
-		self.sub.current_block_height()
-	}
-}
-
-#[derive(Clone)]
-pub struct GrandpaJustificationSubscription {
+pub struct GrandpaJustificationSub {
 	client: Client,
 	next_block_height: u32,
 	poll_rate: Duration,
@@ -366,7 +467,7 @@ pub struct GrandpaJustificationSubscription {
 	stopwatch: std::time::Instant,
 }
 
-impl GrandpaJustificationSubscription {
+impl GrandpaJustificationSub {
 	pub fn new(client: Client, poll_rate: Duration, next_block_height: u32) -> Self {
 		Self {
 			client,
@@ -431,7 +532,7 @@ impl GrandpaJustificationSubscription {
 }
 
 #[derive(Clone)]
-pub struct GrandpaJustificationJsonSubscription {
+pub struct GrandpaJustificationJsonSub {
 	client: Client,
 	next_block_height: u32,
 	poll_rate: Duration,
@@ -439,7 +540,7 @@ pub struct GrandpaJustificationJsonSubscription {
 	stopwatch: std::time::Instant,
 }
 
-impl GrandpaJustificationJsonSubscription {
+impl GrandpaJustificationJsonSub {
 	pub fn new(client: Client, poll_rate: Duration, next_block_height: u32) -> Self {
 		Self {
 			client,

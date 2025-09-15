@@ -54,7 +54,7 @@ impl BlockWithRawExt {
 				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(|x| UserError::Decoding(x))?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
-			let mut opts = BlockExtOptions2::default();
+			let mut opts = BlockExtOptionsExpanded::default();
 			opts.filter = Some(filter);
 			opts.encode_as = Some(encode_as);
 			Ok(s.first(opts).await?)
@@ -63,7 +63,7 @@ impl BlockWithRawExt {
 		inner(&self, extrinsic_id.into(), encode_as).await
 	}
 
-	pub async fn first(&self, mut opts: BlockExtOptions2) -> Result<Option<BlockRawExtrinsic>, Error> {
+	pub async fn first(&self, mut opts: BlockExtOptionsExpanded) -> Result<Option<BlockRawExtrinsic>, Error> {
 		if opts.encode_as.is_none() {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
@@ -90,7 +90,7 @@ impl BlockWithRawExt {
 		Ok(Some(ext))
 	}
 
-	pub async fn last(&self, mut opts: BlockExtOptions2) -> Result<Option<BlockRawExtrinsic>, Error> {
+	pub async fn last(&self, mut opts: BlockExtOptionsExpanded) -> Result<Option<BlockRawExtrinsic>, Error> {
 		if opts.encode_as.is_none() {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
@@ -117,7 +117,7 @@ impl BlockWithRawExt {
 		Ok(Some(ext))
 	}
 
-	pub async fn all(&self, mut opts: BlockExtOptions2) -> Result<Vec<BlockRawExtrinsic>, Error> {
+	pub async fn all(&self, mut opts: BlockExtOptionsExpanded) -> Result<Vec<BlockRawExtrinsic>, Error> {
 		if opts.encode_as.is_none() {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
@@ -145,14 +145,14 @@ impl BlockWithRawExt {
 		Ok(result)
 	}
 
-	pub async fn count(&self, mut opts: BlockExtOptions2) -> Result<usize, Error> {
+	pub async fn count(&self, mut opts: BlockExtOptionsExpanded) -> Result<usize, Error> {
 		opts.encode_as = Some(EncodeSelector::None);
 
 		let result = self.all(opts).await?;
 		Ok(result.len())
 	}
 
-	pub async fn exists(&self, mut opts: BlockExtOptions2) -> Result<bool, Error> {
+	pub async fn exists(&self, mut opts: BlockExtOptionsExpanded) -> Result<bool, Error> {
 		opts.encode_as = Some(EncodeSelector::None);
 
 		let result = self.first(opts).await?;
@@ -183,7 +183,8 @@ impl BlockWithExt {
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let filter = Some(filter);
-			Ok(s.first::<T>(BlockExtOptions1 { filter, ..Default::default() }).await?)
+			Ok(s.first::<T>(BlockExtOptionsSimple { filter, ..Default::default() })
+				.await?)
 		}
 
 		inner::<T>(&self, extrinsic_id.into()).await
@@ -191,9 +192,9 @@ impl BlockWithExt {
 
 	pub async fn first<T: HasHeader + Decode>(
 		&self,
-		opts: BlockExtOptions1,
+		opts: BlockExtOptionsSimple,
 	) -> Result<Option<BlockExtrinsic<T>>, Error> {
-		let mut opts: BlockExtOptions2 = opts.into();
+		let mut opts: BlockExtOptionsExpanded = opts.into();
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
@@ -215,9 +216,9 @@ impl BlockWithExt {
 
 	pub async fn last<T: HasHeader + Decode>(
 		&self,
-		opts: BlockExtOptions1,
+		opts: BlockExtOptionsSimple,
 	) -> Result<Option<BlockExtrinsic<T>>, Error> {
-		let mut opts: BlockExtOptions2 = opts.into();
+		let mut opts: BlockExtOptionsExpanded = opts.into();
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
@@ -236,8 +237,11 @@ impl BlockWithExt {
 		Ok(Some(ext))
 	}
 
-	pub async fn all<T: HasHeader + Decode>(&self, opts: BlockExtOptions1) -> Result<Vec<BlockExtrinsic<T>>, Error> {
-		let mut opts: BlockExtOptions2 = opts.into();
+	pub async fn all<T: HasHeader + Decode>(
+		&self,
+		opts: BlockExtOptionsSimple,
+	) -> Result<Vec<BlockExtrinsic<T>>, Error> {
+		let mut opts: BlockExtOptionsExpanded = opts.into();
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
@@ -256,8 +260,8 @@ impl BlockWithExt {
 		Ok(result)
 	}
 
-	pub async fn count<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<usize, Error> {
-		let mut opts: BlockExtOptions2 = opts.into();
+	pub async fn count<T: HasHeader>(&self, opts: BlockExtOptionsSimple) -> Result<usize, Error> {
+		let mut opts: BlockExtOptionsExpanded = opts.into();
 		opts.encode_as = Some(EncodeSelector::None);
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
@@ -266,8 +270,8 @@ impl BlockWithExt {
 		return self.rxt.count(opts).await;
 	}
 
-	pub async fn exists<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<bool, Error> {
-		let mut opts: BlockExtOptions2 = opts.into();
+	pub async fn exists<T: HasHeader>(&self, opts: BlockExtOptionsSimple) -> Result<bool, Error> {
+		let mut opts: BlockExtOptionsExpanded = opts.into();
 		opts.encode_as = Some(EncodeSelector::None);
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
@@ -300,7 +304,8 @@ impl BlockWithTx {
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let filter = Some(filter);
-			Ok(s.first::<T>(BlockExtOptions1 { filter, ..Default::default() }).await?)
+			Ok(s.first::<T>(BlockExtOptionsSimple { filter, ..Default::default() })
+				.await?)
 		}
 
 		inner::<T>(&self, extrinsic_id.into()).await
@@ -308,7 +313,7 @@ impl BlockWithTx {
 
 	pub async fn first<T: HasHeader + Decode>(
 		&self,
-		opts: BlockExtOptions1,
+		opts: BlockExtOptionsSimple,
 	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
 		let ext = self.ext.first(opts).await?;
 		let Some(ext) = ext else {
@@ -325,7 +330,7 @@ impl BlockWithTx {
 
 	pub async fn last<T: HasHeader + Decode>(
 		&self,
-		opts: BlockExtOptions1,
+		opts: BlockExtOptionsSimple,
 	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
 		let ext = self.ext.last(opts).await?;
 		let Some(ext) = ext else {
@@ -342,7 +347,7 @@ impl BlockWithTx {
 
 	pub async fn all<T: HasHeader + Decode>(
 		&self,
-		opts: BlockExtOptions1,
+		opts: BlockExtOptionsSimple,
 	) -> Result<Vec<BlockSignedExtrinsic<T>>, Error> {
 		let all = self.ext.all::<T>(opts).await?;
 		let mut result = Vec::with_capacity(all.len());
@@ -356,11 +361,11 @@ impl BlockWithTx {
 		Ok(result)
 	}
 
-	pub async fn count<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<usize, Error> {
+	pub async fn count<T: HasHeader>(&self, opts: BlockExtOptionsSimple) -> Result<usize, Error> {
 		self.ext.count::<T>(opts).await
 	}
 
-	pub async fn exists<T: HasHeader>(&self, opts: BlockExtOptions1) -> Result<bool, Error> {
+	pub async fn exists<T: HasHeader>(&self, opts: BlockExtOptionsSimple) -> Result<bool, Error> {
 		self.ext.exists::<T>(opts).await
 	}
 }
@@ -431,7 +436,7 @@ impl Into<rpc::EventOpts> for BlockEventsOptions {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct BlockExtOptions1 {
+pub struct BlockExtOptionsSimple {
 	pub filter: Option<ExtrinsicFilter>,
 	pub ss58_address: Option<String>,
 	pub app_id: Option<u32>,
@@ -439,7 +444,7 @@ pub struct BlockExtOptions1 {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct BlockExtOptions2 {
+pub struct BlockExtOptionsExpanded {
 	pub filter: Option<ExtrinsicFilter>,
 	pub ss58_address: Option<String>,
 	pub app_id: Option<u32>,
@@ -447,7 +452,7 @@ pub struct BlockExtOptions2 {
 	pub encode_as: Option<EncodeSelector>,
 }
 
-impl Into<rpc::ExtrinsicOpts> for BlockExtOptions2 {
+impl Into<rpc::ExtrinsicOpts> for BlockExtOptionsExpanded {
 	fn into(self) -> rpc::ExtrinsicOpts {
 		rpc::ExtrinsicOpts {
 			transaction_filter: self.filter.unwrap_or_default(),
@@ -459,8 +464,8 @@ impl Into<rpc::ExtrinsicOpts> for BlockExtOptions2 {
 	}
 }
 
-impl From<BlockExtOptions1> for BlockExtOptions2 {
-	fn from(value: BlockExtOptions1) -> Self {
+impl From<BlockExtOptionsSimple> for BlockExtOptionsExpanded {
+	fn from(value: BlockExtOptionsSimple) -> Self {
 		Self {
 			filter: value.filter,
 			ss58_address: value.ss58_address,
