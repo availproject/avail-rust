@@ -19,7 +19,7 @@ pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
 pub use rpc::{EncodeSelector, Error as RpcError};
 pub use types::{
-	AccountId, AccountLike, BlakeTwo256, BlockHash, BlockRef, Era, ExtrinsicExtra, ExtrinsicSignature, H256,
+	AccountId, AccountIdLike, BlakeTwo256, BlockHash, BlockRef, Era, ExtrinsicExtra, ExtrinsicSignature, H256,
 	HashNumber, MultiAddress, MultiSignature, U256, pallets as avail,
 };
 

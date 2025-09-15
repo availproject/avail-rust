@@ -279,40 +279,40 @@ impl<'a> From<&'a [u8]> for StringOrBytes<'a> {
 	}
 }
 
-pub enum AccountLike {
+pub enum AccountIdLike {
 	AccountId(AccountId),
 	BoxedString(Box<str>),
 }
 
-impl TryFrom<AccountLike> for AccountId {
+impl TryFrom<AccountIdLike> for AccountId {
 	type Error = String;
 
-	fn try_from(value: AccountLike) -> Result<Self, Self::Error> {
+	fn try_from(value: AccountIdLike) -> Result<Self, Self::Error> {
 		match value {
-			AccountLike::AccountId(a) => Ok(a),
-			AccountLike::BoxedString(s) => account_id_from_str(&*s),
+			AccountIdLike::AccountId(a) => Ok(a),
+			AccountIdLike::BoxedString(s) => account_id_from_str(&*s),
 		}
 	}
 }
-impl From<AccountId> for AccountLike {
+impl From<AccountId> for AccountIdLike {
 	fn from(value: AccountId) -> Self {
 		Self::AccountId(value)
 	}
 }
 
-impl From<String> for AccountLike {
+impl From<String> for AccountIdLike {
 	fn from(value: String) -> Self {
 		Self::BoxedString(value.into())
 	}
 }
 
-impl From<&String> for AccountLike {
+impl From<&String> for AccountIdLike {
 	fn from(value: &String) -> Self {
 		Self::from(value.as_str())
 	}
 }
 
-impl From<&str> for AccountLike {
+impl From<&str> for AccountIdLike {
 	fn from(value: &str) -> Self {
 		Self::BoxedString(value.into())
 	}
