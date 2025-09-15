@@ -31,9 +31,6 @@ primitive-types = { version = "0.13.1", default-features = false }
 log = { version = "0.4.22", default-features = false }
 env_logger = { version = "0.11.5" }
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.3.3", features = ["wasm_js"] }
-
 jsonrpsee = { version = "0.24.7",  default-features = false, features = [ "http-client" ], optional = true }
 sp-io = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12", default-features = false, features = [ "disable_panic_handler" ], optional = true }
 hyper = { version = "1.6.0", default-features = false, features = ["http1", "client"] }
