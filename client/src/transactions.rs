@@ -1,14 +1,22 @@
 use crate::{Client, SubmittableTransaction};
-use avail_rust_core::{AccountId, ExtrinsicCall, H256, avail};
+use avail_rust_core::{
+	AccountId, AccountLike, ExtrinsicCall, H256,
+	avail::{self, multisig::types::Timepoint},
+	types::{HashString, metadata::StringOrBytes, substrate::Weight},
+};
 
 pub struct Transactions(pub(crate) Client);
 impl Transactions {
+	pub fn balances(&self) -> Balances {
+		Balances(self.0.clone())
+	}
+
 	pub fn data_availability(&self) -> DataAvailability {
 		DataAvailability(self.0.clone())
 	}
 
-	pub fn balances(&self) -> Balances {
-		Balances(self.0.clone())
+	pub fn multisig(&self) -> Multisig {
+		Multisig(self.0.clone())
 	}
 
 	pub fn utility(&self) -> Utility {
@@ -28,33 +36,165 @@ impl Transactions {
 	}
 }
 
-pub struct DataAvailability(Client);
-impl DataAvailability {
-	pub fn create_application_key(&self, key: Vec<u8>) -> SubmittableTransaction {
-		let value = avail::data_availability::tx::CreateApplicationKey { key };
-		SubmittableTransaction::from_encodable(self.0.clone(), value)
-	}
-
-	pub fn submit_data(&self, data: Vec<u8>) -> SubmittableTransaction {
-		let value = avail::data_availability::tx::SubmitData { data };
-		SubmittableTransaction::from_encodable(self.0.clone(), value)
-	}
-}
-
 pub struct Balances(Client);
 impl Balances {
-	pub fn transfer_allow_death(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
+	pub fn transfer_allow_death(&self, dest: impl Into<AccountLike>, amount: u128) -> SubmittableTransaction {
+		let dest: AccountLike = Into::<AccountLike>::into(dest);
+		let dest: AccountId = dest.try_into().expect("Malformed string is passed for AccountId");
+
 		let value = avail::balances::tx::TransferAllowDeath { dest: dest.into(), value: amount };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
-	pub fn transfer_keep_alive(&self, dest: AccountId, amount: u128) -> SubmittableTransaction {
+	pub fn transfer_keep_alive(&self, dest: impl Into<AccountLike>, amount: u128) -> SubmittableTransaction {
+		let dest: AccountLike = Into::<AccountLike>::into(dest);
+		let dest: AccountId = dest.try_into().expect("Malformed string is passed for AccountId");
+
 		let value = avail::balances::tx::TransferKeepAlive { dest: dest.into(), value: amount };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
-	pub fn transfer_all(&self, dest: AccountId, keep_alive: bool) -> SubmittableTransaction {
+	pub fn transfer_all(&self, dest: impl Into<AccountLike>, keep_alive: bool) -> SubmittableTransaction {
+		let dest: AccountLike = Into::<AccountLike>::into(dest);
+		let dest: AccountId = dest.try_into().expect("Malformed string is passed for AccountId");
+
 		let value = avail::balances::tx::TransferAll { dest: dest.into(), keep_alive };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+}
+
+pub struct Multisig(Client);
+impl Multisig {
+	pub fn approve_as_multi(
+		&self,
+		threshold: u16,
+		other_signatories: Vec<impl Into<AccountLike>>,
+		maybe_timepoint: Option<Timepoint>,
+		call_hash: impl Into<HashString>,
+		max_weight: Weight,
+	) -> SubmittableTransaction {
+		fn inner(
+			client: Client,
+			threshold: u16,
+			other_signatories: Vec<AccountLike>,
+			maybe_timepoint: Option<Timepoint>,
+			call_hash: HashString,
+			max_weight: Weight,
+		) -> SubmittableTransaction {
+			let other_signatories: Result<Vec<AccountId>, _> =
+				other_signatories.into_iter().map(|x| x.try_into()).collect();
+			let other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+
+			let call_hash: H256 = call_hash.try_into().expect("Malformed string is passed for H256");
+
+			let value = avail::multisig::tx::ApproveAsMulti {
+				threshold,
+				other_signatories,
+				maybe_timepoint,
+				call_hash,
+				max_weight,
+			};
+			SubmittableTransaction::from_encodable(client, value)
+		}
+
+		let other_signatories: Vec<AccountLike> = other_signatories.into_iter().map(|x| x.into()).collect();
+		let call_hash: HashString = call_hash.into();
+		inner(self.0.clone(), threshold, other_signatories, maybe_timepoint, call_hash, max_weight)
+	}
+
+	pub fn as_multi(
+		&self,
+		threshold: u16,
+		other_signatories: Vec<impl Into<AccountLike>>,
+		maybe_timepoint: Option<Timepoint>,
+		call: impl Into<ExtrinsicCall>,
+		max_weight: Weight,
+	) -> SubmittableTransaction {
+		fn inner(
+			client: Client,
+			threshold: u16,
+			other_signatories: Vec<AccountLike>,
+			maybe_timepoint: Option<Timepoint>,
+			call: ExtrinsicCall,
+			max_weight: Weight,
+		) -> SubmittableTransaction {
+			let other_signatories: Result<Vec<AccountId>, _> =
+				other_signatories.into_iter().map(|x| x.try_into()).collect();
+			let other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+
+			let value = avail::multisig::tx::AsMulti {
+				threshold,
+				other_signatories,
+				maybe_timepoint,
+				call,
+				max_weight,
+			};
+			SubmittableTransaction::from_encodable(client, value)
+		}
+
+		let other_signatories: Vec<AccountLike> = other_signatories.into_iter().map(|x| x.into()).collect();
+		inner(self.0.clone(), threshold, other_signatories, maybe_timepoint, call.into(), max_weight)
+	}
+
+	pub fn as_multi_threshold_1(
+		&self,
+		other_signatories: Vec<impl Into<AccountLike>>,
+		call: impl Into<ExtrinsicCall>,
+	) -> SubmittableTransaction {
+		fn inner(client: Client, other_signatories: Vec<AccountLike>, call: ExtrinsicCall) -> SubmittableTransaction {
+			let other_signatories: Result<Vec<AccountId>, _> =
+				other_signatories.into_iter().map(|x| x.try_into()).collect();
+			let other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+
+			let value = avail::multisig::tx::AsMultiThreshold1 { other_signatories, call };
+			SubmittableTransaction::from_encodable(client, value)
+		}
+
+		let other_signatories: Vec<AccountLike> = other_signatories.into_iter().map(|x| x.into()).collect();
+		inner(self.0.clone(), other_signatories, call.into())
+	}
+
+	pub fn cancel_as_multi(
+		&self,
+		threshold: u16,
+		other_signatories: Vec<impl Into<AccountLike>>,
+		timepoint: Timepoint,
+		call_hash: impl Into<HashString>,
+	) -> SubmittableTransaction {
+		fn inner(
+			client: Client,
+			threshold: u16,
+			other_signatories: Vec<AccountLike>,
+			timepoint: Timepoint,
+			call_hash: HashString,
+		) -> SubmittableTransaction {
+			let other_signatories: Result<Vec<AccountId>, _> =
+				other_signatories.into_iter().map(|x| x.try_into()).collect();
+			let other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+
+			let call_hash: H256 = call_hash.try_into().expect("Malformed string is passed for H256");
+
+			let value = avail::multisig::tx::CancelAsMulti { threshold, other_signatories, timepoint, call_hash };
+			SubmittableTransaction::from_encodable(client, value)
+		}
+
+		let other_signatories: Vec<AccountLike> = other_signatories.into_iter().map(|x| x.into()).collect();
+		let call_hash: HashString = call_hash.into();
+		inner(self.0.clone(), threshold, other_signatories, timepoint, call_hash)
+	}
+}
+
+pub struct DataAvailability(Client);
+impl DataAvailability {
+	pub fn create_application_key<'a>(&self, key: impl Into<StringOrBytes<'a>>) -> SubmittableTransaction {
+		let key: Vec<u8> = Into::<StringOrBytes>::into(key).into();
+		let value = avail::data_availability::tx::CreateApplicationKey { key };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn submit_data<'a>(&self, data: impl Into<StringOrBytes<'a>>) -> SubmittableTransaction {
+		let data: Vec<u8> = Into::<StringOrBytes>::into(data).into();
+		let value = avail::data_availability::tx::SubmitData { data };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 }
@@ -275,39 +415,3 @@ impl System {
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 }
-
-/* pub enum ExtrinsicCallLike {
-	Call(ExtrinsicCall),
-}
-
-impl From<SubmittableTransaction> for ExtrinsicCallLike {
-	fn from(value: SubmittableTransaction) -> Self {
-		Self::from(value.call)
-	}
-}
-
-impl From<&SubmittableTransaction> for ExtrinsicCallLike {
-	fn from(value: &SubmittableTransaction) -> Self {
-		Self::from(&value.call)
-	}
-}
-
-impl From<ExtrinsicCall> for ExtrinsicCallLike {
-	fn from(value: ExtrinsicCall) -> Self {
-		Self::Call(value)
-	}
-}
-
-impl From<&ExtrinsicCall> for ExtrinsicCallLike {
-	fn from(value: &ExtrinsicCall) -> Self {
-		Self::Call(value.clone())
-	}
-}
-
-impl<T: HasHeader + Encode> From<T> for ExtrinsicCallLike {
-	fn from(value: T) -> Self {
-		let call = ExtrinsicCall::new(T::HEADER_INDEX.0, T::HEADER_INDEX.1, value.encode());
-		Self::from(call)
-	}
-}
- */

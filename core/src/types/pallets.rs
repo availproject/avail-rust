@@ -258,14 +258,14 @@ pub mod data_availability {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				self.key.encode_to(dest);
 				self.owner.encode_to(dest);
-				self.id.encode_to(dest);
+				Compact(self.id).encode_to(dest);
 			}
 		}
 		impl Decode for ApplicationKeyCreated {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let key = Decode::decode(input)?;
 				let owner = Decode::decode(input)?;
-				let id = Decode::decode(input)?;
+				let id = Compact::<u32>::decode(input)?.0;
 				Ok(Self { key, owner, id })
 			}
 		}
@@ -1388,8 +1388,8 @@ pub mod multisig {
 
 		#[derive(Debug, Clone, Copy)]
 		pub struct Timepoint {
-			height: u32,
-			index: u32,
+			pub height: u32,
+			pub index: u32,
 		}
 		impl Encode for Timepoint {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -1419,6 +1419,13 @@ pub mod multisig {
 		impl HasHeader for NewMultisig {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
+		impl Encode for NewMultisig {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.approving.encode_to(dest);
+				self.multisig.encode_to(dest);
+				self.call_hash.encode_to(dest);
+			}
+		}
 		impl Decode for NewMultisig {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let approving = Decode::decode(input)?;
@@ -1438,6 +1445,14 @@ pub mod multisig {
 		}
 		impl HasHeader for MultisigApproval {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Encode for MultisigApproval {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.approving.encode_to(dest);
+				self.timepoint.encode_to(dest);
+				self.multisig.encode_to(dest);
+				self.call_hash.encode_to(dest);
+			}
 		}
 		impl Decode for MultisigApproval {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1461,6 +1476,15 @@ pub mod multisig {
 		impl HasHeader for MultisigExecuted {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
+		impl Encode for MultisigExecuted {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.approving.encode_to(dest);
+				self.timepoint.encode_to(dest);
+				self.multisig.encode_to(dest);
+				self.call_hash.encode_to(dest);
+				self.result.encode_to(dest);
+			}
+		}
 		impl Decode for MultisigExecuted {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let approving = Decode::decode(input)?;
@@ -1482,6 +1506,14 @@ pub mod multisig {
 		}
 		impl HasHeader for MultisigCancelled {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+		impl Encode for MultisigCancelled {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.cancelling.encode_to(dest);
+				self.timepoint.encode_to(dest);
+				self.multisig.encode_to(dest);
+				self.call_hash.encode_to(dest);
+			}
 		}
 		impl Decode for MultisigCancelled {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {

@@ -662,6 +662,7 @@ impl<T: HasHeader + Decode> TryFrom<BlockExtrinsic<T>> for BlockSignedExtrinsic<
 	}
 }
 
+#[derive(Debug, Clone)]
 pub struct ExtrinsicEvent {
 	pub index: u32,
 	pub pallet_id: u8,
@@ -669,6 +670,7 @@ pub struct ExtrinsicEvent {
 	pub data: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct ExtrinsicEvents {
 	pub events: Vec<ExtrinsicEvent>,
 }

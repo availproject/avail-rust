@@ -19,30 +19,37 @@ pub async fn tx_tests() -> Result<(), Error> {
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 
 	// Transfer All
-	let block = BlockWithExt::new(client.clone(), 1828050);
-	let account_id = AccountId::from_str("0x28806db1fa697e9c4967d8bd8ee78a994dfea2887486c39969a7d16bfebbf36f").unwrap();
-	let submittable = client.tx().balances().transfer_all(account_id, false);
-	let expected_call = TransferAll::from_call(&submittable.call.encode()).unwrap();
-	let actual_ext = block.get::<TransferAll>(1).await?.unwrap();
-	assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	{
+		let block = BlockWithExt::new(client.clone(), 1828050);
+
+		let account_id = "0x28806db1fa697e9c4967d8bd8ee78a994dfea2887486c39969a7d16bfebbf36f";
+		let submittable = client.tx().balances().transfer_all(account_id, false);
+		let expected_call = TransferAll::from_call(&submittable.call.encode()).unwrap();
+		let actual_ext = block.get::<TransferAll>(1).await?.unwrap();
+		assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	}
 
 	// TransferAllowDeath
-	let block = BlockWithExt::new(client.clone(), 1828972);
-	let account_id = AccountId::from_str("0x0d584a4cbbfd9a4878d816512894e65918e54fae13df39a6f520fc90caea2fb0").unwrap();
-	let amount = 2010899374608366600109698;
-	let submittable = client.tx().balances().transfer_allow_death(account_id, amount);
-	let expected_call = TransferAllowDeath::from_call(&submittable.call.encode()).unwrap();
-	let actual_ext = block.get::<TransferAllowDeath>(1).await?.unwrap();
-	assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	{
+		let block = BlockWithExt::new(client.clone(), 1828972);
+		let account_id = "0x0d584a4cbbfd9a4878d816512894e65918e54fae13df39a6f520fc90caea2fb0";
+		let amount = 2010899374608366600109698;
+		let submittable = client.tx().balances().transfer_allow_death(account_id, amount);
+		let expected_call = TransferAllowDeath::from_call(&submittable.call.encode()).unwrap();
+		let actual_ext = block.get::<TransferAllowDeath>(1).await?.unwrap();
+		assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	}
 
 	// TransferKeepAlive
-	let block = BlockWithExt::new(client.clone(), 1828947);
-	let account_id = AccountId::from_str("0x00d6fb2b0c83e1bbf6938265912d900f57c9bee67bd8a8cb18ec50fefbf47931").unwrap();
-	let amount = 616150000000000000000;
-	let submittable = client.tx().balances().transfer_keep_alive(account_id, amount);
-	let expected_call = TransferKeepAlive::from_call(&submittable.call.encode()).unwrap();
-	let actual_ext = block.get::<TransferKeepAlive>(1).await?.unwrap();
-	assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	{
+		let block = BlockWithExt::new(client.clone(), 1828947);
+		let account_id = "0x00d6fb2b0c83e1bbf6938265912d900f57c9bee67bd8a8cb18ec50fefbf47931";
+		let amount = 616150000000000000000;
+		let submittable = client.tx().balances().transfer_keep_alive(account_id, amount);
+		let expected_call = TransferKeepAlive::from_call(&submittable.call.encode()).unwrap();
+		let actual_ext = block.get::<TransferKeepAlive>(1).await?.unwrap();
+		assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	}
 
 	Ok(())
 }

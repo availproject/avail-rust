@@ -19,14 +19,15 @@ pub trait TransactionDecodable: Sized {
 impl<T: HasHeader + Decode> TransactionDecodable for T {
 	fn from_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Result<T, String> {
 		fn inner<T: HasHeader + Decode>(call: StringOrBytes) -> Result<T, String> {
-			let call = match call {
+			let call: &[u8] = match &call {
 				StringOrBytes::StringRef(s) => {
 					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
 				},
-				StringOrBytes::String(s) => {
+				StringOrBytes::BoxedString(s) => {
 					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
 				},
-				StringOrBytes::Bytes(b) => b,
+				StringOrBytes::Bytes(b) => *b,
+				StringOrBytes::BoxedBytes(b) => b,
 			};
 
 			if !tx_filter_in(call, T::HEADER_INDEX) {
@@ -47,13 +48,14 @@ impl<T: HasHeader + Decode> TransactionDecodable for T {
 
 	fn from_ext<'a>(ext: impl Into<StringOrBytes<'a>>) -> Result<T, String> {
 		fn inner<T: HasHeader + Decode>(ext: StringOrBytes) -> Result<T, String> {
-			let ext = match ext {
+			let ext: &[u8] = match &ext {
 				StringOrBytes::StringRef(s) => &const_hex::decode(s.trim_start_matches("0x"))
 					.map_err(|x: const_hex::FromHexError| x.to_string())?,
-				StringOrBytes::String(s) => {
+				StringOrBytes::BoxedString(s) => {
 					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
 				},
-				StringOrBytes::Bytes(b) => b,
+				StringOrBytes::Bytes(b) => *b,
+				StringOrBytes::BoxedBytes(b) => &*b,
 			};
 
 			let ext = Extrinsic::<T>::try_from(ext)?;
@@ -94,8 +96,9 @@ impl<'a> TryFrom<StringOrBytes<'a>> for RawExtrinsic {
 	fn try_from(value: StringOrBytes<'a>) -> Result<Self, Self::Error> {
 		match value {
 			StringOrBytes::StringRef(s) => Self::try_from(s),
-			StringOrBytes::String(s) => Self::try_from(s),
+			StringOrBytes::BoxedString(s) => Self::try_from(&*s),
 			StringOrBytes::Bytes(b) => Self::try_from(b),
+			StringOrBytes::BoxedBytes(b) => Self::try_from(&*b),
 		}
 	}
 }
@@ -229,8 +232,9 @@ impl<'a, T: HasHeader + Decode> TryFrom<StringOrBytes<'a>> for SignedExtrinsic<T
 	fn try_from(value: StringOrBytes<'a>) -> Result<Self, Self::Error> {
 		match value {
 			StringOrBytes::StringRef(s) => Self::try_from(s),
-			StringOrBytes::String(s) => Self::try_from(s),
+			StringOrBytes::BoxedString(s) => Self::try_from(&*s),
 			StringOrBytes::Bytes(b) => Self::try_from(b),
+			StringOrBytes::BoxedBytes(b) => Self::try_from(&*b),
 		}
 	}
 }
@@ -317,8 +321,9 @@ impl<'a, T: HasHeader + Decode> TryFrom<StringOrBytes<'a>> for Extrinsic<T> {
 	fn try_from(value: StringOrBytes<'a>) -> Result<Self, Self::Error> {
 		match value {
 			StringOrBytes::StringRef(s) => Self::try_from(s),
-			StringOrBytes::String(s) => Self::try_from(s),
+			StringOrBytes::BoxedString(s) => Self::try_from(&*s),
 			StringOrBytes::Bytes(b) => Self::try_from(b),
+			StringOrBytes::BoxedBytes(b) => Self::try_from(&*b),
 		}
 	}
 }

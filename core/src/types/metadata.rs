@@ -1,7 +1,10 @@
+use std::str::FromStr;
+
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+
+use crate::{AccountId, utils::account_id_from_str};
 
 #[derive(Debug, Clone, Copy, Default, Encode, Decode, Eq, PartialEq)]
 pub struct AppId(#[codec(compact)] pub u32);
@@ -224,13 +227,25 @@ impl From<String> for HashStringNumber {
 #[derive(Debug, Clone)]
 pub enum StringOrBytes<'a> {
 	StringRef(&'a str),
-	String(String),
+	BoxedString(Box<str>),
 	Bytes(&'a [u8]),
+	BoxedBytes(Box<[u8]>),
+}
+
+impl<'a> Into<Vec<u8>> for StringOrBytes<'a> {
+	fn into(self) -> Vec<u8> {
+		match self {
+			StringOrBytes::StringRef(x) => x.as_bytes().to_vec(),
+			StringOrBytes::BoxedString(x) => x.as_bytes().to_vec(),
+			StringOrBytes::Bytes(x) => x.to_vec(),
+			StringOrBytes::BoxedBytes(x) => x.into_vec(),
+		}
+	}
 }
 
 impl<'a> From<String> for StringOrBytes<'a> {
 	fn from(value: String) -> Self {
-		Self::String(value)
+		Self::BoxedString(value.into())
 	}
 }
 
@@ -240,9 +255,9 @@ impl<'a> From<&'a String> for StringOrBytes<'a> {
 	}
 }
 
-impl<'a> From<&'a str> for StringOrBytes<'a> {
-	fn from(value: &'a str) -> Self {
-		Self::StringRef(value)
+impl<'a> From<Vec<u8>> for StringOrBytes<'a> {
+	fn from(value: Vec<u8>) -> Self {
+		Self::BoxedBytes(value.into())
 	}
 }
 
@@ -252,8 +267,53 @@ impl<'a> From<&'a Vec<u8>> for StringOrBytes<'a> {
 	}
 }
 
+impl<'a> From<&'a str> for StringOrBytes<'a> {
+	fn from(value: &'a str) -> Self {
+		Self::StringRef(value)
+	}
+}
+
 impl<'a> From<&'a [u8]> for StringOrBytes<'a> {
 	fn from(value: &'a [u8]) -> Self {
 		Self::Bytes(value)
+	}
+}
+
+pub enum AccountLike {
+	AccountId(AccountId),
+	BoxedString(Box<str>),
+}
+
+impl TryFrom<AccountLike> for AccountId {
+	type Error = String;
+
+	fn try_from(value: AccountLike) -> Result<Self, Self::Error> {
+		match value {
+			AccountLike::AccountId(a) => Ok(a),
+			AccountLike::BoxedString(s) => account_id_from_str(&*s),
+		}
+	}
+}
+impl From<AccountId> for AccountLike {
+	fn from(value: AccountId) -> Self {
+		Self::AccountId(value)
+	}
+}
+
+impl From<String> for AccountLike {
+	fn from(value: String) -> Self {
+		Self::BoxedString(value.into())
+	}
+}
+
+impl From<&String> for AccountLike {
+	fn from(value: &String) -> Self {
+		Self::from(value.as_str())
+	}
+}
+
+impl From<&str> for AccountLike {
+	fn from(value: &str) -> Self {
+		Self::BoxedString(value.into())
 	}
 }

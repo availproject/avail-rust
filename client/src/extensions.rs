@@ -1,5 +1,9 @@
 use crate::subxt_signer::{SecretUri, sr25519::Keypair};
-use avail_rust_core::{AccountId, H256, ext::subxt_core::utils::AccountId32};
+use avail_rust_core::{
+	AccountId, H256,
+	ext::subxt_core::utils::AccountId32,
+	utils::{account_id_from_slice, account_id_from_str},
+};
 
 pub trait H256Ext {
 	fn from_str(s: &str) -> Result<H256, String>;
@@ -41,22 +45,11 @@ pub trait AccountIdExt {
 
 impl AccountIdExt for AccountId {
 	fn from_str(value: &str) -> Result<AccountId, String> {
-		if value.starts_with("0x") {
-			// Cannot be in SS58 format
-			let decoded = const_hex::decode(value.trim_start_matches("0x")).map_err(|e| e.to_string())?;
-			return Self::from_slice(&decoded);
-		}
-
-		value.parse().map_err(|e| std::format!("{:?}", e))
+		account_id_from_str(value)
 	}
 
 	fn from_slice(value: &[u8]) -> Result<AccountId, String> {
-		let account_id: [u8; 32] = match value.try_into() {
-			Ok(x) => x,
-			Err(err) => return Err(err.to_string()),
-		};
-
-		Ok(AccountId { 0: account_id })
+		account_id_from_slice(value)
 	}
 
 	fn default() -> AccountId {

@@ -29,14 +29,15 @@ impl<T: HasHeader + Encode> TransactionEventEncodable for T {
 impl<T: HasHeader + Decode> TransactionEventDecodable for T {
 	fn from_event<'a>(event: impl Into<StringOrBytes<'a>>) -> Result<Self, String> {
 		fn inner<T: HasHeader + Decode>(event: StringOrBytes) -> Result<T, String> {
-			let event = match event {
+			let event: &[u8] = match &event {
 				StringOrBytes::StringRef(s) => {
 					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
 				},
-				StringOrBytes::String(s) => {
+				StringOrBytes::BoxedString(s) => {
 					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
 				},
-				StringOrBytes::Bytes(b) => b,
+				StringOrBytes::Bytes(b) => *b,
+				StringOrBytes::BoxedBytes(b) => b,
 			};
 
 			// This was moved out in order to decrease compilation times
