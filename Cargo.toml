@@ -69,4 +69,4 @@ sp-runtime = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "
 sp-std = { git = "https://github.com/availproject/polkadot-sdk.git", tag = "polkadot-1.7.1-patch-12" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.3.3", features = ["wasm_js"] }
+getrandom = { version = "0.2.16", features = ["js"] }
