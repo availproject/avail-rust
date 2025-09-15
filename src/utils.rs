@@ -139,6 +139,7 @@ pub fn generate_multiproof_grid_dims(grid: Dimensions, target: Dimensions) -> Op
 
 	Dimensions::new(rows, cols)
 }
+
 pub(crate) fn extract_kate(extension: &HeaderExtension) -> Option<(u16, u16, H256, Vec<u8>)> {
 	match &extension.option()? {
 		HeaderExtension::V3(v3::HeaderExtension { commitment: kate, .. }) => {
