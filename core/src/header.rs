@@ -22,6 +22,7 @@ impl AvailHeader {
 	pub fn data_root(&self) -> H256 {
 		match &self.extension {
 			HeaderExtension::V3(ext) => ext.commitment.data_root,
+			HeaderExtension::V4(ext) => ext.commitment.data_root,
 		}
 	}
 
@@ -68,6 +69,7 @@ where
 #[repr(u8)]
 pub enum HeaderExtension {
 	V3(V3HeaderExtension) = 2,
+	V4(V4HeaderExtension) = 3,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -88,6 +90,22 @@ impl Decode for V3HeaderExtension {
 		let commitment = Decode::decode(input)?;
 		Ok(Self { app_lookup, commitment })
 	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct V4HeaderExtension {
+	pub app_lookup: V4CompactDataLookup,
+	pub commitment: KateCommitment,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct V4CompactDataLookup {
+	#[codec(compact)]
+	pub size: u32,
+	pub index: Vec<DataLookupItem>,
+	pub rows_per_tx: Vec<u16>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

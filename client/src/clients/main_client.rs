@@ -392,6 +392,10 @@ impl Rpc {
 		inner(&self, at.into(), &opts, retry_on_error).await
 	}
 
+	pub async fn blob_submit_blob(&self, metadata_signed_transaction: Vec<u8>, blob: Vec<u8>) -> Result<(), Error> {
+		Ok(rpc::blob::submit_blob(&self.client.rpc_client, metadata_signed_transaction, blob).await?)
+	}
+
 	pub async fn grandpa_block_justification(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let f = || async move { rpc::grandpa::block_justification(&self.client.rpc_client, at).await };
