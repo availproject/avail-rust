@@ -48,6 +48,28 @@ pub enum RuntimeCall {
 	StakingUnbond(staking::tx::Unbond),
 	StakingValidate(staking::tx::Validate),
 	StakingWithdrawUnbonded(staking::tx::WithdrawUnbonded),
+	NominationPoolsBondExtra(nomination_pools::tx::BondExtra),
+	NominationPoolsBondExtraOther(nomination_pools::tx::BondExtraOther),
+	NominationPoolsChill(nomination_pools::tx::Chill),
+	NominationPoolsClaimCommission(nomination_pools::tx::ClaimCommission),
+	NominationPoolsClaimPayout(nomination_pools::tx::ClaimPayout),
+	NominationPoolsClaimPayoutOther(nomination_pools::tx::ClaimPayoutOther),
+	NominationPoolsCreate(nomination_pools::tx::Create),
+	NominationPoolsCreateWithPoolId(nomination_pools::tx::CreateWithPoolId),
+	NominationPoolsJoin(nomination_pools::tx::Join),
+	NominationPoolsNominate(nomination_pools::tx::Nominate),
+	NominationPoolsSetClaimPermission(nomination_pools::tx::SetClaimPermission),
+	NominationPoolsSetCommission(nomination_pools::tx::SetCommission),
+	NominationPoolsSetCommissionChangeRate(nomination_pools::tx::SetCommissionChangeRate),
+	NominationPoolsSetCommissionMax(nomination_pools::tx::SetCommissionMax),
+	NominationPoolsSetMetadata(nomination_pools::tx::SetMetadata),
+	NominationPoolsSetState(nomination_pools::tx::SetState),
+	NominationPoolsUnbond(nomination_pools::tx::Unbond),
+	NominationPoolsUpdateRoles(nomination_pools::tx::UpdateRoles),
+	NominationPoolsWithdrawUnbonded(nomination_pools::tx::WithdrawUnbonded),
+	SessionSetKeys(session::tx::SetKeys),
+	SessionPurgeKeys(session::tx::PurgeKeys),
+	TimestampSet(timestamp::tx::Set),
 }
 impl Encode for RuntimeCall {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -90,6 +112,28 @@ impl Encode for RuntimeCall {
 			RuntimeCall::StakingUnbond(x) => x.encode_to(dest),
 			RuntimeCall::StakingValidate(x) => x.encode_to(dest),
 			RuntimeCall::StakingWithdrawUnbonded(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsBondExtra(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsBondExtraOther(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsChill(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsClaimCommission(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsClaimPayout(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsClaimPayoutOther(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsCreate(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsCreateWithPoolId(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsJoin(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsNominate(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsSetClaimPermission(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsSetCommission(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsSetCommissionChangeRate(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsSetCommissionMax(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsSetMetadata(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsSetState(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsUnbond(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsUpdateRoles(x) => x.encode_to(dest),
+			RuntimeCall::NominationPoolsWithdrawUnbonded(x) => x.encode_to(dest),
+			RuntimeCall::SessionSetKeys(x) => x.encode_to(dest),
+			RuntimeCall::SessionPurgeKeys(x) => x.encode_to(dest),
+			RuntimeCall::TimestampSet(x) => x.encode_to(dest),
 		}
 	}
 }
@@ -97,6 +141,25 @@ impl Decode for RuntimeCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let pallet_id = input.read_byte()?;
 		let variant_id = input.read_byte()?;
+
+		if pallet_id == timestamp::PALLET_ID {
+			if variant_id == timestamp::tx::Set::HEADER_INDEX.1 {
+				let call = timestamp::tx::Set::decode(input)?;
+				return Ok(RuntimeCall::TimestampSet(call));
+			}
+		}
+
+		if pallet_id == session::PALLET_ID {
+			if variant_id == session::tx::SetKeys::HEADER_INDEX.1 {
+				let call = session::tx::SetKeys::decode(input)?;
+				return Ok(RuntimeCall::SessionSetKeys(call));
+			}
+
+			if variant_id == session::tx::PurgeKeys::HEADER_INDEX.1 {
+				let call = session::tx::PurgeKeys::decode(input)?;
+				return Ok(RuntimeCall::SessionPurgeKeys(call));
+			}
+		}
 
 		if pallet_id == balances::PALLET_ID {
 			if variant_id == balances::tx::TransferAllowDeath::HEADER_INDEX.1 {
@@ -299,6 +362,103 @@ impl Decode for RuntimeCall {
 			if variant_id == staking::tx::WithdrawUnbonded::HEADER_INDEX.1 {
 				let call = staking::tx::WithdrawUnbonded::decode(input)?;
 				return Ok(RuntimeCall::StakingWithdrawUnbonded(call));
+			}
+		}
+
+		if pallet_id == nomination_pools::PALLET_ID {
+			if variant_id == nomination_pools::tx::BondExtra::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::BondExtra::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsBondExtra(call));
+			}
+
+			if variant_id == nomination_pools::tx::BondExtraOther::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::BondExtraOther::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsBondExtraOther(call));
+			}
+
+			if variant_id == nomination_pools::tx::Chill::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::Chill::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsChill(call));
+			}
+
+			if variant_id == nomination_pools::tx::ClaimCommission::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::ClaimCommission::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsClaimCommission(call));
+			}
+
+			if variant_id == nomination_pools::tx::ClaimPayout::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::ClaimPayout::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsClaimPayout(call));
+			}
+
+			if variant_id == nomination_pools::tx::ClaimPayoutOther::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::ClaimPayoutOther::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsClaimPayoutOther(call));
+			}
+
+			if variant_id == nomination_pools::tx::Create::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::Create::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsCreate(call));
+			}
+
+			if variant_id == nomination_pools::tx::CreateWithPoolId::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::CreateWithPoolId::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsCreateWithPoolId(call));
+			}
+
+			if variant_id == nomination_pools::tx::Join::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::Join::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsJoin(call));
+			}
+
+			if variant_id == nomination_pools::tx::Nominate::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::Nominate::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsNominate(call));
+			}
+
+			if variant_id == nomination_pools::tx::SetClaimPermission::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::SetClaimPermission::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsSetClaimPermission(call));
+			}
+
+			if variant_id == nomination_pools::tx::SetCommission::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::SetCommission::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsSetCommission(call));
+			}
+
+			if variant_id == nomination_pools::tx::SetCommissionChangeRate::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::SetCommissionChangeRate::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsSetCommissionChangeRate(call));
+			}
+
+			if variant_id == nomination_pools::tx::SetCommissionMax::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::SetCommissionMax::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsSetCommissionMax(call));
+			}
+
+			if variant_id == nomination_pools::tx::SetMetadata::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::SetMetadata::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsSetMetadata(call));
+			}
+
+			if variant_id == nomination_pools::tx::SetState::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::SetState::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsSetState(call));
+			}
+
+			if variant_id == nomination_pools::tx::Unbond::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::Unbond::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsUnbond(call));
+			}
+
+			if variant_id == nomination_pools::tx::UpdateRoles::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::UpdateRoles::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsUpdateRoles(call));
+			}
+
+			if variant_id == nomination_pools::tx::WithdrawUnbonded::HEADER_INDEX.1 {
+				let call = nomination_pools::tx::WithdrawUnbonded::decode(input)?;
+				return Ok(RuntimeCall::NominationPoolsWithdrawUnbonded(call));
 			}
 		}
 
@@ -871,6 +1031,60 @@ pub mod balances {
 	}
 }
 
+pub mod session {
+	use super::*;
+	pub const PALLET_ID: u8 = 11;
+
+	pub mod tx {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		pub struct SetKeys {
+			pub babe: H256,
+			pub grandpa: H256,
+			pub im_online: H256,
+			pub authority_discovery: H256,
+			pub proof: Vec<u8>,
+		}
+		impl Encode for SetKeys {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.babe.encode_to(dest);
+				self.grandpa.encode_to(dest);
+				self.im_online.encode_to(dest);
+				self.authority_discovery.encode_to(dest);
+				self.proof.encode_to(dest);
+			}
+		}
+		impl Decode for SetKeys {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let babe = Decode::decode(input)?;
+				let grandpa = Decode::decode(input)?;
+				let im_online = Decode::decode(input)?;
+				let authority_discovery = Decode::decode(input)?;
+				let proof = Decode::decode(input)?;
+				Ok(Self { babe, grandpa, im_online, authority_discovery, proof })
+			}
+		}
+		impl HasHeader for SetKeys {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct PurgeKeys {}
+		impl Encode for PurgeKeys {
+			fn encode_to<T: codec::Output + ?Sized>(&self, _dest: &mut T) {}
+		}
+		impl Decode for PurgeKeys {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self {})
+			}
+		}
+		impl HasHeader for PurgeKeys {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+	}
+}
+
 pub mod utility {
 	use super::*;
 	pub const PALLET_ID: u8 = 1;
@@ -1204,6 +1418,551 @@ pub mod utility {
 		}
 		impl HasHeader for ForceBatch {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+	}
+}
+
+pub mod nomination_pools {
+	use super::*;
+	pub const PALLET_ID: u8 = 36;
+
+	pub mod types {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		pub enum ClaimPermission {
+			Permissioned,
+			PermissionlessCompound,
+			PermissionlessWithdraw,
+			PermissionlessAll,
+		}
+		impl Encode for ClaimPermission {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				match self {
+					Self::Permissioned => 0u8.encode_to(dest),
+					Self::PermissionlessCompound => 1u8.encode_to(dest),
+					Self::PermissionlessWithdraw => 2u8.encode_to(dest),
+					Self::PermissionlessAll => 3u8.encode_to(dest),
+				}
+			}
+		}
+		impl Decode for ClaimPermission {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::Permissioned),
+					1 => Ok(Self::PermissionlessCompound),
+					2 => Ok(Self::PermissionlessWithdraw),
+					3 => Ok(Self::PermissionlessAll),
+					_ => Err("Failed to decode ClaimPermission. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub enum BondExtraValue {
+			FreBalance(u128),
+			Rewards,
+		}
+		impl Encode for BondExtraValue {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				match self {
+					Self::FreBalance(v) => {
+						0u8.encode_to(dest);
+						v.encode_to(dest);
+					},
+					Self::Rewards => 1u8.encode_to(dest),
+				}
+			}
+		}
+		impl Decode for BondExtraValue {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::FreBalance(Decode::decode(input)?)),
+					1 => Ok(Self::Rewards),
+					_ => Err("Failed to decode BondExtra. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub enum PoolState {
+			Open,
+			Blocked,
+			Destroying,
+		}
+		impl Encode for PoolState {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				match self {
+					Self::Open => 0u8.encode_to(dest),
+					Self::Blocked => 1u8.encode_to(dest),
+					Self::Destroying => 2u8.encode_to(dest),
+				}
+			}
+		}
+		impl Decode for PoolState {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::Open),
+					1 => Ok(Self::Blocked),
+					2 => Ok(Self::Destroying),
+					_ => Err("Failed to decode PoolState. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub enum ConfigOpAccount {
+			Noop,
+			Set(AccountId),
+			Remove,
+		}
+		impl Encode for ConfigOpAccount {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				match self {
+					Self::Noop => 1u8.encode_to(dest),
+					Self::Set(v) => {
+						1u8.encode_to(dest);
+						v.encode_to(dest);
+					},
+					Self::Remove => 2u8.encode_to(dest),
+				}
+			}
+		}
+		impl Decode for ConfigOpAccount {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::Noop),
+					1 => Ok(Self::Set(Decode::decode(input)?)),
+					2 => Ok(Self::Remove),
+					_ => Err("Failed to decode ConfigOpAccount. Unknown variant".into()),
+				}
+			}
+		}
+	}
+
+	pub mod tx {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		pub struct BondExtra {
+			pub value: super::types::BondExtraValue,
+		}
+		impl Encode for BondExtra {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.value.encode_to(dest);
+			}
+		}
+		impl Decode for BondExtra {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let value = Decode::decode(input)?;
+				Ok(Self { value })
+			}
+		}
+		impl HasHeader for BondExtra {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct BondExtraOther {
+			pub member: MultiAddress,
+			pub value: super::types::BondExtraValue,
+		}
+		impl Encode for BondExtraOther {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.member.encode_to(dest);
+				self.value.encode_to(dest);
+			}
+		}
+		impl Decode for BondExtraOther {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let member = Decode::decode(input)?;
+				let value = Decode::decode(input)?;
+				Ok(Self { member, value })
+			}
+		}
+		impl HasHeader for BondExtraOther {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 14);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Chill {
+			pub pool_id: u32,
+		}
+		impl Encode for Chill {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pool_id.encode_to(dest);
+			}
+		}
+		impl Decode for Chill {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self { pool_id: Decode::decode(input)? })
+			}
+		}
+		impl HasHeader for Chill {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 13);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ClaimCommission {
+			pub pool_id: u32,
+		}
+		impl Encode for ClaimCommission {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pool_id.encode_to(dest);
+			}
+		}
+		impl Decode for ClaimCommission {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pool_id = Decode::decode(input)?;
+				Ok(Self { pool_id })
+			}
+		}
+		impl HasHeader for ClaimCommission {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 20);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ClaimPayout {}
+		impl Encode for ClaimPayout {
+			fn encode_to<T: codec::Output + ?Sized>(&self, _dest: &mut T) {}
+		}
+		impl Decode for ClaimPayout {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self {})
+			}
+		}
+		impl HasHeader for ClaimPayout {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ClaimPayoutOther {
+			pub owner: AccountId,
+		}
+		impl Encode for ClaimPayoutOther {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.owner.encode_to(dest);
+			}
+		}
+		impl Decode for ClaimPayoutOther {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let owner = Decode::decode(input)?;
+				Ok(Self { owner })
+			}
+		}
+		impl HasHeader for ClaimPayoutOther {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 16);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Create {
+			pub amount: u128,
+			pub root: MultiAddress,
+			pub nominator: MultiAddress,
+			pub bouncer: MultiAddress,
+		}
+		impl Encode for Create {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.amount).encode_to(dest);
+				self.root.encode_to(dest);
+				self.nominator.encode_to(dest);
+				self.bouncer.encode_to(dest);
+			}
+		}
+		impl Decode for Create {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let amount = Compact::<u128>::decode(input)?.0;
+				let root = Decode::decode(input)?;
+				let nominator = Decode::decode(input)?;
+				let bouncer = Decode::decode(input)?;
+				Ok(Self { amount, root, nominator, bouncer })
+			}
+		}
+		impl HasHeader for Create {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 6);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct CreateWithPoolId {
+			pub amount: u128,
+			pub root: MultiAddress,
+			pub nominator: MultiAddress,
+			pub bouncer: MultiAddress,
+			pub pool_id: u32,
+		}
+		impl Encode for CreateWithPoolId {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.amount).encode_to(dest);
+				self.root.encode_to(dest);
+				self.nominator.encode_to(dest);
+				self.bouncer.encode_to(dest);
+				self.pool_id.encode_to(dest);
+			}
+		}
+		impl Decode for CreateWithPoolId {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let amount = Compact::<u128>::decode(input)?.0;
+				let root = Decode::decode(input)?;
+				let nominator = Decode::decode(input)?;
+				let bouncer = Decode::decode(input)?;
+				let pool_id = Decode::decode(input)?;
+				Ok(Self { amount, root, nominator, bouncer, pool_id })
+			}
+		}
+		impl HasHeader for CreateWithPoolId {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 7);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Join {
+			pub amount: u128,
+			pub pool_id: u32,
+		}
+		impl Encode for Join {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.amount).encode_to(dest);
+				self.pool_id.encode_to(dest);
+			}
+		}
+		impl Decode for Join {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let amount = Compact::<u128>::decode(input)?.0;
+				let pool_id = Decode::decode(input)?;
+				Ok(Self { amount, pool_id })
+			}
+		}
+		impl HasHeader for Join {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Nominate {
+			pub pool_id: u32,
+			pub validators: Vec<AccountId>,
+		}
+		impl Encode for Nominate {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pool_id.encode_to(dest);
+				self.validators.encode_to(dest);
+			}
+		}
+		impl Decode for Nominate {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pool_id = Decode::decode(input)?;
+				let validators = Decode::decode(input)?;
+				Ok(Self { pool_id, validators })
+			}
+		}
+		impl HasHeader for Nominate {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 8);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct SetClaimPermission {
+			pub permission: types::ClaimPermission,
+		}
+		impl Encode for SetClaimPermission {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.permission.encode_to(dest);
+			}
+		}
+		impl Decode for SetClaimPermission {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let permission = Decode::decode(input)?;
+				Ok(Self { permission })
+			}
+		}
+		impl HasHeader for SetClaimPermission {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 15);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct SetCommission {
+			pub pool_id: u32,
+			pub new_commission: Option<(u32, AccountId)>,
+		}
+		impl Encode for SetCommission {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pool_id.encode_to(dest);
+				self.new_commission.encode_to(dest);
+			}
+		}
+		impl Decode for SetCommission {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pool_id = Decode::decode(input)?;
+				let new_commission = Decode::decode(input)?;
+				Ok(Self { pool_id, new_commission })
+			}
+		}
+		impl HasHeader for SetCommission {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 17);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct SetCommissionChangeRate {
+			pub pool_id: u32,
+			pub max_increase: u32,
+			pub min_delay: u32,
+		}
+		impl Encode for SetCommissionChangeRate {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pool_id.encode_to(dest);
+				self.max_increase.encode_to(dest);
+				self.min_delay.encode_to(dest);
+			}
+		}
+		impl Decode for SetCommissionChangeRate {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pool_id = Decode::decode(input)?;
+				let max_increase = Decode::decode(input)?;
+				let min_delay = Decode::decode(input)?;
+				Ok(Self { pool_id, max_increase, min_delay })
+			}
+		}
+		impl HasHeader for SetCommissionChangeRate {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 19);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct SetCommissionMax {
+			pub pool_id: u32,
+			pub max_commission: u32,
+		}
+		impl Encode for SetCommissionMax {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pool_id.encode_to(dest);
+				self.max_commission.encode_to(dest);
+			}
+		}
+		impl Decode for SetCommissionMax {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pool_id = Decode::decode(input)?;
+				let max_commission = Decode::decode(input)?;
+				Ok(Self { pool_id, max_commission })
+			}
+		}
+		impl HasHeader for SetCommissionMax {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 18);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct SetMetadata {
+			pub pool_id: u32,
+			pub metadata: Vec<u8>,
+		}
+		impl Encode for SetMetadata {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pool_id.encode_to(dest);
+				self.metadata.encode_to(dest);
+			}
+		}
+		impl Decode for SetMetadata {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pool_id = Decode::decode(input)?;
+				let metadata = Decode::decode(input)?;
+				Ok(Self { pool_id, metadata })
+			}
+		}
+		impl HasHeader for SetMetadata {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 10);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct SetState {
+			pub pool_id: u32,
+			pub state: types::PoolState,
+		}
+		impl Encode for SetState {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pool_id.encode_to(dest);
+				self.state.encode_to(dest);
+			}
+		}
+		impl Decode for SetState {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pool_id = Decode::decode(input)?;
+				let state = Decode::decode(input)?;
+				Ok(Self { pool_id, state })
+			}
+		}
+		impl HasHeader for SetState {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 9);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Unbond {
+			pub member_account: MultiAddress,
+			pub unbonding_points: u128,
+		}
+		impl Encode for Unbond {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.member_account.encode_to(dest);
+				Compact(self.unbonding_points).encode_to(dest);
+			}
+		}
+		impl Decode for Unbond {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let member_account = Decode::decode(input)?;
+				let unbonding_points = Compact::<u128>::decode(input)?.0;
+				Ok(Self { member_account, unbonding_points })
+			}
+		}
+		impl HasHeader for Unbond {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct UpdateRoles {
+			pub pool_id: u32,
+			pub new_root: types::ConfigOpAccount,
+			pub new_nominator: types::ConfigOpAccount,
+			pub new_bouncer: types::ConfigOpAccount,
+		}
+		impl Encode for UpdateRoles {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pool_id.encode_to(dest);
+				self.new_root.encode_to(dest);
+				self.new_nominator.encode_to(dest);
+				self.new_bouncer.encode_to(dest);
+			}
+		}
+		impl Decode for UpdateRoles {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let pool_id = Decode::decode(input)?;
+				let new_root = Decode::decode(input)?;
+				let new_nominator = Decode::decode(input)?;
+				let new_bouncer = Decode::decode(input)?;
+				Ok(Self { pool_id, new_root, new_nominator, new_bouncer })
+			}
+		}
+		impl HasHeader for UpdateRoles {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 12);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct WithdrawUnbonded {
+			pub member_account: MultiAddress,
+			pub num_slashing_spans: u32,
+		}
+		impl Encode for WithdrawUnbonded {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.member_account.encode_to(dest);
+				self.num_slashing_spans.encode_to(dest);
+			}
+		}
+		impl Decode for WithdrawUnbonded {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let member_account = Decode::decode(input)?;
+				let num_slashing_spans = Decode::decode(input)?;
+				Ok(Self { member_account, num_slashing_spans })
+			}
+		}
+		impl HasHeader for WithdrawUnbonded {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}
 	}
 }

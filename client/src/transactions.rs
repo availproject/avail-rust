@@ -4,6 +4,7 @@ use avail_rust_core::{
 	avail::{
 		self,
 		multisig::types::Timepoint,
+		nomination_pools::types::{BondExtraValue, ClaimPermission, ConfigOpAccount, PoolState},
 		proxy::types::ProxyType,
 		staking::types::{RewardDestination, ValidatorPerfs},
 	},
@@ -46,6 +47,218 @@ impl Transactions {
 
 	pub fn system(&self) -> System {
 		System(self.0.clone())
+	}
+
+	pub fn nomination_pools(&self) -> NominationPools {
+		NominationPools(self.0.clone())
+	}
+
+	pub fn session(&self) -> Session {
+		Session(self.0.clone())
+	}
+}
+
+pub struct Session(Client);
+impl Session {
+	pub fn set_key(
+		&self,
+		babe: impl Into<HashString>,
+		grandpa: impl Into<HashString>,
+		authority_discovery: impl Into<HashString>,
+		im_online: impl Into<HashString>,
+		proof: Vec<u8>,
+	) -> SubmittableTransaction {
+		let babe: HashString = babe.into();
+		let babe: H256 = babe.try_into().expect("Invalid string for H256");
+
+		let grandpa: HashString = grandpa.into();
+		let grandpa: H256 = grandpa.try_into().expect("Invalid string for H256");
+
+		let authority_discovery: HashString = authority_discovery.into();
+		let authority_discovery: H256 = authority_discovery.try_into().expect("Invalid string for H256");
+
+		let im_online: HashString = im_online.into();
+		let im_online: H256 = im_online.try_into().expect("Invalid string for H256");
+
+		let value = avail::session::tx::SetKeys { babe, grandpa, authority_discovery, im_online, proof };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn purge_key(&self) -> SubmittableTransaction {
+		let value = avail::session::tx::PurgeKeys {};
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+}
+
+pub struct NominationPools(Client);
+impl NominationPools {
+	pub fn bond_extra(&self, value: BondExtraValue) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::BondExtra { value };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn bond_extra_other(
+		&self,
+		member: impl Into<MultiAddressLike>,
+		value: BondExtraValue,
+	) -> SubmittableTransaction {
+		let member: MultiAddressLike = member.into();
+		let member: MultiAddress = member.try_into().expect("Malformed string is passed for AccountId");
+
+		let value = avail::nomination_pools::tx::BondExtraOther { member, value };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn chill(&self, pool_id: u32) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::Chill { pool_id };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn claim_commission(&self, pool_id: u32) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::ClaimCommission { pool_id };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn claim_payout(&self) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::ClaimPayout {};
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn claim_payout_other(&self, owner: impl Into<AccountIdLike>) -> SubmittableTransaction {
+		let owner: AccountIdLike = owner.into();
+		let owner: AccountId = owner.try_into().expect("Malformed string is passed for AccountId");
+
+		let value = avail::nomination_pools::tx::ClaimPayoutOther { owner };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn create(
+		&self,
+		amount: u128,
+		root: impl Into<MultiAddressLike>,
+		nominator: impl Into<MultiAddressLike>,
+		bouncer: impl Into<MultiAddressLike>,
+	) -> SubmittableTransaction {
+		let root: MultiAddressLike = root.into();
+		let root: MultiAddress = root.try_into().expect("Malformed string is passed for AccountId");
+		let nominator: MultiAddressLike = nominator.into();
+		let nominator: MultiAddress = nominator.try_into().expect("Malformed string is passed for AccountId");
+		let bouncer: MultiAddressLike = bouncer.into();
+		let bouncer: MultiAddress = bouncer.try_into().expect("Malformed string is passed for AccountId");
+
+		let value = avail::nomination_pools::tx::Create { amount, root, nominator, bouncer };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn create_with_pool_id(
+		&self,
+		amount: u128,
+		root: impl Into<MultiAddressLike>,
+		nominator: impl Into<MultiAddressLike>,
+		bouncer: impl Into<MultiAddressLike>,
+		pool_id: u32,
+	) -> SubmittableTransaction {
+		let root: MultiAddressLike = root.into();
+		let root: MultiAddress = root.try_into().expect("Malformed string is passed for AccountId");
+		let nominator: MultiAddressLike = nominator.into();
+		let nominator: MultiAddress = nominator.try_into().expect("Malformed string is passed for AccountId");
+		let bouncer: MultiAddressLike = bouncer.into();
+		let bouncer: MultiAddress = bouncer.try_into().expect("Malformed string is passed for AccountId");
+
+		let value = avail::nomination_pools::tx::CreateWithPoolId { amount, root, nominator, bouncer, pool_id };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn join(&self, amount: u128, pool_id: u32) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::Join { amount, pool_id };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn nominate(&self, pool_id: u32, validators: Vec<impl Into<AccountIdLike>>) -> SubmittableTransaction {
+		let validators: Vec<AccountIdLike> = validators.into_iter().map(|x| x.into()).collect();
+		let validators: Result<Vec<AccountId>, _> = validators.into_iter().map(|x| AccountId::try_from(x)).collect();
+		let validators = validators.expect("Malformed string is passed for AccountId");
+
+		let value = avail::nomination_pools::tx::Nominate { pool_id, validators };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn set_claim_permission(&self, permission: ClaimPermission) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::SetClaimPermission { permission };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn set_commission(&self, pool_id: u32, new_commission: Option<(u32, AccountIdLike)>) -> SubmittableTransaction {
+		let new_commission =
+			new_commission.map(|x| (x.0, AccountId::try_from(x.1).expect("Malformed string is passed for AccountId")));
+		let value = avail::nomination_pools::tx::SetCommission { pool_id, new_commission };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn set_commission_change_rate(
+		&self,
+		pool_id: u32,
+		max_increase: u32,
+		min_delay: u32,
+	) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::SetCommissionChangeRate { pool_id, max_increase, min_delay };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn set_commission_max(&self, pool_id: u32, max_commission: u32) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::SetCommissionMax { pool_id, max_commission };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn set_metadata<'a>(&self, pool_id: u32, metadata: impl Into<StringOrBytes<'a>>) -> SubmittableTransaction {
+		let metadata: StringOrBytes = metadata.into();
+		let metadata: Vec<u8> = metadata.into();
+		let value = avail::nomination_pools::tx::SetMetadata { pool_id, metadata };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn set_state(&self, pool_id: u32, state: PoolState) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::SetState { pool_id, state };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn unbond(
+		&self,
+		member_account: impl Into<MultiAddressLike>,
+		unbonding_points: u128,
+	) -> SubmittableTransaction {
+		let member_account: MultiAddressLike = member_account.into();
+		let member_account: MultiAddress = member_account
+			.try_into()
+			.expect("Malformed string is passed for AccountId");
+
+		let value = avail::nomination_pools::tx::Unbond { member_account, unbonding_points };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn update_roles(
+		&self,
+		pool_id: u32,
+		new_root: ConfigOpAccount,
+		new_nominator: ConfigOpAccount,
+		new_bouncer: ConfigOpAccount,
+	) -> SubmittableTransaction {
+		let value = avail::nomination_pools::tx::UpdateRoles { pool_id, new_root, new_nominator, new_bouncer };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn withdraw_unbonded(
+		&self,
+		member_account: impl Into<MultiAddressLike>,
+		num_slashing_spans: u32,
+	) -> SubmittableTransaction {
+		let member_account: MultiAddressLike = member_account.into();
+		let member_account: MultiAddress = member_account
+			.try_into()
+			.expect("Malformed string is passed for AccountId");
+
+		let value = avail::nomination_pools::tx::WithdrawUnbonded { member_account, num_slashing_spans };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 }
 

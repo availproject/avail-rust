@@ -3,8 +3,11 @@ use avail_rust_client::error::Error;
 mod balances;
 mod da;
 mod multisig;
+mod nomination_pools;
 mod proxy;
+mod session;
 mod staking;
+mod timestamp;
 mod utility;
 
 pub async fn run_tests() -> Result<(), Error> {
@@ -14,5 +17,8 @@ pub async fn run_tests() -> Result<(), Error> {
 	proxy::run_tests().await?;
 	staking::run_tests().await?;
 	utility::run_tests().await?;
+	nomination_pools::run_tests().await?;
+	session::run_tests().await?;
+	timestamp::run_tests().await?;
 	Ok(())
 }
