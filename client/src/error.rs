@@ -4,6 +4,8 @@ pub enum UserError {
 	Decoding(String),
 	#[error("{0}")]
 	ValidationFailed(String),
+	#[error("{0}")]
+	Other(String),
 }
 
 #[derive(thiserror::Error, Debug)]

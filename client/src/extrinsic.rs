@@ -128,22 +128,22 @@ pub enum BlockState {
 #[derive(Clone)]
 pub struct TransactionReceipt {
 	client: Client,
-	pub block_ref: BlockRef,
-	pub tx_ref: TxRef,
+	pub block_info: BlockRef,
+	pub tx_info: TxRef,
 }
 
 impl TransactionReceipt {
-	pub fn new(client: Client, block_ref: BlockRef, tx_ref: TxRef) -> Self {
-		Self { client, block_ref, tx_ref }
+	pub fn new(client: Client, block: BlockRef, tx: TxRef) -> Self {
+		Self { client, block_info: block, tx_info: tx }
 	}
 
 	pub async fn block_state(&self) -> Result<BlockState, RpcError> {
-		self.client.rpc().block_state(self.block_ref).await
+		self.client.rpc().block_state(self.block_info).await
 	}
 
 	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockSignedExtrinsic<T>, Error> {
-		let block = BlockWithTx::new(self.client.clone(), self.block_ref.height);
-		let tx = block.get(self.tx_ref.index).await?;
+		let block = BlockWithTx::new(self.client.clone(), self.block_info.height);
+		let tx = block.get(self.tx_info.index).await?;
 		let Some(tx) = tx else {
 			return Err(RpcError::ExpectedData("No transaction was found.".into()).into());
 		};
@@ -152,8 +152,8 @@ impl TransactionReceipt {
 	}
 
 	pub async fn ext<T: HasHeader + Decode>(&self) -> Result<BlockExtrinsic<T>, Error> {
-		let block = BlockWithExt::new(self.client.clone(), self.block_ref.height);
-		let ext: Option<BlockExtrinsic<T>> = block.get(self.tx_ref.index).await?;
+		let block = BlockWithExt::new(self.client.clone(), self.block_info.height);
+		let ext: Option<BlockExtrinsic<T>> = block.get(self.tx_info.index).await?;
 		let Some(ext) = ext else {
 			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
 		};
@@ -162,8 +162,8 @@ impl TransactionReceipt {
 	}
 
 	pub async fn call<T: HasHeader + Decode>(&self) -> Result<T, Error> {
-		let block = BlockWithExt::new(self.client.clone(), self.block_ref.height);
-		let tx = block.get(self.tx_ref.index).await?;
+		let block = BlockWithExt::new(self.client.clone(), self.block_info.height);
+		let tx = block.get(self.tx_info.index).await?;
 		let Some(tx) = tx else {
 			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
 		};
@@ -172,8 +172,8 @@ impl TransactionReceipt {
 	}
 
 	pub async fn raw_ext(&self, encode_as: EncodeSelector) -> Result<BlockRawExtrinsic, Error> {
-		let block = BlockWithRawExt::new(self.client.clone(), self.block_ref.height);
-		let ext = block.get(self.tx_ref.index, encode_as).await?;
+		let block = BlockWithRawExt::new(self.client.clone(), self.block_info.height);
+		let ext = block.get(self.tx_info.index, encode_as).await?;
 		let Some(ext) = ext else {
 			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
 		};
@@ -182,8 +182,8 @@ impl TransactionReceipt {
 	}
 
 	pub async fn events(&self) -> Result<ExtrinsicEvents, Error> {
-		let block = BlockEvents::new(self.client.clone(), self.block_ref.hash);
-		let events = block.ext(self.tx_ref.index).await?;
+		let block = BlockEvents::new(self.client.clone(), self.block_info.hash);
+		let events = block.ext(self.tx_info.index).await?;
 		let Some(events) = events else {
 			return Err(RpcError::ExpectedData("No events was found.".into()).into());
 		};

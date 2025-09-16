@@ -1,7 +1,7 @@
 [workspace]
 
 [package]
-name = "parallel-transaction-submission-example"
+name = "parallel-submission-example"
 edition = "2024"
 
 

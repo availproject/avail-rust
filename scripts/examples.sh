@@ -3,7 +3,7 @@ set -e
 
 cd ./examples
 
-NAMES="./account ./batch ./client ./subscriptions ./parallel_transaction_submission ./transaction_submission ./transaction_submission_with_exp ./event_client ./block_client ./custom_transaction ./custom_rpc_client ./custom_storage ./constants ./estimating_fees ./storage ./encoding_decoding ./transaction_receipt"
+NAMES="./account ./batch ./client ./subscriptions ./parallel_submission ./transaction_submission ./transaction_submission_with_exp ./event_client ./block_client ./custom_transaction ./custom_rpc_client ./custom_storage ./constants ./estimating_fees ./storage ./encoding_decoding ./transaction_receipt"
 
 OP="$1"
 if [ "$OP" == "check" ]; then

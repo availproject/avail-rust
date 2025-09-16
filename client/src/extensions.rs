@@ -1,4 +1,7 @@
-use crate::subxt_signer::{SecretUri, sr25519::Keypair};
+use crate::{
+	UserError,
+	subxt_signer::{SecretUri, sr25519::Keypair},
+};
 use avail_rust_core::{
 	AccountId, H256,
 	ext::subxt_core::utils::AccountId32,
@@ -58,24 +61,24 @@ impl AccountIdExt for AccountId {
 }
 
 pub trait SecretUriExt {
-	fn from_str(value: &str) -> Result<SecretUri, String>;
+	fn from_str(value: &str) -> Result<SecretUri, UserError>;
 }
 
 impl SecretUriExt for SecretUri {
-	fn from_str(value: &str) -> Result<SecretUri, String> {
-		value.parse().map_err(|e| std::format!("{:?}", e))
+	fn from_str(value: &str) -> Result<SecretUri, UserError> {
+		value.parse().map_err(|e| UserError::Other(std::format!("{:?}", e)))
 	}
 }
 
 pub trait KeypairExt {
-	fn from_str(value: &str) -> Result<Keypair, String>;
+	fn from_str(value: &str) -> Result<Keypair, UserError>;
 	fn account_id(&self) -> AccountId;
 }
 
 impl KeypairExt for Keypair {
-	fn from_str(value: &str) -> Result<Keypair, String> {
-		let secret_uri = SecretUri::from_str(value).map_err(|e| e.to_string())?;
-		let keypair = Keypair::from_uri(&secret_uri).map_err(|e| e.to_string())?;
+	fn from_str(value: &str) -> Result<Keypair, UserError> {
+		let secret_uri = SecretUri::from_str(value).map_err(|e| UserError::Other(e.to_string()))?;
+		let keypair = Keypair::from_uri(&secret_uri).map_err(|e| UserError::Other(e.to_string()))?;
 		Ok(keypair)
 	}
 
