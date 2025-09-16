@@ -68,7 +68,7 @@ impl<T: HasHeader + Decode> TransactionDecodable for T {
 
 #[inline(never)]
 fn tx_filter_in(call: &[u8], header: (u8, u8)) -> bool {
-	if call.len() < 3 {
+	if call.len() < 2 {
 		return false;
 	}
 

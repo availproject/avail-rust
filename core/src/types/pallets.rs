@@ -31,6 +31,23 @@ pub enum RuntimeCall {
 	MultisigApproveAsMulti(multisig::tx::ApproveAsMulti),
 	MultisigCancelAsMulti(multisig::tx::CancelAsMulti),
 	DataAvailabilityCreateApplicationKey(data_availability::tx::CreateApplicationKey),
+	DataAvailabilitySubmitData(data_availability::tx::SubmitData),
+	StakingBond(staking::tx::Bond),
+	StakingBondExtra(staking::tx::BondExtra),
+	StakingChill(staking::tx::Chill),
+	StakingChillOther(staking::tx::ChillOther),
+	StakingForceApplyMinCommission(staking::tx::ForceApplyMinCommission),
+	StakingKick(staking::tx::Kick),
+	StakingNominate(staking::tx::Nominate),
+	StakingPayoutStakers(staking::tx::PayoutStakers),
+	StakingPayoutStakersByPage(staking::tx::PayoutStakersByPage),
+	StakingReapStash(staking::tx::ReapStash),
+	StakingRebond(staking::tx::Rebond),
+	StakingSetController(staking::tx::SetController),
+	StakingSetPayee(staking::tx::SetPayee),
+	StakingUnbond(staking::tx::Unbond),
+	StakingValidate(staking::tx::Validate),
+	StakingWithdrawUnbonded(staking::tx::WithdrawUnbonded),
 }
 impl Encode for RuntimeCall {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -56,6 +73,23 @@ impl Encode for RuntimeCall {
 			RuntimeCall::MultisigApproveAsMulti(x) => x.encode_to(dest),
 			RuntimeCall::MultisigCancelAsMulti(x) => x.encode_to(dest),
 			RuntimeCall::DataAvailabilityCreateApplicationKey(x) => x.encode_to(dest),
+			RuntimeCall::DataAvailabilitySubmitData(x) => x.encode_to(dest),
+			RuntimeCall::StakingBond(x) => x.encode_to(dest),
+			RuntimeCall::StakingBondExtra(x) => x.encode_to(dest),
+			RuntimeCall::StakingChill(x) => x.encode_to(dest),
+			RuntimeCall::StakingChillOther(x) => x.encode_to(dest),
+			RuntimeCall::StakingForceApplyMinCommission(x) => x.encode_to(dest),
+			RuntimeCall::StakingKick(x) => x.encode_to(dest),
+			RuntimeCall::StakingNominate(x) => x.encode_to(dest),
+			RuntimeCall::StakingPayoutStakers(x) => x.encode_to(dest),
+			RuntimeCall::StakingPayoutStakersByPage(x) => x.encode_to(dest),
+			RuntimeCall::StakingReapStash(x) => x.encode_to(dest),
+			RuntimeCall::StakingRebond(x) => x.encode_to(dest),
+			RuntimeCall::StakingSetController(x) => x.encode_to(dest),
+			RuntimeCall::StakingSetPayee(x) => x.encode_to(dest),
+			RuntimeCall::StakingUnbond(x) => x.encode_to(dest),
+			RuntimeCall::StakingValidate(x) => x.encode_to(dest),
+			RuntimeCall::StakingWithdrawUnbonded(x) => x.encode_to(dest),
 		}
 	}
 }
@@ -178,6 +212,93 @@ impl Decode for RuntimeCall {
 			if variant_id == data_availability::tx::CreateApplicationKey::HEADER_INDEX.1 {
 				let call = data_availability::tx::CreateApplicationKey::decode(input)?;
 				return Ok(RuntimeCall::DataAvailabilityCreateApplicationKey(call));
+			}
+
+			if variant_id == data_availability::tx::SubmitData::HEADER_INDEX.1 {
+				let call = data_availability::tx::SubmitData::decode(input)?;
+				return Ok(RuntimeCall::DataAvailabilitySubmitData(call));
+			}
+		}
+
+		if pallet_id == staking::PALLET_ID {
+			if variant_id == staking::tx::Bond::HEADER_INDEX.1 {
+				let call = staking::tx::Bond::decode(input)?;
+				return Ok(RuntimeCall::StakingBond(call));
+			}
+
+			if variant_id == staking::tx::BondExtra::HEADER_INDEX.1 {
+				let call = staking::tx::BondExtra::decode(input)?;
+				return Ok(RuntimeCall::StakingBondExtra(call));
+			}
+
+			if variant_id == staking::tx::Chill::HEADER_INDEX.1 {
+				let call = staking::tx::Chill::decode(input)?;
+				return Ok(RuntimeCall::StakingChill(call));
+			}
+
+			if variant_id == staking::tx::ChillOther::HEADER_INDEX.1 {
+				let call = staking::tx::ChillOther::decode(input)?;
+				return Ok(RuntimeCall::StakingChillOther(call));
+			}
+
+			if variant_id == staking::tx::ForceApplyMinCommission::HEADER_INDEX.1 {
+				let call = staking::tx::ForceApplyMinCommission::decode(input)?;
+				return Ok(RuntimeCall::StakingForceApplyMinCommission(call));
+			}
+
+			if variant_id == staking::tx::Kick::HEADER_INDEX.1 {
+				let call = staking::tx::Kick::decode(input)?;
+				return Ok(RuntimeCall::StakingKick(call));
+			}
+
+			if variant_id == staking::tx::Nominate::HEADER_INDEX.1 {
+				let call = staking::tx::Nominate::decode(input)?;
+				return Ok(RuntimeCall::StakingNominate(call));
+			}
+
+			if variant_id == staking::tx::PayoutStakers::HEADER_INDEX.1 {
+				let call = staking::tx::PayoutStakers::decode(input)?;
+				return Ok(RuntimeCall::StakingPayoutStakers(call));
+			}
+
+			if variant_id == staking::tx::PayoutStakersByPage::HEADER_INDEX.1 {
+				let call = staking::tx::PayoutStakersByPage::decode(input)?;
+				return Ok(RuntimeCall::StakingPayoutStakersByPage(call));
+			}
+
+			if variant_id == staking::tx::ReapStash::HEADER_INDEX.1 {
+				let call = staking::tx::ReapStash::decode(input)?;
+				return Ok(RuntimeCall::StakingReapStash(call));
+			}
+
+			if variant_id == staking::tx::Rebond::HEADER_INDEX.1 {
+				let call = staking::tx::Rebond::decode(input)?;
+				return Ok(RuntimeCall::StakingRebond(call));
+			}
+
+			if variant_id == staking::tx::SetController::HEADER_INDEX.1 {
+				let call = staking::tx::SetController::decode(input)?;
+				return Ok(RuntimeCall::StakingSetController(call));
+			}
+
+			if variant_id == staking::tx::SetPayee::HEADER_INDEX.1 {
+				let call = staking::tx::SetPayee::decode(input)?;
+				return Ok(RuntimeCall::StakingSetPayee(call));
+			}
+
+			if variant_id == staking::tx::Unbond::HEADER_INDEX.1 {
+				let call = staking::tx::Unbond::decode(input)?;
+				return Ok(RuntimeCall::StakingUnbond(call));
+			}
+
+			if variant_id == staking::tx::Validate::HEADER_INDEX.1 {
+				let call = staking::tx::Validate::decode(input)?;
+				return Ok(RuntimeCall::StakingValidate(call));
+			}
+
+			if variant_id == staking::tx::WithdrawUnbonded::HEADER_INDEX.1 {
+				let call = staking::tx::WithdrawUnbonded::decode(input)?;
+				return Ok(RuntimeCall::StakingWithdrawUnbonded(call));
 			}
 		}
 
@@ -2652,10 +2773,617 @@ pub mod timestamp {
 }
 
 pub mod staking {
+	use super::*;
 	pub const PALLET_ID: u8 = 10;
 
 	pub mod types {
+		use super::*;
 		pub type SessionIndex = u32;
+
+		#[derive(Debug, Clone)]
+		#[repr(u8)]
+		pub enum RewardDestination {
+			Staked = 0,
+			Stash = 1,
+			Controller = 2,
+			Account(AccountId) = 3,
+			None = 4,
+		}
+		impl Encode for RewardDestination {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				match self {
+					RewardDestination::Staked => 0u8.encode_to(dest),
+					RewardDestination::Stash => 1u8.encode_to(dest),
+					RewardDestination::Controller => 2u8.encode_to(dest),
+					RewardDestination::Account(x) => {
+						3u8.encode_to(dest);
+						x.encode_to(dest);
+					},
+					RewardDestination::None => 4u8.encode_to(dest),
+				}
+			}
+		}
+		impl Decode for RewardDestination {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let variant = u8::decode(input)?;
+				match variant {
+					0 => Ok(Self::Staked),
+					1 => Ok(Self::Stash),
+					2 => Ok(Self::Controller),
+					3 => {
+						let account_id = AccountId::decode(input)?;
+						Ok(Self::Account(account_id))
+					},
+					4 => Ok(Self::None),
+					_ => Err("Failed to decode RewardDestination. Unknown variant".into()),
+				}
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ValidatorPerfs {
+			pub commission: u32, // Compact Perbill
+			pub blocked: bool,
+		}
+		impl Encode for ValidatorPerfs {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.commission).encode_to(dest);
+				self.blocked.encode_to(dest);
+			}
+		}
+		impl Decode for ValidatorPerfs {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let commission = Compact::<u32>::decode(input)?.0;
+				let blocked = Decode::decode(input)?;
+				Ok(Self { commission, blocked })
+			}
+		}
+	}
+
+	pub mod events {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		pub struct Bonded {
+			pub stash: AccountId,
+			pub amount: u128,
+		}
+		impl Encode for Bonded {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.stash.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
+		impl Decode for Bonded {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let stash = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { stash, amount })
+			}
+		}
+		impl HasHeader for Bonded {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 6);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Unbonded {
+			pub stash: AccountId,
+			pub amount: u128,
+		}
+		impl Encode for Unbonded {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.stash.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
+		impl Decode for Unbonded {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let stash = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { stash, amount })
+			}
+		}
+		impl HasHeader for Unbonded {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 7);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct ValidatorPrefsSet {
+			pub stash: AccountId,
+			pub prefs: super::types::ValidatorPerfs,
+		}
+		impl Encode for ValidatorPrefsSet {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.stash.encode_to(dest);
+				self.prefs.encode_to(dest);
+			}
+		}
+		impl Decode for ValidatorPrefsSet {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let stash = Decode::decode(input)?;
+				let prefs = Decode::decode(input)?;
+				Ok(Self { stash, prefs })
+			}
+		}
+		impl HasHeader for ValidatorPrefsSet {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 13);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Chilled {
+			pub stash: AccountId,
+		}
+		impl Encode for Chilled {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.stash.encode_to(dest);
+			}
+		}
+		impl Decode for Chilled {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let stash = Decode::decode(input)?;
+				Ok(Self { stash })
+			}
+		}
+		impl HasHeader for Chilled {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 11);
+		}
+
+		// TODO tests
+		#[derive(Debug, Clone)]
+		pub struct EraPaid {
+			pub era_index: u32,
+			pub validator_payout: u128,
+			pub remainder: u128,
+		}
+		impl Encode for EraPaid {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.era_index.encode_to(dest);
+				self.validator_payout.encode_to(dest);
+				self.remainder.encode_to(dest);
+			}
+		}
+		impl Decode for EraPaid {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let era_index = Decode::decode(input)?;
+				let validator_payout = Decode::decode(input)?;
+				let remainder = Decode::decode(input)?;
+				Ok(Self { era_index, validator_payout, remainder })
+			}
+		}
+		impl HasHeader for EraPaid {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Rewarded {
+			pub stash: AccountId,
+			pub dest: super::types::RewardDestination,
+			pub amount: u128,
+		}
+		impl Encode for Rewarded {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.stash.encode_to(dest);
+				self.dest.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
+		impl Decode for Rewarded {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let stash = Decode::decode(input)?;
+				let dest = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { stash, dest, amount })
+			}
+		}
+		impl HasHeader for Rewarded {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+
+		// TODO tests
+		#[derive(Debug, Clone)]
+		pub struct Slashed {
+			pub staker: AccountId,
+			pub amount: u128,
+		}
+		impl Encode for Slashed {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.staker.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
+		impl Decode for Slashed {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let staker = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { staker, amount })
+			}
+		}
+		impl HasHeader for Slashed {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Withdraw {
+			pub stash: AccountId,
+			pub amount: u128,
+		}
+		impl Encode for Withdraw {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.stash.encode_to(dest);
+				self.amount.encode_to(dest);
+			}
+		}
+		impl Decode for Withdraw {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let stash = Decode::decode(input)?;
+				let amount = Decode::decode(input)?;
+				Ok(Self { stash, amount })
+			}
+		}
+		impl HasHeader for Withdraw {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 8);
+		}
+
+		// TODO tests
+		#[derive(Debug, Clone)]
+		pub struct Kicked {
+			pub nominator: AccountId,
+			pub stash: AccountId,
+		}
+		impl Encode for Kicked {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.nominator.encode_to(dest);
+				self.stash.encode_to(dest);
+			}
+		}
+		impl Decode for Kicked {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let nominator = Decode::decode(input)?;
+				let stash = Decode::decode(input)?;
+				Ok(Self { nominator, stash })
+			}
+		}
+		impl HasHeader for Kicked {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 9);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct PayoutStarted {
+			pub era_index: u32,
+			pub validator_stash: AccountId,
+		}
+		impl Encode for PayoutStarted {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.era_index.encode_to(dest);
+				self.validator_stash.encode_to(dest);
+			}
+		}
+		impl Decode for PayoutStarted {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let era_index = Decode::decode(input)?;
+				let validator_stash = Decode::decode(input)?;
+				Ok(Self { era_index, validator_stash })
+			}
+		}
+		impl HasHeader for PayoutStarted {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 12);
+		}
+	}
+
+	pub mod tx {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		pub struct Bond {
+			pub value: u128, // Compact
+			pub payee: super::types::RewardDestination,
+		}
+		impl Encode for Bond {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.value).encode_to(dest);
+				self.payee.encode_to(dest);
+			}
+		}
+		impl Decode for Bond {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let value = Compact::<u128>::decode(input)?.0;
+				let payee = Decode::decode(input)?;
+				Ok(Self { value, payee })
+			}
+		}
+		impl HasHeader for Bond {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct BondExtra {
+			pub value: u128, // Compact
+		}
+		impl Encode for BondExtra {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.value).encode_to(dest);
+			}
+		}
+		impl Decode for BondExtra {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let value = Compact::<u128>::decode(input)?.0;
+				Ok(Self { value })
+			}
+		}
+		impl HasHeader for BondExtra {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Unbond {
+			pub value: u128, // Compact
+		}
+		impl Encode for Unbond {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.value).encode_to(dest);
+			}
+		}
+		impl Decode for Unbond {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let value = Compact::<u128>::decode(input)?.0;
+				Ok(Self { value })
+			}
+		}
+		impl HasHeader for Unbond {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Rebond {
+			pub value: u128, // Compact
+		}
+		impl Encode for Rebond {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.value).encode_to(dest);
+			}
+		}
+		impl Decode for Rebond {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let value = Compact::<u128>::decode(input)?.0;
+				Ok(Self { value })
+			}
+		}
+		impl HasHeader for Rebond {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 19);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Validate {
+			pub prefs: super::types::ValidatorPerfs,
+		}
+		impl Encode for Validate {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.prefs.encode_to(dest);
+			}
+		}
+		impl Decode for Validate {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let prefs = Decode::decode(input)?;
+				Ok(Self { prefs })
+			}
+		}
+		impl HasHeader for Validate {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Nominate {
+			pub targets: Vec<MultiAddress>,
+		}
+		impl Encode for Nominate {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.targets.encode_to(dest);
+			}
+		}
+		impl Decode for Nominate {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let targets = Decode::decode(input)?;
+				Ok(Self { targets })
+			}
+		}
+		impl HasHeader for Nominate {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 5);
+		}
+
+		// TODO tests
+		#[derive(Debug, Clone)]
+		pub struct ChillOther {
+			pub stash: AccountId,
+		}
+		impl Encode for ChillOther {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.stash.encode_to(dest);
+			}
+		}
+		impl Decode for ChillOther {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let stash = Decode::decode(input)?;
+				Ok(Self { stash })
+			}
+		}
+		impl HasHeader for ChillOther {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 23);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct PayoutStakers {
+			pub validator_stash: AccountId,
+			pub era: u32,
+		}
+		impl Encode for PayoutStakers {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.validator_stash.encode_to(dest);
+				self.era.encode_to(dest);
+			}
+		}
+		impl Decode for PayoutStakers {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let validator_stash = Decode::decode(input)?;
+				let era = Decode::decode(input)?;
+				Ok(Self { validator_stash, era })
+			}
+		}
+		impl HasHeader for PayoutStakers {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 18);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct SetController {}
+		impl Encode for SetController {
+			fn encode_to<T: codec::Output + ?Sized>(&self, _dest: &mut T) {}
+		}
+		impl Decode for SetController {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self {})
+			}
+		}
+		impl HasHeader for SetController {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 8);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct SetPayee {
+			pub payee: super::types::RewardDestination,
+		}
+		impl Encode for SetPayee {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.payee.encode_to(dest);
+			}
+		}
+		impl Decode for SetPayee {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let payee = Decode::decode(input)?;
+				Ok(Self { payee })
+			}
+		}
+		impl HasHeader for SetPayee {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 7);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Chill {}
+		impl Encode for Chill {
+			fn encode_to<T: codec::Output + ?Sized>(&self, _dest: &mut T) {}
+		}
+		impl Decode for Chill {
+			fn decode<I: codec::Input>(_input: &mut I) -> Result<Self, codec::Error> {
+				Ok(Self {})
+			}
+		}
+		impl HasHeader for Chill {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 6);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct WithdrawUnbonded {
+			pub num_slashing_spans: u32,
+		}
+		impl Encode for WithdrawUnbonded {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.num_slashing_spans.encode_to(dest);
+			}
+		}
+		impl Decode for WithdrawUnbonded {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let num_slashing_spans = Decode::decode(input)?;
+				Ok(Self { num_slashing_spans })
+			}
+		}
+		impl HasHeader for WithdrawUnbonded {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+
+		// TODO tests
+		#[derive(Debug, Clone)]
+		pub struct ReapStash {
+			pub stash: AccountId,
+			pub num_slashing_spans: u32,
+		}
+		impl Encode for ReapStash {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.stash.encode_to(dest);
+				self.num_slashing_spans.encode_to(dest);
+			}
+		}
+		impl Decode for ReapStash {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let stash = Decode::decode(input)?;
+				let num_slashing_spans = Decode::decode(input)?;
+				Ok(Self { stash, num_slashing_spans })
+			}
+		}
+		impl HasHeader for ReapStash {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 20);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct Kick {
+			pub who: Vec<MultiAddress>,
+		}
+		impl Encode for Kick {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+			}
+		}
+		impl Decode for Kick {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				Ok(Self { who })
+			}
+		}
+		impl HasHeader for Kick {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 21);
+		}
+
+		// TODO tests
+		#[derive(Debug, Clone)]
+		pub struct ForceApplyMinCommission {
+			pub validator_stash: AccountId,
+		}
+		impl Encode for ForceApplyMinCommission {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.validator_stash.encode_to(dest);
+			}
+		}
+		impl Decode for ForceApplyMinCommission {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let validator_stash = Decode::decode(input)?;
+				Ok(Self { validator_stash })
+			}
+		}
+		impl HasHeader for ForceApplyMinCommission {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 24);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct PayoutStakersByPage {
+			pub validator_stash: AccountId,
+			pub era: u32,
+			pub page: u32,
+		}
+		impl Encode for PayoutStakersByPage {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.validator_stash.encode_to(dest);
+				self.era.encode_to(dest);
+				self.page.encode_to(dest);
+			}
+		}
+		impl Decode for PayoutStakersByPage {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let validator_stash = Decode::decode(input)?;
+				let era = Decode::decode(input)?;
+				let page = Decode::decode(input)?;
+				Ok(Self { validator_stash, era, page })
+			}
+		}
+		impl HasHeader for PayoutStakersByPage {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 26);
+		}
 	}
 }
 

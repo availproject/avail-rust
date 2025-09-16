@@ -2,7 +2,7 @@ use avail_rust_client::{block::BlockWithTx, error::Error, prelude::*};
 use avail_rust_core::avail::{
 	proxy::{
 		events::{ProxyAdded, ProxyExecuted, ProxyRemoved, PureCreated},
-		tx::{AddProxy, CreatePure, RemoveProxy},
+		tx::{AddProxy, CreatePure, Proxy, RemoveProxy},
 		types::ProxyType::{self},
 	},
 	system::types::{DispatchError, ModuleError},
@@ -39,7 +39,26 @@ pub async fn tx_tests() -> Result<(), Error> {
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
-	// Proxy TODO
+	// Proxy
+	{
+		let block = BlockWithTx::new(client.clone(), 1776412);
+
+		let targets = vec![
+			"0xc51d936c502bb72e4735619eeed59b3840cdbed6f414bb5da2b5bd977273d663",
+			"0x3c243cc085dea34f4f2a1f40ad0740f1423aef957b5b35accc677cf2f4023130",
+			"0x12ce9da1bfb72b90ae0060b2ce3ebc653b66d28e04f4821642dab6aefc9f5c2e",
+			"0x209a04aa4a6eada5605b38d6bc87056e44a7c79fa31927ff73eb99df69329137",
+			"0x0690d90d894580414030216c58faffc65e45b3257c264ffece9a6cf7369f1cb9",
+			"0x3c0e5853201324a59630e80e15cd0049c637d1e68ae51a1d190e6f083263ad79",
+			"0x4c86609864155fb79dd4939d4b5e09e5a8bd5032ca648a308575ecda7e182f72",
+		];
+		let c = client.tx().staking().nominate(targets);
+		let id = "0xaabd39bb20728ec512a104178c2244703ae900eb3368ddcd3f8dbf6ed6151696";
+		let submittable = client.tx().proxy().proxy(id, None, c);
+		let expected_call = Proxy::from_call(&submittable.call.encode()).unwrap();
+		let actual_ext = block.get::<Proxy>(1).await?.unwrap();
+		assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	}
 
 	// Remove Proxy
 	{

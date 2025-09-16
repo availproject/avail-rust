@@ -4,7 +4,7 @@ use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 
-use crate::{AccountId, utils::account_id_from_str};
+use crate::{AccountId, MultiAddress, utils::account_id_from_str};
 
 #[derive(Debug, Clone, Copy, Default, Encode, Decode, Eq, PartialEq)]
 pub struct AppId(#[codec(compact)] pub u32);
@@ -279,6 +279,52 @@ impl<'a> From<&'a [u8]> for StringOrBytes<'a> {
 	}
 }
 
+pub enum MultiAddressLike {
+	MultiAddress(MultiAddress),
+	BoxedString(Box<str>),
+}
+
+impl TryFrom<MultiAddressLike> for MultiAddress {
+	type Error = String;
+
+	fn try_from(value: MultiAddressLike) -> Result<Self, Self::Error> {
+		match value {
+			MultiAddressLike::MultiAddress(a) => Ok(a),
+			MultiAddressLike::BoxedString(s) => account_id_from_str(&*s).map(MultiAddress::from),
+		}
+	}
+}
+
+impl From<MultiAddress> for MultiAddressLike {
+	fn from(value: MultiAddress) -> Self {
+		Self::MultiAddress(value)
+	}
+}
+
+impl From<AccountId> for MultiAddressLike {
+	fn from(value: AccountId) -> Self {
+		Self::MultiAddress(value.into())
+	}
+}
+
+impl From<String> for MultiAddressLike {
+	fn from(value: String) -> Self {
+		Self::BoxedString(value.into())
+	}
+}
+
+impl From<&String> for MultiAddressLike {
+	fn from(value: &String) -> Self {
+		Self::from(value.as_str())
+	}
+}
+
+impl From<&str> for MultiAddressLike {
+	fn from(value: &str) -> Self {
+		Self::BoxedString(value.into())
+	}
+}
+
 pub enum AccountIdLike {
 	AccountId(AccountId),
 	BoxedString(Box<str>),
@@ -294,6 +340,7 @@ impl TryFrom<AccountIdLike> for AccountId {
 		}
 	}
 }
+
 impl From<AccountId> for AccountIdLike {
 	fn from(value: AccountId) -> Self {
 		Self::AccountId(value)
