@@ -1137,6 +1137,11 @@ pub mod proxy {
 		impl HasHeader for ProxyExecuted {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
 		}
+		impl Encode for ProxyExecuted {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.result.encode_to(dest);
+			}
+		}
 		impl Decode for ProxyExecuted {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let result = Decode::decode(input)?;
@@ -1155,6 +1160,14 @@ pub mod proxy {
 		}
 		impl HasHeader for PureCreated {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+		impl Encode for PureCreated {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.pure.encode_to(dest);
+				self.who.encode_to(dest);
+				self.proxy_type.encode_to(dest);
+				self.disambiguation_index.encode_to(dest);
+			}
 		}
 		impl Decode for PureCreated {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1176,6 +1189,13 @@ pub mod proxy {
 		impl HasHeader for Announced {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 2);
 		}
+		impl Encode for Announced {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.real.encode_to(dest);
+				self.proxy.encode_to(dest);
+				self.call_hash.encode_to(dest);
+			}
+		}
 		impl Decode for Announced {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let real = Decode::decode(input)?;
@@ -1195,6 +1215,14 @@ pub mod proxy {
 		}
 		impl HasHeader for ProxyAdded {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 3);
+		}
+		impl Encode for ProxyAdded {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.delegator.encode_to(dest);
+				self.delegatee.encode_to(dest);
+				self.proxy_type.encode_to(dest);
+				self.delay.encode_to(dest);
+			}
 		}
 		impl Decode for ProxyAdded {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
@@ -1216,6 +1244,14 @@ pub mod proxy {
 		}
 		impl HasHeader for ProxyRemoved {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 4);
+		}
+		impl Encode for ProxyRemoved {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.delegator.encode_to(dest);
+				self.delegatee.encode_to(dest);
+				self.proxy_type.encode_to(dest);
+				self.delay.encode_to(dest);
+			}
 		}
 		impl Decode for ProxyRemoved {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {

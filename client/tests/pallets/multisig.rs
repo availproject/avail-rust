@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block::{BlockEvents, BlockWithExt},
+	block::{BlockEvents, BlockWithTx},
 	error::Error,
 	prelude::*,
 };
@@ -24,7 +24,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// ApproveAsMulti
 	{
-		let block = BlockWithExt::new(client.clone(), 1824125);
+		let block = BlockWithTx::new(client.clone(), 1824125);
 
 		let signatures = vec![
 			"0xa26556769ad6581b7beb103590a5c378955244aa349bbacc2f148c51205e055a",
@@ -43,7 +43,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// AsMulti
 	{
-		let block = BlockWithExt::new(client.clone(), 1814842);
+		let block = BlockWithTx::new(client.clone(), 1814842);
 
 		let signatures = vec![
 			"0x2a960c22ebf8069f53172a91f5754c184e89c87e8435976415ab8c9dd4f0b61c",
@@ -65,7 +65,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// CancelAsMulti
 	{
-		let block = BlockWithExt::new(client.clone(), 1824115);
+		let block = BlockWithTx::new(client.clone(), 1824115);
 
 		let signatures = vec![
 			"0xa26556769ad6581b7beb103590a5c378955244aa349bbacc2f148c51205e055a",

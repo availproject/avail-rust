@@ -1,0 +1,124 @@
+use avail_rust_client::{block::BlockWithTx, error::Error, prelude::*};
+use avail_rust_core::avail::{
+	proxy::{
+		events::{ProxyAdded, ProxyExecuted, ProxyRemoved, PureCreated},
+		tx::{AddProxy, CreatePure, RemoveProxy},
+		types::ProxyType::{self},
+	},
+	system::types::{DispatchError, ModuleError},
+};
+use codec::Encode;
+
+pub async fn run_tests() -> Result<(), Error> {
+	tx_tests().await?;
+	event_test().await?;
+
+	Ok(())
+}
+pub async fn tx_tests() -> Result<(), Error> {
+	let client = Client::new(MAINNET_ENDPOINT).await?;
+
+	// Add Proxy
+	{
+		let block = BlockWithTx::new(client.clone(), 1076139);
+
+		let id = "0xa6668ecbef4f8b0c64e294a9addc0fb267ec02cb0e0c3f74f3a45b8f1043c774";
+		let submittable = client.tx().proxy().add_proxy(id, ProxyType::NonTransfer, 0);
+		let expected_call = AddProxy::from_call(&submittable.call.encode()).unwrap();
+		let actual_ext = block.get::<AddProxy>(1).await?.unwrap();
+		assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	}
+
+	// Create Pure
+	{
+		let block = BlockWithTx::new(client.clone(), 1439619);
+
+		let submittable = client.tx().proxy().create_pure(ProxyType::Any, 0, 0);
+		let expected_call = CreatePure::from_call(&submittable.call.encode()).unwrap();
+		let actual_ext = block.get::<CreatePure>(1).await?.unwrap();
+		assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	}
+
+	// Proxy TODO
+
+	// Remove Proxy
+	{
+		let block = BlockWithTx::new(client.clone(), 790393);
+
+		let delegate = "0x685302266408090333837daf4c1fee2b23c5a7f055b61f6e8d16ad6662b28b39";
+		let submittable = client.tx().proxy().remove_proxy(delegate, ProxyType::Staking, 0);
+		let expected_call = RemoveProxy::from_call(&submittable.call.encode()).unwrap();
+		let actual_ext = block.get::<RemoveProxy>(1).await?.unwrap();
+		assert_eq!(actual_ext.call.encode(), expected_call.encode());
+	}
+
+	Ok(())
+}
+pub async fn event_test() -> Result<(), Error> {
+	let client = Client::new(TURING_ENDPOINT).await?;
+
+	// ProxyAdded
+	{
+		let events = BlockEvents::new(client.clone(), 2279940).ext(1).await?.unwrap();
+
+		let expected = ProxyAdded {
+			delegator: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),
+			delegatee: AccountId::from_str("5H9Wh9UPU2kGZRCMLmEDKhhMxh1PLgBefMUgpLgGzFvjKkKw").unwrap(),
+			proxy_type: ProxyType::Governance,
+			delay: 25,
+		};
+		let actual = events.first::<ProxyAdded>().unwrap();
+		assert_eq!(actual.to_event(), expected.to_event());
+	}
+
+	// PureCreated
+	{
+		let events = BlockEvents::new(client.clone(), 2279951).ext(1).await?.unwrap();
+
+		let expected = PureCreated {
+			pure: AccountId::from_str("5EYj7miFkQ8EFNbEdg7MfeG8dHKWHBoLXCrmoTXWZwMpmxAs").unwrap(),
+			who: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),
+			proxy_type: ProxyType::Any,
+			disambiguation_index: 10,
+		};
+		let actual = events.first::<PureCreated>().unwrap();
+		assert_eq!(actual.to_event(), expected.to_event());
+	}
+
+	// ProxyExecuted
+	{
+		let client = Client::new(MAINNET_ENDPOINT).await?;
+		let events = BlockEvents::new(client.clone(), 1841067).ext(1).await?.unwrap();
+
+		let expected = ProxyExecuted { result: Ok(()) };
+		let actual = events.first::<ProxyExecuted>().unwrap();
+		assert_eq!(actual.to_event(), expected.to_event());
+	}
+
+	// ProxyExecuted Failed
+	{
+		let events = BlockEvents::new(client.clone(), 2279971).ext(1).await?.unwrap();
+
+		let expected = ProxyExecuted {
+			result: Err(DispatchError::Module(ModuleError { index: 40, error: [1, 0, 0, 0] })),
+		};
+		let actual = events.first::<ProxyExecuted>().unwrap();
+		assert_eq!(actual.to_event(), expected.to_event());
+	}
+
+	// Proxy Removed
+	{
+		let events = BlockEvents::new(client.clone(), 2279990).ext(1).await?.unwrap();
+
+		let expected = ProxyRemoved {
+			delegator: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),
+			delegatee: AccountId::from_str("5H9Wh9UPU2kGZRCMLmEDKhhMxh1PLgBefMUgpLgGzFvjKkKw").unwrap(),
+			proxy_type: ProxyType::Any,
+			delay: 0,
+		};
+		let actual = events.first::<ProxyRemoved>().unwrap();
+		assert_eq!(actual.to_event(), expected.to_event());
+	}
+
+	Ok(())
+}

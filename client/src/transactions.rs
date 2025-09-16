@@ -1,7 +1,7 @@
 use crate::{Client, SubmittableTransaction};
 use avail_rust_core::{
 	AccountId, AccountIdLike, ExtrinsicCall, H256,
-	avail::{self, multisig::types::Timepoint},
+	avail::{self, multisig::types::Timepoint, proxy::types::ProxyType},
 	types::{HashString, metadata::StringOrBytes, substrate::Weight},
 };
 
@@ -39,7 +39,7 @@ impl Transactions {
 pub struct Balances(Client);
 impl Balances {
 	pub fn transfer_allow_death(&self, dest: impl Into<AccountIdLike>, amount: u128) -> SubmittableTransaction {
-		let dest: AccountIdLike = Into::<AccountIdLike>::into(dest);
+		let dest: AccountIdLike = dest.into();
 		let dest: AccountId = dest.try_into().expect("Malformed string is passed for AccountId");
 
 		let value = avail::balances::tx::TransferAllowDeath { dest: dest.into(), value: amount };
@@ -47,7 +47,7 @@ impl Balances {
 	}
 
 	pub fn transfer_keep_alive(&self, dest: impl Into<AccountIdLike>, amount: u128) -> SubmittableTransaction {
-		let dest: AccountIdLike = Into::<AccountIdLike>::into(dest);
+		let dest: AccountIdLike = dest.into();
 		let dest: AccountId = dest.try_into().expect("Malformed string is passed for AccountId");
 
 		let value = avail::balances::tx::TransferKeepAlive { dest: dest.into(), value: amount };
@@ -55,7 +55,7 @@ impl Balances {
 	}
 
 	pub fn transfer_all(&self, dest: impl Into<AccountIdLike>, keep_alive: bool) -> SubmittableTransaction {
-		let dest: AccountIdLike = Into::<AccountIdLike>::into(dest);
+		let dest: AccountIdLike = dest.into();
 		let dest: AccountId = dest.try_into().expect("Malformed string is passed for AccountId");
 
 		let value = avail::balances::tx::TransferAll { dest: dest.into(), keep_alive };
@@ -224,30 +224,34 @@ pub struct Proxy(Client);
 impl Proxy {
 	pub fn proxy(
 		&self,
-		id: AccountId,
-		force_proxy_type: Option<avail::proxy::types::ProxyType>,
+		id: impl Into<AccountIdLike>,
+		force_proxy_type: Option<ProxyType>,
 		call: ExtrinsicCall,
 	) -> SubmittableTransaction {
+		let id: AccountIdLike = id.into();
+		let id: AccountId = id.try_into().expect("Malformed string is passed for AccountId");
+
 		let value = avail::proxy::tx::Proxy { id: id.into(), force_proxy_type, call };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
-	pub fn add_proxy(
-		&self,
-		id: AccountId,
-		proxy_type: avail::proxy::types::ProxyType,
-		delay: u32,
-	) -> SubmittableTransaction {
+	pub fn add_proxy(&self, id: impl Into<AccountIdLike>, proxy_type: ProxyType, delay: u32) -> SubmittableTransaction {
+		let id: AccountIdLike = id.into();
+		let id: AccountId = id.try_into().expect("Malformed string is passed for AccountId");
+
 		let value = avail::proxy::tx::AddProxy { id: id.into(), proxy_type, delay };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
 	pub fn remove_proxy(
 		&self,
-		delegate: AccountId,
-		proxy_type: avail::proxy::types::ProxyType,
+		delegate: impl Into<AccountIdLike>,
+		proxy_type: ProxyType,
 		delay: u32,
 	) -> SubmittableTransaction {
+		let delegate: AccountIdLike = delegate.into();
+		let delegate: AccountId = delegate.try_into().expect("Malformed string is passed for AccountId");
+
 		let value = avail::proxy::tx::RemoveProxy { delegate: delegate.into(), proxy_type, delay };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
@@ -257,24 +261,22 @@ impl Proxy {
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
-	pub fn create_pure(
-		&self,
-		proxy_type: avail::proxy::types::ProxyType,
-		delay: u32,
-		index: u16,
-	) -> SubmittableTransaction {
+	pub fn create_pure(&self, proxy_type: ProxyType, delay: u32, index: u16) -> SubmittableTransaction {
 		let value = avail::proxy::tx::CreatePure { proxy_type, delay, index };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
 	pub fn kill_pure(
 		&self,
-		spawner: AccountId,
-		proxy_type: avail::proxy::types::ProxyType,
+		spawner: impl Into<AccountIdLike>,
+		proxy_type: ProxyType,
 		index: u16,
 		height: u32,
 		ext_index: u32,
 	) -> SubmittableTransaction {
+		let spawner: AccountIdLike = spawner.into();
+		let spawner: AccountId = spawner.try_into().expect("Malformed string is passed for AccountId");
+
 		let value = avail::proxy::tx::KillPure {
 			spawner: spawner.into(),
 			proxy_type,

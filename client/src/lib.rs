@@ -15,7 +15,6 @@ pub use clients::Client;
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
-pub(crate) use error::{Error, UserError};
 pub use extensions::{AccountIdExt, H256Ext, KeypairExt, SecretUriExt};
 pub use extrinsic::{BlockState, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
 pub use transaction_options::{MortalityOption, Options, RefinedMortality, RefinedOptions};
@@ -32,6 +31,11 @@ pub use avail_rust_core::{
 	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue, TransactionDecodable,
 	TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
 };
+pub use block::{
+	Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockSignedExtrinsic, BlockWithExt, BlockWithRawExt,
+	BlockWithTx,
+};
+pub use error::{Error, UserError};
 pub use primitive_types::{H256, U256};
 pub use subxt_signer::{SecretUri, sr25519::Keypair};
 
