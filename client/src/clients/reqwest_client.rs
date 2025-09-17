@@ -49,7 +49,7 @@ impl std::fmt::Display for ResponseError {
 impl std::error::Error for ResponseError {}
 
 type ResponseMessage = Result<Box<serde_json::Value>, reqwest::Error>;
-type ChannelMessage = (Box<serde_json::Value>, Sender<ResponseMessage>);
+type ChannelMessage = (Vec<u8>, Sender<ResponseMessage>);
 
 #[derive(Clone)]
 pub struct ReqwestClient {
@@ -73,7 +73,7 @@ impl ReqwestClient {
 			let request = client
 				.post(&endpoint)
 				.header("Content-Type", "application/json")
-				.json(&*body);
+				.body(body);
 
 			let response = match request.send().await {
 				Ok(x) => x,
@@ -112,16 +112,17 @@ impl RpcClientT for ReqwestClient {
 				current_id
 			};
 
-			let request = {
+			let mut request = {
 				let request = RequestSer::owned(request_id, method, params);
-				match serde_json::to_value(&request) {
+				match serde_json::to_vec(&request) {
 					Ok(req) => req,
 					Err(err) => return Err(subxt_rpcs::Error::Client(Box::new(err))),
 				}
 			};
+			request.shrink_to_fit();
 
 			let (tx, mut rx) = tokio::sync::mpsc::channel(32);
-			let message = (Box::new(request), tx);
+			let message = (request, tx);
 			if self.tx.send(message).await.is_err() {
 				let err = ResponseError("Failed to send request".into());
 				return Err(subxt_rpcs::Error::Client(Box::new(err)));
