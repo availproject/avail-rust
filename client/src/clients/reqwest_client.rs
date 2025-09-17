@@ -112,10 +112,12 @@ impl RpcClientT for ReqwestClient {
 				current_id
 			};
 
-			let request = RequestSer::owned(request_id, method, params);
-			let request = match serde_json::to_value(&request) {
-				Ok(req) => req,
-				Err(err) => return Err(subxt_rpcs::Error::Client(Box::new(err))),
+			let request = {
+				let request = RequestSer::owned(request_id, method, params);
+				match serde_json::to_value(&request) {
+					Ok(req) => req,
+					Err(err) => return Err(subxt_rpcs::Error::Client(Box::new(err))),
+				}
 			};
 
 			let (tx, mut rx) = tokio::sync::mpsc::channel(32);
