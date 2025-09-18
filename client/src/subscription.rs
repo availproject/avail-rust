@@ -287,6 +287,30 @@ impl Sub {
 			Self::FinalizedBlock(s) => s.current_block_height(),
 		}
 	}
+
+	pub fn revert_to(&mut self, block_height: u32) {
+		match self {
+			Sub::BestBlock(x) => {
+				x.block_processed.clear();
+				x.current_block_height = block_height;
+			},
+			Sub::FinalizedBlock(x) => x.next_block_height = block_height,
+		}
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		match self {
+			Sub::BestBlock(x) => x.poll_rate = value,
+			Sub::FinalizedBlock(x) => x.poll_rate = value,
+		}
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		match self {
+			Sub::BestBlock(x) => x.retry_on_error = value,
+			Sub::FinalizedBlock(x) => x.retry_on_error = value,
+		}
+	}
 }
 
 #[derive(Clone)]
@@ -304,11 +328,21 @@ impl BlockWithJustSub {
 
 	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, RpcError> {
 		let info = self.sub.next(&self.client).await?;
-		self.client
+		let block = match self
+			.client
 			.rpc()
 			.retry_on(Some(self.retry_on_error), Some(true))
 			.block_with_justification(Some(info.hash))
 			.await
+		{
+			Ok(x) => x,
+			Err(err) => {
+				// Revet block height if we fail to fetch block
+				self.sub.revert_to(info.height);
+				return Err(err);
+			},
+		};
+		Ok(block)
 	}
 }
 
@@ -326,6 +360,18 @@ impl BlockSub {
 	pub async fn next(&mut self) -> Result<crate::block::Block, RpcError> {
 		let info = self.sub.next(&self.client).await?;
 		Ok(crate::block::Block::new(self.client.clone(), info.hash))
+	}
+
+	pub fn revert_to(&mut self, block_height: u32) {
+		self.sub.revert_to(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
 	}
 }
 
@@ -346,14 +392,34 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
 			let block = BlockWithTx::new(self.client.clone(), info.hash);
-			// TODO if it fails we need to revert our SUB!.
-			let txs = block.all::<T>(self.opts.clone()).await?;
+
+			let txs = match block.all::<T>(self.opts.clone()).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.revert_to(info.height);
+					return Err(err);
+				},
+			};
+
 			if txs.is_empty() {
 				continue;
 			}
 
 			return Ok((txs, info));
 		}
+	}
+
+	pub fn revert_to(&mut self, block_height: u32) {
+		self.sub.revert_to(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
 	}
 }
 
@@ -374,14 +440,34 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
 			let block = BlockWithExt::new(self.client.clone(), info.hash);
-			// TODO if it fails we need to revert our SUB!.
-			let txs = block.all::<T>(self.opts.clone()).await?;
+
+			let txs = match block.all::<T>(self.opts.clone()).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.revert_to(info.height);
+					return Err(err);
+				},
+			};
+
 			if txs.is_empty() {
 				continue;
 			}
 
 			return Ok((txs, info));
 		}
+	}
+
+	pub fn revert_to(&mut self, block_height: u32) {
+		self.sub.revert_to(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
 	}
 }
 
@@ -401,14 +487,34 @@ impl RawExtrinsicSub {
 		loop {
 			let info = self.sub.next(&self.client).await?;
 			let block = BlockWithRawExt::new(self.client.clone(), info.hash);
-			// TODO if it fails we need to revert our SUB!.
-			let txs = block.all(self.opts.clone()).await?;
+
+			let txs = match block.all(self.opts.clone()).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.revert_to(info.height);
+					return Err(err);
+				},
+			};
+
 			if txs.is_empty() {
 				continue;
 			}
 
 			return Ok((txs, info));
 		}
+	}
+
+	pub fn revert_to(&mut self, block_height: u32) {
+		self.sub.revert_to(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
 	}
 }
 
@@ -428,14 +534,33 @@ impl EventsSub {
 		loop {
 			let info = self.sub.next(&self.client).await?;
 			let block = BlockEvents::new(self.client.clone(), info.hash);
-			// TODO if it fails we need to revert our SUB!.
-			let events = block.block(self.opts.clone()).await?;
+			let events = match block.block(self.opts.clone()).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch events
+					self.sub.revert_to(info.height);
+					return Err(err);
+				},
+			};
+
 			if events.is_empty() {
 				continue;
 			}
 
 			return Ok(events);
 		}
+	}
+
+	pub fn revert_to(&mut self, block_height: u32) {
+		self.sub.revert_to(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
 	}
 }
 
@@ -454,156 +579,135 @@ impl BlockHeaderSub {
 
 	pub async fn next(&mut self) -> Result<Option<AvailHeader>, RpcError> {
 		let info = self.sub.next(&self.client).await?;
-		self.client
+		let header = match self
+			.client
 			.rpc()
 			.retry_on(Some(self.retry_on_error), Some(true))
 			.block_header(Some(info.hash))
 			.await
+		{
+			Ok(x) => x,
+			Err(err) => {
+				// Revet block height if we fail to fetch block header
+				self.sub.revert_to(info.height);
+				return Err(err);
+			},
+		};
+
+		Ok(header)
+	}
+
+	pub fn revert_to(&mut self, block_height: u32) {
+		self.sub.revert_to(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
 	}
 }
 
 #[derive(Clone)]
 pub struct GrandpaJustificationSub {
 	client: Client,
-	next_block_height: u32,
-	poll_rate: Duration,
-	latest_finalized_height: Option<u32>,
-	stopwatch: std::time::Instant,
+	sub: Sub,
 }
 
 impl GrandpaJustificationSub {
-	pub fn new(client: Client, poll_rate: Duration, next_block_height: u32) -> Self {
-		Self {
-			client,
+	pub fn new(client: Client, next_block_height: u32) -> Self {
+		let sub = Sub::FinalizedBlock(FinalizedBlockSub {
+			poll_rate: Duration::from_secs(3),
 			next_block_height,
-			poll_rate,
+			retry_on_error: true,
 			latest_finalized_height: None,
-			stopwatch: std::time::Instant::now(),
-		}
+		});
+
+		Self { client, sub }
 	}
 
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
-			let latest_finalized_height = self.fetch_latest_finalized_height().await?;
-
-			// Dealing with historical blocks
-			let block_height = if latest_finalized_height > self.next_block_height {
-				self.run_historical()
-			} else {
-				self.run_head().await?
+			let info = self.sub.next(&self.client).await?;
+			let just = match self.client.rpc().grandpa_block_justification(info.height).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.revert_to(info.height);
+					return Err(err);
+				},
 			};
 
-			let justification = self.client.rpc().grandpa_block_justification(block_height).await?;
-			self.next_block_height += 1;
-
-			let Some(justification) = justification else {
+			let Some(just) = just else {
 				continue;
 			};
 
-			return Ok(justification);
+			return Ok(just);
 		}
 	}
 
-	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, RpcError> {
-		if self.stopwatch.elapsed().as_secs() > 300 {
-			self.latest_finalized_height = None
-		}
-
-		if let Some(height) = self.latest_finalized_height.as_ref() {
-			return Ok(*height);
-		}
-
-		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = self.client.finalized().block_height().await?;
-		self.latest_finalized_height = Some(latest_finalized_height);
-		Ok(latest_finalized_height)
+	pub fn revert_to(&mut self, block_height: u32) {
+		self.sub.revert_to(block_height);
 	}
 
-	fn run_historical(&mut self) -> u32 {
-		self.next_block_height
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
 	}
 
-	async fn run_head(&mut self) -> Result<u32, RpcError> {
-		loop {
-			let head = self.client.finalized().block_info().await?;
-			if self.next_block_height > head.height {
-				sleep(self.poll_rate).await;
-				continue;
-			}
-			return Ok(self.next_block_height);
-		}
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
 	}
 }
 
 #[derive(Clone)]
 pub struct GrandpaJustificationJsonSub {
 	client: Client,
-	next_block_height: u32,
-	poll_rate: Duration,
-	latest_finalized_height: Option<u32>,
-	stopwatch: std::time::Instant,
+	sub: Sub,
 }
 
 impl GrandpaJustificationJsonSub {
-	pub fn new(client: Client, poll_rate: Duration, next_block_height: u32) -> Self {
-		Self {
-			client,
+	pub fn new(client: Client, next_block_height: u32) -> Self {
+		let sub = Sub::FinalizedBlock(FinalizedBlockSub {
+			poll_rate: Duration::from_secs(3),
 			next_block_height,
-			poll_rate,
+			retry_on_error: true,
 			latest_finalized_height: None,
-			stopwatch: std::time::Instant::now(),
-		}
+		});
+
+		Self { client, sub }
 	}
 
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
-			let latest_finalized_height = self.fetch_latest_finalized_height().await?;
-
-			// Dealing with historical blocks
-			let block_height = if latest_finalized_height > self.next_block_height {
-				self.run_historical()
-			} else {
-				self.run_head().await?
+			let info = self.sub.next(&self.client).await?;
+			let just = match self.client.rpc().grandpa_block_justification_json(info.height).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.revert_to(info.height);
+					return Err(err);
+				},
 			};
 
-			let justification = self.client.rpc().grandpa_block_justification_json(block_height).await?;
-			self.next_block_height += 1;
-
-			let Some(justification) = justification else {
+			let Some(just) = just else {
 				continue;
 			};
 
-			return Ok(justification);
+			return Ok(just);
 		}
 	}
 
-	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, RpcError> {
-		if self.stopwatch.elapsed().as_secs() > 300 {
-			self.latest_finalized_height = None
-		}
-
-		if let Some(height) = self.latest_finalized_height.as_ref() {
-			return Ok(*height);
-		}
-
-		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = self.client.finalized().block_height().await?;
-		self.latest_finalized_height = Some(latest_finalized_height);
-		Ok(latest_finalized_height)
+	pub fn revert_to(&mut self, block_height: u32) {
+		self.sub.revert_to(block_height);
 	}
 
-	fn run_historical(&mut self) -> u32 {
-		self.next_block_height
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
 	}
 
-	async fn run_head(&mut self) -> Result<u32, RpcError> {
-		loop {
-			let head = self.client.finalized().block_info().await?;
-			if self.next_block_height > head.height {
-				sleep(self.poll_rate).await;
-				continue;
-			}
-			return Ok(self.next_block_height);
-		}
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
 	}
 }
