@@ -2588,19 +2588,19 @@ pub mod vector {
 			pub message: Message,
 			pub from: H256,
 			pub to: H256,
-			pub origin_domain: Compact<u32>,
-			pub destination_domain: Compact<u32>,
+			pub origin_domain: u32,      // Compact
+			pub destination_domain: u32, // Compact
 			/// Unique identifier for the message
-			pub id: Compact<u64>,
+			pub id: u64, // Compact
 		}
 		impl Encode for AddressedMessage {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				self.message.encode_to(dest);
 				self.from.encode_to(dest);
 				self.to.encode_to(dest);
-				self.origin_domain.encode_to(dest);
-				self.destination_domain.encode_to(dest);
-				self.id.encode_to(dest);
+				Compact(self.origin_domain).encode_to(dest);
+				Compact(self.destination_domain).encode_to(dest);
+				Compact(self.id).encode_to(dest);
 			}
 		}
 		impl Decode for AddressedMessage {
@@ -2608,9 +2608,9 @@ pub mod vector {
 				let message = Decode::decode(input)?;
 				let from = Decode::decode(input)?;
 				let to = Decode::decode(input)?;
-				let origin_domain = Decode::decode(input)?;
-				let destination_domain = Decode::decode(input)?;
-				let id = Decode::decode(input)?;
+				let origin_domain = Compact::<u32>::decode(input)?.0;
+				let destination_domain = Compact::<u32>::decode(input)?.0;
+				let id = Compact::<u64>::decode(input)?.0;
 				Ok(Self { message, from, to, origin_domain, destination_domain, id })
 			}
 		}
@@ -2620,7 +2620,7 @@ pub mod vector {
 		#[repr(u8)]
 		pub enum Message {
 			ArbitraryMessage(Vec<u8>) = 0,
-			FungibleToken { asset_id: H256, amount: Compact<u128> } = 1,
+			FungibleToken { asset_id: H256, amount: u128 } = 1,
 		}
 		impl Encode for Message {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -2632,7 +2632,7 @@ pub mod vector {
 					},
 					Message::FungibleToken { asset_id, amount } => {
 						asset_id.encode_to(dest);
-						amount.encode_to(dest);
+						Compact(*amount).encode_to(dest);
 					},
 				}
 			}
@@ -2647,7 +2647,7 @@ pub mod vector {
 					},
 					1 => {
 						let asset_id = Decode::decode(input)?;
-						let amount = Decode::decode(input)?;
+						let amount = Compact::<u128>::decode(input)?.0;
 						Ok(Self::FungibleToken { asset_id, amount })
 					},
 					_ => Err("Failed to decode Message. Unknown Message variant".into()),
@@ -2684,7 +2684,7 @@ pub mod vector {
 			pub input: Vec<u8>,
 			pub output: Vec<u8>,
 			pub proof: Vec<u8>,
-			pub slot: Compact<u64>,
+			pub slot: u64, // Compact
 		}
 		impl Encode for FulfillCall {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -2692,7 +2692,7 @@ pub mod vector {
 				self.input.encode_to(dest);
 				self.output.encode_to(dest);
 				self.proof.encode_to(dest);
-				self.slot.encode_to(dest);
+				Compact(self.slot).encode_to(dest);
 			}
 		}
 		impl Decode for FulfillCall {
@@ -2701,7 +2701,7 @@ pub mod vector {
 				let inputt = Decode::decode(input)?;
 				let output = Decode::decode(input)?;
 				let proof = Decode::decode(input)?;
-				let slot = Decode::decode(input)?;
+				let slot = Compact::<u64>::decode(input)?.0;
 				Ok(Self { function_id, input: inputt, output, proof, slot })
 			}
 		}
@@ -2711,14 +2711,14 @@ pub mod vector {
 
 		#[derive(Debug, Clone)]
 		pub struct Execute {
-			pub slot: Compact<u64>,
+			pub slot: u64, // Compact
 			pub addr_message: super::types::AddressedMessage,
 			pub account_proof: Vec<Vec<u8>>,
 			pub storage_proof: Vec<Vec<u8>>,
 		}
 		impl Encode for Execute {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				self.slot.encode_to(dest);
+				Compact(self.slot).encode_to(dest);
 				self.addr_message.encode_to(dest);
 				self.account_proof.encode_to(dest);
 				self.storage_proof.encode_to(dest);
@@ -2726,7 +2726,7 @@ pub mod vector {
 		}
 		impl Decode for Execute {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let slot = Decode::decode(input)?;
+				let slot = Compact::<u64>::decode(input)?.0;
 				let addr_message = Decode::decode(input)?;
 				let account_proof = Decode::decode(input)?;
 				let storage_proof = Decode::decode(input)?;
@@ -2739,18 +2739,18 @@ pub mod vector {
 
 		#[derive(Debug, Clone)]
 		pub struct SourceChainFroze {
-			pub source_chain_id: Compact<u32>,
+			pub source_chain_id: u32, // Compact
 			pub frozen: bool,
 		}
 		impl Encode for SourceChainFroze {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				self.source_chain_id.encode_to(dest);
+				Compact(self.source_chain_id).encode_to(dest);
 				self.frozen.encode_to(dest);
 			}
 		}
 		impl Decode for SourceChainFroze {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let source_chain_id = Decode::decode(input)?;
+				let source_chain_id = Compact::<u32>::decode(input)?.0;
 				let frozen = Decode::decode(input)?;
 				Ok(Self { source_chain_id, frozen })
 			}
@@ -2761,26 +2761,23 @@ pub mod vector {
 
 		#[derive(Debug, Clone)]
 		pub struct SendMessage {
-			pub slot: Compact<u64>,
-			pub message: super::types::Message,
+			pub message: types::Message,
 			pub to: H256,
-			pub domain: Compact<u32>,
+			pub domain: u32, // Compact
 		}
 		impl Encode for SendMessage {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				self.slot.encode_to(dest);
 				self.message.encode_to(dest);
 				self.to.encode_to(dest);
-				self.domain.encode_to(dest);
+				Compact(self.domain).encode_to(dest);
 			}
 		}
 		impl Decode for SendMessage {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let slot = Decode::decode(input)?;
 				let message = Decode::decode(input)?;
 				let to = Decode::decode(input)?;
-				let domain = Decode::decode(input)?;
-				Ok(Self { slot, message, to, domain })
+				let domain = Compact::<u32>::decode(input)?.0;
+				Ok(Self { message, to, domain })
 			}
 		}
 		impl HasHeader for SendMessage {
@@ -3044,6 +3041,25 @@ pub mod vector {
 		}
 		impl HasHeader for MockFulfill {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 17);
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct FailedSendMessageTxs {
+			pub failed_txs: Vec<Compact<u32>>,
+		}
+		impl Encode for FailedSendMessageTxs {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.failed_txs.encode_to(dest);
+			}
+		}
+		impl Decode for FailedSendMessageTxs {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let failed_txs = Decode::decode(input)?;
+				Ok(Self { failed_txs })
+			}
+		}
+		impl HasHeader for FailedSendMessageTxs {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 11);
 		}
 	}
 }

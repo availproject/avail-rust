@@ -640,7 +640,7 @@ impl Vector {
 		proof: Vec<u8>,
 		slot: u64,
 	) -> SubmittableTransaction {
-		let value = avail::vector::tx::FulfillCall { function_id, input, output, proof, slot: slot.into() };
+		let value = avail::vector::tx::FulfillCall { function_id, input, output, proof, slot };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
@@ -651,28 +651,31 @@ impl Vector {
 		account_proof: Vec<Vec<u8>>,
 		storage_proof: Vec<Vec<u8>>,
 	) -> SubmittableTransaction {
-		let value = avail::vector::tx::Execute {
-			slot: slot.into(),
-			addr_message,
-			account_proof,
-			storage_proof,
-		};
+		let value = avail::vector::tx::Execute { slot, addr_message, account_proof, storage_proof };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
 	pub fn source_chain_froze(&self, source_chain_id: u32, frozen: bool) -> SubmittableTransaction {
-		let value = avail::vector::tx::SourceChainFroze { source_chain_id: source_chain_id.into(), frozen };
+		let value = avail::vector::tx::SourceChainFroze { source_chain_id, frozen };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
 	pub fn send_message(
 		&self,
-		slot: u64,
 		message: avail::vector::types::Message,
-		to: H256,
+		to: impl Into<HashString>,
 		domain: u32,
 	) -> SubmittableTransaction {
-		let value = avail::vector::tx::SendMessage { slot: slot.into(), message, to, domain: domain.into() };
+		let to: HashString = to.into();
+		let to: H256 = to.try_into().expect("Malformed string is passed for H256");
+
+		let value = avail::vector::tx::SendMessage { message, to, domain };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	pub fn failed_send_message_txs(&self, failed_txs: Vec<u32>) -> SubmittableTransaction {
+		let failed_txs = failed_txs.into_iter().map(|x| x.into()).collect();
+		let value = avail::vector::tx::FailedSendMessageTxs { failed_txs };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 

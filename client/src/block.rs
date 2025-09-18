@@ -321,7 +321,7 @@ impl BlockWithTx {
 		};
 
 		let Some(signature) = ext.signature else {
-			todo!()
+			return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
 		};
 
 		let ext = BlockSignedExtrinsic::new(signature, ext.call, ext.metadata);
@@ -338,7 +338,7 @@ impl BlockWithTx {
 		};
 
 		let Some(signature) = ext.signature else {
-			todo!()
+			return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
 		};
 
 		let ext = BlockSignedExtrinsic::new(signature, ext.call, ext.metadata);
@@ -353,7 +353,7 @@ impl BlockWithTx {
 		let mut result = Vec::with_capacity(all.len());
 		for ext in all {
 			let Some(signature) = ext.signature else {
-				todo!()
+				return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
 			};
 			result.push(BlockSignedExtrinsic::new(signature, ext.call, ext.metadata));
 		}
@@ -398,6 +398,7 @@ impl BlockEvents {
 			let Some(data) = phase_event.encoded_data.take() else {
 				return Err(RpcError::ExpectedData("No data was provided from event".into()).into());
 			};
+
 			let ext_event = ExtrinsicEvent {
 				index: phase_event.index,
 				pallet_id: phase_event.pallet_id,

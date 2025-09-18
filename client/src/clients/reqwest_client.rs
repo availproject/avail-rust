@@ -206,7 +206,7 @@ pub mod testable {
 			mut rx: Receiver<ChannelMessage>,
 		) {
 			while let Some((body, tx_response)) = rx.recv().await {
-				dbg!(&body);
+				/* 				dbg!(&body);
 				let response_value = {
 					let mut lock = return_values.lock().expect("qed");
 					let id = *id.lock().unwrap() - 1;
@@ -240,7 +240,7 @@ pub mod testable {
 						todo!()
 					}
 				};
-				tx_response.send(Ok(response_value)).await.unwrap();
+				tx_response.send(Ok(response_value)).await.unwrap(); */
 			}
 		}
 	}
