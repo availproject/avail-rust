@@ -342,16 +342,17 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		Self { client, sub, opts, _phantom: Default::default() }
 	}
 
-	pub async fn next(&mut self) -> Result<Vec<BlockSignedExtrinsic<T>>, crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<BlockSignedExtrinsic<T>>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
 			let block = BlockWithTx::new(self.client.clone(), info.hash);
+			// TODO if it fails we need to revert our SUB!.
 			let txs = block.all::<T>(self.opts.clone()).await?;
 			if txs.is_empty() {
 				continue;
 			}
 
-			return Ok(txs);
+			return Ok((txs, info));
 		}
 	}
 }
@@ -369,16 +370,17 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		Self { client, sub, opts, _phantom: Default::default() }
 	}
 
-	pub async fn next(&mut self) -> Result<Vec<BlockExtrinsic<T>>, crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<BlockExtrinsic<T>>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
 			let block = BlockWithExt::new(self.client.clone(), info.hash);
+			// TODO if it fails we need to revert our SUB!.
 			let txs = block.all::<T>(self.opts.clone()).await?;
 			if txs.is_empty() {
 				continue;
 			}
 
-			return Ok(txs);
+			return Ok((txs, info));
 		}
 	}
 }
@@ -395,16 +397,17 @@ impl RawExtrinsicSub {
 		Self { client, sub, opts }
 	}
 
-	pub async fn next(&mut self) -> Result<Vec<BlockRawExtrinsic>, crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<BlockRawExtrinsic>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
 			let block = BlockWithRawExt::new(self.client.clone(), info.hash);
+			// TODO if it fails we need to revert our SUB!.
 			let txs = block.all(self.opts.clone()).await?;
 			if txs.is_empty() {
 				continue;
 			}
 
-			return Ok(txs);
+			return Ok((txs, info));
 		}
 	}
 }
@@ -425,6 +428,7 @@ impl EventsSub {
 		loop {
 			let info = self.sub.next(&self.client).await?;
 			let block = BlockEvents::new(self.client.clone(), info.hash);
+			// TODO if it fails we need to revert our SUB!.
 			let events = block.block(self.opts.clone()).await?;
 			if events.is_empty() {
 				continue;
