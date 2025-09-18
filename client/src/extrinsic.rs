@@ -39,7 +39,7 @@ impl SubmittableTransaction {
 			.await
 	}
 
-	pub async fn sign(&self, signer: &Keypair, options: Options) -> Result<GenericExtrinsic, RpcError> {
+	pub async fn sign(&self, signer: &Keypair, options: Options) -> Result<GenericExtrinsic<'_>, RpcError> {
 		self.client.rpc().sign_call(signer, &self.call, options).await
 	}
 
