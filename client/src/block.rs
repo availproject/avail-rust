@@ -663,6 +663,15 @@ impl<T: HasHeader + Decode> TryFrom<BlockExtrinsic<T>> for BlockSignedExtrinsic<
 	}
 }
 
+impl<T: HasHeader + Decode> TryFrom<BlockRawExtrinsic> for BlockSignedExtrinsic<T> {
+	type Error = String;
+
+	fn try_from(value: BlockRawExtrinsic) -> Result<Self, Self::Error> {
+		let ext = BlockExtrinsic::try_from(value)?;
+		Self::try_from(ext)
+	}
+}
+
 #[derive(Debug, Clone)]
 pub struct ExtrinsicEvent {
 	pub index: u32,
