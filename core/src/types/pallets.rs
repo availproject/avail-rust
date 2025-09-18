@@ -3045,16 +3045,18 @@ pub mod vector {
 
 		#[derive(Debug, Clone)]
 		pub struct FailedSendMessageTxs {
-			pub failed_txs: Vec<Compact<u32>>,
+			pub failed_txs: Vec<u32>,
 		}
 		impl Encode for FailedSendMessageTxs {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				self.failed_txs.encode_to(dest);
+				let failed_txs: Vec<Compact<u32>> = self.failed_txs.iter().map(|x| x.into()).collect();
+				failed_txs.encode_to(dest);
 			}
 		}
 		impl Decode for FailedSendMessageTxs {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-				let failed_txs = Decode::decode(input)?;
+				let failed_txs = Vec::<Compact<u32>>::decode(input)?;
+				let failed_txs = failed_txs.into_iter().map(|x| x.into()).collect();
 				Ok(Self { failed_txs })
 			}
 		}
