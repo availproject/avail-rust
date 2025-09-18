@@ -140,9 +140,27 @@ impl From<u8> for ExtrinsicFilter {
 	}
 }
 
+impl From<&[u8]> for ExtrinsicFilter {
+	fn from(value: &[u8]) -> Self {
+		Self::Pallet(value.to_vec())
+	}
+}
+
 impl From<(u8, u8)> for ExtrinsicFilter {
 	fn from(value: (u8, u8)) -> Self {
 		Self::PalletCall(vec![value])
+	}
+}
+
+impl From<&[(u8, u8)]> for ExtrinsicFilter {
+	fn from(value: &[(u8, u8)]) -> Self {
+		Self::PalletCall(value.to_vec())
+	}
+}
+
+impl From<Vec<(u8, u8)>> for ExtrinsicFilter {
+	fn from(value: Vec<(u8, u8)>) -> Self {
+		Self::PalletCall(value)
 	}
 }
 
