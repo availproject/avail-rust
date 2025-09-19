@@ -41,9 +41,7 @@ impl<T: HasHeader + Decode> TransactionEventDecodable for T {
 			};
 
 			// This was moved out in order to decrease compilation times
-			if !event_filter_in(event, T::HEADER_INDEX) {
-				return Err("Failed to decode event. TODO".into());
-			}
+			check_header(event, T::HEADER_INDEX)?;
 
 			if event.len() <= 2 {
 				let mut data: &[u8] = &[];
@@ -59,17 +57,24 @@ impl<T: HasHeader + Decode> TransactionEventDecodable for T {
 }
 
 // Purely here to decrease compilation times
-fn event_filter_in(event: &[u8], emitted_index: (u8, u8)) -> bool {
-	if event.len() < 2 {
-		return false;
+pub(crate) fn check_header(data: &[u8], header_index: (u8, u8)) -> Result<(), String> {
+	if data.len() < 2 {
+		return Err("Failed to decode. Not have enough bytes to decode the header".into());
 	}
 
-	let (pallet_id, variant_id) = (event[0], event[1]);
-	if emitted_index.0 != pallet_id || emitted_index.1 != variant_id {
-		return false;
+	let (pallet_id, variant_id) = (data[0], data[1]);
+	if header_index.0 != pallet_id || header_index.1 != variant_id {
+		let err = std::format!(
+			"Failed to decode. Mismatch in pallet and/or variant id. Actual: PI: {}, VI: {} Expected: PI: {}, VI: {}",
+			pallet_id,
+			variant_id,
+			header_index.0,
+			header_index.1
+		);
+		return Err(err);
 	}
 
-	true
+	Ok(())
 }
 
 /* /// Contains only the event body. Phase and topics are not included here.

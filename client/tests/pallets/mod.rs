@@ -12,15 +12,15 @@ mod utility;
 mod vector;
 
 pub async fn run_tests() -> Result<(), Error> {
-	// balances::run_tests().await?;
-	// da::run_tests().await?;
-	// multisig::run_tests().await?;
-	// proxy::run_tests().await?;
-	// staking::run_tests().await?;
-	// utility::run_tests().await?;
-	// nomination_pools::run_tests().await?;
-	// session::run_tests().await?;
-	// timestamp::run_tests().await?;
+	balances::run_tests().await?;
+	da::run_tests().await?;
+	multisig::run_tests().await?;
+	proxy::run_tests().await?;
+	staking::run_tests().await?;
+	utility::run_tests().await?;
+	nomination_pools::run_tests().await?;
+	session::run_tests().await?;
+	timestamp::run_tests().await?;
 	vector::run_tests().await?;
 	Ok(())
 }

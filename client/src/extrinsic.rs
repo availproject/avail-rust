@@ -4,7 +4,7 @@ use crate::{
 		Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockSignedExtrinsic, BlockWithExt, BlockWithRawExt,
 		BlockWithTx, ExtrinsicEvents,
 	},
-	subscription::SubBuilder,
+	subscription::Sub,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
@@ -201,11 +201,9 @@ impl TransactionReceipt {
 			return Err(UserError::ValidationFailed("Block Start cannot start after Block End".into()).into());
 		}
 		let tx_hash: HashString = tx_hash.into();
-		let mut sub = SubBuilder::default()
-			.follow(use_best_block)
-			.block_height(block_start)
-			.build(&client)
-			.await?;
+		let mut sub = Sub::new();
+		sub.set_follow(use_best_block);
+		sub.set_block_height(block_start);
 
 		loop {
 			let block_ref = sub.next(&client).await?;
@@ -261,11 +259,10 @@ impl Utils {
 	) -> Result<Option<BlockRef>, Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
-		let mut sub = SubBuilder::new()
-			.block_height(mortality.block_height)
-			.follow(use_best_block)
-			.build(client)
-			.await?;
+		let mut sub = Sub::new();
+		sub.set_block_height(mortality.block_height);
+		sub.set_follow(use_best_block);
+
 		let mut current_block_height = mortality.block_height;
 
 		#[cfg(feature = "tracing")]

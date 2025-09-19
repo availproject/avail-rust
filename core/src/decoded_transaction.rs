@@ -1,5 +1,6 @@
 use super::substrate::extrinsic::EXTRINSIC_FORMAT_VERSION;
 use crate::{
+	decoded_events::check_header,
 	types::{ExtrinsicSignature, metadata::StringOrBytes},
 	utils::decode_already_decoded,
 };
@@ -30,9 +31,7 @@ impl<T: HasHeader + Decode> TransactionDecodable for T {
 				StringOrBytes::BoxedBytes(b) => b,
 			};
 
-			if !tx_filter_in(call, T::HEADER_INDEX) {
-				return Err("Failed to decode extrinsic. TODO".into());
-			}
+			check_header(call, T::HEADER_INDEX)?;
 
 			if call.len() <= 2 {
 				let mut data: &[u8] = &[];
@@ -64,20 +63,6 @@ impl<T: HasHeader + Decode> TransactionDecodable for T {
 
 		inner(ext.into())
 	}
-}
-
-#[inline(never)]
-fn tx_filter_in(call: &[u8], header: (u8, u8)) -> bool {
-	if call.len() < 2 {
-		return false;
-	}
-
-	let (pallet_id, variant_id) = (call[0], call[1]);
-	if header.0 != pallet_id || header.1 != variant_id {
-		return false;
-	}
-
-	true
 }
 
 #[derive(Clone)]

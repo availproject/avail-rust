@@ -15,36 +15,16 @@ use codec::Decode;
 use std::{marker::PhantomData, time::Duration};
 
 #[derive(Clone)]
-pub struct SubBuilder {
+pub struct UnInitSub {
 	use_best_block: bool,
 	block_height: Option<u32>,
 	poll_rate: Duration,
 	retry_on_error: bool,
 }
 
-impl SubBuilder {
+impl UnInitSub {
 	pub fn new() -> Self {
 		Self::default()
-	}
-
-	pub fn follow(mut self, best_block: bool) -> Self {
-		self.use_best_block = best_block;
-		self
-	}
-
-	pub fn block_height(mut self, value: u32) -> Self {
-		self.block_height = Some(value);
-		self
-	}
-
-	pub fn poll_rate(mut self, value: Duration) -> Self {
-		self.poll_rate = value;
-		self
-	}
-
-	pub fn retry_on_error(mut self, value: bool) -> Self {
-		self.retry_on_error = value;
-		self
 	}
 
 	pub async fn build(&self, client: &Client) -> Result<Sub, RpcError> {
@@ -75,7 +55,7 @@ impl SubBuilder {
 	}
 }
 
-impl Default for SubBuilder {
+impl Default for UnInitSub {
 	fn default() -> Self {
 		Self {
 			use_best_block: false,
@@ -262,53 +242,76 @@ impl BestBlockSub {
 
 #[derive(Clone)]
 pub enum Sub {
+	UnInit(UnInitSub),
 	BestBlock(BestBlockSub),
 	FinalizedBlock(FinalizedBlockSub),
 }
 
 impl Sub {
+	pub fn new() -> Self {
+		Self::UnInit(UnInitSub::default())
+	}
+
 	pub async fn next(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
+		if let Self::UnInit(u) = self {
+			let concrete = u.build(client).await?;
+			*self = concrete;
+		};
+
 		match self {
 			Self::BestBlock(s) => s.run(client).await,
 			Self::FinalizedBlock(s) => s.run(client).await,
-		}
-	}
-
-	pub fn retry_on_error(&self) -> bool {
-		match self {
-			Self::BestBlock(s) => s.retry_on_error,
-			Self::FinalizedBlock(s) => s.retry_on_error,
+			_ => unreachable!("We cannot be here."),
 		}
 	}
 
 	pub fn current_block_height(&self) -> u32 {
 		match self {
+			Self::UnInit(u) => u.block_height.unwrap_or_default(),
 			Self::BestBlock(s) => s.current_block_height(),
 			Self::FinalizedBlock(s) => s.current_block_height(),
 		}
 	}
 
-	pub fn revert_to(&mut self, block_height: u32) {
+	pub fn set_follow(&mut self, best_block: bool) {
 		match self {
-			Sub::BestBlock(x) => {
+			Self::UnInit(u) => u.use_best_block = best_block,
+			_ => (),
+		};
+	}
+
+	pub fn retry_on_error(&self) -> bool {
+		match self {
+			Self::UnInit(u) => u.retry_on_error,
+			Self::BestBlock(s) => s.retry_on_error,
+			Self::FinalizedBlock(s) => s.retry_on_error,
+		}
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		match self {
+			Self::UnInit(u) => u.block_height = Some(block_height),
+			Self::BestBlock(x) => {
 				x.block_processed.clear();
 				x.current_block_height = block_height;
 			},
-			Sub::FinalizedBlock(x) => x.next_block_height = block_height,
+			Self::FinalizedBlock(x) => x.next_block_height = block_height,
 		}
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		match self {
-			Sub::BestBlock(x) => x.poll_rate = value,
-			Sub::FinalizedBlock(x) => x.poll_rate = value,
+			Self::UnInit(u) => u.poll_rate = value,
+			Self::BestBlock(x) => x.poll_rate = value,
+			Self::FinalizedBlock(x) => x.poll_rate = value,
 		}
 	}
 
 	pub fn set_retry_on_error(&mut self, value: bool) {
 		match self {
-			Sub::BestBlock(x) => x.retry_on_error = value,
-			Sub::FinalizedBlock(x) => x.retry_on_error = value,
+			Self::UnInit(u) => u.retry_on_error = value,
+			Self::BestBlock(x) => x.retry_on_error = value,
+			Self::FinalizedBlock(x) => x.retry_on_error = value,
 		}
 	}
 }
@@ -338,11 +341,23 @@ impl BlockWithJustSub {
 			Ok(x) => x,
 			Err(err) => {
 				// Revet block height if we fail to fetch block
-				self.sub.revert_to(info.height);
+				self.sub.set_block_height(info.height);
 				return Err(err);
 			},
 		};
 		Ok(block)
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
 	}
 }
 
@@ -362,8 +377,8 @@ impl BlockSub {
 		Ok(crate::block::Block::new(self.client.clone(), info.hash))
 	}
 
-	pub fn revert_to(&mut self, block_height: u32) {
-		self.sub.revert_to(block_height);
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
@@ -397,7 +412,7 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
-					self.sub.revert_to(info.height);
+					self.sub.set_block_height(info.height);
 					return Err(err);
 				},
 			};
@@ -410,8 +425,8 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		}
 	}
 
-	pub fn revert_to(&mut self, block_height: u32) {
-		self.sub.revert_to(block_height);
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
@@ -445,7 +460,7 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
-					self.sub.revert_to(info.height);
+					self.sub.set_block_height(info.height);
 					return Err(err);
 				},
 			};
@@ -458,8 +473,8 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		}
 	}
 
-	pub fn revert_to(&mut self, block_height: u32) {
-		self.sub.revert_to(block_height);
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
@@ -492,7 +507,7 @@ impl RawExtrinsicSub {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
-					self.sub.revert_to(info.height);
+					self.sub.set_block_height(info.height);
 					return Err(err);
 				},
 			};
@@ -505,8 +520,8 @@ impl RawExtrinsicSub {
 		}
 	}
 
-	pub fn revert_to(&mut self, block_height: u32) {
-		self.sub.revert_to(block_height);
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
@@ -538,7 +553,7 @@ impl EventsSub {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch events
-					self.sub.revert_to(info.height);
+					self.sub.set_block_height(info.height);
 					return Err(err);
 				},
 			};
@@ -551,8 +566,8 @@ impl EventsSub {
 		}
 	}
 
-	pub fn revert_to(&mut self, block_height: u32) {
-		self.sub.revert_to(block_height);
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
@@ -589,7 +604,7 @@ impl BlockHeaderSub {
 			Ok(x) => x,
 			Err(err) => {
 				// Revet block height if we fail to fetch block header
-				self.sub.revert_to(info.height);
+				self.sub.set_block_height(info.height);
 				return Err(err);
 			},
 		};
@@ -597,8 +612,8 @@ impl BlockHeaderSub {
 		Ok(header)
 	}
 
-	pub fn revert_to(&mut self, block_height: u32) {
-		self.sub.revert_to(block_height);
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
@@ -635,7 +650,7 @@ impl GrandpaJustificationSub {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
-					self.sub.revert_to(info.height);
+					self.sub.set_block_height(info.height);
 					return Err(err);
 				},
 			};
@@ -648,8 +663,8 @@ impl GrandpaJustificationSub {
 		}
 	}
 
-	pub fn revert_to(&mut self, block_height: u32) {
-		self.sub.revert_to(block_height);
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
@@ -686,7 +701,7 @@ impl GrandpaJustificationJsonSub {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
-					self.sub.revert_to(info.height);
+					self.sub.set_block_height(info.height);
 					return Err(err);
 				},
 			};
@@ -699,8 +714,8 @@ impl GrandpaJustificationJsonSub {
 		}
 	}
 
-	pub fn revert_to(&mut self, block_height: u32) {
-		self.sub.revert_to(block_height);
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
