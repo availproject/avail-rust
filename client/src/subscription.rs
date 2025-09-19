@@ -282,10 +282,9 @@ impl Sub {
 	}
 
 	pub fn set_follow(&mut self, best_block: bool) {
-		match self {
-			Self::UnInit(u) => u.use_best_block = best_block,
-			_ => (),
-		};
+		if let Self::UnInit(u) = self {
+			u.use_best_block = best_block;
+		}
 	}
 
 	pub fn set_block_height(&mut self, block_height: u32) {

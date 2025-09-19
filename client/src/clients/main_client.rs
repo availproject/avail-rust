@@ -44,7 +44,7 @@ impl Client {
 	pub async fn new_rpc_client(rpc_client: RpcClient) -> Result<Client, RpcError> {
 		let online_client = OnlineClient::new(&rpc_client).await?;
 
-		Self::new_custom(rpc_client, online_client.into()).await
+		Self::new_custom(rpc_client, online_client).await
 	}
 
 	pub async fn new_custom(rpc_client: RpcClient, online_client: OnlineClient) -> Result<Client, RpcError> {
@@ -110,9 +110,7 @@ impl Rpc {
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
 		let f = || async move { rpc::chain::get_block_hash(&self.client.rpc_client, block_height).await };
-		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "")
-			.await
-			.map_err(|e| e.into())
+		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "").await
 	}
 
 	pub async fn block_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, RpcError> {
@@ -120,9 +118,7 @@ impl Rpc {
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
 		let f = || async move { rpc::chain::get_header(&self.client.rpc_client, at).await };
-		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "")
-			.await
-			.map_err(|e| e.into())
+		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "").await
 	}
 
 	pub async fn block_with_justification(
@@ -133,9 +129,7 @@ impl Rpc {
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
 		let f = || async move { rpc::chain::get_block(&self.client.rpc_client, at).await };
-		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "")
-			.await
-			.map_err(|e| e.into())
+		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "").await
 	}
 
 	// Nonce
@@ -145,7 +139,7 @@ impl Rpc {
 		let f = || async move {
 			rpc::system::account_next_index(&self.client.rpc_client, &std::format!("{}", account_id)).await
 		};
-		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		with_retry_on_error(f, retry_on_error, "").await
 	}
 
 	pub async fn block_nonce(&self, account_id: &AccountId, block_hash: H256) -> Result<u32, RpcError> {
@@ -166,7 +160,7 @@ impl Rpc {
 				.await
 				.map(|x| x.unwrap_or_default())
 		};
-		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		with_retry_on_error(f, retry_on_error, "").await
 	}
 
 	// Block State
@@ -194,16 +188,14 @@ impl Rpc {
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
 		let f = || async move { rpc::system::get_block_number(&self.client.rpc_client, at).await };
-		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "")
-			.await
-			.map_err(|e| e.into())
+		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "").await
 	}
 
 	pub async fn block_info(&self, use_best_block: bool) -> Result<BlockRef, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move { rpc::system::latest_block_info(&self.client.rpc_client, use_best_block).await };
-		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		with_retry_on_error(f, retry_on_error, "").await
 	}
 
 	// Sign and submit
@@ -241,9 +233,8 @@ impl Rpc {
 
 		let account_id = signer.public_key().to_account_id();
 		let signature = tx_payload.sign(signer);
-		let tx = GenericExtrinsic::new(account_id, signature, tx_payload);
 
-		tx
+		GenericExtrinsic::new(account_id, signature, tx_payload)
 	}
 
 	pub async fn sign_call<'a>(
@@ -313,21 +304,21 @@ impl Rpc {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move { rpc::state::call(&self.client.rpc_client, method, data, at).await };
-		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		with_retry_on_error(f, retry_on_error, "").await
 	}
 
 	pub async fn state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move { rpc::state::get_metadata(&self.client.rpc_client, at).await };
-		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		with_retry_on_error(f, retry_on_error, "").await
 	}
 
 	pub async fn state_get_storage(&self, key: &str, at: Option<H256>) -> Result<Option<Vec<u8>>, RpcError> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move { rpc::state::get_storage(&self.client.rpc_client, key, at).await };
-		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		with_retry_on_error(f, retry_on_error, "").await
 	}
 
 	pub async fn state_get_keys_paged(
@@ -341,7 +332,7 @@ impl Rpc {
 
 		let f =
 			|| async move { rpc::state::get_keys_paged(&self.client.rpc_client, prefix, count, start_key, at).await };
-		with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
+		with_retry_on_error(f, retry_on_error, "").await
 	}
 
 	pub async fn system_fetch_extrinsics(
@@ -355,7 +346,7 @@ impl Rpc {
 			opts: &rpc::ExtrinsicOpts,
 			retry_on_error: bool,
 		) -> Result<Vec<ExtrinsicInfo>, Error> {
-			let block_id: HashNumber = block_id.try_into().map_err(|x| UserError::Decoding(x))?;
+			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
 			let f = || async move { rpc::system::fetch_extrinsics_v1(&client.rpc_client, block_id, opts).await };
 			with_retry_on_error(f, retry_on_error, "").await.map_err(|e| e.into())
 		}
@@ -375,7 +366,7 @@ impl Rpc {
 			opts: &rpc::EventOpts,
 			retry_on_error: bool,
 		) -> Result<Vec<BlockPhaseEvent>, Error> {
-			let block_id: HashNumber = block_id.try_into().map_err(|x| UserError::Decoding(x))?;
+			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
 			let at = match block_id {
 				HashNumber::Hash(x) => x,
 				HashNumber::Number(x) => {
@@ -389,7 +380,7 @@ impl Rpc {
 		}
 
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
-		inner(&self, at.into(), &opts, retry_on_error).await
+		inner(self, at.into(), &opts, retry_on_error).await
 	}
 
 	pub async fn grandpa_block_justification(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {

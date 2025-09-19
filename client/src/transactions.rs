@@ -176,7 +176,7 @@ impl NominationPools {
 
 	pub fn nominate(&self, pool_id: u32, validators: Vec<impl Into<AccountIdLike>>) -> SubmittableTransaction {
 		let validators: Vec<AccountIdLike> = validators.into_iter().map(|x| x.into()).collect();
-		let validators: Result<Vec<AccountId>, _> = validators.into_iter().map(|x| AccountId::try_from(x)).collect();
+		let validators: Result<Vec<AccountId>, _> = validators.into_iter().map(AccountId::try_from).collect();
 		let validators = validators.expect("Malformed string is passed for AccountId");
 
 		let value = avail::nomination_pools::tx::Nominate { pool_id, validators };
@@ -291,7 +291,7 @@ impl Staking {
 
 	pub fn nominate(&self, targets: Vec<impl Into<MultiAddressLike>>) -> SubmittableTransaction {
 		let targets: Vec<MultiAddressLike> = targets.into_iter().map(|x| x.into()).collect();
-		let targets: Result<Vec<MultiAddress>, _> = targets.into_iter().map(|x| MultiAddress::try_from(x)).collect();
+		let targets: Result<Vec<MultiAddress>, _> = targets.into_iter().map(MultiAddress::try_from).collect();
 		let targets = targets.expect("Malformed string is passed for AccountId");
 
 		let value = avail::staking::tx::Nominate { targets };
@@ -344,7 +344,7 @@ impl Staking {
 
 	pub fn kick(&self, who: Vec<impl Into<MultiAddressLike>>) -> SubmittableTransaction {
 		let who: Vec<MultiAddressLike> = who.into_iter().map(|x| x.into()).collect();
-		let who: Result<Vec<MultiAddress>, _> = who.into_iter().map(|x| MultiAddress::try_from(x)).collect();
+		let who: Result<Vec<MultiAddress>, _> = who.into_iter().map(MultiAddress::try_from).collect();
 		let who = who.expect("Malformed string is passed for AccountId");
 
 		let value = avail::staking::tx::Kick { who };
@@ -619,13 +619,7 @@ impl Proxy {
 		let spawner: MultiAddressLike = spawner.into();
 		let spawner: MultiAddress = spawner.try_into().expect("Malformed string is passed for AccountId");
 
-		let value = avail::proxy::tx::KillPure {
-			spawner,
-			proxy_type,
-			index,
-			height: height.into(),
-			ext_index: ext_index.into(),
-		};
+		let value = avail::proxy::tx::KillPure { spawner, proxy_type, index, height, ext_index };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 }
@@ -674,7 +668,6 @@ impl Vector {
 	}
 
 	pub fn failed_send_message_txs(&self, failed_txs: Vec<u32>) -> SubmittableTransaction {
-		let failed_txs = failed_txs.into_iter().map(|x| x.into()).collect();
 		let value = avail::vector::tx::FailedSendMessageTxs { failed_txs };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}

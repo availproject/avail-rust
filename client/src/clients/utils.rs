@@ -28,11 +28,11 @@ where
 		match f().await {
 			Ok(x) => return Ok(x),
 			Err(err) if !retry_on_error => {
-				return Err(err.into());
+				return Err(err);
 			},
 			Err(err) => {
 				let Some(duration) = sleep_duration.pop() else {
-					return Err(err.into());
+					return Err(err);
 				};
 				sleep_on_retry(duration, error_message, &err.to_string()).await;
 			},
@@ -65,11 +65,11 @@ where
 				sleep_on_retry(duration, error_message, "Option<None>").await;
 			},
 			Err(err) if !retry_on_error => {
-				return Err(err.into());
+				return Err(err);
 			},
 			Err(err) => {
 				let Some(duration) = sleep_duration.pop() else {
-					return Err(err.into());
+					return Err(err);
 				};
 				sleep_on_retry(duration, error_message, &err.to_string()).await;
 			},

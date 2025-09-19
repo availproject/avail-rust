@@ -179,7 +179,7 @@ impl BlockWithExt {
 		) -> Result<Option<BlockExtrinsic<T>>, Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
-				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(|x| UserError::Decoding(x))?,
+				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let filter = Some(filter);
@@ -208,7 +208,7 @@ impl BlockWithExt {
 			return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
 		};
 
-		let ext = Extrinsic::<T>::try_from(data.as_str()).map_err(|x| UserError::Decoding(x))?;
+		let ext = Extrinsic::<T>::try_from(data.as_str()).map_err(UserError::Decoding)?;
 		let ext = BlockExtrinsic::new(ext.signature, ext.call, first.metadata);
 
 		Ok(Some(ext))
@@ -232,7 +232,7 @@ impl BlockWithExt {
 			return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
 		};
 
-		let ext = Extrinsic::<T>::try_from(data.as_str()).map_err(|x| UserError::Decoding(x))?;
+		let ext = Extrinsic::<T>::try_from(data.as_str()).map_err(UserError::Decoding)?;
 		let ext = BlockExtrinsic::new(ext.signature, ext.call, last.metadata);
 		Ok(Some(ext))
 	}
@@ -252,7 +252,7 @@ impl BlockWithExt {
 			let Some(data) = raw_ext.data else {
 				return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
 			};
-			let ext = Extrinsic::<T>::try_from(data.as_str()).map_err(|x| UserError::Decoding(x))?;
+			let ext = Extrinsic::<T>::try_from(data.as_str()).map_err(UserError::Decoding)?;
 			let ext = BlockExtrinsic::new(ext.signature, ext.call, raw_ext.metadata);
 			result.push(ext);
 		}
@@ -300,7 +300,7 @@ impl BlockWithTx {
 		) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
-				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(|x| UserError::Decoding(x))?,
+				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let filter = Some(filter);
@@ -308,7 +308,7 @@ impl BlockWithTx {
 				.await?)
 		}
 
-		inner::<T>(&self, extrinsic_id.into()).await
+		inner::<T>(self, extrinsic_id.into()).await
 	}
 
 	pub async fn first<T: HasHeader + Decode>(
@@ -695,9 +695,7 @@ impl ExtrinsicEvents {
 			.events
 			.iter()
 			.find(|x| x.pallet_id == T::HEADER_INDEX.0 && x.variant_id == T::HEADER_INDEX.1);
-		let Some(event) = event else {
-			return None;
-		};
+		let event = event?;
 
 		T::from_event(&event.data).ok()
 	}
@@ -726,12 +724,12 @@ impl ExtrinsicEvents {
 
 	pub fn proxy_executed_successfully(&self) -> Option<bool> {
 		let executed = self.first::<avail::proxy::events::ProxyExecuted>()?;
-		return Some(executed.result.is_ok());
+		Some(executed.result.is_ok())
 	}
 
 	pub fn multisig_executed_successfully(&self) -> Option<bool> {
 		let executed = self.first::<avail::multisig::events::MultisigExecuted>()?;
-		return Some(executed.result.is_ok());
+		Some(executed.result.is_ok())
 	}
 
 	pub fn is_present<T: HasHeader>(&self) -> bool {
