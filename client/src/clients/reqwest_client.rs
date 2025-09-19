@@ -83,6 +83,14 @@ impl ReqwestClient {
 				},
 			};
 
+			let response = match response.error_for_status() {
+				Ok(x) => x,
+				Err(err) => {
+					_ = tx_response.send(Err(err)).await;
+					continue;
+				},
+			};
+
 			match response.json::<Box<serde_json::Value>>().await {
 				Ok(x) => {
 					_ = tx_response.send(Ok(x)).await;
@@ -134,6 +142,7 @@ impl RpcClientT for ReqwestClient {
 					return Err(subxt_rpcs::Error::Client(Box::new(err)));
 				},
 			};
+
 			let response = match response {
 				Ok(x) => x,
 				Err(err) => return Err(subxt_rpcs::Error::Client(Box::new(err))),
