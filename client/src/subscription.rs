@@ -1,7 +1,7 @@
 use crate::{
 	AvailHeader, Client,
 	block::{
-		BlockEvents, BlockEventsOptions, BlockExtOptionsExpanded, BlockExtOptionsSimple, BlockExtrinsic,
+		Block, BlockEvents, BlockEventsOptions, BlockExtOptionsExpanded, BlockExtOptionsSimple, BlockExtrinsic,
 		BlockRawExtrinsic, BlockSignedExtrinsic, BlockWithExt, BlockWithRawExt, BlockWithTx,
 	},
 	platform::sleep,
@@ -249,7 +249,7 @@ pub enum Sub {
 
 impl Sub {
 	pub fn new() -> Self {
-		Self::UnInit(UnInitSub::default())
+		Self::default()
 	}
 
 	pub async fn next(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
@@ -273,19 +273,19 @@ impl Sub {
 		}
 	}
 
-	pub fn set_follow(&mut self, best_block: bool) {
-		match self {
-			Self::UnInit(u) => u.use_best_block = best_block,
-			_ => (),
-		};
-	}
-
 	pub fn retry_on_error(&self) -> bool {
 		match self {
 			Self::UnInit(u) => u.retry_on_error,
 			Self::BestBlock(s) => s.retry_on_error,
 			Self::FinalizedBlock(s) => s.retry_on_error,
 		}
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		match self {
+			Self::UnInit(u) => u.use_best_block = best_block,
+			_ => (),
+		};
 	}
 
 	pub fn set_block_height(&mut self, block_height: u32) {
@@ -316,17 +316,21 @@ impl Sub {
 	}
 }
 
+impl Default for Sub {
+	fn default() -> Self {
+		Self::UnInit(UnInitSub::default())
+	}
+}
+
 #[derive(Clone)]
 pub struct BlockWithJustSub {
 	client: Client,
 	sub: Sub,
-	retry_on_error: bool,
 }
 
 impl BlockWithJustSub {
-	pub fn new(client: Client, sub: Sub) -> Self {
-		let retry_on_error = sub.retry_on_error();
-		Self { client, sub, retry_on_error }
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
 	}
 
 	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, RpcError> {
@@ -334,7 +338,7 @@ impl BlockWithJustSub {
 		let block = match self
 			.client
 			.rpc()
-			.retry_on(Some(self.retry_on_error), Some(true))
+			.retry_on(Some(self.sub.retry_on_error()), Some(true))
 			.block_with_justification(Some(info.hash))
 			.await
 		{
@@ -346,6 +350,10 @@ impl BlockWithJustSub {
 			},
 		};
 		Ok(block)
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
 	}
 
 	pub fn set_block_height(&mut self, block_height: u32) {
@@ -368,13 +376,17 @@ pub struct BlockSub {
 }
 
 impl BlockSub {
-	pub fn new(client: Client, sub: Sub) -> Self {
-		Self { client, sub }
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
 	}
 
-	pub async fn next(&mut self) -> Result<crate::block::Block, RpcError> {
+	pub async fn next(&mut self) -> Result<(Block, BlockRef), RpcError> {
 		let info = self.sub.next(&self.client).await?;
-		Ok(crate::block::Block::new(self.client.clone(), info.hash))
+		Ok((Block::new(self.client.clone(), info.hash), info))
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
 	}
 
 	pub fn set_block_height(&mut self, block_height: u32) {
@@ -399,8 +411,8 @@ pub struct TransactionSub<T: HasHeader + Decode> {
 }
 
 impl<T: HasHeader + Decode> TransactionSub<T> {
-	pub fn new(client: Client, sub: Sub, opts: BlockExtOptionsSimple) -> Self {
-		Self { client, sub, opts, _phantom: Default::default() }
+	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
+		Self { client, sub: Sub::new(), opts, _phantom: Default::default() }
 	}
 
 	pub async fn next(&mut self) -> Result<(Vec<BlockSignedExtrinsic<T>>, BlockRef), crate::Error> {
@@ -425,8 +437,16 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		}
 	}
 
-	pub fn set_block_height(&mut self, block_height: u32) {
-		self.sub.set_block_height(block_height);
+	pub fn set_opts(&mut self, value: BlockExtOptionsSimple) {
+		self.opts = value;
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
+	pub fn set_block_height(&mut self, value: u32) {
+		self.sub.set_block_height(value);
 	}
 
 	pub fn set_pool_rate(&mut self, value: Duration) {
@@ -447,8 +467,8 @@ pub struct ExtrinsicSub<T: HasHeader + Decode> {
 }
 
 impl<T: HasHeader + Decode> ExtrinsicSub<T> {
-	pub fn new(client: Client, sub: Sub, opts: BlockExtOptionsSimple) -> Self {
-		Self { client, sub, opts, _phantom: Default::default() }
+	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
+		Self { client, sub: Sub::new(), opts, _phantom: Default::default() }
 	}
 
 	pub async fn next(&mut self) -> Result<(Vec<BlockExtrinsic<T>>, BlockRef), crate::Error> {
@@ -473,6 +493,10 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		}
 	}
 
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
@@ -494,8 +518,8 @@ pub struct RawExtrinsicSub {
 }
 
 impl RawExtrinsicSub {
-	pub fn new(client: Client, sub: Sub, opts: BlockExtOptionsExpanded) -> Self {
-		Self { client, sub, opts }
+	pub fn new(client: Client, opts: BlockExtOptionsExpanded) -> Self {
+		Self { client, sub: Sub::new(), opts }
 	}
 
 	pub async fn next(&mut self) -> Result<(Vec<BlockRawExtrinsic>, BlockRef), crate::Error> {
@@ -520,6 +544,10 @@ impl RawExtrinsicSub {
 		}
 	}
 
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
@@ -541,8 +569,8 @@ pub struct EventsSub {
 }
 
 impl EventsSub {
-	pub fn new(client: Client, sub: Sub, opts: BlockEventsOptions) -> Self {
-		Self { client, sub, opts }
+	pub fn new(client: Client, opts: BlockEventsOptions) -> Self {
+		Self { client, sub: Sub::new(), opts }
 	}
 
 	pub async fn next(&mut self) -> Result<Vec<BlockPhaseEvent>, crate::Error> {
@@ -566,6 +594,10 @@ impl EventsSub {
 		}
 	}
 
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
@@ -583,13 +615,11 @@ impl EventsSub {
 pub struct BlockHeaderSub {
 	client: Client,
 	sub: Sub,
-	retry_on_error: bool,
 }
 
 impl BlockHeaderSub {
-	pub fn new(client: Client, sub: Sub) -> Self {
-		let retry_on_error = sub.retry_on_error();
-		Self { client, sub, retry_on_error }
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
 	}
 
 	pub async fn next(&mut self) -> Result<Option<AvailHeader>, RpcError> {
@@ -597,7 +627,7 @@ impl BlockHeaderSub {
 		let header = match self
 			.client
 			.rpc()
-			.retry_on(Some(self.retry_on_error), Some(true))
+			.retry_on(Some(self.sub.retry_on_error()), Some(true))
 			.block_header(Some(info.hash))
 			.await
 		{
@@ -610,6 +640,10 @@ impl BlockHeaderSub {
 		};
 
 		Ok(header)
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
 	}
 
 	pub fn set_block_height(&mut self, block_height: u32) {
@@ -632,15 +666,8 @@ pub struct GrandpaJustificationSub {
 }
 
 impl GrandpaJustificationSub {
-	pub fn new(client: Client, next_block_height: u32) -> Self {
-		let sub = Sub::FinalizedBlock(FinalizedBlockSub {
-			poll_rate: Duration::from_secs(3),
-			next_block_height,
-			retry_on_error: true,
-			latest_finalized_height: None,
-		});
-
-		Self { client, sub }
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
 	}
 
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
@@ -683,15 +710,8 @@ pub struct GrandpaJustificationJsonSub {
 }
 
 impl GrandpaJustificationJsonSub {
-	pub fn new(client: Client, next_block_height: u32) -> Self {
-		let sub = Sub::FinalizedBlock(FinalizedBlockSub {
-			poll_rate: Duration::from_secs(3),
-			next_block_height,
-			retry_on_error: true,
-			latest_finalized_height: None,
-		});
-
-		Self { client, sub }
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
 	}
 
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
