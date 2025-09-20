@@ -30,8 +30,8 @@ let receipt = submitted_tx.receipt(false).await?;
 let Some(receipt) = receipt else {
     panic!("Oops, looks like our transaction was dropped")
 };
-println!("Block Hash: {:?}, Block Height: {}", receipt.block_info.hash, receipt.block_info.height);
-println!("Tx Hash: {:?}, Tx Index: {}", receipt.tx_info.hash, receipt.tx_info.index);
+println!("Block Hash: {:?}, Block Height: {}", receipt.block_ref.hash, receipt.block_ref.height);
+println!("Tx Hash: {:?}, Tx Index: {}", receipt.tx_ref.hash, receipt.tx_ref.index);
 ```
 
 <!-- langtabs-end -->
@@ -46,5 +46,12 @@ match block_state {
     BlockState::Discarded => println!("Block Discarded"),
     BlockState::DoesNotExist => println!("Block Does not Exist"),
 };
+```
+<!-- langtabs-end -->
+
+## Full Example
+<!-- langtabs-start -->
+```rust
+{{#include ../../../examples/submission_api/src/main.rs}}
 ```
 <!-- langtabs-end -->

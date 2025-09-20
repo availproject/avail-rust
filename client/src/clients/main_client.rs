@@ -60,11 +60,15 @@ impl Client {
 	}
 
 	#[cfg(feature = "tracing")]
-	pub fn enable_tracing(enable_json_format: bool) {
+	pub fn toggle_tracing(toggle: bool, json_format: bool) {
 		use tracing_subscriber::util::SubscriberInitExt;
 
-		let builder = tracing_subscriber::fmt::SubscriberBuilder::default();
-		if enable_json_format {
+		let mut builder = tracing_subscriber::fmt::SubscriberBuilder::default();
+		if !toggle {
+			builder = builder.with_max_level(tracing_subscriber::filter::LevelFilter::OFF);
+		}
+
+		if json_format {
 			let builder = builder.json();
 			builder.finish().init();
 		} else {

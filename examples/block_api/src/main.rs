@@ -6,7 +6,8 @@ use avail_rust_client::{
 	prelude::*,
 };
 
-pub async fn example() -> Result<(), Error> {
+#[tokio::main]
+pub async fn main() -> Result<(), Error> {
 	// Establishing a connection
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 
@@ -14,7 +15,7 @@ pub async fn example() -> Result<(), Error> {
 	let block = client.block(1913231);
 	// or -> let block = Block::new(client.clone(), 1913231);
 
-	// TODO
+	// Fetching all transactions (signed extrinsics) of type DataAvailability::SubmitData
 	let all_submit_data = block.tx().all::<SubmitData>(Default::default()).await?;
 	for tx in all_submit_data {
 		// Displaying transaction general and specific information
@@ -33,7 +34,7 @@ pub async fn example() -> Result<(), Error> {
 	   Who: 5EHoP9SFQ9N1RrWAeWuLQG2ngHwChgSCNgtUm31p5XpjhXDq, Data Hash: 0xe069e11254ed2e6958acdc8f9f79287e5046c1c4eb650eeec409bbd79a0f45d1
 	*/
 
-	// TODO
+	// Fetching extrinsic (signed or unsigned) of type Timestamp::Set at index 0
 	let first_extrinsic = block.ext().get::<Set>(0).await?;
 	if let Some(ext) = first_extrinsic {
 		// Displaying extrinsic general and specific information
@@ -48,7 +49,8 @@ pub async fn example() -> Result<(), Error> {
 	   App ID: None, SS58 Address: None, Timestamp: 1758361080000
 	*/
 
-	// TODO
+	// Fetching all extrinsics (singed or unsigned) in raw format.
+	// Raw format means that they are not decoded and we need to do it manually.
 	let all_extrinsics = block.raw_ext().all(Default::default()).await?;
 	for raw_ext in all_extrinsics {
 		let id = (raw_ext.metadata.pallet_id, raw_ext.metadata.variant_id);
@@ -56,6 +58,7 @@ pub async fn example() -> Result<(), Error> {
 			println!("Found submit data transaction");
 
 			// We can convert Block Raw Extrinsic directly to Block Transaction...
+
 			let tx = BlockTransaction::<SubmitData>::try_from(raw_ext.clone()).expect("Should be decodable");
 			let (app_id, address, data_len) = (tx.app_id(), tx.ss58_address(), tx.call.data.len());
 			println!("App ID: {}, SS58 Address: {:?}, Data Length: {} bytes", app_id, address, data_len);
@@ -80,7 +83,7 @@ pub async fn example() -> Result<(), Error> {
 		Data Length: 262194 bytes
 	*/
 
-	// TODO
+	// Fetching extrinsic related events
 	let ext_events = block.events().ext(1).await?.expect("Should be there");
 	let event = ext_events.first::<DataSubmitted>().expect("Should be present");
 	println!("Who: {}, Data Hash: {:?}", event.who, event.data_hash);
@@ -110,7 +113,8 @@ pub async fn example() -> Result<(), Error> {
 		Event Pallet Id: 0, Variant Id: 0, Index: 7, Data len: 36 bytes
 	*/
 
-	// TODO
+	// Fetching all events from a block.
+	// The events are in raw format which means that they are not decoded.
 	let block_events = block.events().block(Default::default()).await?;
 	for phase_event in &block_events {
 		// Displaying phase
@@ -151,7 +155,7 @@ pub async fn example() -> Result<(), Error> {
 		Event Pallet Id: 0, Variant Id: 0, Index: 15
 	*/
 
-	// TODO
+	// Fetching grandpa justification
 	let justification = block.justification().await?;
 	if justification.is_some() {
 		println!("Justification was found at block: {}", 1913231)

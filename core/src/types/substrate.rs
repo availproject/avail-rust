@@ -87,6 +87,28 @@ impl From<AccountId> for MultiAddress {
 	}
 }
 
+impl TryFrom<MultiAddress> for AccountId {
+	type Error = String;
+
+	fn try_from(value: MultiAddress) -> Result<Self, Self::Error> {
+		match value {
+			MultiAddress::Id(i) => Ok(i),
+			_ => Err("MultiAddress is not of type ID.".into()),
+		}
+	}
+}
+
+impl TryFrom<&MultiAddress> for AccountId {
+	type Error = String;
+
+	fn try_from(value: &MultiAddress) -> Result<Self, Self::Error> {
+		match value {
+			MultiAddress::Id(i) => Ok(i.clone()),
+			_ => Err("MultiAddress is not of type ID.".into()),
+		}
+	}
+}
+
 /// The base fee and adjusted weight and length fees constitute the _inclusion fee_.
 #[derive(Clone, Debug, PartialEq, Deserialize, Decode)]
 #[serde(rename_all = "camelCase")]

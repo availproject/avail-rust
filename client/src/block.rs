@@ -412,7 +412,11 @@ impl BlockEvents {
 		Ok(Some(ExtrinsicEvents::new(result)))
 	}
 
-	pub async fn block(&self, opts: BlockEventsOptions) -> Result<Vec<rpc::BlockPhaseEvent>, Error> {
+	pub async fn block(&self, mut opts: BlockEventsOptions) -> Result<Vec<rpc::BlockPhaseEvent>, Error> {
+		if opts.enable_encoding.is_none() {
+			opts.enable_encoding = Some(true);
+		}
+
 		self.client
 			.rpc()
 			.system_fetch_events(self.block_id.clone(), opts.into())
