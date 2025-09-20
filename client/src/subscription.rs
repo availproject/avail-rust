@@ -2,7 +2,7 @@ use crate::{
 	AvailHeader, Client,
 	block::{
 		Block, BlockEvents, BlockEventsOptions, BlockExtOptionsExpanded, BlockExtOptionsSimple, BlockExtrinsic,
-		BlockRawExtrinsic, BlockSignedExtrinsic, BlockWithExt, BlockWithRawExt, BlockWithTx,
+		BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt, BlockWithTx,
 	},
 	platform::sleep,
 };
@@ -414,7 +414,7 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		Self { client, sub: Sub::new(), opts, _phantom: Default::default() }
 	}
 
-	pub async fn next(&mut self) -> Result<(Vec<BlockSignedExtrinsic<T>>, BlockRef), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<BlockTransaction<T>>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
 			let block = BlockWithTx::new(self.client.clone(), info.hash);

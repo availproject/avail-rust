@@ -32,8 +32,7 @@ pub use avail_rust_core::{
 	TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
 };
 pub use block::{
-	Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockSignedExtrinsic, BlockWithExt, BlockWithRawExt,
-	BlockWithTx,
+	Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt, BlockWithTx,
 };
 pub use error::{Error, UserError};
 pub use primitive_types::{H256, U256};

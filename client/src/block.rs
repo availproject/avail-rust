@@ -1,31 +1,56 @@
 use crate::{Client, Error, UserError};
 use avail_rust_core::{
-	EncodeSelector, Extrinsic, ExtrinsicSignature, H256, HasHeader, MultiAddress, RpcError, TransactionEventDecodable,
-	avail,
+	EncodeSelector, Extrinsic, ExtrinsicSignature, H256, HasHeader, HashNumber, MultiAddress, RpcError,
+	TransactionEventDecodable, avail,
+	grandpa::GrandpaJustification,
 	rpc::{self, ExtrinsicFilter, SignerPayload},
 	types::HashStringNumber,
 };
 use codec::Decode;
 
 pub struct Block {
-	pub tx: BlockWithTx,
-	pub ext: BlockWithExt,
-	pub raw_ext: BlockWithRawExt,
-	pub event: BlockEvents,
+	client: Client,
+	block_id: HashStringNumber,
 }
 
 impl Block {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		fn inner(client: Client, block_id: HashStringNumber) -> Block {
-			Block {
-				tx: BlockWithTx::new(client.clone(), block_id.clone()),
-				ext: BlockWithExt::new(client.clone(), block_id.clone()),
-				raw_ext: BlockWithRawExt::new(client.clone(), block_id.clone()),
-				event: BlockEvents::new(client.clone(), block_id.clone()),
-			}
-		}
+		Block { client, block_id: block_id.into() }
+	}
 
-		inner(client, block_id.into())
+	pub fn tx(&self) -> BlockWithTx {
+		BlockWithTx::new(self.client.clone(), self.block_id.clone())
+	}
+
+	pub fn ext(&self) -> BlockWithExt {
+		BlockWithExt::new(self.client.clone(), self.block_id.clone())
+	}
+
+	pub fn raw_ext(&self) -> BlockWithRawExt {
+		BlockWithRawExt::new(self.client.clone(), self.block_id.clone())
+	}
+
+	pub fn events(&self) -> BlockEvents {
+		BlockEvents::new(self.client.clone(), self.block_id.clone())
+	}
+
+	pub async fn justification(&self) -> Result<Option<GrandpaJustification>, Error> {
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let at = match block_id {
+			HashNumber::Hash(h) => self
+				.client
+				.rpc()
+				.block_height(h)
+				.await?
+				.ok_or(Error::Other("Failed to find block from the provided hash".into()))?,
+			HashNumber::Number(n) => n,
+		};
+
+		self.client
+			.rpc()
+			.grandpa_block_justification(at)
+			.await
+			.map_err(|e| e.into())
 	}
 }
 
@@ -68,23 +93,15 @@ impl BlockWithRawExt {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
 
-		let mut result = self
-			.client
-			.rpc()
-			.system_fetch_extrinsics(self.block_id.clone(), opts.into())
-			.await?;
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let mut result = self.client.rpc().system_fetch_extrinsics(block_id, opts.into()).await?;
 
 		let Some(first) = result.first_mut() else {
 			return Ok(None);
 		};
 
-		let metadata = BlockExtrinsicMetadata::new(
-			first.ext_hash,
-			first.ext_index,
-			first.pallet_id,
-			first.variant_id,
-			self.block_id.clone(),
-		);
+		let metadata =
+			BlockExtrinsicMetadata::new(first.ext_hash, first.ext_index, first.pallet_id, first.variant_id, block_id);
 		let ext = BlockRawExtrinsic::new(first.data.take(), metadata, first.signer_payload.take());
 
 		Ok(Some(ext))
@@ -95,23 +112,15 @@ impl BlockWithRawExt {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
 
-		let mut result = self
-			.client
-			.rpc()
-			.system_fetch_extrinsics(self.block_id.clone(), opts.into())
-			.await?;
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let mut result = self.client.rpc().system_fetch_extrinsics(block_id, opts.into()).await?;
 
 		let Some(last) = result.last_mut() else {
 			return Ok(None);
 		};
 
-		let metadata = BlockExtrinsicMetadata::new(
-			last.ext_hash,
-			last.ext_index,
-			last.pallet_id,
-			last.variant_id,
-			self.block_id.clone(),
-		);
+		let metadata =
+			BlockExtrinsicMetadata::new(last.ext_hash, last.ext_index, last.pallet_id, last.variant_id, block_id);
 		let ext = BlockRawExtrinsic::new(last.data.take(), metadata, last.signer_payload.take());
 
 		Ok(Some(ext))
@@ -122,22 +131,14 @@ impl BlockWithRawExt {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
 
-		let result = self
-			.client
-			.rpc()
-			.system_fetch_extrinsics(self.block_id.clone(), opts.into())
-			.await?;
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let result = self.client.rpc().system_fetch_extrinsics(block_id, opts.into()).await?;
 
 		let result = result
 			.into_iter()
 			.map(|x| {
-				let metadata = BlockExtrinsicMetadata::new(
-					x.ext_hash,
-					x.ext_index,
-					x.pallet_id,
-					x.variant_id,
-					self.block_id.clone(),
-				);
+				let metadata =
+					BlockExtrinsicMetadata::new(x.ext_hash, x.ext_index, x.pallet_id, x.variant_id, block_id);
 				BlockRawExtrinsic::new(x.data, metadata, x.signer_payload)
 			})
 			.collect();
@@ -293,11 +294,11 @@ impl BlockWithTx {
 	pub async fn get<T: HasHeader + Decode>(
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
-	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+	) -> Result<Option<BlockTransaction<T>>, Error> {
 		async fn inner<T: HasHeader + Decode>(
 			s: &BlockWithTx,
 			extrinsic_id: HashStringNumber,
-		) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+		) -> Result<Option<BlockTransaction<T>>, Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
 				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
@@ -314,7 +315,7 @@ impl BlockWithTx {
 	pub async fn first<T: HasHeader + Decode>(
 		&self,
 		opts: BlockExtOptionsSimple,
-	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+	) -> Result<Option<BlockTransaction<T>>, Error> {
 		let ext = self.ext.first(opts).await?;
 		let Some(ext) = ext else {
 			return Ok(None);
@@ -324,14 +325,14 @@ impl BlockWithTx {
 			return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
 		};
 
-		let ext = BlockSignedExtrinsic::new(signature, ext.call, ext.metadata);
+		let ext = BlockTransaction::new(signature, ext.call, ext.metadata);
 		Ok(Some(ext))
 	}
 
 	pub async fn last<T: HasHeader + Decode>(
 		&self,
 		opts: BlockExtOptionsSimple,
-	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+	) -> Result<Option<BlockTransaction<T>>, Error> {
 		let ext = self.ext.last(opts).await?;
 		let Some(ext) = ext else {
 			return Ok(None);
@@ -341,21 +342,21 @@ impl BlockWithTx {
 			return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
 		};
 
-		let ext = BlockSignedExtrinsic::new(signature, ext.call, ext.metadata);
+		let ext = BlockTransaction::new(signature, ext.call, ext.metadata);
 		Ok(Some(ext))
 	}
 
 	pub async fn all<T: HasHeader + Decode>(
 		&self,
 		opts: BlockExtOptionsSimple,
-	) -> Result<Vec<BlockSignedExtrinsic<T>>, Error> {
+	) -> Result<Vec<BlockTransaction<T>>, Error> {
 		let all = self.ext.all::<T>(opts).await?;
 		let mut result = Vec::with_capacity(all.len());
 		for ext in all {
 			let Some(signature) = ext.signature else {
 				return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
 			};
-			result.push(BlockSignedExtrinsic::new(signature, ext.call, ext.metadata));
+			result.push(BlockTransaction::new(signature, ext.call, ext.metadata));
 		}
 
 		Ok(result)
@@ -483,11 +484,11 @@ pub struct BlockExtrinsicMetadata {
 	pub ext_index: u32,
 	pub pallet_id: u8,
 	pub variant_id: u8,
-	pub block_id: HashStringNumber,
+	pub block_id: HashNumber,
 }
 
 impl BlockExtrinsicMetadata {
-	pub fn new(ext_hash: H256, ext_index: u32, pallet_id: u8, variant_id: u8, block_id: HashStringNumber) -> Self {
+	pub fn new(ext_hash: H256, ext_index: u32, pallet_id: u8, variant_id: u8, block_id: HashNumber) -> Self {
 		Self { ext_hash, ext_index, pallet_id, variant_id, block_id }
 	}
 }
@@ -600,20 +601,21 @@ impl<T: HasHeader + Decode> TryFrom<BlockRawExtrinsic> for BlockExtrinsic<T> {
 	}
 }
 
+/// Block Transaction is the same as Block Signed Extrinsic
 #[derive(Debug, Clone)]
-pub struct BlockSignedExtrinsic<T: HasHeader + Decode> {
+pub struct BlockTransaction<T: HasHeader + Decode> {
 	pub signature: ExtrinsicSignature,
 	pub call: T,
 	pub metadata: BlockExtrinsicMetadata,
 }
 
-impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
+impl<T: HasHeader + Decode> BlockTransaction<T> {
 	pub fn new(signature: ExtrinsicSignature, call: T, metadata: BlockExtrinsicMetadata) -> Self {
 		Self { signature, call, metadata }
 	}
 
 	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, Error> {
-		let events = BlockEvents::new(client, self.metadata.block_id.clone())
+		let events = BlockEvents::new(client, self.metadata.block_id)
 			.ext(self.ext_index())
 			.await?;
 		let Some(events) = events else {
@@ -651,7 +653,7 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 	}
 }
 
-impl<T: HasHeader + Decode> TryFrom<BlockExtrinsic<T>> for BlockSignedExtrinsic<T> {
+impl<T: HasHeader + Decode> TryFrom<BlockExtrinsic<T>> for BlockTransaction<T> {
 	type Error = String;
 
 	fn try_from(value: BlockExtrinsic<T>) -> Result<Self, Self::Error> {
@@ -663,7 +665,7 @@ impl<T: HasHeader + Decode> TryFrom<BlockExtrinsic<T>> for BlockSignedExtrinsic<
 	}
 }
 
-impl<T: HasHeader + Decode> TryFrom<BlockRawExtrinsic> for BlockSignedExtrinsic<T> {
+impl<T: HasHeader + Decode> TryFrom<BlockRawExtrinsic> for BlockTransaction<T> {
 	type Error = String;
 
 	fn try_from(value: BlockRawExtrinsic) -> Result<Self, Self::Error> {

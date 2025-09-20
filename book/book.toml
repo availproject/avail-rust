@@ -11,3 +11,6 @@ command = "mdbook-langtabs"
 [output.html]
 additional-css = ["langtabs.css"]
 additional-js = ["langtabs.js"]
+
+[output.html.playground]
+runnable = false

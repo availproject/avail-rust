@@ -42,7 +42,7 @@ async fn main() -> Result<(), Error> {
 
 	// Decoding batch call
 	let block = client.block(receipt.block_ref);
-	let tx: block::BlockSignedExtrinsic<UtilityBatchAll> = block
+	let tx: block::BlockTransaction<UtilityBatchAll> = block
 		.tx
 		.get::<UtilityBatchAll>(receipt.tx_ref)
 		.await?

@@ -1,7 +1,7 @@
 use crate::{
 	Client, Error, UserError,
 	block::{
-		Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockSignedExtrinsic, BlockWithExt, BlockWithRawExt,
+		Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt,
 		BlockWithTx, ExtrinsicEvents,
 	},
 	subscription::Sub,
@@ -141,7 +141,7 @@ impl TransactionReceipt {
 		self.client.rpc().block_state(self.block_info).await
 	}
 
-	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockSignedExtrinsic<T>, Error> {
+	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockTransaction<T>, Error> {
 		let block = BlockWithTx::new(self.client.clone(), self.block_info.height);
 		let tx = block.get(self.tx_info.index).await?;
 		let Some(tx) = tx else {
@@ -239,7 +239,7 @@ impl Utils {
 		};
 
 		let block = Block::new(client.clone(), block_ref.hash);
-		let ext = block.raw_ext.get(tx_hash, EncodeSelector::None).await?;
+		let ext = block.raw_ext().get(tx_hash, EncodeSelector::None).await?;
 
 		let Some(ext) = ext else {
 			return Ok(None);
@@ -290,7 +290,7 @@ impl Utils {
 			}
 			if state_nonce == 0 {
 				let block = Block::new(client.clone(), info.hash);
-				let ext = block.raw_ext.get(tx_hash, EncodeSelector::None).await?;
+				let ext = block.raw_ext().get(tx_hash, EncodeSelector::None).await?;
 				if ext.is_some() {
 					trace_new_block(nonce, state_nonce, account_id, info, true);
 					return Ok(Some(info));

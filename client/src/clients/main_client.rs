@@ -32,13 +32,17 @@ pub struct Client {
 
 impl Client {
 	#[cfg(feature = "reqwest")]
-	pub async fn new(endpoint: &str) -> Result<Client, RpcError> {
+	pub async fn new(endpoint: &str) -> Result<Client, Error> {
 		use super::reqwest_client::ReqwestClient;
 
-		let rpc_client = ReqwestClient::new(endpoint);
-		let rpc_client = RpcClient::new(rpc_client);
+		let op = async || -> Result<Client, Error> {
+			let rpc_client = ReqwestClient::new(endpoint);
+			let rpc_client = RpcClient::new(rpc_client);
 
-		Self::new_rpc_client(rpc_client).await
+			Self::new_rpc_client(rpc_client).await.map_err(|e| e.into())
+		};
+
+		with_retry_on_error(op, true, "").await
 	}
 
 	pub async fn new_rpc_client(rpc_client: RpcClient) -> Result<Client, RpcError> {

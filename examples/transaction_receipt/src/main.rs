@@ -1,6 +1,6 @@
 use avail::data_availability::{events::DataSubmitted, tx::SubmitData};
 use avail_rust_client::{
-	block::{BlockExtrinsic, BlockRawExtrinsic, BlockSignedExtrinsic},
+	block::{BlockExtrinsic, BlockRawExtrinsic, BlockTransaction},
 	prelude::*,
 };
 
@@ -33,7 +33,7 @@ async fn main() -> Result<(), ClientError> {
 	//		- This is the same as 2., but discards non Extrinsic Call related information.
 	{
 		// Transaction (Signed Extrinsic) - Extrinsic Signature, Decoded Extrinsic Call, Metadata
-		let _: BlockSignedExtrinsic<SubmitData> = receipt.tx().await?;
+		let _: BlockTransaction<SubmitData> = receipt.tx().await?;
 
 		// Extrinsic (might be Signed) - [Optional] Extrinsic Signature, Decoded Extrinsic Call, Metadata
 		let _: BlockExtrinsic<SubmitData> = receipt.ext().await?;
