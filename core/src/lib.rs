@@ -22,6 +22,7 @@ pub use types::{
 	AccountId, AccountIdLike, BlakeTwo256, BlockHash, BlockRef, Era, ExtrinsicExtra, ExtrinsicSignature, H256,
 	HashNumber, MultiAddress, MultiSignature, U256, pallets as avail,
 };
+pub use utils::multi_account_id;
 
 pub mod ext {
 	pub use codec;

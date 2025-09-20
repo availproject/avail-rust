@@ -420,7 +420,8 @@ impl Multisig {
 		) -> SubmittableTransaction {
 			let other_signatories: Result<Vec<AccountId>, _> =
 				other_signatories.into_iter().map(|x| x.try_into()).collect();
-			let other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+			let mut other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+			other_signatories.sort_by(|x, y| x.cmp(&y));
 
 			let call_hash: H256 = call_hash.try_into().expect("Malformed string is passed for H256");
 
@@ -457,7 +458,8 @@ impl Multisig {
 		) -> SubmittableTransaction {
 			let other_signatories: Result<Vec<AccountId>, _> =
 				other_signatories.into_iter().map(|x| x.try_into()).collect();
-			let other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+			let mut other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+			other_signatories.sort_by(|x, y| x.cmp(&y));
 
 			let value = avail::multisig::tx::AsMulti {
 				threshold,
@@ -481,7 +483,8 @@ impl Multisig {
 		fn inner(client: Client, other_signatories: Vec<AccountIdLike>, call: ExtrinsicCall) -> SubmittableTransaction {
 			let other_signatories: Result<Vec<AccountId>, _> =
 				other_signatories.into_iter().map(|x| x.try_into()).collect();
-			let other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+			let mut other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+			other_signatories.sort_by(|x, y| x.cmp(&y));
 
 			let value = avail::multisig::tx::AsMultiThreshold1 { other_signatories, call };
 			SubmittableTransaction::from_encodable(client, value)
@@ -507,7 +510,8 @@ impl Multisig {
 		) -> SubmittableTransaction {
 			let other_signatories: Result<Vec<AccountId>, _> =
 				other_signatories.into_iter().map(|x| x.try_into()).collect();
-			let other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+			let mut other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
+			other_signatories.sort_by(|x, y| x.cmp(&y));
 
 			let call_hash: H256 = call_hash.try_into().expect("Malformed string is passed for H256");
 

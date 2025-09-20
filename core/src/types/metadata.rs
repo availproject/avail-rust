@@ -28,19 +28,19 @@ impl From<BlockRef> for H256 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub struct TxRef {
+pub struct TransactionRef {
 	pub hash: H256,
 	pub index: u32,
 }
 
-impl From<(H256, u32)> for TxRef {
+impl From<(H256, u32)> for TransactionRef {
 	fn from(value: (H256, u32)) -> Self {
 		Self { hash: value.0, index: value.1 }
 	}
 }
 
-impl From<TxRef> for H256 {
-	fn from(value: TxRef) -> Self {
+impl From<TransactionRef> for H256 {
+	fn from(value: TransactionRef) -> Self {
 		value.hash
 	}
 }
@@ -57,8 +57,8 @@ impl From<BlockRef> for HashNumber {
 	}
 }
 
-impl From<TxRef> for HashNumber {
-	fn from(value: TxRef) -> Self {
+impl From<TransactionRef> for HashNumber {
+	fn from(value: TransactionRef) -> Self {
 		Self::Number(value.index)
 	}
 }
@@ -188,8 +188,8 @@ impl From<HashNumber> for HashStringNumber {
 	}
 }
 
-impl From<TxRef> for HashStringNumber {
-	fn from(value: TxRef) -> Self {
+impl From<TransactionRef> for HashStringNumber {
+	fn from(value: TransactionRef) -> Self {
 		Self::Number(value.index)
 	}
 }

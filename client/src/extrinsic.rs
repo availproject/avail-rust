@@ -13,8 +13,8 @@ use avail_rust_core::{
 	ext::codec::Encode,
 	substrate::extrinsic::{ExtrinsicAdditional, ExtrinsicCall, GenericExtrinsic},
 	types::{
-		metadata::{HashString, TxRef},
-		substrate::FeeDetails,
+		metadata::{HashString, TransactionRef},
+		substrate::{FeeDetails, RuntimeDispatchInfo},
 	},
 };
 use codec::Decode;
@@ -65,9 +65,18 @@ impl SubmittableTransaction {
 			.await
 	}
 
+	pub async fn call_info(&self, at: Option<H256>) -> Result<RuntimeDispatchInfo, RpcError> {
+		let call = self.call.encode();
+		self.client.rpc().transaction_payment_query_call_info(call, at).await
+	}
+
 	pub fn from_encodable<T: HasHeader + Encode>(client: Client, value: T) -> SubmittableTransaction {
 		let call = ExtrinsicCall::new(T::HEADER_INDEX.0, T::HEADER_INDEX.1, value.encode());
 		SubmittableTransaction::new(client, call)
+	}
+
+	pub fn call_hash(&self) -> [u8; 32] {
+		self.call.hash()
 	}
 }
 
@@ -128,22 +137,22 @@ pub enum BlockState {
 #[derive(Clone)]
 pub struct TransactionReceipt {
 	client: Client,
-	pub block_info: BlockRef,
-	pub tx_info: TxRef,
+	pub block_ref: BlockRef,
+	pub tx_ref: TransactionRef,
 }
 
 impl TransactionReceipt {
-	pub fn new(client: Client, block: BlockRef, tx: TxRef) -> Self {
-		Self { client, block_info: block, tx_info: tx }
+	pub fn new(client: Client, block: BlockRef, tx: TransactionRef) -> Self {
+		Self { client, block_ref: block, tx_ref: tx }
 	}
 
 	pub async fn block_state(&self) -> Result<BlockState, RpcError> {
-		self.client.rpc().block_state(self.block_info).await
+		self.client.rpc().block_state(self.block_ref).await
 	}
 
 	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockTransaction<T>, Error> {
-		let block = BlockWithTx::new(self.client.clone(), self.block_info.height);
-		let tx = block.get(self.tx_info.index).await?;
+		let block = BlockWithTx::new(self.client.clone(), self.block_ref.height);
+		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
 			return Err(RpcError::ExpectedData("No transaction was found.".into()).into());
 		};
@@ -152,8 +161,8 @@ impl TransactionReceipt {
 	}
 
 	pub async fn ext<T: HasHeader + Decode>(&self) -> Result<BlockExtrinsic<T>, Error> {
-		let block = BlockWithExt::new(self.client.clone(), self.block_info.height);
-		let ext: Option<BlockExtrinsic<T>> = block.get(self.tx_info.index).await?;
+		let block = BlockWithExt::new(self.client.clone(), self.block_ref.height);
+		let ext: Option<BlockExtrinsic<T>> = block.get(self.tx_ref.index).await?;
 		let Some(ext) = ext else {
 			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
 		};
@@ -162,8 +171,8 @@ impl TransactionReceipt {
 	}
 
 	pub async fn call<T: HasHeader + Decode>(&self) -> Result<T, Error> {
-		let block = BlockWithExt::new(self.client.clone(), self.block_info.height);
-		let tx = block.get(self.tx_info.index).await?;
+		let block = BlockWithExt::new(self.client.clone(), self.block_ref.height);
+		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
 			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
 		};
@@ -172,8 +181,8 @@ impl TransactionReceipt {
 	}
 
 	pub async fn raw_ext(&self, encode_as: EncodeSelector) -> Result<BlockRawExtrinsic, Error> {
-		let block = BlockWithRawExt::new(self.client.clone(), self.block_info.height);
-		let ext = block.get(self.tx_info.index, encode_as).await?;
+		let block = BlockWithRawExt::new(self.client.clone(), self.block_ref.height);
+		let ext = block.get(self.tx_ref.index, encode_as).await?;
 		let Some(ext) = ext else {
 			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
 		};
@@ -182,8 +191,8 @@ impl TransactionReceipt {
 	}
 
 	pub async fn events(&self) -> Result<ExtrinsicEvents, Error> {
-		let block = BlockEvents::new(self.client.clone(), self.block_info.hash);
-		let events = block.ext(self.tx_info.index).await?;
+		let block = BlockEvents::new(self.client.clone(), self.block_ref.hash);
+		let events = block.ext(self.tx_ref.index).await?;
 		let Some(events) = events else {
 			return Err(RpcError::ExpectedData("No events was found.".into()).into());
 		};
@@ -245,7 +254,7 @@ impl Utils {
 			return Ok(None);
 		};
 
-		let tx_ref = TxRef::from((ext.ext_hash(), ext.ext_index()));
+		let tx_ref = TransactionRef::from((ext.ext_hash(), ext.ext_index()));
 		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref)))
 	}
 

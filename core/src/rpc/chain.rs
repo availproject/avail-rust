@@ -1,5 +1,5 @@
 use super::{AvailHeader, Error};
-use crate::types::metadata::TxRef;
+use crate::types::metadata::TransactionRef;
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer};
 use subxt_core::config::{Hasher, substrate::BlakeTwo256};
@@ -23,10 +23,10 @@ pub struct Block {
 }
 
 impl Block {
-	pub fn has_transaction(&self, tx_hash: H256) -> Option<TxRef> {
+	pub fn has_transaction(&self, tx_hash: H256) -> Option<TransactionRef> {
 		for (i, tx) in self.extrinsics.iter().enumerate() {
 			if BlakeTwo256::hash(tx) == tx_hash {
-				return Some(TxRef::from((tx_hash, i as u32)));
+				return Some(TransactionRef::from((tx_hash, i as u32)));
 			}
 		}
 

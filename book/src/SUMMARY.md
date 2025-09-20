@@ -15,6 +15,6 @@
 - [Examples](./chapter_1.md)
     - [Batching](./chapter_1.md)
     - [Parallel Submission](./chapter_1.md)
-    - [Using Multisig](./chapter_1.md)
+    - [Using Multisig](./examples/multisig.md)
     - [Using Proxy](./chapter_1.md)
     - [Interacting With Nomination Pools](./chapter_1.md)

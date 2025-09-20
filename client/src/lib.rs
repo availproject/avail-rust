@@ -13,23 +13,20 @@ pub mod transactions;
 pub use block::{ExtrinsicEvent, ExtrinsicEvents};
 pub use clients::Client;
 pub use constants::{
-	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, TURING_ENDPOINT, TURING_WS_ENDPOINT,
+	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, ONE_AVAIL, ONE_HUNDRED_AVAIL,
+	ONE_THOUSAND_AVAIL, TEN_AVAIL, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
 pub use extensions::{AccountIdExt, H256Ext, KeypairExt, SecretUriExt};
 pub use extrinsic::{BlockState, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
 pub use transaction_options::{MortalityOption, Options, RefinedMortality, RefinedOptions};
 
 pub use avail_rust_core::{
-	self,
+	self, AccountId, AvailHeader, BlockRef, CompactDataLookup, EncodeSelector, Extrinsic, ExtrinsicCall,
+	ExtrinsicExtra, ExtrinsicSignature, HasHeader, HashNumber, HeaderExtension, KateCommitment, MultiAddress,
+	RawExtrinsic, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator,
+	StorageValue, TransactionDecodable, TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
 	ext::{codec, primitive_types, scale_info, subxt_core, subxt_rpcs, subxt_signer},
-};
-
-// Exporting types from ext libraries
-pub use avail_rust_core::{
-	AccountId, AvailHeader, BlockRef, CompactDataLookup, EncodeSelector, Extrinsic, ExtrinsicExtra, ExtrinsicSignature,
-	HasHeader, HashNumber, HeaderExtension, KateCommitment, MultiAddress, RawExtrinsic, StorageDoubleMap,
-	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue, TransactionDecodable,
-	TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
+	multi_account_id,
 };
 pub use block::{
 	Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt, BlockWithTx,

@@ -1,6 +1,7 @@
 use crate::{
 	HasHeader,
 	types::{AccountId, ExtrinsicExtra, ExtrinsicSignature, H256, MultiAddress, MultiSignature},
+	utils::decode_already_decoded,
 };
 use codec::{Compact, Decode, Encode};
 use serde::{Deserialize, Serialize};
@@ -50,6 +51,11 @@ impl ExtrinsicCall {
 	pub fn new(pallet_id: u8, variant_id: u8, data: Vec<u8>) -> Self {
 		Self { pallet_id, variant_id, data }
 	}
+
+	pub fn hash(&self) -> [u8; 32] {
+		let call_vec: Vec<u8> = self.encode();
+		sp_crypto_hashing::blake2_256(&call_vec)
+	}
 }
 impl Encode for ExtrinsicCall {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -62,7 +68,7 @@ impl Decode for ExtrinsicCall {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let pallet_id = Decode::decode(input)?;
 		let variant_id = Decode::decode(input)?;
-		let data = crate::utils::decode_already_decoded(input)?;
+		let data = decode_already_decoded(input)?;
 		Ok(Self { pallet_id, variant_id, data })
 	}
 }
@@ -74,6 +80,54 @@ impl<T: HasHeader + Encode> From<&T> for ExtrinsicCall {
 			variant_id: T::HEADER_INDEX.1,
 			data: value.encode(),
 		}
+	}
+}
+
+impl TryFrom<String> for ExtrinsicCall {
+	type Error = String;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_str())
+	}
+}
+
+impl TryFrom<&str> for ExtrinsicCall {
+	type Error = String;
+
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		let decoded = const_hex::decode(value.trim_start_matches("0x")).map_err(|e| e.to_string())?;
+		Self::try_from(decoded.as_slice())
+	}
+}
+
+impl TryFrom<Vec<u8>> for ExtrinsicCall {
+	type Error = String;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_slice())
+	}
+}
+
+impl TryFrom<&Vec<u8>> for ExtrinsicCall {
+	type Error = String;
+
+	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_slice())
+	}
+}
+
+impl TryFrom<&[u8]> for ExtrinsicCall {
+	type Error = String;
+
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		if value.len() < 2 {
+			return Err("Failed to convert array to Extrinsic Call. Not Enough data".into());
+		}
+		if value.len() == 2 {
+			return Ok(ExtrinsicCall::new(value[0], value[1], Vec::new()));
+		}
+
+		Ok(ExtrinsicCall::new(value[0], value[1], value[2..].to_vec()))
 	}
 }
 
