@@ -101,6 +101,14 @@ pub async fn example() -> Result<(), Error> {
 			println!("Who: {}, Data Hash: {:?}", data_submitted.who, data_submitted.data_hash)
 		}
 	}
+	/*
+		Who: 5Ck9e4wm38Kdmap82aYrSeJ7MKfxXgagqfFdUjCpHXbFMjst, Data Hash: 0x50dd8f9b2b95a2809ae375a60599feaa90f3be8461a510363f5c0e03b724a41e
+		Event Pallet Id: 6, Variant Id: 7, Index: 3, Data len: 100 bytes
+		Event Pallet Id: 6, Variant Id: 7, Index: 4, Data len: 100 bytes
+		Event Pallet Id: 6, Variant Id: 7, Index: 5, Data len: 100 bytes
+		Event Pallet Id: 7, Variant Id: 0, Index: 6, Data len: 132 bytes
+		Event Pallet Id: 0, Variant Id: 0, Index: 7, Data len: 36 bytes
+	*/
 
 	// TODO
 	let block_events = block.events().block(Default::default()).await?;
@@ -120,6 +128,28 @@ pub async fn example() -> Result<(), Error> {
 			}
 		}
 	}
+	/*
+		Phase: ApplyExtrinsic(0)
+		Event Pallet Id: 0, Variant Id: 0, Index: 0
+		Phase: ApplyExtrinsic(1)
+		Event Pallet Id: 6, Variant Id: 8, Index: 1
+		Event Pallet Id: 29, Variant Id: 1, Index: 2
+		Event Pallet Id: 6, Variant Id: 7, Index: 3
+		Event Pallet Id: 6, Variant Id: 7, Index: 4
+		Event Pallet Id: 6, Variant Id: 7, Index: 5
+		Event Pallet Id: 7, Variant Id: 0, Index: 6
+		Event Pallet Id: 0, Variant Id: 0, Index: 7
+		Phase: ApplyExtrinsic(2)
+		Event Pallet Id: 6, Variant Id: 8, Index: 8
+		Event Pallet Id: 29, Variant Id: 1, Index: 9
+		Event Pallet Id: 6, Variant Id: 7, Index: 10
+		Event Pallet Id: 6, Variant Id: 7, Index: 11
+		Event Pallet Id: 6, Variant Id: 7, Index: 12
+		Event Pallet Id: 7, Variant Id: 0, Index: 13
+		Event Pallet Id: 0, Variant Id: 0, Index: 14
+		Phase: ApplyExtrinsic(3)
+		Event Pallet Id: 0, Variant Id: 0, Index: 15
+	*/
 
 	// TODO
 	let justification = block.justification().await?;
@@ -136,6 +166,10 @@ pub async fn example() -> Result<(), Error> {
 	} else {
 		println!("No justification was found at block: {}", 1913216)
 	}
+	/*
+		No justification was found at block: 1913231
+		Justification was found at block: 1913216
+	*/
 
 	Ok(())
 }

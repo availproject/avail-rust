@@ -134,3 +134,7 @@
     height: 1.3em;
   }
 }
+
+:root {
+    --content-max-width: 1024px;
+}
