@@ -41,6 +41,12 @@ impl<'de> Deserialize<'de> for AuthorityId {
 	}
 }
 
+impl Default for AuthorityId {
+	fn default() -> Self {
+		Self([0u8; 32])
+	}
+}
+
 #[derive(Debug, Clone, Serialize, Encode, Decode)]
 pub struct ScheduledChange<N> {
 	/// The new authorities after the change, along with their respective weights.
@@ -93,7 +99,13 @@ impl<'de> Deserialize<'de> for Signature {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+impl Default for Signature {
+	fn default() -> Self {
+		Self([0u8; 64])
+	}
+}
+
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Precommit {
 	/// The target block's hash.
 	pub target_hash: H256,
@@ -114,7 +126,7 @@ impl Decode for Precommit {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SignedPrecommit {
 	/// The precommit message which has been signed.
 	pub precommit: Precommit,
@@ -139,7 +151,7 @@ impl Decode for SignedPrecommit {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Commit {
 	/// The target block's hash.
 	pub target_hash: H256,
@@ -164,7 +176,7 @@ impl Decode for Commit {
 	}
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GrandpaJustification {
 	pub round: u64,
 	pub commit: Commit,

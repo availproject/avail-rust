@@ -290,7 +290,7 @@ impl Utils {
 
 		while mortality_ends_height >= current_block_height {
 			let info = sub.next(client).await?;
-			current_block_height = sub.current_block_height();
+			current_block_height = info.height;
 
 			let state_nonce = client.rpc().block_nonce(account_id, info.hash).await?;
 			if state_nonce > nonce {

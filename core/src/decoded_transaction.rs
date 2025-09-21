@@ -12,9 +12,27 @@ pub trait HasHeader {
 	const HEADER_INDEX: (u8, u8);
 }
 
+pub trait TransactionEncodable {
+	/// SCALE encodes the event
+	///
+	/// If you need to Hex and SCALE encode then call `encode_as_hex_event`
+	fn to_call(&self) -> Vec<u8>;
+}
+
 pub trait TransactionDecodable: Sized {
 	fn from_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Result<Self, String>;
 	fn from_ext<'a>(call: impl Into<StringOrBytes<'a>>) -> Result<Self, String>;
+}
+
+impl<T: HasHeader + Encode> TransactionEncodable for T {
+	fn to_call(&self) -> Vec<u8> {
+		let pallet_id = Self::HEADER_INDEX.0;
+		let variant_id = Self::HEADER_INDEX.1;
+		let mut encoded_event: Vec<u8> = vec![pallet_id, variant_id];
+		Self::encode_to(self, &mut encoded_event);
+
+		encoded_event
+	}
 }
 
 impl<T: HasHeader + Decode> TransactionDecodable for T {

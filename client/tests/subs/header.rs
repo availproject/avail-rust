@@ -1,8 +1,9 @@
-use avail_rust_client::{error::Error, prelude::*, subscription::BlockHeaderSub};
+use crate::subs::client_mock::MockClient;
+use avail_rust_client::{error::Error, prelude::*, subscription::BlockHeaderSub, subxt_rpcs::RpcClient};
 
 pub async fn run_tests() -> Result<(), Error> {
-	let client = Client::new(MAINNET_ENDPOINT).await?;
-
+	let rpc_client = RpcClient::new(MockClient::new(MAINNET_ENDPOINT));
+	let client = Client::new_rpc_client(rpc_client).await?;
 	// Historical block
 	let mut sub = BlockHeaderSub::new(client.clone());
 	sub.set_block_height(1908729);

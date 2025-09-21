@@ -16,10 +16,10 @@ use std::{marker::PhantomData, time::Duration};
 
 #[derive(Clone)]
 pub struct UnInitSub {
-	use_best_block: bool,
-	block_height: Option<u32>,
-	poll_rate: Duration,
-	retry_on_error: bool,
+	pub(crate) use_best_block: bool,
+	pub(crate) block_height: Option<u32>,
+	pub(crate) poll_rate: Duration,
+	pub(crate) retry_on_error: bool,
 }
 
 impl UnInitSub {
@@ -86,10 +86,6 @@ impl FinalizedBlockSub {
 
 		self.next_block_height = result.height + 1;
 		Ok(result)
-	}
-
-	pub fn current_block_height(&self) -> u32 {
-		self.next_block_height.saturating_sub(1)
 	}
 
 	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, RpcError> {
@@ -170,10 +166,6 @@ impl BestBlockSub {
 		}
 
 		Ok(info)
-	}
-
-	pub fn current_block_height(&self) -> u32 {
-		self.current_block_height
 	}
 
 	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, RpcError> {
@@ -265,14 +257,6 @@ impl Sub {
 		}
 	}
 
-	pub fn current_block_height(&self) -> u32 {
-		match self {
-			Self::UnInit(u) => u.block_height.unwrap_or_default(),
-			Self::BestBlock(s) => s.current_block_height(),
-			Self::FinalizedBlock(s) => s.current_block_height(),
-		}
-	}
-
 	pub fn retry_on_error(&self) -> bool {
 		match self {
 			Self::UnInit(u) => u.retry_on_error,
@@ -312,6 +296,14 @@ impl Sub {
 			Self::BestBlock(x) => x.retry_on_error = value,
 			Self::FinalizedBlock(x) => x.retry_on_error = value,
 		}
+	}
+
+	#[cfg(test)]
+	fn as_finalized(&self) -> &FinalizedBlockSub {
+		if let Self::FinalizedBlock(f) = self {
+			return f;
+		}
+		panic!("Not Finalized Sub");
 	}
 }
 
@@ -417,7 +409,8 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 	pub async fn next(&mut self) -> Result<(Vec<BlockTransaction<T>>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
-			let block = BlockWithTx::new(self.client.clone(), info.hash);
+			let mut block = BlockWithTx::new(self.client.clone(), info.hash);
+			block.set_retry_on_error(self.sub.retry_on_error());
 
 			let txs = match block.all::<T>(self.opts.clone()).await {
 				Ok(x) => x,
@@ -473,7 +466,8 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 	pub async fn next(&mut self) -> Result<(Vec<BlockExtrinsic<T>>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
-			let block = BlockWithExt::new(self.client.clone(), info.hash);
+			let mut block = BlockWithExt::new(self.client.clone(), info.hash);
+			block.set_retry_on_error(self.sub.retry_on_error());
 
 			let txs = match block.all::<T>(self.opts.clone()).await {
 				Ok(x) => x,
@@ -524,7 +518,8 @@ impl RawExtrinsicSub {
 	pub async fn next(&mut self) -> Result<(Vec<BlockRawExtrinsic>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
-			let block = BlockWithRawExt::new(self.client.clone(), info.hash);
+			let mut block = BlockWithRawExt::new(self.client.clone(), info.hash);
+			block.set_retry_on_error(self.sub.retry_on_error());
 
 			let txs = match block.all(self.opts.clone()).await {
 				Ok(x) => x,
@@ -672,7 +667,13 @@ impl GrandpaJustificationSub {
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
-			let just = match self.client.rpc().grandpa_block_justification(info.height).await {
+			let just = match self
+				.client
+				.rpc()
+				.retry_on(Some(self.sub.retry_on_error()), None)
+				.grandpa_block_justification(info.height)
+				.await
+			{
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
@@ -716,7 +717,13 @@ impl GrandpaJustificationJsonSub {
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let info = self.sub.next(&self.client).await?;
-			let just = match self.client.rpc().grandpa_block_justification_json(info.height).await {
+			let just = match self
+				.client
+				.rpc()
+				.retry_on(Some(self.sub.retry_on_error()), None)
+				.grandpa_block_justification_json(info.height)
+				.await
+			{
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
@@ -743,5 +750,321 @@ impl GrandpaJustificationJsonSub {
 
 	pub fn set_retry_on_error(&mut self, value: bool) {
 		self.sub.set_retry_on_error(value);
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use avail_rust_core::{
+		avail::data_availability::tx::SubmitData, decoded_transaction::TransactionEncodable,
+		grandpa::GrandpaJustification, rpc::SignerPayload,
+	};
+	use codec::Encode;
+	use serde::{Deserialize, Serialize};
+	use serde_json::value::RawValue;
+
+	use crate::{
+		block::BlockExtOptionsExpanded,
+		clients::mock_client::MockClient,
+		error::Error,
+		prelude::*,
+		subscription::{
+			ExtrinsicSub, GrandpaJustificationJsonSub, GrandpaJustificationSub, RawExtrinsicSub, TransactionSub,
+		},
+		subxt_rpcs::RpcClient,
+	};
+
+	fn prep_just(value: Option<GrandpaJustification>) -> Box<RawValue> {
+		match value.clone() {
+			Some(x) => {
+				let value = serde_json::to_string(&Some(const_hex::encode(x.encode()))).unwrap();
+				RawValue::from_string(value).unwrap()
+			},
+			None => {
+				let value = serde_json::to_string(&value).unwrap();
+				RawValue::from_string(value).unwrap()
+			},
+		}
+	}
+
+	fn prep_just_json(value: Option<GrandpaJustification>) -> Box<RawValue> {
+		match value.clone() {
+			Some(x) => {
+				let value = serde_json::to_string(&Some(x)).unwrap();
+				RawValue::from_string(value).unwrap()
+			},
+			None => {
+				let value = serde_json::to_string(&value).unwrap();
+				RawValue::from_string(value).unwrap()
+			},
+		}
+	}
+
+	fn prep_ext_info(value: Vec<ExtrinsicInformation>) -> Box<RawValue> {
+		let value = serde_json::to_string(&value).unwrap();
+		RawValue::from_string(value).unwrap()
+	}
+
+	#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+	struct ExtrinsicInformation {
+		// Hex string encoded
+		pub encoded: Option<String>,
+		pub tx_hash: H256,
+		pub tx_index: u32,
+		pub pallet_id: u8,
+		pub call_id: u8,
+		pub signature: Option<SignerPayload>,
+	}
+
+	#[tokio::test]
+	async fn grandpa_justification_sub_test() -> Result<(), Error> {
+		_ = Client::init_tracing(false);
+		let (rpc_client, mut commander) = MockClient::new(MAINNET_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical block
+		let mut sub = GrandpaJustificationSub::new(client.clone());
+
+		sub.set_block_height(1900031);
+		let n = sub.next().await?;
+		assert_eq!(n.commit.target_number, 1900032);
+
+		sub.set_block_height(1900122);
+		let n = sub.next().await?;
+		assert_eq!(n.commit.target_number, 1900122);
+
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		let method = "grandpa_blockJustification";
+		commander.add_ok(method, prep_just(Some(GrandpaJustification::default()))); // 1
+		commander.add_ok(method, prep_just(None)); // 2
+		commander.add_ok(method, prep_just(Some(GrandpaJustification::default()))); // 3
+		commander.add_err(method, subxt_rpcs::Error::DisconnectedWillReconnect("Error".into())); // 4
+		commander.add_ok(method, prep_just(Some(GrandpaJustification::default()))); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn grandpa_justification_json_sub_test() -> Result<(), Error> {
+		let (rpc_client, mut commander) = MockClient::new(MAINNET_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical block
+		let mut sub = GrandpaJustificationJsonSub::new(client.clone());
+
+		sub.set_block_height(1900031);
+		let n = sub.next().await?;
+		assert_eq!(n.commit.target_number, 1900032);
+
+		sub.set_block_height(1900122);
+		let n = sub.next().await?;
+		assert_eq!(n.commit.target_number, 1900122);
+
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		let method = "grandpa_blockJustificationJson";
+		commander.add_ok(method, prep_just_json(Some(GrandpaJustification::default()))); // 1
+		commander.add_ok(method, prep_just_json(None)); // 2
+		commander.add_ok(method, prep_just_json(Some(GrandpaJustification::default()))); // 3
+		commander.add_err(method, subxt_rpcs::Error::DisconnectedWillReconnect("Error".into())); // 4
+		commander.add_ok(method, prep_just_json(Some(GrandpaJustification::default()))); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn extrinsic_sub_test() -> Result<(), Error> {
+		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical blocks
+		let mut sub = ExtrinsicSub::<SubmitData>::new(client.clone(), Default::default());
+
+		sub.set_block_height(2326671);
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326672);
+		assert_eq!(list.len(), 1);
+
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326674);
+		assert_eq!(list.len(), 1);
+
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		let mut data = ExtrinsicInformation::default();
+		let tx = client.tx().data_availability().submit_data("1234");
+		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+
+		let method = "system_fetchExtrinsicsV1";
+		commander.add_ok(method, prep_ext_info(vec![data.clone()])); // 1
+		commander.add_ok(method, prep_ext_info(vec![])); // 2
+		commander.add_ok(method, prep_ext_info(vec![data.clone()])); // 3
+		commander.add_err(method, subxt_rpcs::Error::DisconnectedWillReconnect("Error".into())); // 4
+		commander.add_ok(method, prep_ext_info(vec![data.clone()])); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn transaction_sub_test() -> Result<(), Error> {
+		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical blocks
+		let mut sub = TransactionSub::<SubmitData>::new(client.clone(), Default::default());
+
+		sub.set_block_height(2326671);
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326672);
+		assert_eq!(list.len(), 1);
+
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326674);
+		assert_eq!(list.len(), 1);
+
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		let mut data = ExtrinsicInformation::default();
+		let tx = client.tx().data_availability().submit_data("1234");
+		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+
+		let method = "system_fetchExtrinsicsV1";
+		commander.add_ok(method, prep_ext_info(vec![data.clone()])); // 1
+		commander.add_ok(method, prep_ext_info(vec![])); // 2
+		commander.add_ok(method, prep_ext_info(vec![data.clone()])); // 3
+		commander.add_err(method, subxt_rpcs::Error::DisconnectedWillReconnect("Error".into())); // 4
+		commander.add_ok(method, prep_ext_info(vec![data.clone()])); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn raw_extrinsic_sub_test() -> Result<(), Error> {
+		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical blocks
+		let opts = BlockExtOptionsExpanded { filter: Some((29u8, 1u8).into()), ..Default::default() };
+		let mut sub = RawExtrinsicSub::new(client.clone(), opts);
+
+		sub.set_block_height(2326671);
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326672);
+		assert_eq!(list.len(), 1);
+
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326674);
+		assert_eq!(list.len(), 1);
+
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		let mut data = ExtrinsicInformation::default();
+		let tx = client.tx().data_availability().submit_data("1234");
+		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+
+		let method = "system_fetchExtrinsicsV1";
+		commander.add_ok(method, prep_ext_info(vec![data.clone()])); // 1
+		commander.add_ok(method, prep_ext_info(vec![])); // 2
+		commander.add_ok(method, prep_ext_info(vec![data.clone()])); // 3
+		commander.add_err(method, subxt_rpcs::Error::DisconnectedWillReconnect("Error".into())); // 4
+		commander.add_ok(method, prep_ext_info(vec![data.clone()])); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
 	}
 }

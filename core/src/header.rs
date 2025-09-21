@@ -5,7 +5,7 @@ use subxt_core::config::{Hasher, Header, substrate::BlakeTwo256};
 
 pub use subxt_core::config::substrate::{Digest, DigestItem};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, Encode, Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct AvailHeader {
 	pub parent_hash: H256,
@@ -87,6 +87,12 @@ impl Decode for V3HeaderExtension {
 		let app_lookup = Decode::decode(input)?;
 		let commitment = Decode::decode(input)?;
 		Ok(Self { app_lookup, commitment })
+	}
+}
+
+impl Default for HeaderExtension {
+	fn default() -> Self {
+		Self::V3(Default::default())
 	}
 }
 

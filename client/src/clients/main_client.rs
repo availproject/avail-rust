@@ -23,6 +23,8 @@ use avail_rust_core::{
 	},
 };
 use codec::Decode;
+#[cfg(feature = "tracing")]
+use tracing_subscriber::util::TryInitError;
 
 #[derive(Clone)]
 pub struct Client {
@@ -60,19 +62,15 @@ impl Client {
 	}
 
 	#[cfg(feature = "tracing")]
-	pub fn toggle_tracing(toggle: bool, json_format: bool) {
+	pub fn init_tracing(json_format: bool) -> Result<(), TryInitError> {
 		use tracing_subscriber::util::SubscriberInitExt;
 
-		let mut builder = tracing_subscriber::fmt::SubscriberBuilder::default();
-		if !toggle {
-			builder = builder.with_max_level(tracing_subscriber::filter::LevelFilter::OFF);
-		}
-
+		let builder = tracing_subscriber::fmt::SubscriberBuilder::default();
 		if json_format {
 			let builder = builder.json();
-			builder.finish().init();
+			builder.finish().try_init()
 		} else {
-			builder.finish().init();
+			builder.finish().try_init()
 		}
 	}
 

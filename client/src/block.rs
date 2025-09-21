@@ -11,11 +11,12 @@ use codec::Decode;
 pub struct Block {
 	client: Client,
 	block_id: HashStringNumber,
+	retry_on_error: bool,
 }
 
 impl Block {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		Block { client, block_id: block_id.into() }
+		Block { client, block_id: block_id.into(), retry_on_error: true }
 	}
 
 	pub fn tx(&self) -> BlockWithTx {
@@ -34,12 +35,17 @@ impl Block {
 		BlockEvents::new(self.client.clone(), self.block_id.clone())
 	}
 
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.retry_on_error = value;
+	}
+
 	pub async fn justification(&self) -> Result<Option<GrandpaJustification>, Error> {
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
 		let at = match block_id {
 			HashNumber::Hash(h) => self
 				.client
 				.rpc()
+				.retry_on(Some(self.retry_on_error), None)
 				.block_height(h)
 				.await?
 				.ok_or(Error::Other("Failed to find block from the provided hash".into()))?,
@@ -48,6 +54,7 @@ impl Block {
 
 		self.client
 			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
 			.grandpa_block_justification(at)
 			.await
 			.map_err(|e| e.into())
@@ -57,11 +64,16 @@ impl Block {
 pub struct BlockWithRawExt {
 	client: Client,
 	block_id: HashStringNumber,
+	retry_on_error: bool,
 }
 
 impl BlockWithRawExt {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		Self { client, block_id: block_id.into() }
+		Self { client, block_id: block_id.into(), retry_on_error: true }
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.retry_on_error = value;
 	}
 
 	pub async fn get(
@@ -94,7 +106,12 @@ impl BlockWithRawExt {
 		}
 
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
-		let mut result = self.client.rpc().system_fetch_extrinsics(block_id, opts.into()).await?;
+		let mut result = self
+			.client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
+			.system_fetch_extrinsics(block_id, opts.into())
+			.await?;
 
 		let Some(first) = result.first_mut() else {
 			return Ok(None);
@@ -113,7 +130,12 @@ impl BlockWithRawExt {
 		}
 
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
-		let mut result = self.client.rpc().system_fetch_extrinsics(block_id, opts.into()).await?;
+		let mut result = self
+			.client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
+			.system_fetch_extrinsics(block_id, opts.into())
+			.await?;
 
 		let Some(last) = result.last_mut() else {
 			return Ok(None);
@@ -132,7 +154,12 @@ impl BlockWithRawExt {
 		}
 
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
-		let result = self.client.rpc().system_fetch_extrinsics(block_id, opts.into()).await?;
+		let result = self
+			.client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
+			.system_fetch_extrinsics(block_id, opts.into())
+			.await?;
 
 		let result = result
 			.into_iter()
@@ -168,6 +195,10 @@ pub struct BlockWithExt {
 impl BlockWithExt {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
 		Self { rxt: BlockWithRawExt::new(client, block_id) }
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.rxt.set_retry_on_error(value);
 	}
 
 	pub async fn get<T: HasHeader + Decode>(
@@ -291,6 +322,10 @@ impl BlockWithTx {
 		Self { ext: BlockWithExt::new(client, block_id) }
 	}
 
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.ext.set_retry_on_error(value);
+	}
+
 	pub async fn get<T: HasHeader + Decode>(
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
@@ -374,11 +409,16 @@ impl BlockWithTx {
 pub struct BlockEvents {
 	client: Client,
 	block_id: HashStringNumber,
+	retry_on_error: bool,
 }
 
 impl BlockEvents {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		BlockEvents { client, block_id: block_id.into() }
+		BlockEvents { client, block_id: block_id.into(), retry_on_error: true }
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.retry_on_error = value;
 	}
 
 	pub async fn ext(&self, tx_index: u32) -> Result<Option<ExtrinsicEvents>, Error> {
@@ -419,6 +459,7 @@ impl BlockEvents {
 
 		self.client
 			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
 			.system_fetch_events(self.block_id.clone(), opts.into())
 			.await
 	}

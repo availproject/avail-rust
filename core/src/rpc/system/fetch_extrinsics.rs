@@ -68,7 +68,7 @@ impl From<ExtrinsicInformation> for ExtrinsicInfo {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct SignerPayload {
 	pub ss58_address: Option<String>,
 	pub nonce: u32,
