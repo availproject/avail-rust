@@ -183,8 +183,12 @@ struct SignatureFilter {
 	pub nonce: Option<u32>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct ExtrinsicInformation {
+// This is struct is supposed to be private but is made public
+// for our tests to work.
+//
+// It is not dumb if it works. ¯\_(ツ)_/¯
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ExtrinsicInformation {
 	// Hex string encoded
 	pub encoded: Option<String>,
 	pub tx_hash: H256,

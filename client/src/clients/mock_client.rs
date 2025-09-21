@@ -2,8 +2,13 @@ use crate::{
 	clients::ReqwestClient,
 	ext::subxt_rpcs::{self, RpcClientT},
 };
+use avail_rust_core::grandpa::GrandpaJustification;
+use codec::Encode;
 use serde_json::value::RawValue;
 use std::sync::{Arc, Mutex};
+
+#[cfg(test)]
+use avail_rust_core::rpc::system::fetch_extrinsics::ExtrinsicInformation;
 
 #[derive(Clone)]
 pub struct MockClient {
@@ -81,5 +86,54 @@ impl CommandManagerHelper {
 	pub fn add_err(&mut self, method: impl Into<String>, value: subxt_rpcs::Error) {
 		let mut lock = self.0.lock().unwrap();
 		lock.add_err(method, value);
+	}
+
+	pub fn justification_ok(&mut self, value: Option<GrandpaJustification>) {
+		let value = match value.clone() {
+			Some(x) => {
+				let value = serde_json::to_string(&Some(const_hex::encode(x.encode()))).unwrap();
+				RawValue::from_string(value).unwrap()
+			},
+			None => {
+				let value = serde_json::to_string(&value).unwrap();
+				RawValue::from_string(value).unwrap()
+			},
+		};
+		self.add_ok("grandpa_blockJustification", value);
+	}
+
+	pub fn justification_err(&mut self, value: Option<subxt_rpcs::Error>) {
+		let value = value.unwrap_or_else(|| subxt_rpcs::Error::DisconnectedWillReconnect("Error".into()));
+		self.add_err("grandpa_blockJustification", value);
+	}
+
+	pub fn justification_json_ok(&mut self, value: Option<GrandpaJustification>) {
+		let value = match value.clone() {
+			Some(x) => {
+				let value = serde_json::to_string(&Some(x)).unwrap();
+				RawValue::from_string(value).unwrap()
+			},
+			None => {
+				let value = serde_json::to_string(&value).unwrap();
+				RawValue::from_string(value).unwrap()
+			},
+		};
+		self.add_ok("grandpa_blockJustificationJson", value);
+	}
+
+	pub fn justification_json_err(&mut self, value: Option<subxt_rpcs::Error>) {
+		let value = value.unwrap_or_else(|| subxt_rpcs::Error::DisconnectedWillReconnect("Error".into()));
+		self.add_err("grandpa_blockJustificationJson", value);
+	}
+
+	pub fn extrinsics_ok(&mut self, value: Vec<ExtrinsicInformation>) {
+		let value = serde_json::to_string(&value).unwrap();
+		let value = RawValue::from_string(value).unwrap();
+		self.add_ok("system_fetchExtrinsicsV1", value);
+	}
+
+	pub fn extrinsics_err(&mut self, value: Option<subxt_rpcs::Error>) {
+		let value = value.unwrap_or_else(|| subxt_rpcs::Error::DisconnectedWillReconnect("Error".into()));
+		self.add_err("system_fetchExtrinsicsV1", value);
 	}
 }
