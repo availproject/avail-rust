@@ -1,6 +1,5 @@
-use crate::config::TxRef;
-
-use super::AvailHeader;
+use super::{AvailHeader, Error};
+use crate::types::metadata::TransactionRef;
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer};
 use subxt_core::config::{Hasher, substrate::BlakeTwo256};
@@ -24,10 +23,10 @@ pub struct Block {
 }
 
 impl Block {
-	pub fn has_transaction(&self, tx_hash: H256) -> Option<TxRef> {
+	pub fn has_transaction(&self, tx_hash: H256) -> Option<TransactionRef> {
 		for (i, tx) in self.extrinsics.iter().enumerate() {
 			if BlakeTwo256::hash(tx) == tx_hash {
-				return Some(TxRef::from((tx_hash, i as u32)));
+				return Some(TransactionRef::from((tx_hash, i as u32)));
 			}
 		}
 
@@ -57,10 +56,7 @@ pub type ConsensusEngineId = [u8; 4];
 /// The encoded justification specific to a consensus engine.
 pub type EncodedJustification = Vec<u8>;
 
-pub async fn get_block(
-	client: &RpcClient,
-	at: Option<H256>,
-) -> Result<Option<BlockWithJustifications>, subxt_rpcs::Error> {
+pub async fn get_block(client: &RpcClient, at: Option<H256>) -> Result<Option<BlockWithJustifications>, Error> {
 	let params = rpc_params![at];
 	let res: Option<BlockWithJustifications> = client.request("chain_getBlock", params).await?;
 	let Some(value) = res else {
@@ -69,19 +65,19 @@ pub async fn get_block(
 	Ok(Some(value))
 }
 
-pub async fn get_block_hash(client: &RpcClient, block_height: Option<u32>) -> Result<Option<H256>, subxt_rpcs::Error> {
+pub async fn get_block_hash(client: &RpcClient, block_height: Option<u32>) -> Result<Option<H256>, Error> {
 	let params = rpc_params![block_height];
 	let value = client.request("chain_getBlockHash", params).await?;
 	Ok(value)
 }
 
-pub async fn get_header(client: &RpcClient, at: Option<H256>) -> Result<Option<AvailHeader>, subxt_rpcs::Error> {
+pub async fn get_header(client: &RpcClient, at: Option<H256>) -> Result<Option<AvailHeader>, Error> {
 	let params = rpc_params![at];
 	let value = client.request("chain_getHeader", params).await?;
 	Ok(value)
 }
 
-pub async fn get_finalized_head(client: &RpcClient) -> Result<H256, subxt_rpcs::Error> {
+pub async fn get_finalized_head(client: &RpcClient) -> Result<H256, Error> {
 	let value = client.request("chain_getFinalizedHead", rpc_params![]).await?;
 	Ok(value)
 }

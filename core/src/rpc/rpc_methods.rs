@@ -1,3 +1,4 @@
+use super::Error;
 use serde::Deserialize;
 use subxt_rpcs::{RpcClient, rpc_params};
 
@@ -6,7 +7,7 @@ pub struct RpcMethods {
 	pub methods: Vec<String>,
 }
 
-pub async fn call(client: &RpcClient) -> Result<RpcMethods, subxt_rpcs::Error> {
+pub async fn call(client: &RpcClient) -> Result<RpcMethods, Error> {
 	let value = client.request("rpc_methods", rpc_params![]).await?;
 	Ok(value)
 }

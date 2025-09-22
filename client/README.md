@@ -29,7 +29,7 @@ async fn main() -> Result<(), ClientError> {
     let submittable_tx = client.tx().data_availability().submit_data(vec![0, 1, 2, 3, 4, 5]);
 
     // Transaction Submission
-    let submitted_tx = submittable_tx.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+    let submitted_tx = submittable_tx.sign_and_submit(&alice(), Options::new(2)).await?;
 
     // Fetching Transaction Receipt
     let receipt = submitted_tx.receipt(false).await?;
@@ -75,19 +75,6 @@ After that, you are free to choose one or all of the following feature flags:
 - `tracing`: Enables logging/tracing, which is useful when dealing with nonce
   and other transaction-related issues. The logging output can be set to JSON
   format if needed.
-- `subxt`: Provides access to the entire external Subxt library. This can be
-  useful when you need to fetch and manage storage and constants-related data.
-- `generated_metadata`: Provides access to all possible extrinsics, events, and
-  other chain-related metadata types. By default, a subset of metadata types is
-  already available, but if necessary, this feature flag gives access to
-  everything. Use this feature with caution—it significantly increases
-  compilation time (by over 10 seconds) and may cause rust-analyzer to stop
-  analyzing your code. If a metadata type isn’t available, it’s best to define
-  it manually, as shown in the
-  [custom transaction](https://github.com/availproject/avail-rust/tree/main/examples/custom_transaction)
-  and
-  [custom event](https://github.com/availproject/avail-rust/tree/main/examples/custom_event)
-  examples.
 
 ## Examples
 
@@ -146,8 +133,7 @@ RUST_LOG=info cargo run
 ## Custom Transactions and Events
 
 Sometimes you need a specific transaction or event type not included in the
-default metadata. However, enabling the `generated_metadata` feature flag may
-greatly increase compile time. In such cases, you can define a custom
+default metadata. In such cases, you can define a custom
 transaction or event and use it just like any predefined type. Both are simple
 to implement and use.
 
@@ -155,7 +141,7 @@ Create a [custom transaction](https://github.com/availproject/avail-rust/tree/ma
 
 ```rust
 use avail_rust_client::{
-    avail::{TransactionCallLike, HasTxDispatchIndex},
+    avail::{TransactionCallLike, HasHeader},
     prelude::*,
 };
 
@@ -163,8 +149,8 @@ use avail_rust_client::{
 pub struct CustomTransaction {
     pub data: Vec<u8>,
 }
-impl HasTxDispatchIndex for CustomTransaction {
-    const DISPATCH_INDEX: (u8, u8) = (29u8, 1u8);
+impl HasHeader for CustomTransaction {
+    const HEADER_INDEX: (u8, u8) = (29u8, 1u8);
 }
 
 #[tokio::main]
@@ -173,7 +159,7 @@ async fn main() -> Result<(), ClientError> {
 
     let custom_tx = CustomTransaction { data: vec![0, 1, 2, 3] };
     let submittable = custom_tx.to_submittable(client.clone());
-    let submitted = submittable.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+    let submitted = submittable.sign_and_submit(&alice(), Options::new(2)).await?;
     let receipt = submitted.receipt(true).await?.expect("Must be there");
 }
 ```
@@ -188,8 +174,8 @@ pub struct CustomEvent {
     pub who: AccountId,
     pub data_hash: H256,
 }
-impl HasEventEmittedIndex for CustomEvent {
-    const EMITTED_INDEX: (u8, u8) = (29, 1);
+impl HasHeader for CustomEvent {
+    const HEADER_INDEX: (u8, u8) = (29, 1);
 }
 
 #[tokio::main]

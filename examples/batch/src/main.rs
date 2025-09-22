@@ -1,69 +1,83 @@
-use avail::utility::{events as UtilityEvents, tx::BatchAll as UtilityBatchAll};
-use avail_rust_client::{avail::RuntimeCall, prelude::*};
+use avail_rust_client::{
+	avail::{
+		RuntimeCall,
+		utility::{
+			events::{
+				BatchCompleted, BatchCompletedWithErrors, BatchInterrupted, DispatchedAs, ItemCompleted, ItemFailed,
+			},
+			tx::BatchAll,
+		},
+	},
+	prelude::*,
+};
 
 #[tokio::main]
-async fn main() -> Result<(), ClientError> {
-	Client::enable_tracing(false);
+async fn main() -> Result<(), Error> {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	let balances = client.tx().balances();
-	let c1 = balances
-		.transfer_keep_alive(bob().account_id(), constants::ONE_AVAIL)
-		.call;
-	let c2 = balances
-		.transfer_keep_alive(dave().account_id(), constants::ONE_AVAIL)
-		.call;
+	let c1 = balances.transfer_keep_alive(bob().account_id(), constants::ONE_AVAIL);
+	let c2 = balances.transfer_keep_alive(dave().account_id(), constants::ONE_AVAIL);
 
+	// There are three batch calls:
+	// 1. Batch, 2. Batch All and 3. Force Batch
 	let tx = client.tx().utility().batch_all(vec![c1, c2]);
-	let st = tx.sign_and_submit(&alice(), Options::new(None)).await?;
+	let st = tx.sign_and_submit(&alice(), Options::default()).await?;
 	let Some(receipt) = st.receipt(false).await? else {
 		return Err("Transaction got dropped. This should never happen in a local network.".into());
 	};
 
-	let block_state = receipt.block_state().await?;
-	println!("Block State: {:?}", block_state);
-
 	// Fetching and displaying Transaction Events
-	let events = receipt.tx_events().await?;
-	for event in events {
-		println!("Pallet Index: {}, Variant index: {}", event.emitted_index.0, event.emitted_index.1,);
-		let encoded_event = const_hex::decode(event.encoded.expect("Must be there"))?;
-		if let Some(_e) = UtilityEvents::BatchInterrupted::decode_event(&encoded_event) {
-			println!("Found Utility::BatchInterrupted");
-		}
-		if let Some(_e) = UtilityEvents::BatchCompleted::decode_event(&encoded_event) {
-			println!("Found Utility::BatchCompleted");
-		}
-		if let Some(_e) = UtilityEvents::BatchCompletedWithErrors::decode_event(&encoded_event) {
-			println!("Found Utility::BatchCompletedWithErrors");
-		}
-		if let Some(_e) = UtilityEvents::ItemCompleted::decode_event(&encoded_event) {
-			println!("Found Utility::ItemCompleted");
-		}
-		if let Some(_e) = UtilityEvents::ItemFailed::decode_event(&encoded_event) {
-			println!("Found Utility::ItemFailed");
-		}
-		if let Some(_e) = UtilityEvents::DispatchedAs::decode_event(&encoded_event) {
-			println!("Found Utility::DispatchedAs");
-		}
+	let events = receipt.events().await?;
+	assert!(events.is_extrinsic_success_present());
+
+	// Batch, Batch All and Force Batch can emit different events.
+	if events.is_present::<BatchInterrupted>() {
+		println!("Found Utility::BatchInterrupted");
+	}
+	if events.is_present::<BatchCompleted>() {
+		println!("Found Utility::BatchCompleted");
+	}
+	if events.is_present::<BatchCompletedWithErrors>() {
+		println!("Found Utility::BatchCompletedWithErrors");
 	}
 
-	// Decoding batch call
-	let block_client = client.block_client();
-	let (decoded_transaction, _) = block_client
-		.transaction_static::<UtilityBatchAll>(receipt.block_ref.into(), receipt.tx_ref.into())
-		.await?
-		.expect("Should be there");
+	println!("Found {}x Utility::ItemCompleted", events.count::<ItemCompleted>());
 
-	// Not all calls are decodable.
-	let decoded_calls = decoded_transaction.call.decode_calls()?;
+	if events.is_present::<ItemFailed>() {
+		println!("Found Utility::ItemFailed");
+	}
+	if events.is_present::<DispatchedAs>() {
+		println!("Found Utility::DispatchedAs");
+	}
+	/*
+		Found Utility::BatchCompleted
+		Found 2x Utility::ItemCompleted
+	*/
+
+	// Decoding batch call
+	let tx = receipt.tx::<BatchAll>().await?;
+	let decoded_calls = tx.call.decode_calls()?;
 	for call in decoded_calls {
+		// RuntimeCall variants are the only calls that are decodable from a batch call.
+		// If the call is not a RuntimeCall variant then it won't be decodable by the
+		// Batch call
 		let RuntimeCall::BalancesTransferKeepAlive(tx) = call else {
 			return Err("Expected Balance Transfer Keep Alive".into());
 		};
 
-		println!("Dest: {:?}, Amount: {}", tx.dest, tx.value);
+		// If MultiAddress is of variant ID then map it to ss58 address otherwise
+		// display the debug information
+		let dest = AccountId::try_from(&tx.dest)
+			.map(|x| x.to_string())
+			.unwrap_or_else(|_| std::format!("{:?}", tx.dest));
+
+		println!("Dest: {:?}, Amount: {}", dest, tx.value);
 	}
+	/*
+		Dest: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", Amount: 1000000000000000000
+		Dest: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy", Amount: 1000000000000000000
+	*/
 
 	Ok(())
 }

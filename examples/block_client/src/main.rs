@@ -33,7 +33,7 @@ async fn main() -> Result<(), ClientError> {
 
 pub async fn submit_dummy_transactions(client: &Client) -> Result<TransactionReceipt, ClientError> {
 	let tx = client.tx().data_availability().submit_data(vec![0, 1, 2]);
-	let submitted = tx.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+	let submitted = tx.sign_and_submit(&alice(), Options::new(2)).await?;
 	let receipt = submitted.receipt(true).await?.expect("Should be there");
 	Ok(receipt)
 }
@@ -48,7 +48,7 @@ pub async fn submit_dummy_transactions(client: &Client) -> Result<TransactionRec
 pub async fn block_rpc_example(client: Client, hash: H256) -> Result<(), ClientError> {
 	let blocks = client.block_client();
 
-	let block_w_justification = blocks.rpc_block(hash).await?.expect("Should be there");
+	let block_w_justification = blocks.rpc_block(Some(hash)).await?.expect("Should be there");
 	let block = &block_w_justification.block;
 
 	// Accessing Block Header data
@@ -75,14 +75,14 @@ pub async fn transaction_example(client: Client, block_hash: H256, tx_hash: H256
 
 	// Fetching only the Transaction Call from the block
 	let info = blocks
-		.transaction(block_hash.into(), tx_hash.into(), None)
+		.transaction(block_hash.into(), tx_hash.into(), Default::default())
 		.await?
 		.expect("Should be there");
 
-	// Printing out Transaction metadata like: Tx Hash, Tx Index, Pallet Id, Call Id
+	// Printing out Transaction metadata like: Tx Hash, Tx Index, Pallet Id, Variant Id
 	println!(
-		"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Call Id: {}",
-		info.tx_hash, info.call_id, info.pallet_id, info.call_id
+		"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Variant Id: {}",
+		info.tx_hash, info.tx_index, info.pallet_id, info.variant_id
 	);
 
 	// Printing out Transaction signature data like: Signer, Nonce, App Id
@@ -91,18 +91,18 @@ pub async fn transaction_example(client: Client, block_hash: H256, tx_hash: H256
 	}
 
 	// Decoding the Transaction Call
-	decode_transaction_call(&info.encoded.expect("Must be there"));
+	decode_transaction_call(&info.data.expect("Must be there"));
 
 	// Fetching the whole transaction from the block
 	let info = blocks
-		.transaction(block_hash.into(), tx_hash.into(), Some(EncodeSelector::Extrinsic))
+		.transaction(block_hash.into(), tx_hash.into(), EncodeSelector::Extrinsic)
 		.await?
 		.expect("Should be there");
 
-	// Printing out Transaction metadata like: Tx Hash, Tx Index, Pallet Id, Call Id
+	// Printing out Transaction metadata like: Tx Hash, Tx Index, Pallet Id, Variant Id
 	println!(
-		"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Call Id: {}",
-		info.tx_hash, info.call_id, info.pallet_id, info.call_id
+		"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Variant Id: {}",
+		info.tx_hash, info.tx_index, info.pallet_id, info.variant_id
 	);
 
 	// Printing out Transaction signature data like: Signer, Nonce, App Id
@@ -110,7 +110,7 @@ pub async fn transaction_example(client: Client, block_hash: H256, tx_hash: H256
 		println!("ss58: {:?}, Nonce: {}, App Id: {}", signature.ss58_address, signature.nonce, signature.app_id);
 	}
 
-	decode_transaction(&info.encoded.expect("Must be there"));
+	decode_transaction(&info.data.expect("Must be there"));
 
 	Ok(())
 }
@@ -125,10 +125,10 @@ pub async fn transaction_static_example(client: Client, block_hash: H256, tx_has
 		.await?
 		.expect("Should be there");
 
-	// Printing out Transaction metadata like: Tx Hash, Tx Index, Pallet Id, Call Id
+	// Printing out Transaction metadata like: Tx Hash, Tx Index, Pallet Id, Variant Id
 	println!(
-		"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Call Id: {}",
-		info.tx_hash, info.call_id, info.pallet_id, info.call_id
+		"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Variant Id: {}",
+		info.tx_hash, info.tx_index, info.pallet_id, info.variant_id
 	);
 
 	// Printing out Transaction signature data like: Signer, Nonce, App Id
@@ -149,8 +149,8 @@ pub async fn transactions_example(client: Client, block_hash: H256) -> Result<()
 	let infos = blocks.builder().fetch(block_hash.into()).await?;
 	for info in infos {
 		println!(
-			"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Call Id: {}",
-			info.tx_hash, info.call_id, info.pallet_id, info.call_id
+			"Tx Hash: {:?}, Tx Index: {}, Pallet Id: {}, Variant Id: {}",
+			info.tx_hash, info.tx_index, info.pallet_id, info.variant_id
 		);
 		if let Some(signature) = &info.signature {
 			println!(
@@ -159,7 +159,7 @@ pub async fn transactions_example(client: Client, block_hash: H256) -> Result<()
 			);
 		}
 
-		decode_transaction_call(&info.encoded.expect("Must be there"));
+		decode_transaction_call(&info.data.expect("Must be there"));
 	}
 
 	Ok(())

@@ -12,8 +12,8 @@ use codec::Encode;
 pub struct CustomTransaction {
 	pub data: Vec<u8>,
 }
-impl HasTxDispatchIndex for CustomTransaction {
-	const DISPATCH_INDEX: (u8, u8) = (29u8, 1u8);
+impl HasHeader for CustomTransaction {
+	const HEADER_INDEX: (u8, u8) = (29u8, 1u8);
 }
 
 // Event Definition
@@ -22,8 +22,8 @@ pub struct CustomEvent {
 	pub who: AccountId,
 	pub data_hash: H256,
 }
-impl HasEventEmittedIndex for CustomEvent {
-	const EMITTED_INDEX: (u8, u8) = (29, 1);
+impl HasHeader for CustomEvent {
+	const HEADER_INDEX: (u8, u8) = (29, 1);
 }
 
 // Storage Definition
@@ -88,7 +88,7 @@ async fn transaction_decoding_encoding() -> Result<(), ClientError> {
 	let submittable = custom.to_submittable(client.clone());
 
 	// Submitting
-	let submitted = submittable.sign_and_submit(&alice(), Options::new(Some(2))).await?;
+	let submitted = submittable.sign_and_submit(&alice(), Options::new(2)).await?;
 	let receipt = submitted.receipt(true).await?.expect("Must be there");
 	println!("Block Hash: {:?}", receipt.block_ref.hash);
 

@@ -1,5 +1,5 @@
 use crate::{Client, subxt_core::config::Header};
-use avail_rust_core::{AccountId, Era, H256, TransactionExtra};
+use avail_rust_core::{AccountId, Era, ExtrinsicExtra, H256, RpcError};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Options {
@@ -10,8 +10,8 @@ pub struct Options {
 }
 
 impl Options {
-	pub fn new(app_id: Option<u32>) -> Self {
-		Self { app_id, ..Default::default() }
+	pub fn new(app_id: u32) -> Self {
+		Self { app_id: Some(app_id), ..Default::default() }
 	}
 
 	pub fn app_id(mut self, value: u32) -> Self {
@@ -38,15 +38,17 @@ impl Options {
 		self,
 		client: &Client,
 		account_id: &AccountId,
-	) -> Result<RefinedOptions, avail_rust_core::Error> {
+		retry_on_error: bool,
+	) -> Result<RefinedOptions, RpcError> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {
 			Some(x) => x,
 			None => {
 				client
-					.rpc_api()
-					.system_account_next_index(&account_id.to_string())
+					.rpc()
+					.retry_on(Some(retry_on_error), None)
+					.account_nonce(account_id)
 					.await?
 			},
 		};
@@ -68,10 +70,10 @@ pub struct RefinedOptions {
 	pub tip: u128,
 }
 
-impl From<&RefinedOptions> for TransactionExtra {
+impl From<&RefinedOptions> for ExtrinsicExtra {
 	fn from(value: &RefinedOptions) -> Self {
 		let era = Era::mortal(value.mortality.period, value.mortality.block_height as u64);
-		TransactionExtra {
+		ExtrinsicExtra {
 			era,
 			nonce: value.nonce,
 			tip: value.tip,
@@ -97,8 +99,8 @@ impl RefinedMortality {
 		Self { period, block_hash, block_height }
 	}
 
-	pub async fn from_period(client: &Client, period: u64) -> Result<Self, avail_rust_core::Error> {
-		let header = client.finalized_block_header().await?;
+	pub async fn from_period(client: &Client, period: u64) -> Result<Self, RpcError> {
+		let header = client.finalized().block_header().await?;
 		let (block_hash, block_height) = (header.hash(), header.number());
 		Ok(Self { period, block_hash, block_height })
 	}

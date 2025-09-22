@@ -1,0 +1,26 @@
+use avail_rust_client::error::Error;
+
+mod balances;
+mod da;
+mod multisig;
+mod nomination_pools;
+mod proxy;
+mod session;
+mod staking;
+mod timestamp;
+mod utility;
+mod vector;
+
+pub async fn run_tests() -> Result<(), Error> {
+	balances::run_tests().await?;
+	da::run_tests().await?;
+	multisig::run_tests().await?;
+	proxy::run_tests().await?;
+	staking::run_tests().await?;
+	utility::run_tests().await?;
+	nomination_pools::run_tests().await?;
+	session::run_tests().await?;
+	timestamp::run_tests().await?;
+	vector::run_tests().await?;
+	Ok(())
+}

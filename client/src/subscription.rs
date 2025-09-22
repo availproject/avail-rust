@@ -1,93 +1,64 @@
-use crate::{AvailHeader, Client, platform::sleep};
-use avail_rust_core::{Error as CoreError, H256, grandpa::GrandpaJustification, rpc::BlockWithJustifications};
-use std::time::Duration;
-
-#[derive(Debug, Default, Clone, Copy)]
-pub enum SubscriptionKind {
-	BestBlock,
-	#[default]
-	FinalizedBlock,
-}
+use crate::{
+	AvailHeader, Client,
+	block::{
+		Block, BlockEvents, BlockEventsOptions, BlockExtOptionsExpanded, BlockExtOptionsSimple, BlockExtrinsic,
+		BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt, BlockWithTx,
+	},
+	platform::sleep,
+};
+use avail_rust_core::{
+	BlockRef, H256, HasHeader, RpcError,
+	grandpa::GrandpaJustification,
+	rpc::{BlockPhaseEvent, BlockWithJustifications},
+};
+use codec::Decode;
+use std::{marker::PhantomData, time::Duration};
 
 #[derive(Clone)]
-pub struct SubscriptionBuilder {
-	kind: SubscriptionKind,
-	block_height: Option<u32>,
-	poll_rate: Duration,
-	retry_on_error: bool,
+pub struct UnInitSub {
+	pub(crate) use_best_block: bool,
+	pub(crate) block_height: Option<u32>,
+	pub(crate) poll_rate: Duration,
+	pub(crate) retry_on_error: bool,
 }
 
-impl SubscriptionBuilder {
+impl UnInitSub {
 	pub fn new() -> Self {
 		Self::default()
 	}
 
-	pub fn follow_best_blocks(mut self) -> Self {
-		self.kind = SubscriptionKind::BestBlock;
-		self
-	}
-
-	pub fn follow_finalized_blocks(mut self) -> Self {
-		self.kind = SubscriptionKind::FinalizedBlock;
-		self
-	}
-
-	pub fn block_height(mut self, value: u32) -> Self {
-		self.block_height = Some(value);
-		self
-	}
-
-	pub fn poll_rate(mut self, value: Duration) -> Self {
-		self.poll_rate = value;
-		self
-	}
-
-	pub fn kind(mut self, value: SubscriptionKind) -> Self {
-		self.kind = value;
-		self
-	}
-
-	pub fn retry_on_error(mut self, value: bool) -> Self {
-		self.retry_on_error = value;
-		self
-	}
-
-	pub async fn build(&self, client: &Client) -> Result<Subscription, CoreError> {
+	pub async fn build(&self, client: &Client) -> Result<Sub, RpcError> {
 		let block_height = match self.block_height {
 			Some(x) => x,
-			None => match self.kind {
-				SubscriptionKind::BestBlock => client.best_block_height_ext(self.retry_on_error).await?,
-				SubscriptionKind::FinalizedBlock => {
-					client.finalized_block_height_ext(self.retry_on_error, true).await?
-				},
+			None => match self.use_best_block {
+				true => client.best().block_height().await?,
+				false => client.finalized().block_height().await?,
 			},
 		};
 
-		let sub = match self.kind {
-			SubscriptionKind::BestBlock => Subscription::BestBlock(BestBlockSubscriber {
+		let sub = match self.use_best_block {
+			true => Sub::BestBlock(BestBlockSub {
 				poll_rate: self.poll_rate,
 				current_block_height: block_height,
 				block_processed: Vec::new(),
 				retry_on_error: self.retry_on_error,
 				latest_finalized_height: None,
-				stopwatch: std::time::Instant::now(),
 			}),
-			SubscriptionKind::FinalizedBlock => Subscription::FinalizedBlock(FinalizedBlockSubscriber {
+			false => Sub::FinalizedBlock(FinalizedBlockSub {
 				poll_rate: self.poll_rate,
 				next_block_height: block_height,
 				retry_on_error: self.retry_on_error,
 				latest_finalized_height: None,
-				stopwatch: std::time::Instant::now(),
 			}),
 		};
 		Ok(sub)
 	}
 }
 
-impl Default for SubscriptionBuilder {
+impl Default for UnInitSub {
 	fn default() -> Self {
 		Self {
-			kind: Default::default(),
+			use_best_block: false,
 			block_height: Default::default(),
 			poll_rate: Duration::from_secs(3),
 			retry_on_error: true,
@@ -96,427 +67,1066 @@ impl Default for SubscriptionBuilder {
 }
 
 #[derive(Clone)]
-pub struct FinalizedBlockSubscriber {
+pub struct FinalizedBlockSub {
 	poll_rate: Duration,
 	next_block_height: u32,
 	retry_on_error: bool,
 	latest_finalized_height: Option<u32>,
-	stopwatch: std::time::Instant,
 }
 
-impl FinalizedBlockSubscriber {
-	pub async fn run(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
+impl FinalizedBlockSub {
+	pub async fn run(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
 
-		// Dealing with historical blocks
-		if latest_finalized_height >= self.next_block_height {
-			return self.run_historical(client).await;
-		}
+		let result = if latest_finalized_height >= self.next_block_height {
+			self.run_historical(client).await?
+		} else {
+			self.run_head(client).await?
+		};
 
-		// Dealing with most recent blocks
-		self.run_head(client).await.map(Some)
+		self.next_block_height = result.height + 1;
+		Ok(result)
 	}
 
-	pub fn current_block_height(&self) -> u32 {
-		self.next_block_height.saturating_sub(1)
-	}
-
-	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, CoreError> {
-		if self.stopwatch.elapsed().as_secs() > 300 {
-			self.latest_finalized_height = None
-		}
-
+	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, RpcError> {
 		if let Some(height) = self.latest_finalized_height.as_ref() {
 			return Ok(*height);
 		}
 
-		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = client.finalized_block_height_ext(self.retry_on_error, true).await?;
+		let latest_finalized_height = client.finalized().block_height().await?;
 		self.latest_finalized_height = Some(latest_finalized_height);
 		Ok(latest_finalized_height)
 	}
 
-	async fn run_historical(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
-		let block_height = self.next_block_height;
-		let block_hash = client.block_hash_ext(block_height, self.retry_on_error, false).await?;
-		self.next_block_height = block_height + 1;
+	async fn run_historical(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
+		let height = self.next_block_height;
+		let hash = client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
+			.block_hash(Some(height))
+			.await?;
+		let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
-		Ok(block_hash.map(|x| (block_height, x)))
+		Ok(BlockRef { hash, height })
 	}
 
-	async fn run_head(&mut self, client: &Client) -> Result<(u32, H256), CoreError> {
+	async fn run_head(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
 		loop {
-			let head = client.finalized_block_loc_ext(self.retry_on_error, true).await?;
-			if self.next_block_height > head.height {
-				sleep(self.poll_rate).await;
-				continue;
-			}
+			let head = client.finalized().block_info().await?;
 
-			if self.next_block_height == head.height {
-				self.next_block_height += 1;
-				return Ok((head.height, head.hash));
-			}
-
-			let block_height = self.next_block_height;
-			let block_hash = client.block_hash_ext(block_height, true, true).await?;
-			let block_hash = block_hash.ok_or(CoreError::from("Failed to fetch block hash"))?;
-
-			self.next_block_height += 1;
-			return Ok((block_height, block_hash));
-		}
-	}
-}
-
-#[derive(Clone)]
-pub struct BestBlockSubscriber {
-	poll_rate: Duration,
-	current_block_height: u32,
-	block_processed: Vec<H256>,
-	retry_on_error: bool,
-	latest_finalized_height: Option<u32>,
-	stopwatch: std::time::Instant,
-}
-
-impl BestBlockSubscriber {
-	pub async fn run(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
-		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
-
-		// Dealing with historical blocks
-		if latest_finalized_height >= self.current_block_height {
-			return self.run_historical(client).await;
-		}
-
-		// Dealing with most recent blocks
-		self.run_head(client).await.map(Some)
-	}
-
-	pub fn current_block_height(&self) -> u32 {
-		self.current_block_height
-	}
-
-	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, CoreError> {
-		if self.stopwatch.elapsed().as_secs() > 300 {
-			self.latest_finalized_height = None
-		}
-
-		if let Some(height) = self.latest_finalized_height.as_ref() {
-			return Ok(*height);
-		}
-
-		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = client.finalized_block_height_ext(self.retry_on_error, true).await?;
-		self.latest_finalized_height = Some(latest_finalized_height);
-		Ok(latest_finalized_height)
-	}
-
-	async fn run_historical(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
-		let block_height = self.current_block_height;
-		let block_hash = client.block_hash_ext(block_height, self.retry_on_error, false).await?;
-		self.current_block_height = block_height + 1;
-		self.block_processed.clear();
-
-		Ok(block_hash.map(|x| (block_height, x)))
-	}
-
-	async fn run_head(&mut self, client: &Client) -> Result<(u32, H256), CoreError> {
-		loop {
-			let head_hash = client.best_block_hash_ext(self.retry_on_error, true).await?;
-			if self.block_processed.contains(&head_hash) {
-				sleep(self.poll_rate).await;
-				continue;
-			}
-
-			let head_height = client.block_height_ext(head_hash, self.retry_on_error, true).await?;
-			let Some(head_height) = head_height else {
-				return Err(CoreError::from("Failed to fetch block height"));
-			};
-
-			let is_past_block = self.current_block_height > head_height;
+			let is_past_block = self.next_block_height > head.height;
 			if is_past_block {
 				sleep(self.poll_rate).await;
 				continue;
 			}
 
-			let is_current_block = head_height == self.current_block_height;
-			if is_current_block {
-				self.block_processed.push(head_hash);
-				return Ok((head_height, head_hash));
+			if self.next_block_height == head.height {
+				return Ok(head);
 			}
 
-			let no_block_processed_yet = self.block_processed.is_empty();
-			if no_block_processed_yet {
-				let block_hash = client
-					.block_hash_ext(self.current_block_height, self.retry_on_error, true)
-					.await?;
-				let Some(block_hash) = block_hash else {
-					return Err(CoreError::from("Failed to fetch block hash"));
-				};
-
-				self.block_processed.push(head_hash);
-				return Ok((self.current_block_height, block_hash));
-			}
-
-			let is_next_block = head_height == (self.current_block_height + 1);
-			if is_next_block {
-				self.current_block_height = head_height;
-				self.block_processed.clear();
-				self.block_processed.push(head_hash);
-				return Ok((head_height, head_hash));
-			}
-
-			let next_block_height = self.current_block_height + 1;
-			let block_hash = client
-				.block_hash_ext(next_block_height, self.retry_on_error, true)
+			let height = self.next_block_height;
+			let hash = client
+				.rpc()
+				.retry_on(Some(self.retry_on_error), Some(true))
+				.block_hash(Some(height))
 				.await?;
-			let Some(block_hash) = block_hash else {
-				return Err(CoreError::from("Failed to fetch block hash"));
-			};
+			let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
-			self.block_processed.clear();
-			self.block_processed.push(block_hash);
-			self.current_block_height = next_block_height;
-			return Ok((next_block_height, block_hash));
+			return Ok(BlockRef { hash, height });
 		}
 	}
 }
 
 #[derive(Clone)]
-pub enum Subscription {
-	BestBlock(BestBlockSubscriber),
-	FinalizedBlock(FinalizedBlockSubscriber),
+pub struct BestBlockSub {
+	poll_rate: Duration,
+	current_block_height: u32,
+	block_processed: Vec<H256>,
+	retry_on_error: bool,
+	latest_finalized_height: Option<u32>,
 }
 
-impl Subscription {
-	pub async fn run(&mut self, client: &Client) -> Result<Option<(u32, H256)>, CoreError> {
+impl BestBlockSub {
+	pub async fn run(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
+		let latest_finalized_height = self.fetch_latest_finalized_height(client).await?;
+
+		// Dealing with historical blocks
+		if latest_finalized_height >= self.current_block_height {
+			let info = self.run_historical(client).await?;
+			self.current_block_height = info.height + 1;
+			return Ok(info);
+		}
+
+		let info = self.run_head(client).await?;
+		if info.height == self.current_block_height {
+			self.block_processed.push(info.hash);
+		} else {
+			self.block_processed = vec![info.hash];
+			self.current_block_height = info.height;
+		}
+
+		Ok(info)
+	}
+
+	async fn fetch_latest_finalized_height(&mut self, client: &Client) -> Result<u32, RpcError> {
+		if let Some(height) = self.latest_finalized_height.as_ref() {
+			return Ok(*height);
+		}
+
+		let latest_finalized_height = client.finalized().block_height().await?;
+		self.latest_finalized_height = Some(latest_finalized_height);
+		Ok(latest_finalized_height)
+	}
+
+	async fn run_historical(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
+		let height = self.current_block_height;
+		let hash = client
+			.rpc()
+			.retry_on(Some(self.retry_on_error), None)
+			.block_hash(Some(height))
+			.await?;
+		let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
+
+		Ok(BlockRef { hash, height })
+	}
+
+	async fn run_head(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
+		loop {
+			let head = client.best().block_info().await?;
+
+			let is_past_block = self.current_block_height > head.height;
+			let block_already_processed = self.block_processed.contains(&head.hash);
+			if is_past_block || block_already_processed {
+				sleep(self.poll_rate).await;
+				continue;
+			}
+
+			let is_current_block = self.current_block_height == head.height;
+			let is_next_block = self.current_block_height + 1 == head.height;
+			if is_current_block || is_next_block {
+				return Ok(head);
+			}
+
+			let no_block_processed_yet = self.block_processed.is_empty();
+			if no_block_processed_yet {
+				let hash = client
+					.rpc()
+					.retry_on(Some(true), Some(true))
+					.block_hash(Some(self.current_block_height))
+					.await?;
+				let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
+
+				return Ok(BlockRef { hash, height: self.current_block_height });
+			}
+
+			let height = self.current_block_height + 1;
+			let hash = client
+				.rpc()
+				.retry_on(Some(true), Some(true))
+				.block_hash(Some(height))
+				.await?;
+			let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
+
+			return Ok(BlockRef { hash, height });
+		}
+	}
+}
+
+#[derive(Clone)]
+pub enum Sub {
+	UnInit(UnInitSub),
+	BestBlock(BestBlockSub),
+	FinalizedBlock(FinalizedBlockSub),
+}
+
+impl Sub {
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub async fn next(&mut self, client: &Client) -> Result<BlockRef, RpcError> {
+		if let Self::UnInit(u) = self {
+			let concrete = u.build(client).await?;
+			*self = concrete;
+		};
+
 		match self {
 			Self::BestBlock(s) => s.run(client).await,
 			Self::FinalizedBlock(s) => s.run(client).await,
+			_ => unreachable!("We cannot be here."),
 		}
 	}
 
 	pub fn retry_on_error(&self) -> bool {
 		match self {
+			Self::UnInit(u) => u.retry_on_error,
 			Self::BestBlock(s) => s.retry_on_error,
 			Self::FinalizedBlock(s) => s.retry_on_error,
 		}
 	}
 
-	pub fn current_block_height(&self) -> u32 {
-		match self {
-			Self::BestBlock(s) => s.current_block_height(),
-			Self::FinalizedBlock(s) => s.current_block_height(),
+	pub fn set_follow(&mut self, best_block: bool) {
+		if let Self::UnInit(u) = self {
+			u.use_best_block = best_block;
 		}
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		match self {
+			Self::UnInit(u) => u.block_height = Some(block_height),
+			Self::BestBlock(x) => {
+				x.block_processed.clear();
+				x.current_block_height = block_height;
+			},
+			Self::FinalizedBlock(x) => x.next_block_height = block_height,
+		}
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		match self {
+			Self::UnInit(u) => u.poll_rate = value,
+			Self::BestBlock(x) => x.poll_rate = value,
+			Self::FinalizedBlock(x) => x.poll_rate = value,
+		}
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		match self {
+			Self::UnInit(u) => u.retry_on_error = value,
+			Self::BestBlock(x) => x.retry_on_error = value,
+			Self::FinalizedBlock(x) => x.retry_on_error = value,
+		}
+	}
+
+	#[cfg(test)]
+	fn as_finalized(&self) -> &FinalizedBlockSub {
+		if let Self::FinalizedBlock(f) = self {
+			return f;
+		}
+		panic!("Not Finalized Sub");
+	}
+}
+
+impl Default for Sub {
+	fn default() -> Self {
+		Self::UnInit(UnInitSub::default())
 	}
 }
 
 #[derive(Clone)]
-pub struct HeaderSubscription {
+pub struct BlockWithJustSub {
 	client: Client,
-	sub: Subscription,
-	retry_on_error: bool,
+	sub: Sub,
 }
 
-impl HeaderSubscription {
-	pub fn new(client: Client, sub: Subscription) -> Self {
-		let retry_on_error = sub.retry_on_error();
-		Self { client, sub, retry_on_error }
+impl BlockWithJustSub {
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
 	}
 
-	pub async fn next(&mut self) -> Result<Option<AvailHeader>, CoreError> {
-		let block_info = self.sub.run(&self.client).await?;
+	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, RpcError> {
+		let info = self.sub.next(&self.client).await?;
+		let block = match self
+			.client
+			.rpc()
+			.retry_on(Some(self.sub.retry_on_error()), Some(true))
+			.block_with_justification(Some(info.hash))
+			.await
+		{
+			Ok(x) => x,
+			Err(err) => {
+				// Revet block height if we fail to fetch block
+				self.sub.set_block_height(info.height);
+				return Err(err);
+			},
+		};
+		Ok(block)
+	}
 
-		let Some((_, block_hash)) = block_info else {
-			return Ok(None);
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
+	}
+}
+
+#[derive(Clone)]
+pub struct BlockSub {
+	client: Client,
+	sub: Sub,
+}
+
+impl BlockSub {
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
+	}
+
+	pub async fn next(&mut self) -> Result<(Block, BlockRef), RpcError> {
+		let info = self.sub.next(&self.client).await?;
+		Ok((Block::new(self.client.clone(), info.hash), info))
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
+	}
+}
+
+#[derive(Clone)]
+pub struct TransactionSub<T: HasHeader + Decode> {
+	client: Client,
+	sub: Sub,
+	opts: BlockExtOptionsSimple,
+	_phantom: PhantomData<T>,
+}
+
+impl<T: HasHeader + Decode> TransactionSub<T> {
+	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
+		Self { client, sub: Sub::new(), opts, _phantom: Default::default() }
+	}
+
+	pub async fn next(&mut self) -> Result<(Vec<BlockTransaction<T>>, BlockRef), crate::Error> {
+		loop {
+			let info = self.sub.next(&self.client).await?;
+			let mut block = BlockWithTx::new(self.client.clone(), info.hash);
+			block.set_retry_on_error(self.sub.retry_on_error());
+
+			let txs = match block.all::<T>(self.opts.clone()).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.set_block_height(info.height);
+					return Err(err);
+				},
+			};
+
+			if txs.is_empty() {
+				continue;
+			}
+
+			return Ok((txs, info));
+		}
+	}
+
+	pub fn set_opts(&mut self, value: BlockExtOptionsSimple) {
+		self.opts = value;
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
+	pub fn set_block_height(&mut self, value: u32) {
+		self.sub.set_block_height(value);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
+	}
+}
+
+#[derive(Clone)]
+pub struct ExtrinsicSub<T: HasHeader + Decode> {
+	client: Client,
+	sub: Sub,
+	opts: BlockExtOptionsSimple,
+	_phantom: PhantomData<T>,
+}
+
+impl<T: HasHeader + Decode> ExtrinsicSub<T> {
+	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
+		Self { client, sub: Sub::new(), opts, _phantom: Default::default() }
+	}
+
+	pub async fn next(&mut self) -> Result<(Vec<BlockExtrinsic<T>>, BlockRef), crate::Error> {
+		loop {
+			let info = self.sub.next(&self.client).await?;
+			let mut block = BlockWithExt::new(self.client.clone(), info.hash);
+			block.set_retry_on_error(self.sub.retry_on_error());
+
+			let txs = match block.all::<T>(self.opts.clone()).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.set_block_height(info.height);
+					return Err(err);
+				},
+			};
+
+			if txs.is_empty() {
+				continue;
+			}
+
+			return Ok((txs, info));
+		}
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
+	}
+}
+
+#[derive(Clone)]
+pub struct RawExtrinsicSub {
+	client: Client,
+	sub: Sub,
+	opts: BlockExtOptionsExpanded,
+}
+
+impl RawExtrinsicSub {
+	pub fn new(client: Client, opts: BlockExtOptionsExpanded) -> Self {
+		Self { client, sub: Sub::new(), opts }
+	}
+
+	pub async fn next(&mut self) -> Result<(Vec<BlockRawExtrinsic>, BlockRef), crate::Error> {
+		loop {
+			let info = self.sub.next(&self.client).await?;
+			let mut block = BlockWithRawExt::new(self.client.clone(), info.hash);
+			block.set_retry_on_error(self.sub.retry_on_error());
+
+			let txs = match block.all(self.opts.clone()).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.set_block_height(info.height);
+					return Err(err);
+				},
+			};
+
+			if txs.is_empty() {
+				continue;
+			}
+
+			return Ok((txs, info));
+		}
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
+	}
+}
+
+#[derive(Clone)]
+pub struct EventsSub {
+	client: Client,
+	sub: Sub,
+	opts: BlockEventsOptions,
+}
+
+impl EventsSub {
+	pub fn new(client: Client, opts: BlockEventsOptions) -> Self {
+		Self { client, sub: Sub::new(), opts }
+	}
+
+	pub async fn next(&mut self) -> Result<Vec<BlockPhaseEvent>, crate::Error> {
+		loop {
+			let info = self.sub.next(&self.client).await?;
+			let block = BlockEvents::new(self.client.clone(), info.hash);
+			let events = match block.block(self.opts.clone()).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch events
+					self.sub.set_block_height(info.height);
+					return Err(err);
+				},
+			};
+
+			if events.is_empty() {
+				continue;
+			}
+
+			return Ok(events);
+		}
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
+	}
+}
+
+#[derive(Clone)]
+pub struct BlockHeaderSub {
+	client: Client,
+	sub: Sub,
+}
+
+impl BlockHeaderSub {
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
+	}
+
+	pub async fn next(&mut self) -> Result<Option<AvailHeader>, RpcError> {
+		let info = self.sub.next(&self.client).await?;
+		let header = match self
+			.client
+			.rpc()
+			.retry_on(Some(self.sub.retry_on_error()), Some(true))
+			.block_header(Some(info.hash))
+			.await
+		{
+			Ok(x) => x,
+			Err(err) => {
+				// Revet block height if we fail to fetch block header
+				self.sub.set_block_height(info.height);
+				return Err(err);
+			},
 		};
 
+		Ok(header)
+	}
+
+	pub fn set_follow(&mut self, best_block: bool) {
+		self.sub.set_follow(best_block);
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
+	}
+}
+
+#[derive(Clone)]
+pub struct GrandpaJustificationSub {
+	client: Client,
+	sub: Sub,
+}
+
+impl GrandpaJustificationSub {
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
+	}
+
+	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
+		loop {
+			let info = self.sub.next(&self.client).await?;
+			let retry = self.sub.retry_on_error();
+			let just = match self.fetch_justification(info.height, retry).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.set_block_height(info.height);
+					return Err(err);
+				},
+			};
+
+			let Some(just) = just else {
+				continue;
+			};
+
+			return Ok(just);
+		}
+	}
+
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
+	}
+
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
+	}
+
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
+	}
+
+	async fn fetch_justification(&self, height: u32, retry: bool) -> Result<Option<GrandpaJustification>, RpcError> {
 		self.client
-			.block_header_ext(block_hash, self.retry_on_error, true)
+			.rpc()
+			.retry_on(Some(retry), None)
+			.grandpa_block_justification(height)
 			.await
 	}
-
-	pub fn current_block_height(&self) -> u32 {
-		self.sub.current_block_height()
-	}
 }
 
 #[derive(Clone)]
-pub struct BlockSubscription {
+pub struct GrandpaJustificationJsonSub {
 	client: Client,
-	sub: Subscription,
-	retry_on_error: bool,
+	sub: Sub,
 }
 
-impl BlockSubscription {
-	pub fn new(client: Client, sub: Subscription) -> Self {
-		let retry_on_error = sub.retry_on_error();
-		Self { client, sub, retry_on_error }
+impl GrandpaJustificationJsonSub {
+	pub fn new(client: Client) -> Self {
+		Self { client, sub: Sub::new() }
 	}
 
-	pub async fn next(&mut self) -> Result<Option<BlockWithJustifications>, CoreError> {
-		let block_info = self.sub.run(&self.client).await?;
-
-		let Some((_, block_hash)) = block_info else {
-			return Ok(None);
-		};
-
-		self.client.block_ext(block_hash, self.retry_on_error, true).await
-	}
-
-	pub fn current_block_height(&self) -> u32 {
-		self.sub.current_block_height()
-	}
-}
-
-#[derive(Clone)]
-pub struct GrandpaJustificationSubscription {
-	client: Client,
-	next_block_height: u32,
-	poll_rate: Duration,
-	latest_finalized_height: Option<u32>,
-	stopwatch: std::time::Instant,
-}
-
-impl GrandpaJustificationSubscription {
-	pub fn new(client: Client, poll_rate: Duration, next_block_height: u32) -> Self {
-		Self {
-			client,
-			next_block_height,
-			poll_rate,
-			latest_finalized_height: None,
-			stopwatch: std::time::Instant::now(),
-		}
-	}
-
-	pub async fn next(&mut self) -> Result<GrandpaJustification, CoreError> {
+	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
-			let latest_finalized_height = self.fetch_latest_finalized_height().await?;
-
-			// Dealing with historical blocks
-			let block_height = if latest_finalized_height > self.next_block_height {
-				self.run_historical()
-			} else {
-				self.run_head().await?
+			let info = self.sub.next(&self.client).await?;
+			let retry = self.sub.retry_on_error();
+			let just = match self.fetch_justification(info.height, retry).await {
+				Ok(x) => x,
+				Err(err) => {
+					// Revet block height if we fail to fetch transactions
+					self.sub.set_block_height(info.height);
+					return Err(err);
+				},
 			};
 
-			let justification = self
-				.client
-				.rpc_api()
-				.grandpa_block_justification_ext(block_height, true)
-				.await?;
-			self.next_block_height += 1;
-
-			let Some(justification) = justification else {
+			let Some(just) = just else {
 				continue;
 			};
 
-			return Ok(justification);
+			return Ok(just);
 		}
 	}
 
-	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, CoreError> {
-		if self.stopwatch.elapsed().as_secs() > 300 {
-			self.latest_finalized_height = None
-		}
-
-		if let Some(height) = self.latest_finalized_height.as_ref() {
-			return Ok(*height);
-		}
-
-		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = self.client.finalized_block_height_ext(true, true).await?;
-		self.latest_finalized_height = Some(latest_finalized_height);
-		Ok(latest_finalized_height)
+	pub fn set_block_height(&mut self, block_height: u32) {
+		self.sub.set_block_height(block_height);
 	}
 
-	fn run_historical(&mut self) -> u32 {
-		self.next_block_height
+	pub fn set_pool_rate(&mut self, value: Duration) {
+		self.sub.set_pool_rate(value);
 	}
 
-	async fn run_head(&mut self) -> Result<u32, CoreError> {
-		loop {
-			let head = self.client.finalized_block_loc_ext(true, true).await?;
-			if self.next_block_height > head.height {
-				sleep(self.poll_rate).await;
-				continue;
-			}
-			return Ok(self.next_block_height);
-		}
+	pub fn set_retry_on_error(&mut self, value: bool) {
+		self.sub.set_retry_on_error(value);
+	}
+
+	async fn fetch_justification(&self, height: u32, retry: bool) -> Result<Option<GrandpaJustification>, RpcError> {
+		self.client
+			.rpc()
+			.retry_on(Some(retry), None)
+			.grandpa_block_justification_json(height)
+			.await
 	}
 }
 
-#[derive(Clone)]
-pub struct GrandpaJustificationJsonSubscription {
-	client: Client,
-	next_block_height: u32,
-	poll_rate: Duration,
-	latest_finalized_height: Option<u32>,
-	stopwatch: std::time::Instant,
-}
+#[cfg(test)]
+mod tests {
+	use avail_rust_core::{
+		avail::data_availability::tx::SubmitData, grandpa::GrandpaJustification,
+		rpc::system::fetch_extrinsics::ExtrinsicInformation,
+	};
 
-impl GrandpaJustificationJsonSubscription {
-	pub fn new(client: Client, poll_rate: Duration, next_block_height: u32) -> Self {
-		Self {
-			client,
-			next_block_height,
-			poll_rate,
-			latest_finalized_height: None,
-			stopwatch: std::time::Instant::now(),
-		}
+	use crate::{
+		block::BlockExtOptionsExpanded,
+		clients::mock_client::MockClient,
+		error::Error,
+		prelude::*,
+		subscription::{
+			BlockHeaderSub, BlockSub, BlockWithJustSub, ExtrinsicSub, GrandpaJustificationJsonSub,
+			GrandpaJustificationSub, RawExtrinsicSub, TransactionSub,
+		},
+		subxt_rpcs::RpcClient,
+	};
+
+	#[tokio::test]
+	async fn grandpa_justification_sub_test() -> Result<(), Error> {
+		_ = Client::init_tracing(false);
+		let (rpc_client, mut commander) = MockClient::new(MAINNET_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical block
+		let mut sub = GrandpaJustificationSub::new(client.clone());
+
+		sub.set_block_height(1900031);
+		let n = sub.next().await?;
+		assert_eq!(n.commit.target_number, 1900032);
+
+		sub.set_block_height(1900122);
+		let n = sub.next().await?;
+		assert_eq!(n.commit.target_number, 1900122);
+
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		commander.justification_ok(Some(GrandpaJustification::default())); // 1
+		commander.justification_ok(None); // 2
+		commander.justification_ok(Some(GrandpaJustification::default())); // 3
+		commander.justification_err(None); // 4
+		commander.justification_ok(Some(GrandpaJustification::default())); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
 	}
 
-	pub async fn next(&mut self) -> Result<GrandpaJustification, CoreError> {
-		loop {
-			let latest_finalized_height = self.fetch_latest_finalized_height().await?;
+	#[tokio::test]
+	async fn grandpa_justification_json_sub_test() -> Result<(), Error> {
+		let (rpc_client, mut commander) = MockClient::new(MAINNET_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
 
-			// Dealing with historical blocks
-			let block_height = if latest_finalized_height > self.next_block_height {
-				self.run_historical()
-			} else {
-				self.run_head().await?
-			};
+		// Historical block
+		let mut sub = GrandpaJustificationJsonSub::new(client.clone());
 
-			let justification = self
-				.client
-				.rpc_api()
-				.grandpa_block_justification_json_ext(block_height, true)
-				.await?;
-			self.next_block_height += 1;
+		sub.set_block_height(1900031);
+		let n = sub.next().await?;
+		assert_eq!(n.commit.target_number, 1900032);
 
-			let Some(justification) = justification else {
-				continue;
-			};
+		sub.set_block_height(1900122);
+		let n = sub.next().await?;
+		assert_eq!(n.commit.target_number, 1900122);
 
-			return Ok(justification);
-		}
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		commander.justification_json_ok(Some(GrandpaJustification::default())); // 1
+		commander.justification_json_ok(None); // 2
+		commander.justification_json_ok(Some(GrandpaJustification::default())); // 3
+		commander.justification_json_err(None); // 4
+		commander.justification_json_ok(Some(GrandpaJustification::default())); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
 	}
 
-	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, CoreError> {
-		if self.stopwatch.elapsed().as_secs() > 300 {
-			self.latest_finalized_height = None
-		}
+	#[tokio::test]
+	async fn extrinsic_sub_test() -> Result<(), Error> {
+		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
 
-		if let Some(height) = self.latest_finalized_height.as_ref() {
-			return Ok(*height);
-		}
+		// Historical blocks
+		let mut sub = ExtrinsicSub::<SubmitData>::new(client.clone(), Default::default());
 
-		self.stopwatch = std::time::Instant::now();
-		let latest_finalized_height = self.client.finalized_block_height_ext(true, true).await?;
-		self.latest_finalized_height = Some(latest_finalized_height);
-		Ok(latest_finalized_height)
+		sub.set_block_height(2326671);
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326672);
+		assert_eq!(list.len(), 1);
+
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326674);
+		assert_eq!(list.len(), 1);
+
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		let mut data = ExtrinsicInformation::default();
+		let tx = client.tx().data_availability().submit_data("1234");
+		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+
+		commander.extrinsics_ok(vec![data.clone()]); // 1
+		commander.extrinsics_ok(vec![]); // 2
+		commander.extrinsics_ok(vec![data.clone()]); // 3
+		commander.extrinsics_err(None); // 4
+		commander.extrinsics_ok(vec![data.clone()]); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
 	}
 
-	fn run_historical(&mut self) -> u32 {
-		self.next_block_height
+	#[tokio::test]
+	async fn transaction_sub_test() -> Result<(), Error> {
+		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical blocks
+		let mut sub = TransactionSub::<SubmitData>::new(client.clone(), Default::default());
+
+		sub.set_block_height(2326671);
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326672);
+		assert_eq!(list.len(), 1);
+
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326674);
+		assert_eq!(list.len(), 1);
+
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		let mut data = ExtrinsicInformation::default();
+		let tx = client.tx().data_availability().submit_data("1234");
+		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+
+		commander.extrinsics_ok(vec![data.clone()]); // 1
+		commander.extrinsics_ok(vec![]); // 2
+		commander.extrinsics_ok(vec![data.clone()]); // 3
+		commander.extrinsics_err(None); // 4
+		commander.extrinsics_ok(vec![data.clone()]); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
 	}
 
-	async fn run_head(&mut self) -> Result<u32, CoreError> {
-		loop {
-			let head = self.client.finalized_block_loc_ext(true, true).await?;
-			if self.next_block_height > head.height {
-				sleep(self.poll_rate).await;
-				continue;
-			}
-			return Ok(self.next_block_height);
-		}
+	#[tokio::test]
+	async fn raw_extrinsic_sub_test() -> Result<(), Error> {
+		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical blocks
+		let opts = BlockExtOptionsExpanded { filter: Some((29u8, 1u8).into()), ..Default::default() };
+		let mut sub = RawExtrinsicSub::new(client.clone(), opts);
+
+		sub.set_block_height(2326671);
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326672);
+		assert_eq!(list.len(), 1);
+
+		let (list, info) = sub.next().await?;
+		assert_eq!(info.height, 2326674);
+		assert_eq!(list.len(), 1);
+
+		// Testing recovery
+		sub.set_block_height(1);
+		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		let mut data = ExtrinsicInformation::default();
+		let tx = client.tx().data_availability().submit_data("1234");
+		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+
+		commander.extrinsics_ok(vec![data.clone()]); // 1
+		commander.extrinsics_ok(vec![]); // 2
+		commander.extrinsics_ok(vec![data.clone()]); // 3
+		commander.extrinsics_err(None); // 4
+		commander.extrinsics_ok(vec![data.clone()]); // 4
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		sub.set_retry_on_error(false);
+		let _ = sub.next().await.expect_err("Expect Error");
+		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+
+		let _ = sub.next().await?;
+		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+
+		Ok(())
+	}
+
+	// This test will be by flaky and that is OK.
+	#[tokio::test]
+	pub async fn block_sub_test() -> Result<(), Error> {
+		let (rpc_client, _commander) = MockClient::new(TURING_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical block
+		let mut sub = BlockSub::new(client.clone());
+		sub.set_block_height(1908729);
+
+		let (_, info) = sub.next().await?;
+		assert_eq!(info.height, 1908729);
+
+		let (_, info) = sub.next().await?;
+		assert_eq!(info.height, 1908730);
+
+		// Best Block
+		let expected = client.best().block_height().await?;
+		let mut sub = BlockSub::new(client.clone());
+		sub.set_follow(true);
+
+		let (_, info) = sub.next().await?;
+		assert_eq!(info.height, expected);
+
+		// Finalized Block
+		let expected = client.finalized().block_height().await?;
+		let mut sub = BlockSub::new(client);
+		sub.set_follow(false);
+
+		let (_, info) = sub.next().await?;
+		assert_eq!(info.height, expected);
+
+		Ok(())
+	}
+
+	// This test will be by flaky and that is OK.
+	#[tokio::test]
+	pub async fn header_sub_test() -> Result<(), Error> {
+		let (rpc_client, _commander) = MockClient::new(TURING_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical block
+		let mut sub = BlockHeaderSub::new(client.clone());
+		sub.set_block_height(1908729);
+
+		let header = sub.next().await?.unwrap();
+		assert_eq!(header.number, 1908729);
+
+		let header = sub.next().await?.unwrap();
+		assert_eq!(header.number, 1908730);
+
+		// Best Block
+		let expected = client.best().block_height().await?;
+		let mut sub = BlockHeaderSub::new(client.clone());
+		sub.set_follow(true);
+
+		let header = sub.next().await?.unwrap();
+		assert_eq!(header.number, expected);
+
+		// Finalized Block
+		let expected = client.finalized().block_height().await?;
+		let mut sub = BlockHeaderSub::new(client);
+		sub.set_follow(false);
+
+		let header = sub.next().await?.unwrap();
+		assert_eq!(header.number, expected);
+
+		Ok(())
+	}
+
+	// This test will be by flaky and that is OK.
+	#[tokio::test]
+	pub async fn block_w_just_sub_test() -> Result<(), Error> {
+		let (rpc_client, _commander) = MockClient::new(TURING_ENDPOINT);
+		let client = Client::new_rpc_client(RpcClient::new(rpc_client)).await?;
+
+		// Historical block
+		let mut sub = BlockWithJustSub::new(client.clone());
+		sub.set_block_height(1908729);
+
+		let block = sub.next().await?.unwrap();
+		assert_eq!(block.block.header.number, 1908729);
+
+		let block = sub.next().await?.unwrap();
+		assert_eq!(block.block.header.number, 1908730);
+
+		// Best Block
+		let expected = client.best().block_height().await?;
+		let mut sub = BlockWithJustSub::new(client.clone());
+		sub.set_follow(true);
+
+		let block = sub.next().await?.unwrap();
+		assert_eq!(block.block.header.number, expected);
+
+		// Finalized Block
+		let expected = client.finalized().block_height().await?;
+		let mut sub = BlockWithJustSub::new(client);
+		sub.set_follow(false);
+
+		let block = sub.next().await?.unwrap();
+		assert_eq!(block.block.header.number, expected);
+
+		Ok(())
 	}
 }

@@ -1,49 +1,43 @@
-use avail_rust_core::ext::codec;
-
-#[derive(Debug)]
-#[repr(u8)]
-pub enum ClientError {
-	#[cfg(feature = "subxt")]
-	Subxt(crate::subxt::Error) = 0,
-	Core(avail_rust_core::Error) = 1,
-	Custom(String) = 2,
-	Codec(codec::Error) = 3,
-	Hex(const_hex::FromHexError) = 4,
+#[derive(thiserror::Error, Debug)]
+pub enum UserError {
+	#[error("{0}")]
+	Decoding(String),
+	#[error("{0}")]
+	ValidationFailed(String),
+	#[error("{0}")]
+	Other(String),
 }
 
-impl From<avail_rust_core::Error> for ClientError {
-	fn from(value: avail_rust_core::Error) -> Self {
-		Self::Core(value)
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+	#[error("{0}")]
+	RpcError(avail_rust_core::rpc::Error),
+	#[error("{0}")]
+	User(UserError),
+	#[error("{0}")]
+	Other(String),
+}
+
+impl From<avail_rust_core::rpc::Error> for Error {
+	fn from(value: avail_rust_core::rpc::Error) -> Self {
+		Self::RpcError(value)
 	}
 }
 
-impl From<String> for ClientError {
-	fn from(value: String) -> Self {
-		Self::Custom(value)
+impl From<UserError> for Error {
+	fn from(value: UserError) -> Self {
+		Self::User(value)
 	}
 }
 
-impl From<&str> for ClientError {
+impl From<&str> for Error {
 	fn from(value: &str) -> Self {
-		Self::Custom(String::from(value))
+		Self::Other(value.to_owned())
 	}
 }
 
-impl From<codec::Error> for ClientError {
+impl From<codec::Error> for Error {
 	fn from(value: codec::Error) -> Self {
-		Self::Codec(value)
-	}
-}
-
-impl From<const_hex::FromHexError> for ClientError {
-	fn from(value: const_hex::FromHexError) -> Self {
-		Self::Hex(value)
-	}
-}
-
-#[cfg(feature = "subxt")]
-impl From<crate::subxt::Error> for ClientError {
-	fn from(value: crate::subxt::Error) -> Self {
-		Self::Subxt(value)
+		Self::Other(value.to_string())
 	}
 }

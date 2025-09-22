@@ -23,8 +23,10 @@ examples-fmt:
 examples-check:
     ./scripts/examples.sh check
 test:
-    cargo test
+    cargo test -- --nocapture
 podman:
     podman run -it --rm --network host docker.io/availj/avail:v2.3.2.0 --dev
 docker:
     docker run -it --rm --network host docker.io/availj/avail:v2.3.2.0 --dev
+book:
+    cd book && mdbook serve

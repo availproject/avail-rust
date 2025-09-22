@@ -1,47 +1,37 @@
+pub mod block;
 pub mod clients;
 pub mod config;
 pub mod constants;
 pub mod error;
 pub mod extensions;
+pub mod extrinsic;
 pub mod platform;
 pub mod subscription;
-pub mod transaction;
 pub mod transaction_options;
 pub mod transactions;
 
-pub use clients::{BlockTransactionsBuilder, Client};
+pub use block::{ExtrinsicEvent, ExtrinsicEvents};
+pub use clients::Client;
 pub use constants::{
-	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, TURING_ENDPOINT, TURING_WS_ENDPOINT,
+	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, ONE_AVAIL, ONE_HUNDRED_AVAIL,
+	ONE_THOUSAND_AVAIL, TEN_AVAIL, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
-pub use error::ClientError;
 pub use extensions::{AccountIdExt, H256Ext, KeypairExt, SecretUriExt};
-pub use transaction::{
-	BlockState, ReceiptMethod, SubmittableTransaction, SubmittableTransactionLike, SubmittedTransaction,
-	TransactionReceipt,
-};
+pub use extrinsic::{BlockState, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
 pub use transaction_options::{MortalityOption, Options, RefinedMortality, RefinedOptions};
 
-#[cfg(feature = "subxt")]
-pub use avail_rust_core::ext::subxt;
 pub use avail_rust_core::{
-	self, FetchEventsV1Options, FetchExtrinsicsV1Options,
+	self, AccountId, AvailHeader, BlockRef, CompactDataLookup, EncodeSelector, Extrinsic, ExtrinsicCall,
+	ExtrinsicExtra, ExtrinsicSignature, HasHeader, HashNumber, HeaderExtension, KateCommitment, MultiAddress,
+	RawExtrinsic, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator,
+	StorageValue, TransactionDecodable, TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
 	ext::{codec, primitive_types, scale_info, subxt_core, subxt_rpcs, subxt_signer},
+	multi_account_id,
 };
-
-#[cfg(feature = "generated_metadata")]
-pub use avail_rust_core::avail_generated;
-
-#[cfg(feature = "generated_metadata")]
-pub use extensions::DefaultPayloadExt;
-
-// Exporting types from ext libraries
-pub use avail_rust_core::{
-	AccountId, AvailHeader, BlockRef, CompactDataLookup, DecodedTransaction, EncodeSelector, HasEventEmittedIndex,
-	HasTxDispatchIndex, HashNumber, HeaderExtension, KateCommitment, MultiAddress, OpaqueTransaction, StorageDoubleMap,
-	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue, Transaction,
-	TransactionAdditional, TransactionCall, TransactionConvertible, TransactionDecodable, TransactionEventDecodable,
-	TransactionEventEncodable, TransactionExtra, TransactionPayload, TransactionSigned, V3HeaderExtension, avail,
+pub use block::{
+	Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt, BlockWithTx,
 };
+pub use error::{Error, UserError};
 pub use primitive_types::{H256, U256};
 pub use subxt_signer::{SecretUri, sr25519::Keypair};
 

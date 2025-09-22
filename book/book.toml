@@ -1,0 +1,16 @@
+[book]
+authors = ["Marko Petrlic"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Avail Rust & JS SDK"
+
+[preprocessor.langtabs]
+command = "mdbook-langtabs"
+
+[output.html]
+additional-css = ["langtabs.css"]
+additional-js = ["langtabs.js"]
+
+[output.html.playground]
+runnable = false

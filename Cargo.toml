@@ -7,24 +7,23 @@ resolver = "2"
 
 [workspace.package]
 edition = "2024"
-version = "0.2.16"
+version = "0.4.0-rc.1"
 license = "ISC"
 repository = "https://github.com/availproject/avail-rust"
 
 [workspace.dependencies]
-tokio = { version = "1.45.0", default-features = false, features = ["sync", "time", "rt"] }
-serde = { version = "1.0.195", default-features = false, features = ["derive" ] }
-serde_json = { version = "1.0.124", default-features = false, features = ["raw_value"] }
+tokio = { version = "1.47", default-features = false, features = ["sync", "time", "rt"] }
+serde = { version = "1.0", default-features = false, features = ["derive" ] }
+serde_json = { version = "1.0", default-features = false, features = ["raw_value"] }
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
 impl-serde = { version = "0.5.0", default-features = false }
-const-hex = { version = "1.14.1", default-features = false, features = ["alloc"] }
-base58 = { version = "0.2.0", default-features = false }
+const-hex = { version = "1.16", default-features = false, features = ["alloc"] }
 primitive-types = { version = "0.13.1", default-features = false }
 futures = { version = "0.3.31", default-features = false }
 
 # Logs
 tracing = { version = "0.1.41", default-features = false }
-tracing-subscriber = { version = "0.3.19", default-features = false }
+tracing-subscriber = { version = "0.3.20", default-features = false }
 
 # Scale
 scale-info = { version = "2.11.6", default-features = false, features = ["bit-vec"] }
@@ -38,14 +37,11 @@ sp-crypto-hashing = { version = "0.1.0", default-features = false }
 subxt-core = { version = "0.41.0", default-features = false }
 subxt-signer = { version = "0.41.0", default-features = false, features = ["sr25519", "subxt"] }
 subxt-rpcs = { version = "0.41.0", default-features = false }
-thiserror = { version = "2.0.12", default-features = false }
+thiserror = { version = "2.0", default-features = false }
 
 # Enabled with reqwest
 reqwest = { version = "0.12.22", default-features = false, features = ["json", "default-tls"] }
 
-# Enabled with Subxt
-subxt = { version = "0.41.0", default-features = false }
-
 # Enabled with Wasm
-wasm-bindgen-futures = { version =  "0.4.50" }
-wasmtimer = { version = "0.4.1" }
+wasm-bindgen-futures = { version =  "0.4" }
+wasmtimer = { version = "0.4" }

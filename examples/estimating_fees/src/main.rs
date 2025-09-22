@@ -9,7 +9,7 @@ async fn main() -> Result<(), ClientError> {
 	println!("Fees: {}", estimated_fees.final_fee());
 
 	let estimated_fees = submittable
-		.estimate_extrinsic_fees(&alice(), Options::new(Some(2)), None)
+		.estimate_extrinsic_fees(&alice(), Options::new(2), None)
 		.await?;
 	println!("Fees: {}", estimated_fees.final_fee());
 

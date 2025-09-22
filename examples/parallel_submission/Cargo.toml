@@ -1,0 +1,10 @@
+[workspace]
+
+[package]
+name = "parallel-submission-example"
+edition = "2024"
+
+
+[dependencies]
+avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest", "tracing"] }
+tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }

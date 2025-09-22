@@ -1,3 +1,4 @@
+use super::Error;
 use crate::avail;
 use codec::{Decode, Encode};
 use primitive_types::{H256, U256};
@@ -114,7 +115,7 @@ pub struct GCellBlock {
 	pub end_y: u32,
 }
 
-pub async fn block_length(client: &RpcClient, at: Option<H256>) -> Result<BlockLength, subxt_rpcs::Error> {
+pub async fn block_length(client: &RpcClient, at: Option<H256>) -> Result<BlockLength, Error> {
 	let params = rpc_params![at];
 	let value = client.request("kate_blockLength", params).await?;
 	Ok(value)
@@ -124,24 +125,20 @@ pub async fn query_data_proof(
 	client: &RpcClient,
 	transaction_index: u32,
 	at: Option<H256>,
-) -> Result<ProofResponse, subxt_rpcs::Error> {
+) -> Result<ProofResponse, Error> {
 	let params = rpc_params![transaction_index, at];
 	let value = client.request("kate_queryDataProof", params).await?;
 	Ok(value)
 }
 
-pub async fn query_proof(
-	client: &RpcClient,
-	cells: Vec<Cell>,
-	at: Option<H256>,
-) -> Result<Vec<GDataProof>, subxt_rpcs::Error> {
+pub async fn query_proof(client: &RpcClient, cells: Vec<Cell>, at: Option<H256>) -> Result<Vec<GDataProof>, Error> {
 	let params = rpc_params![cells, at];
 	let value = client.request("kate_queryProof", params).await?;
 	Ok(value)
 }
 
 /// Constraint: You can pass up to 64 rows
-pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, subxt_rpcs::Error> {
+pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, Error> {
 	let params = rpc_params![rows, at];
 	let value = client.request("kate_queryRows", params).await?;
 	Ok(value)
@@ -151,7 +148,7 @@ pub async fn query_multi_proof(
 	client: &RpcClient,
 	at: Option<H256>,
 	cells: Vec<Cell>,
-) -> Result<Vec<(GMultiProof, GCellBlock)>, subxt_rpcs::Error> {
+) -> Result<Vec<(GMultiProof, GCellBlock)>, Error> {
 	let params = rpc_params![cells.to_vec(), at];
 	let proofs: Vec<(GMultiProof, GCellBlock)> = client.request("kate_queryMultiProof", params).await?;
 

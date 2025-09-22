@@ -1,12 +1,14 @@
-pub mod block_client;
-pub mod event_client;
 pub mod main_client;
 pub mod online_client;
-pub mod rpc_api;
-pub mod runtime_api;
+pub mod utils;
+
+#[cfg(test)]
+pub mod mock_client;
 
 #[cfg(feature = "reqwest")]
 pub mod reqwest_client;
+pub use online_client::OnlineClient;
+#[cfg(feature = "reqwest")]
+pub use reqwest_client::ReqwestClient;
 
-pub use block_client::BlockTransactionsBuilder;
 pub use main_client::Client;

@@ -1,12 +1,12 @@
-use crate::subxt_signer::{SecretUri, sr25519::Keypair};
-use avail_rust_core::{AccountId, H256};
-
-#[cfg(feature = "generated_metadata")]
-use crate::subxt_core::tx::payload::DefaultPayload;
-#[cfg(feature = "generated_metadata")]
-use crate::{Client, SubmittableTransaction};
-#[cfg(feature = "generated_metadata")]
-use avail_rust_core::TransactionCall;
+use crate::{
+	UserError,
+	subxt_signer::{SecretUri, sr25519::Keypair},
+};
+use avail_rust_core::{
+	AccountId, H256,
+	ext::subxt_core::utils::AccountId32,
+	utils::{account_id_from_slice, account_id_from_str},
+};
 
 pub trait H256Ext {
 	fn from_str(s: &str) -> Result<H256, String>;
@@ -43,83 +43,46 @@ impl H256Ext for H256 {
 pub trait AccountIdExt {
 	fn from_str(value: &str) -> Result<AccountId, String>;
 	fn from_slice(value: &[u8]) -> Result<AccountId, String>;
+	fn default() -> AccountId;
 }
 
 impl AccountIdExt for AccountId {
 	fn from_str(value: &str) -> Result<AccountId, String> {
-		value.parse().map_err(|e| std::format!("{:?}", e))
+		account_id_from_str(value)
 	}
 
 	fn from_slice(value: &[u8]) -> Result<AccountId, String> {
-		let account_id: [u8; 32] = match value.try_into() {
-			Ok(x) => x,
-			Err(err) => return Err(err.to_string()),
-		};
+		account_id_from_slice(value)
+	}
 
-		Ok(AccountId { 0: account_id })
+	fn default() -> AccountId {
+		AccountId32([0u8; 32])
 	}
 }
 
 pub trait SecretUriExt {
-	fn from_str(value: &str) -> Result<SecretUri, String>;
+	fn from_str(value: &str) -> Result<SecretUri, UserError>;
 }
 
 impl SecretUriExt for SecretUri {
-	fn from_str(value: &str) -> Result<SecretUri, String> {
-		value.parse().map_err(|e| std::format!("{:?}", e))
+	fn from_str(value: &str) -> Result<SecretUri, UserError> {
+		value.parse().map_err(|e| UserError::Other(std::format!("{:?}", e)))
 	}
 }
 
 pub trait KeypairExt {
-	fn from_str(value: &str) -> Result<Keypair, String>;
+	fn from_str(value: &str) -> Result<Keypair, UserError>;
 	fn account_id(&self) -> AccountId;
 }
 
 impl KeypairExt for Keypair {
-	fn from_str(value: &str) -> Result<Keypair, String> {
-		let secret_uri = SecretUri::from_str(value).map_err(|e| e.to_string())?;
-		let keypair = Keypair::from_uri(&secret_uri).map_err(|e| e.to_string())?;
+	fn from_str(value: &str) -> Result<Keypair, UserError> {
+		let secret_uri = SecretUri::from_str(value).map_err(|e| UserError::Other(e.to_string()))?;
+		let keypair = Keypair::from_uri(&secret_uri).map_err(|e| UserError::Other(e.to_string()))?;
 		Ok(keypair)
 	}
 
 	fn account_id(&self) -> AccountId {
 		self.public_key().to_account_id()
-	}
-}
-
-#[cfg(feature = "generated_metadata")]
-pub trait DefaultPayloadExt {
-	fn to_transaction_call(&self, client: &Client) -> Result<TransactionCall, String>;
-	fn to_submittable_transaction(&self, client: Client) -> Result<SubmittableTransaction, String>;
-}
-
-#[cfg(feature = "generated_metadata")]
-impl<CallData: crate::codec::Encode> DefaultPayloadExt for DefaultPayload<CallData> {
-	fn to_transaction_call(&self, client: &Client) -> Result<TransactionCall, String> {
-		let pallet_name = self.pallet_name();
-		let call_name = self.call_name();
-
-		let metadata = client.online_client().metadata();
-		let Some(pallet) = metadata.pallet_by_name(pallet_name) else {
-			return Err("Failed to find pallet index".into());
-		};
-		let Some(call_variant) = pallet.call_variant_by_name(call_name) else {
-			return Err("Failed to find call index".into());
-		};
-
-		let pallet_index = pallet.index();
-		let call_index = call_variant.index;
-		let call_data = self.call_data().encode();
-
-		let value = TransactionCall::new(pallet_index, call_index, call_data);
-
-		Ok(value)
-	}
-
-	fn to_submittable_transaction(&self, client: Client) -> Result<SubmittableTransaction, String> {
-		let call = self.to_transaction_call(&client)?;
-		let value = SubmittableTransaction::new(client, call);
-
-		Ok(value)
 	}
 }

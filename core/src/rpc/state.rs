@@ -1,13 +1,8 @@
-use crate::error::Error;
+use super::Error;
 use primitive_types::H256;
 use subxt_rpcs::{RpcClient, methods::legacy::RuntimeVersion, rpc_params};
 
-pub async fn call(
-	client: &RpcClient,
-	method: &str,
-	data: &[u8],
-	at: Option<H256>,
-) -> Result<String, subxt_rpcs::Error> {
+pub async fn call(client: &RpcClient, method: &str, data: &[u8], at: Option<H256>) -> Result<String, Error> {
 	let data = std::format!("0x{}", const_hex::encode(data));
 	let params = rpc_params![method, data, at];
 	let value = client.request("state_call", params).await?;
@@ -21,15 +16,15 @@ pub async fn get_storage(client: &RpcClient, key: &str, at: Option<H256>) -> Res
 		return Ok(None);
 	};
 	let value = const_hex::decode(value.trim_start_matches("0x"));
-	let value = value.map_err(|e| Error::from(e.to_string()))?;
+	let value = value.map_err(Error::from)?;
 	Ok(Some(value))
 }
 
 pub async fn get_keys_paged(
 	client: &RpcClient,
-	prefix: Option<String>,
+	prefix: Option<&str>,
 	count: u32,
-	start_key: Option<String>,
+	start_key: Option<&str>,
 	at: Option<H256>,
 ) -> Result<Vec<String>, Error> {
 	let params = rpc_params![prefix, count, start_key, at];
@@ -39,10 +34,12 @@ pub async fn get_keys_paged(
 
 pub async fn get_metadata(client: &RpcClient, at: Option<H256>) -> Result<Vec<u8>, Error> {
 	let value: String = client.request("state_getMetadata", rpc_params![at]).await?;
-	Ok(const_hex::decode(value.trim_start_matches("0x")).map_err(|e| e.to_string())?)
+	let value = const_hex::decode(value.trim_start_matches("0x"));
+	let value = value.map_err(Error::from)?;
+	Ok(value)
 }
 
-pub async fn get_runtime_version(client: &RpcClient, at: Option<H256>) -> Result<RuntimeVersion, subxt_rpcs::Error> {
+pub async fn get_runtime_version(client: &RpcClient, at: Option<H256>) -> Result<RuntimeVersion, Error> {
 	let value = client.request("state_getRuntimeVersion", rpc_params![at]).await?;
 	Ok(value)
 }
