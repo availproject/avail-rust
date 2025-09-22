@@ -1,4 +1,4 @@
-use avail_rust_client::{
+use avail_rust::{
 	avail::{
 		data_availability::{events::DataSubmitted, tx::SubmitData},
 		timestamp::tx::Set,

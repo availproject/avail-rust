@@ -3,6 +3,17 @@ members = [
 	"core",
 	"client",
 ]
+exclude = [
+	"examples/crates",
+	"examples/github",
+	"examples/submission_api",
+	"examples/block_api",
+	"examples/storage_api",
+	"examples/parallel_submission",
+	"examples/multisig",
+	"examples/batch",
+	"examples/estimating_fees",
+]
 resolver = "2"
 
 [workspace.package]
