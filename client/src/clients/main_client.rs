@@ -14,11 +14,11 @@ use avail::{
 	system::{storage as SystemStorage, types::AccountInfo},
 };
 use avail_rust_core::{
-	AccountId, AvailHeader, BlockRef, H256, HashNumber, StorageMap,
+	AccountId, AccountIdLike, AvailHeader, BlockRef, H256, HashNumber, StorageMap,
 	grandpa::GrandpaJustification,
 	rpc::{self, BlockPhaseEvent, BlockWithJustifications, Error as RpcError, ExtrinsicInfo, runtime_api},
 	types::{
-		metadata::HashStringNumber,
+		metadata::{ChainInfo, HashStringNumber},
 		substrate::{FeeDetails, RuntimeDispatchInfo},
 	},
 };
@@ -119,12 +119,30 @@ impl Rpc {
 		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "").await
 	}
 
-	pub async fn block_header(&self, at: Option<H256>) -> Result<Option<AvailHeader>, RpcError> {
-		let retry_on_error = self.retry_on_error.unwrap_or(true);
-		let retry_on_none = self.retry_on_none.unwrap_or(false);
+	pub async fn block_header(&self, at: Option<impl Into<HashStringNumber>>) -> Result<Option<AvailHeader>, Error> {
+		async fn inner(r: &Rpc, at: Option<HashStringNumber>) -> Result<Option<AvailHeader>, Error> {
+			let retry_on_error = r.retry_on_error.unwrap_or(true);
+			let retry_on_none = r.retry_on_none.unwrap_or(false);
 
-		let f = || async move { rpc::chain::get_header(&self.client.rpc_client, at).await };
-		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "").await
+			let at = if let Some(at) = at {
+				let at: HashNumber = at.try_into().map_err(UserError::Other)?;
+				let at = match at {
+					HashNumber::Hash(h) => h,
+					HashNumber::Number(n) => r
+						.block_hash(Some(n))
+						.await?
+						.ok_or(UserError::Other("No block bound for that block height".into()))?,
+				};
+				Some(at)
+			} else {
+				None
+			};
+
+			let f = || async move { rpc::chain::get_header(&r.client.rpc_client, at).await };
+			Ok(with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "").await?)
+		}
+
+		inner(self, at.map(|x| x.into())).await
 	}
 
 	pub async fn block_with_justification(
@@ -138,54 +156,116 @@ impl Rpc {
 		with_retry_on_error_and_none(f, retry_on_error, retry_on_none, "").await
 	}
 
-	// Nonce
-	pub async fn account_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
-		let retry_on_error = self.retry_on_error.unwrap_or(true);
-
-		let f = || async move {
-			rpc::system::account_next_index(&self.client.rpc_client, &std::format!("{}", account_id)).await
-		};
-		with_retry_on_error(f, retry_on_error, "").await
+	// Block Nonce
+	pub async fn block_nonce(
+		&self,
+		account_id: impl Into<AccountIdLike>,
+		at: impl Into<HashStringNumber>,
+	) -> Result<u32, Error> {
+		self.account_info(account_id, at).await.map(|x| x.nonce)
 	}
 
-	pub async fn block_nonce(&self, account_id: &AccountId, block_hash: H256) -> Result<u32, RpcError> {
-		self.account_info(account_id, block_hash).await.map(|x| x.nonce)
+	// Nonce
+	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
+		async fn inner(r: &Rpc, account_id: AccountIdLike) -> Result<u32, Error> {
+			let retry_on_error = r.retry_on_error.unwrap_or(true);
+			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
+
+			let a = &account_id;
+			let f =
+				|| async move { rpc::system::account_next_index(&r.client.rpc_client, &std::format!("{}", a)).await };
+
+			Ok(with_retry_on_error(f, retry_on_error, "").await?)
+		}
+
+		inner(self, account_id.into()).await
 	}
 
 	// Balance
-	pub async fn account_balance(&self, account_id: &AccountId, at: H256) -> Result<AccountData, RpcError> {
+	pub async fn account_balance(
+		&self,
+		account_id: impl Into<AccountIdLike>,
+		at: impl Into<HashStringNumber>,
+	) -> Result<AccountData, Error> {
 		self.account_info(account_id, at).await.map(|x| x.data)
 	}
 
 	// Account Info (nonce, balance, ...)
-	pub async fn account_info(&self, account_id: &AccountId, at: H256) -> Result<AccountInfo, RpcError> {
-		let retry_on_error = self.retry_on_error.unwrap_or(true);
+	pub async fn account_info(
+		&self,
+		account_id: impl Into<AccountIdLike>,
+		at: impl Into<HashStringNumber>,
+	) -> Result<AccountInfo, Error> {
+		async fn inner(r: &Rpc, account_id: AccountIdLike, at: HashStringNumber) -> Result<AccountInfo, Error> {
+			let retry_on_error = r.retry_on_error.unwrap_or(true);
 
-		let f = || async move {
-			SystemStorage::Account::fetch(&self.client.rpc_client, account_id, Some(at))
-				.await
-				.map(|x| x.unwrap_or_default())
-		};
-		with_retry_on_error(f, retry_on_error, "").await
+			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
+			let block_id: HashNumber = at.try_into().map_err(UserError::Other)?;
+			let at = match block_id {
+				HashNumber::Hash(h) => h,
+				HashNumber::Number(n) => r
+					.block_hash(Some(n))
+					.await?
+					.ok_or(UserError::Other("No block bound for that block height".into()))?,
+			};
+
+			let a = &account_id;
+			let f = || async move {
+				SystemStorage::Account::fetch(&r.client.rpc_client, a, Some(at))
+					.await
+					.map(|x| x.unwrap_or_default())
+			};
+
+			Ok(with_retry_on_error(f, retry_on_error, "").await?)
+		}
+
+		inner(self, account_id.into(), at.into()).await
 	}
 
 	// Block State
-	pub async fn block_state(&self, block_ref: BlockRef) -> Result<BlockState, RpcError> {
-		let real_block_hash = self.block_hash(Some(block_ref.height)).await?;
-		let Some(real_block_hash) = real_block_hash else {
-			return Ok(BlockState::DoesNotExist);
-		};
+	pub async fn block_state(&self, block_id: impl Into<HashStringNumber>) -> Result<BlockState, Error> {
+		async fn inner(r: &Rpc, block_id: HashStringNumber) -> Result<BlockState, Error> {
+			let block_id = HashNumber::try_from(block_id).map_err(UserError::Other)?;
+			let chain_info = r.chain_info().await?;
+			let n = match block_id {
+				HashNumber::Hash(h) => {
+					if h == chain_info.finalized_hash {
+						return Ok(BlockState::Finalized);
+					}
 
-		let finalized_block_height = self.client.finalized().block_height().await?;
-		if block_ref.height > finalized_block_height {
-			return Ok(BlockState::Included);
+					if h == chain_info.best_hash {
+						return Ok(BlockState::Included);
+					}
+
+					let Some(n) = r.block_height(h).await? else {
+						return Ok(BlockState::DoesNotExist);
+					};
+
+					let Some(block_hash) = r.block_hash(Some(n)).await? else {
+						return Ok(BlockState::DoesNotExist);
+					};
+
+					if block_hash != h {
+						return Ok(BlockState::Discarded);
+					}
+
+					n
+				},
+				HashNumber::Number(n) => n,
+			};
+
+			if n > chain_info.best_height {
+				return Ok(BlockState::DoesNotExist);
+			}
+
+			if n > chain_info.finalized_height {
+				return Ok(BlockState::Included);
+			}
+
+			return Ok(BlockState::Finalized);
 		}
 
-		if block_ref.hash != real_block_hash {
-			return Ok(BlockState::Discarded);
-		}
-
-		Ok(BlockState::Finalized)
+		inner(self, block_id.into()).await
 	}
 
 	// Block Height
@@ -201,6 +281,13 @@ impl Rpc {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let f = || async move { rpc::system::latest_block_info(&self.client.rpc_client, use_best_block).await };
+		with_retry_on_error(f, retry_on_error, "").await
+	}
+
+	pub async fn chain_info(&self) -> Result<ChainInfo, RpcError> {
+		let retry_on_error = self.retry_on_error.unwrap_or(true);
+
+		let f = || async move { rpc::system::latest_chain_info(&self.client.rpc_client).await };
 		with_retry_on_error(f, retry_on_error, "").await
 	}
 
@@ -248,7 +335,7 @@ impl Rpc {
 		signer: &Keypair,
 		tx_call: &'a avail_rust_core::ExtrinsicCall,
 		options: Options,
-	) -> Result<avail_rust_core::GenericExtrinsic<'a>, RpcError> {
+	) -> Result<avail_rust_core::GenericExtrinsic<'a>, Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, retry_on_error).await?;
@@ -285,7 +372,7 @@ impl Rpc {
 		signer: &Keypair,
 		tx_call: &avail_rust_core::ExtrinsicCall,
 		options: Options,
-	) -> Result<SubmittedTransaction, RpcError> {
+	) -> Result<SubmittedTransaction, Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, retry_on_error).await?;
@@ -474,7 +561,7 @@ impl Best {
 		self
 	}
 
-	pub async fn block_header(&self) -> Result<AvailHeader, RpcError> {
+	pub async fn block_header(&self) -> Result<AvailHeader, Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(true);
 
@@ -486,7 +573,7 @@ impl Best {
 			.block_header(Some(block_hash))
 			.await?;
 		let Some(block_header) = block_header else {
-			return Err(RpcError::ExpectedData("Failed to fetch best block header".into()));
+			return Err(RpcError::ExpectedData("Failed to fetch best block header".into()).into());
 		};
 
 		Ok(block_header)
@@ -497,15 +584,15 @@ impl Best {
 		Ok(Block::new(self.client.clone(), block_hash))
 	}
 
-	pub async fn account_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
+	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
 		self.account_info(account_id).await.map(|v| v.nonce)
 	}
 
-	pub async fn account_balance(&self, account_id: &AccountId) -> Result<AccountData, RpcError> {
+	pub async fn account_balance(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountData, Error> {
 		self.account_info(account_id).await.map(|x| x.data)
 	}
 
-	pub async fn account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let at = self.block_hash().await?;
@@ -551,7 +638,7 @@ impl Finalized {
 		self
 	}
 
-	pub async fn block_header(&self) -> Result<AvailHeader, RpcError> {
+	pub async fn block_header(&self) -> Result<AvailHeader, Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 		let retry_on_none = self.retry_on_none.unwrap_or(true);
 
@@ -563,7 +650,7 @@ impl Finalized {
 			.block_header(Some(block_hash))
 			.await?;
 		let Some(block_header) = block_header else {
-			return Err(RpcError::ExpectedData("Failed to fetch finalized block header".into()));
+			return Err(RpcError::ExpectedData("Failed to fetch finalized block header".into()).into());
 		};
 
 		Ok(block_header)
@@ -574,15 +661,15 @@ impl Finalized {
 		Ok(Block::new(self.client.clone(), block_hash))
 	}
 
-	pub async fn account_nonce(&self, account_id: &AccountId) -> Result<u32, RpcError> {
+	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
 		self.account_info(account_id).await.map(|v| v.nonce)
 	}
 
-	pub async fn account_balance(&self, account_id: &AccountId) -> Result<AccountData, RpcError> {
+	pub async fn account_balance(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountData, Error> {
 		self.account_info(account_id).await.map(|x| x.data)
 	}
 
-	pub async fn account_info(&self, account_id: &AccountId) -> Result<AccountInfo, RpcError> {
+	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
 		let retry_on_error = self.retry_on_error.unwrap_or(true);
 
 		let at = self.block_hash().await?;

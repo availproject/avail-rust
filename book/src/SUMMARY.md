@@ -11,6 +11,7 @@
     - [Submission API](./usage/submission_api.md)
     - [Block API](./usage/block_api.md)
     - [Storage API](./usage/storage_api.md)
+    - [Chain API](./usage/chain_api.md)
 - [Advanced Usage](./advanced_usage/index.md)
 
 # Reference Guide

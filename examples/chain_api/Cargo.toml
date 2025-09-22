@@ -1,5 +1,5 @@
 [package]
-name = "block-api-example"
+name = "chain-api-example"
 edition = "2024"
 
 [dependencies]

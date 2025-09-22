@@ -616,7 +616,7 @@ impl BlockHeaderSub {
 		Self { client, sub: Sub::new() }
 	}
 
-	pub async fn next(&mut self) -> Result<Option<AvailHeader>, RpcError> {
+	pub async fn next(&mut self) -> Result<Option<AvailHeader>, crate::Error> {
 		let info = self.sub.next(&self.client).await?;
 		let header = match self
 			.client

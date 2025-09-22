@@ -32,14 +32,14 @@ impl SubmittableTransaction {
 		Self { client, call }
 	}
 
-	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, RpcError> {
+	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, Error> {
 		self.client
 			.rpc()
 			.sign_and_submit_call(signer, &self.call, options)
 			.await
 	}
 
-	pub async fn sign(&self, signer: &Keypair, options: Options) -> Result<GenericExtrinsic<'_>, RpcError> {
+	pub async fn sign(&self, signer: &Keypair, options: Options) -> Result<GenericExtrinsic<'_>, Error> {
 		self.client.rpc().sign_call(signer, &self.call, options).await
 	}
 
@@ -56,13 +56,14 @@ impl SubmittableTransaction {
 		signer: &Keypair,
 		options: Options,
 		at: Option<H256>,
-	) -> Result<FeeDetails, RpcError> {
+	) -> Result<FeeDetails, Error> {
 		let transaction = self.sign(signer, options).await?;
 		let transaction = transaction.encode();
-		self.client
+		Ok(self
+			.client
 			.rpc()
 			.transaction_payment_query_fee_details(transaction, at)
-			.await
+			.await?)
 	}
 
 	pub async fn call_info(&self, at: Option<H256>) -> Result<RuntimeDispatchInfo, RpcError> {
@@ -146,8 +147,8 @@ impl TransactionReceipt {
 		Self { client, block_ref: block, tx_ref: tx }
 	}
 
-	pub async fn block_state(&self) -> Result<BlockState, RpcError> {
-		self.client.rpc().block_state(self.block_ref).await
+	pub async fn block_state(&self) -> Result<BlockState, Error> {
+		self.client.rpc().block_state(self.block_ref.hash).await
 	}
 
 	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockTransaction<T>, Error> {
@@ -292,7 +293,7 @@ impl Utils {
 			let info = sub.next(client).await?;
 			current_block_height = info.height;
 
-			let state_nonce = client.rpc().block_nonce(account_id, info.hash).await?;
+			let state_nonce = client.rpc().block_nonce(account_id.clone(), info.hash).await?;
 			if state_nonce > nonce {
 				trace_new_block(nonce, state_nonce, account_id, info, true);
 				return Ok(Some(info));

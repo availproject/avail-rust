@@ -6,7 +6,6 @@ Retry Mechanism
 Subscription
 Account Creation
 Custom RPC Client
-Best/Finalized/Other Block Height, Hash, etc
 Submission API - Advanced
 Block API - Advanced
 Feature flags
