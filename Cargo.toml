@@ -13,6 +13,7 @@ exclude = [
 	"examples/multisig",
 	"examples/batch",
 	"examples/estimating_fees",
+	"examples/custom_ext_event_storage"
 ]
 resolver = "2"
 

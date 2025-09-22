@@ -3598,17 +3598,17 @@ pub mod staking {
 		}
 
 		#[derive(Debug, Clone)]
-		pub struct ValidatorPerfs {
+		pub struct ValidatorPrefs {
 			pub commission: u32, // Compact Perbill
 			pub blocked: bool,
 		}
-		impl Encode for ValidatorPerfs {
+		impl Encode for ValidatorPrefs {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				Compact(self.commission).encode_to(dest);
 				self.blocked.encode_to(dest);
 			}
 		}
-		impl Decode for ValidatorPerfs {
+		impl Decode for ValidatorPrefs {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let commission = Compact::<u32>::decode(input)?.0;
 				let blocked = Decode::decode(input)?;
@@ -3667,7 +3667,7 @@ pub mod staking {
 		#[derive(Debug, Clone)]
 		pub struct ValidatorPrefsSet {
 			pub stash: AccountId,
-			pub prefs: super::types::ValidatorPerfs,
+			pub prefs: super::types::ValidatorPrefs,
 		}
 		impl Encode for ValidatorPrefsSet {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -3931,7 +3931,7 @@ pub mod staking {
 
 		#[derive(Debug, Clone)]
 		pub struct Validate {
-			pub prefs: super::types::ValidatorPerfs,
+			pub prefs: super::types::ValidatorPrefs,
 		}
 		impl Encode for Validate {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {

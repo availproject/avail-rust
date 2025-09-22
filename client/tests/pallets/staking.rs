@@ -5,7 +5,7 @@ use avail_rust_core::avail::staking::{
 		Bond, BondExtra, Chill, Kick, Nominate, PayoutStakers, PayoutStakersByPage, Rebond, SetController, SetPayee,
 		Unbond, Validate, WithdrawUnbonded,
 	},
-	types::{RewardDestination, ValidatorPerfs},
+	types::{RewardDestination, ValidatorPrefs},
 };
 use codec::Encode;
 
@@ -203,7 +203,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 		let expected = ValidatorPrefsSet {
 			stash: AccountId::from_str("0xbaaf2475c394b0ab52a41966f1668950b4c896fbc365780d13f616bc7577fe3e").unwrap(),
-			prefs: ValidatorPerfs { blocked: false, commission: 100000000 },
+			prefs: ValidatorPrefs { blocked: false, commission: 100000000 },
 		};
 		let actual = events.first::<ValidatorPrefsSet>().unwrap();
 		assert_eq!(actual.to_event(), expected.to_event());
