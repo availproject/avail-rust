@@ -5,6 +5,7 @@
 # User Guide
 
 - [Installation](./installation/index.md)
+    - [Rust](./installation/rust.md)
     - [Crates.io](./installation/crates_npm.md)
     - [Github](./installation/github.md)
 - [Usage](./usage/index.md)
