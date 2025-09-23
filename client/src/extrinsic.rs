@@ -211,12 +211,12 @@ impl TransactionReceipt {
 			return Err(UserError::ValidationFailed("Block Start cannot start after Block End".into()).into());
 		}
 		let tx_hash: HashString = tx_hash.into();
-		let mut sub = Sub::new();
+		let mut sub = Sub::new(client.clone());
 		sub.set_follow(use_best_block);
 		sub.set_block_height(block_start);
 
 		loop {
-			let block_ref = sub.next(&client).await?;
+			let block_ref = sub.next().await?;
 
 			let block = BlockWithRawExt::new(client.clone(), block_ref.height);
 			let ext = block.get(tx_hash.clone(), EncodeSelector::None).await?;
@@ -269,7 +269,7 @@ impl Utils {
 	) -> Result<Option<BlockRef>, Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
-		let mut sub = Sub::new();
+		let mut sub = Sub::new(client.clone());
 		sub.set_block_height(mortality.block_height);
 		sub.set_follow(use_best_block);
 
@@ -290,7 +290,7 @@ impl Utils {
 		}
 
 		while mortality_ends_height >= current_block_height {
-			let info = sub.next(client).await?;
+			let info = sub.next().await?;
 			current_block_height = info.height;
 
 			let state_nonce = client.rpc().block_nonce(account_id.clone(), info.hash).await?;

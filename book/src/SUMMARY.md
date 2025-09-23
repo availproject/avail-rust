@@ -8,12 +8,14 @@
     - [Rust](./installation/rust.md)
     - [Crates.io](./installation/crates_npm.md)
     - [Github](./installation/github.md)
+    - [Feature Flags](./installation/feature_flags.md)
 - [Usage](./usage/index.md)
     - [Submission API](./usage/submission_api.md)
     - [Block API](./usage/block_api.md)
     - [Storage API](./usage/storage_api.md)
     - [Chain API](./usage/chain_api.md)
 - [Advanced Usage](./advanced_usage/index.md)
+    - [Subscriptions](./advanced_usage/subscriptions.md)
 
 # Reference Guide
 

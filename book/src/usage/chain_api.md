@@ -1,11 +1,24 @@
 # Chain API
 
+The Chain API provides read-only access to chain state. You can query block
+hashes, heights, headers, account information, and balances directly from the
+client.
+
+> 📝 Tip: For most cases, you’ll want to use the best() and finalized()
+> shortcuts to quickly access the head of the chain or its last finalized block.
+> Use rpc() calls when you need a specific block (by number or hash) or the
+> canonical view at an exact point in the chain.
+
+#### Block Hashes & Heights
+
 <!-- langtabs-start -->
+
 ```rust
 // Block Hash
 let best = client.best().block_hash().await?;
 let finalized = client.finalized().block_hash().await?;
 let block_hash = client.rpc().block_hash(Some(1900000)).await?.expect("Should be there");
+println!("Best: {:?}, Finalized: {:?}, Specific: {:?}", best, finalized, block_hash);
 
 // Block Height
 let best = client.best().block_height().await?;
@@ -13,9 +26,16 @@ let finalized = client.finalized().block_height().await?;
 let block_height = client.rpc().block_height(block_hash).await?.expect("Should be there");
 println!("Best: {}, Finalized: {}, Specific: {}", best, finalized, block_height);
 ```
+
 <!-- langtabs-end -->
 
+#### Block & Chain Info
+
+- `block_info()` returns hash + height together.
+- `chain_info()` aggregates best, finalized, and genesis hashes in one call.
+
 <!-- langtabs-start -->
+
 ```rust
 // Block Info
 let best = client.best().block_info().await?;
@@ -29,9 +49,15 @@ println!("Best Hash: {:?}, Height: {}", chain_info.best_hash, chain_info.best_he
 println!("Finalized Hash: {:?}, Height: {}", chain_info.finalized_hash, chain_info.finalized_height);
 println!("Genesis Hash: {:?}", chain_info.genesis_hash);
 ```
+
 <!-- langtabs-end -->
 
+#### Block State & Headers
+
+`block_state()` helps track inclusion/finality status.
+
 <!-- langtabs-start -->
+
 ```rust
 // Block State
 let block_state = client.rpc().block_state(1900000).await?;
@@ -51,9 +77,19 @@ println!("Best Header: Hash: {:?}, Height: {}", best.hash(), best.number);
 println!("Finalized Header: Hash: {:?}, Height: {}", finalized.hash(), finalized.number);
 println!("Specific Header: Hash: {:?}, Height: {}", specific.hash(), specific.number);
 ```
+
 <!-- langtabs-end -->
 
+#### Account Nonces & Balances
+
+- `Nonce` = number of prior transactions from an account (used to prevent
+  replay).
+- `Balance` = includes free, reserved, and other fields.
+- `RPC nonce` is almost always the correct one to use when preparing a new
+  transaction.
+
 <!-- langtabs-start -->
+
 ```rust
 // Account Nonces
 let address = "5Ev16A8iWsEBFgtAxcyS8T5nDx8rZxWkg2ZywPgjup3ACSUZ";
@@ -75,9 +111,19 @@ println!(
     best.free, finalized.free, specific.free
 );
 ```
+
 <!-- langtabs-end -->
 
+#### Account Info
+
+`account_info()` gives you full account state at a given block:
+
+- Nonce
+- Balances
+- Locks / reserves
+
 <!-- langtabs-start -->
+
 ```rust
 // Account Info
 let address = "5GReLENC89bZfEQdytoMDY2krPnX1YC3qe14Gj3zFbjov4hX";
@@ -88,12 +134,15 @@ println!("Best: Nonce: {},  Free Balance: {}", best.nonce, best.data.free);
 println!("Finalized: Nonce: {},  Free Balance: {}", finalized.nonce, finalized.data.free);
 println!("Specific: Nonce: {},  Free Balance: {}", specific.nonce, specific.data.free);
 ```
+
 <!-- langtabs-end -->
 
 ## Source Code
 
 <!-- langtabs-start -->
+
 ```rust
 {{#include ../../../examples/chain_api/src/main.rs}}
 ```
+
 <!-- langtabs-end -->

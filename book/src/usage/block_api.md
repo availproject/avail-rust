@@ -1,6 +1,14 @@
 # Block API
 
+The Block API lets you query blocks, inspect transactions (extrinsics), decode
+events, and check finality justifications.
+
+> 📝 Note: A block_id can be provided as a block number, hash, or string.
+
+#### Connect to a block
+
 <!-- langtabs-start -->
+
 ```rust
 // Establishing a connection
 let client = Client::new(MAINNET_ENDPOINT).await?;
@@ -9,9 +17,13 @@ let client = Client::new(MAINNET_ENDPOINT).await?;
 let block = client.block(1913231);
 // or -> let block = Block::new(client.clone(), 1913231);
 ```
+
 <!-- langtabs-end -->
 
+#### Query Specific Transactions (Signed Extrinsics)
+
 <!-- langtabs-start -->
+
 ```rust
 // Fetching all transactions (signed extrinsics) of type DataAvailability::SubmitData
 let all_submit_data = block.tx().all::<SubmitData>(Default::default()).await?;
@@ -26,9 +38,13 @@ for tx in all_submit_data {
 	println!("Who: {}, Data Hash: {:?}", event.who, event.data_hash)
 }
 ```
+
 <!-- langtabs-end -->
 
+#### Query Specific Signed or Unsigned Extrinsics
+
 <!-- langtabs-start -->
+
 ```rust
 // Fetching extrinsic (signed or unsigned) of type Timestamp::Set at index 0
 let first_extrinsic = block.ext().get::<Set>(0).await?;
@@ -42,9 +58,13 @@ if let Some(ext) = first_extrinsic {
 	assert!(events.is_extrinsic_success_present());
 }
 ```
+
 <!-- langtabs-end -->
 
+#### Work With Raw Extrinsics
+
 <!-- langtabs-start -->
+
 ```rust
 // Fetching all extrinsics (singed or unsigned) in raw format.
 // Raw format means that they are not decoded and we need to do it manually.
@@ -71,9 +91,13 @@ for raw_ext in all_extrinsics {
 	}
 }
 ```
+
 <!-- langtabs-end -->
 
+#### Fetch Extrinsic-related Events
+
 <!-- langtabs-start -->
+
 ```rust
 // Fetching extrinsic related events
 let ext_events = block.events().ext(1).await?.expect("Should be there");
@@ -97,9 +121,13 @@ for event in &ext_events.events {
 	}
 }
 ```
+
 <!-- langtabs-end -->
 
+#### Fetch Block Events
+
 <!-- langtabs-start -->
+
 ```rust
 // Fetching all events from a block.
 // The events are in raw format which means that they are not decoded.
@@ -121,9 +149,13 @@ for phase_event in &block_events {
 	}
 }
 ```
+
 <!-- langtabs-end -->
 
+#### Fetch Grandpa Justifications
+
 <!-- langtabs-start -->
+
 ```rust
 // Fetching grandpa justification
 let justification = block.justification().await?;
@@ -141,11 +173,15 @@ if justification.is_some() {
 	println!("No justification was found at block: {}", 1913216)
 }
 ```
+
 <!-- langtabs-end -->
 
 ## Full Example
+
 <!-- langtabs-start -->
+
 ```rust
 {{#include ../../../examples/block_api/src/main.rs}}
 ```
+
 <!-- langtabs-end -->

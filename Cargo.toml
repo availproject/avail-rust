@@ -15,6 +15,7 @@ exclude = [
 	"examples/batch",
 	"examples/estimating_fees",
 	"examples/custom_ext_event_storage",
+	"examples/subscriptions",
 ]
 resolver = "2"
 

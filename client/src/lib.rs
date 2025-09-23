@@ -33,6 +33,7 @@ pub use block::{
 };
 pub use error::{Error, UserError};
 pub use primitive_types::{H256, U256};
+pub use subscription::Sub;
 pub use subxt_signer::{SecretUri, sr25519::Keypair};
 
 // External

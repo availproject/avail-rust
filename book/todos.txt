@@ -3,9 +3,8 @@ Nomination Pool Example
 Identity Example
 Logging/Tracing
 Retry Mechanism
-Subscription
+Subscriptions
 Account Creation
 Custom RPC Client
 Submission API - Advanced
 Block API - Advanced
-Feature flags
