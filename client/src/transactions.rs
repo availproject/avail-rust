@@ -6,7 +6,7 @@ use avail_rust_core::{
 		multisig::types::Timepoint,
 		nomination_pools::types::{BondExtraValue, ClaimPermission, ConfigOpAccount, PoolState},
 		proxy::types::ProxyType,
-		staking::types::{RewardDestination, ValidatorPerfs},
+		staking::types::{RewardDestination, ValidatorPrefs},
 	},
 	types::{
 		HashString,
@@ -15,8 +15,8 @@ use avail_rust_core::{
 	},
 };
 
-pub struct Transactions(pub(crate) Client);
-impl Transactions {
+pub struct TransactionApi(pub(crate) Client);
+impl TransactionApi {
 	pub fn balances(&self) -> Balances {
 		Balances(self.0.clone())
 	}
@@ -285,7 +285,7 @@ impl Staking {
 	}
 
 	pub fn validate(&self, commission: u32, blocked: bool) -> SubmittableTransaction {
-		let value = avail::staking::tx::Validate { prefs: ValidatorPerfs { commission, blocked } };
+		let value = avail::staking::tx::Validate { prefs: ValidatorPrefs { commission, blocked } };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 

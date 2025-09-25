@@ -1,4 +1,4 @@
-use avail_rust_client::{
+use avail_rust::{
 	avail::{
 		RuntimeCall,
 		utility::{

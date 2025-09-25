@@ -25,28 +25,35 @@ use tracing::info;
 pub struct SubmittableTransaction {
 	client: Client,
 	pub call: ExtrinsicCall,
+	retry_on_error: Option<bool>,
 }
 
 impl SubmittableTransaction {
 	pub fn new(client: Client, call: ExtrinsicCall) -> Self {
-		Self { client, call }
+		Self { client, call, retry_on_error: None }
 	}
 
-	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, RpcError> {
+	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, Error> {
 		self.client
 			.rpc()
+			.retry_on(self.retry_on_error, None)
 			.sign_and_submit_call(signer, &self.call, options)
 			.await
 	}
 
-	pub async fn sign(&self, signer: &Keypair, options: Options) -> Result<GenericExtrinsic<'_>, RpcError> {
-		self.client.rpc().sign_call(signer, &self.call, options).await
+	pub async fn sign(&self, signer: &Keypair, options: Options) -> Result<GenericExtrinsic<'_>, Error> {
+		self.client
+			.rpc()
+			.retry_on(self.retry_on_error, None)
+			.sign_call(signer, &self.call, options)
+			.await
 	}
 
 	pub async fn estimate_call_fees(&self, at: Option<H256>) -> Result<FeeDetails, RpcError> {
 		let call = self.call.encode();
 		self.client
 			.rpc()
+			.retry_on(self.retry_on_error, None)
 			.transaction_payment_query_call_fee_details(call, at)
 			.await
 	}
@@ -56,18 +63,32 @@ impl SubmittableTransaction {
 		signer: &Keypair,
 		options: Options,
 		at: Option<H256>,
-	) -> Result<FeeDetails, RpcError> {
+	) -> Result<FeeDetails, Error> {
 		let transaction = self.sign(signer, options).await?;
 		let transaction = transaction.encode();
-		self.client
+		Ok(self
+			.client
 			.rpc()
+			.retry_on(self.retry_on_error, None)
 			.transaction_payment_query_fee_details(transaction, at)
-			.await
+			.await?)
 	}
 
 	pub async fn call_info(&self, at: Option<H256>) -> Result<RuntimeDispatchInfo, RpcError> {
 		let call = self.call.encode();
-		self.client.rpc().transaction_payment_query_call_info(call, at).await
+		self.client
+			.rpc()
+			.retry_on(self.retry_on_error, None)
+			.transaction_payment_query_call_info(call, at)
+			.await
+	}
+
+	pub fn should_retry_on_error(&self) -> bool {
+		should_retry(&self.client, self.retry_on_error)
+	}
+
+	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
+		self.retry_on_error = value;
 	}
 
 	pub fn from_encodable<T: HasHeader + Encode>(client: Client, value: T) -> SubmittableTransaction {
@@ -146,8 +167,8 @@ impl TransactionReceipt {
 		Self { client, block_ref: block, tx_ref: tx }
 	}
 
-	pub async fn block_state(&self) -> Result<BlockState, RpcError> {
-		self.client.rpc().block_state(self.block_ref).await
+	pub async fn block_state(&self) -> Result<BlockState, Error> {
+		self.client.rpc().block_state(self.block_ref.hash).await
 	}
 
 	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockTransaction<T>, Error> {
@@ -210,12 +231,12 @@ impl TransactionReceipt {
 			return Err(UserError::ValidationFailed("Block Start cannot start after Block End".into()).into());
 		}
 		let tx_hash: HashString = tx_hash.into();
-		let mut sub = Sub::new();
-		sub.set_follow(use_best_block);
+		let mut sub = Sub::new(client.clone());
+		sub.use_best_block(use_best_block);
 		sub.set_block_height(block_start);
 
 		loop {
-			let block_ref = sub.next(&client).await?;
+			let block_ref = sub.next().await?;
 
 			let block = BlockWithRawExt::new(client.clone(), block_ref.height);
 			let ext = block.get(tx_hash.clone(), EncodeSelector::None).await?;
@@ -268,9 +289,9 @@ impl Utils {
 	) -> Result<Option<BlockRef>, Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
-		let mut sub = Sub::new();
+		let mut sub = Sub::new(client.clone());
 		sub.set_block_height(mortality.block_height);
-		sub.set_follow(use_best_block);
+		sub.use_best_block(use_best_block);
 
 		let mut current_block_height = mortality.block_height;
 
@@ -289,10 +310,10 @@ impl Utils {
 		}
 
 		while mortality_ends_height >= current_block_height {
-			let info = sub.next(client).await?;
+			let info = sub.next().await?;
 			current_block_height = info.height;
 
-			let state_nonce = client.rpc().block_nonce(account_id, info.hash).await?;
+			let state_nonce = client.rpc().block_nonce(account_id.clone(), info.hash).await?;
 			if state_nonce > nonce {
 				trace_new_block(nonce, state_nonce, account_id, info, true);
 				return Ok(Some(info));
@@ -327,4 +348,8 @@ fn trace_new_block(nonce: u32, state_nonce: u32, account_id: &AccountId, block_i
 	{
 		let _ = (nonce, state_nonce, account_id, block_info, search_done);
 	}
+}
+
+fn should_retry(client: &Client, value: Option<bool>) -> bool {
+	value.unwrap_or(client.is_global_retries_enabled())
 }

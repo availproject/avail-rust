@@ -1,4 +1,4 @@
-use avail_rust_client::prelude::*;
+use avail_rust::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {

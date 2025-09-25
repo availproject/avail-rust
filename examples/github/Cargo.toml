@@ -1,0 +1,7 @@
+[package]
+name = "github-example"
+edition = "2024"
+
+[dependencies]
+avail-rust = { package = "avail-rust-client", git = "https://github.com/availproject/avail-rust", default-features = false, features = ["native", "reqwest"] }
+tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }

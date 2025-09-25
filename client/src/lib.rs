@@ -23,16 +23,19 @@ pub use transaction_options::{MortalityOption, Options, RefinedMortality, Refine
 pub use avail_rust_core::{
 	self, AccountId, AvailHeader, BlockRef, CompactDataLookup, EncodeSelector, Extrinsic, ExtrinsicCall,
 	ExtrinsicExtra, ExtrinsicSignature, HasHeader, HashNumber, HeaderExtension, KateCommitment, MultiAddress,
-	RawExtrinsic, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator,
+	RawExtrinsic, RpcError, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator,
 	StorageValue, TransactionDecodable, TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
 	ext::{codec, primitive_types, scale_info, subxt_core, subxt_rpcs, subxt_signer},
+	grandpa::GrandpaJustification,
 	multi_account_id,
+	rpc::LegacyBlock,
 };
 pub use block::{
 	Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt, BlockWithTx,
 };
 pub use error::{Error, UserError};
 pub use primitive_types::{H256, U256};
+pub use subscription::Sub;
 pub use subxt_signer::{SecretUri, sr25519::Keypair};
 
 // External

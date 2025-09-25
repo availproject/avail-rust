@@ -6,6 +6,10 @@ cd ./examples
 OP="$1"
 for file in `ls -d */`
 do
+    if [ "$file" == "code_doc/" ]; then
+        continue
+    fi
+    
     if [ "$OP" == "check" ]; then
         cd "$file" && cargo check && cd ./../.
     fi

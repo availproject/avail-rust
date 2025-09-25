@@ -1,5 +1,5 @@
 use avail::{data_availability::storage as DAStorage, system::storage as SystemStorage};
-use avail_rust_client::prelude::*;
+use avail_rust::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -7,7 +7,16 @@ async fn main() -> Result<(), Error> {
 	let client = Client::new(TURING_ENDPOINT).await?;
 	let rpc_client = &client.rpc_client;
 
-	// Fetching DataAvailability::AppKeys - Simple storage
+	// Fetching DataAvailability::NextAppId - Storage Value
+	let next_app_id = DAStorage::NextAppId::fetch(rpc_client, None)
+		.await?
+		.expect("Should be there");
+	println!("Next App Id: {}", next_app_id.0);
+	/*
+		Next App Id: 484
+	*/
+
+	// Fetching DataAvailability::AppKeys - Storage Map
 	let key = "Hello World".as_bytes().to_vec();
 	let app_key = DAStorage::AppKeys::fetch(rpc_client, &key, None)
 		.await?
@@ -43,7 +52,7 @@ async fn main() -> Result<(), Error> {
 		AppKey Key: grind, AppKey Owner: 5DDSWFp79bmkDAVxMfWX5cE7LtijV7RzpmPAyTWDkeerNawd, AppKey Id: 115
 	*/
 
-	// Fetching System::Account - Map storage
+	// Fetching System::Account - Storage Map
 	let account_id = AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").expect("Should work");
 	let account_info = SystemStorage::Account::fetch(&client.rpc_client, &account_id, None)
 		.await?
