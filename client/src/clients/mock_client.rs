@@ -136,4 +136,14 @@ impl CommandManagerHelper {
 		let value = value.unwrap_or_else(|| subxt_rpcs::Error::DisconnectedWillReconnect("Error".into()));
 		self.add_err("system_fetchExtrinsicsV1", value);
 	}
+
+	pub fn legacy_block_err(&mut self, value: Option<subxt_rpcs::Error>) {
+		let value = value.unwrap_or_else(|| subxt_rpcs::Error::DisconnectedWillReconnect("Error".into()));
+		self.add_err("chain_getBlock", value);
+	}
+
+	pub fn block_header_err(&mut self, value: Option<subxt_rpcs::Error>) {
+		let value = value.unwrap_or_else(|| subxt_rpcs::Error::DisconnectedWillReconnect("Error".into()));
+		self.add_err("chain_getHeader", value);
+	}
 }

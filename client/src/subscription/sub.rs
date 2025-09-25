@@ -1,6 +1,5 @@
 use super::should_retry;
-use crate::{Client, platform::sleep};
-use avail_rust_core::{BlockRef, H256, RpcError};
+use crate::{BlockRef, Client, H256, RpcError, platform::sleep};
 use std::time::Duration;
 
 /// The [Sub] subscription behaves as follows by default:

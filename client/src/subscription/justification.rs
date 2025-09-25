@@ -1,5 +1,4 @@
-use crate::{Client, Sub};
-use avail_rust_core::{RpcError, grandpa::GrandpaJustification};
+use crate::{Client, GrandpaJustification, RpcError, Sub};
 use std::time::Duration;
 
 #[derive(Clone)]

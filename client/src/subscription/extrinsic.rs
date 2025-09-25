@@ -1,11 +1,11 @@
 use crate::{
-	Client, Sub,
+	BlockRef, Client, Sub,
 	block::{
 		BlockExtOptionsExpanded, BlockExtOptionsSimple, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction,
 		BlockWithExt, BlockWithRawExt, BlockWithTx,
 	},
 };
-use avail_rust_core::{BlockRef, HasHeader};
+use avail_rust_core::HasHeader;
 use codec::Decode;
 use std::{marker::PhantomData, time::Duration};
 
@@ -212,23 +212,21 @@ impl RawExtrinsicSub {
 #[cfg(test)]
 mod tests {
 	use super::*;
-
-	use avail_rust_core::{
-		avail::data_availability::tx::SubmitData, rpc::system::fetch_extrinsics::ExtrinsicInformation,
-	};
-
 	use crate::{
 		block::BlockExtOptionsExpanded, clients::mock_client::MockClient, error::Error, prelude::*,
 		subxt_rpcs::RpcClient,
 	};
+	use avail_rust_core::{
+		avail::data_availability::tx::SubmitData, rpc::system::fetch_extrinsics::ExtrinsicInformation,
+	};
 
 	#[tokio::test]
-	async fn extrinsic_sub_test() -> Result<(), Error> {
+	async fn transaction_sub_test() -> Result<(), Error> {
 		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
 		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
 
 		// Historical blocks
-		let mut sub = ExtrinsicSub::<SubmitData>::new(client.clone(), Default::default());
+		let mut sub = TransactionSub::<SubmitData>::new(client.clone(), Default::default());
 
 		sub.set_block_height(2326671);
 		let (list, info) = sub.next().await?;
@@ -274,12 +272,12 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn transaction_sub_test() -> Result<(), Error> {
+	async fn extrinsic_sub_test() -> Result<(), Error> {
 		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
 		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
 
 		// Historical blocks
-		let mut sub = TransactionSub::<SubmitData>::new(client.clone(), Default::default());
+		let mut sub = ExtrinsicSub::<SubmitData>::new(client.clone(), Default::default());
 
 		sub.set_block_height(2326671);
 		let (list, info) = sub.next().await?;

@@ -15,8 +15,8 @@ use avail_rust_core::{
 	},
 };
 
-pub struct Transactions(pub(crate) Client);
-impl Transactions {
+pub struct TransactionApi(pub(crate) Client);
+impl TransactionApi {
 	pub fn balances(&self) -> Balances {
 		Balances(self.0.clone())
 	}

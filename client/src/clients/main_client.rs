@@ -7,7 +7,7 @@ use crate::{
 	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::Options,
-	transactions::Transactions,
+	transactions::TransactionApi,
 };
 use avail::{
 	balances::types::AccountData,
@@ -74,8 +74,8 @@ impl Client {
 		}
 	}
 
-	pub fn tx(&self) -> Transactions {
-		Transactions(self.clone())
+	pub fn tx(&self) -> TransactionApi {
+		TransactionApi(self.clone())
 	}
 
 	pub fn online_client(&self) -> OnlineClient {
@@ -86,8 +86,8 @@ impl Client {
 		Block::new(self.clone(), block_id)
 	}
 
-	pub fn rpc(&self) -> Rpc {
-		Rpc::new(self.clone())
+	pub fn rpc(&self) -> RpcApi {
+		RpcApi::new(self.clone())
 	}
 
 	pub fn best(&self) -> Best {
@@ -107,12 +107,12 @@ impl Client {
 	}
 }
 
-pub struct Rpc {
+pub struct RpcApi {
 	client: Client,
 	retry_on_error: Option<bool>,
 	retry_on_none: Option<bool>,
 }
-impl Rpc {
+impl RpcApi {
 	pub fn new(client: Client) -> Self {
 		Self { client, retry_on_error: None, retry_on_none: None }
 	}
@@ -132,7 +132,7 @@ impl Rpc {
 	}
 
 	pub async fn block_header(&self, at: Option<impl Into<HashStringNumber>>) -> Result<Option<AvailHeader>, Error> {
-		async fn inner(r: &Rpc, at: Option<HashStringNumber>) -> Result<Option<AvailHeader>, Error> {
+		async fn inner(r: &RpcApi, at: Option<HashStringNumber>) -> Result<Option<AvailHeader>, Error> {
 			let retry_on_error = r.retry_on_error.unwrap_or(true);
 			let retry_on_none = r.retry_on_none.unwrap_or(false);
 
@@ -176,7 +176,7 @@ impl Rpc {
 
 	// Nonce
 	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
-		async fn inner(r: &Rpc, account_id: AccountIdLike) -> Result<u32, Error> {
+		async fn inner(r: &RpcApi, account_id: AccountIdLike) -> Result<u32, Error> {
 			let retry_on_error = should_retry(&r.client, r.retry_on_error);
 			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
 
@@ -205,7 +205,7 @@ impl Rpc {
 		account_id: impl Into<AccountIdLike>,
 		at: impl Into<HashStringNumber>,
 	) -> Result<AccountInfo, Error> {
-		async fn inner(r: &Rpc, account_id: AccountIdLike, at: HashStringNumber) -> Result<AccountInfo, Error> {
+		async fn inner(r: &RpcApi, account_id: AccountIdLike, at: HashStringNumber) -> Result<AccountInfo, Error> {
 			let retry_on_error = should_retry(&r.client, r.retry_on_error);
 
 			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
@@ -233,7 +233,7 @@ impl Rpc {
 
 	// Block State
 	pub async fn block_state(&self, block_id: impl Into<HashStringNumber>) -> Result<BlockState, Error> {
-		async fn inner(r: &Rpc, block_id: HashStringNumber) -> Result<BlockState, Error> {
+		async fn inner(r: &RpcApi, block_id: HashStringNumber) -> Result<BlockState, Error> {
 			let block_id = HashNumber::try_from(block_id).map_err(UserError::Other)?;
 			let chain_info = r.chain_info().await?;
 			let n = match block_id {
@@ -444,7 +444,7 @@ impl Rpc {
 		opts: rpc::ExtrinsicOpts,
 	) -> Result<Vec<ExtrinsicInfo>, Error> {
 		async fn inner(
-			c: &Rpc,
+			c: &RpcApi,
 			block_id: HashStringNumber,
 			opts: &rpc::ExtrinsicOpts,
 		) -> Result<Vec<ExtrinsicInfo>, Error> {
@@ -463,7 +463,7 @@ impl Rpc {
 		opts: rpc::EventOpts,
 	) -> Result<Vec<BlockPhaseEvent>, Error> {
 		async fn inner(
-			c: &Rpc,
+			c: &RpcApi,
 			block_id: HashStringNumber,
 			opts: &rpc::EventOpts,
 		) -> Result<Vec<BlockPhaseEvent>, Error> {
