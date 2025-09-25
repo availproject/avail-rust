@@ -32,7 +32,7 @@ use std::time::Duration;
 ///
 /// # Example
 /// ```rust
-#[doc = include_str!("../../../examples/code_doc/sub_doc.rs")]
+#[doc = include_str!("../../examples/sub_doc.rs")]
 /// ```
 #[derive(Clone)]
 pub enum Sub {
