@@ -16,7 +16,7 @@ use avail::{
 use avail_rust_core::{
 	AccountId, AccountIdLike, AvailHeader, BlockRef, H256, HashNumber, StorageMap,
 	grandpa::GrandpaJustification,
-	rpc::{self, BlockPhaseEvent, BlockWithJustifications, Error as RpcError, ExtrinsicInfo, runtime_api},
+	rpc::{self, BlockPhaseEvent, Error as RpcError, ExtrinsicInfo, LegacyBlock, runtime_api},
 	types::{
 		metadata::{ChainInfo, HashStringNumber},
 		substrate::{FeeDetails, RuntimeDispatchInfo},
@@ -157,10 +157,7 @@ impl Rpc {
 		inner(self, at.map(|x| x.into())).await
 	}
 
-	pub async fn block_with_justification(
-		&self,
-		at: Option<H256>,
-	) -> Result<Option<BlockWithJustifications>, RpcError> {
+	pub async fn block_with_justification(&self, at: Option<H256>) -> Result<Option<LegacyBlock>, RpcError> {
 		let retry_on_error = should_retry(&self.client, self.retry_on_error);
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 

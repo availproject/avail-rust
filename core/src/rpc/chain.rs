@@ -7,7 +7,7 @@ use subxt_rpcs::{RpcClient, rpc_params};
 
 /// The response from `chain_getBlock`
 #[derive(Debug, Clone, Deserialize)]
-pub struct BlockWithJustifications {
+pub struct LegacyBlock {
 	/// The block itself.
 	pub block: Block,
 	/// Block justification.
@@ -56,9 +56,9 @@ pub type ConsensusEngineId = [u8; 4];
 /// The encoded justification specific to a consensus engine.
 pub type EncodedJustification = Vec<u8>;
 
-pub async fn get_block(client: &RpcClient, at: Option<H256>) -> Result<Option<BlockWithJustifications>, Error> {
+pub async fn get_block(client: &RpcClient, at: Option<H256>) -> Result<Option<LegacyBlock>, Error> {
 	let params = rpc_params![at];
-	let res: Option<BlockWithJustifications> = client.request("chain_getBlock", params).await?;
+	let res: Option<LegacyBlock> = client.request("chain_getBlock", params).await?;
 	let Some(value) = res else {
 		return Ok(None);
 	};

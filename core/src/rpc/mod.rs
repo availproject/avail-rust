@@ -12,7 +12,7 @@ pub mod system;
 pub use error::Error;
 
 pub use super::AvailHeader;
-pub use chain::{Block, BlockJustification, BlockWithJustifications};
+pub use chain::{Block, BlockJustification, LegacyBlock};
 use subxt_rpcs::{RpcClient, client::RpcParams};
 pub use system::{
 	fetch_events::{BlockPhaseEvent, Filter as EventFilter, Options as EventOpts, PhaseEvent},
