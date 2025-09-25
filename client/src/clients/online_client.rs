@@ -3,16 +3,15 @@ use avail_rust_core::{H256, RpcError, ext::codec::Decode, rpc};
 use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
-pub struct OnlineClient {
-	pub inner: Arc<RwLock<OnlineClientInner>>,
-}
+pub struct OnlineClient(pub Arc<RwLock<OnlineClientInner>>);
 
 #[derive(Clone)]
 pub struct OnlineClientInner {
-	pub genesis_hash: H256,
-	pub spec_version: u32,
-	pub transaction_version: u32,
-	pub metadata: Metadata,
+	genesis_hash: H256,
+	spec_version: u32,
+	transaction_version: u32,
+	metadata: Metadata,
+	global_retries: bool,
 }
 
 impl OnlineClient {
@@ -30,49 +29,59 @@ impl OnlineClient {
 			spec_version: runtime_version.spec_version,
 			transaction_version: runtime_version.transaction_version,
 			metadata,
+			global_retries: true,
 		};
-		Ok(Self { inner: Arc::new(RwLock::new(inner)) })
+		Ok(Self(Arc::new(RwLock::new(inner))))
 	}
 }
 
 impl OnlineClient {
 	pub fn genesis_hash(&self) -> H256 {
-		let lock = self.inner.read().expect("Should not be poisoned");
+		let lock = self.0.read().expect("Should not be poisoned");
 		lock.genesis_hash
 	}
 
 	pub fn spec_version(&self) -> u32 {
-		let lock = self.inner.read().expect("Should not be poisoned");
+		let lock = self.0.read().expect("Should not be poisoned");
 		lock.spec_version
 	}
 
 	pub fn transaction_version(&self) -> u32 {
-		let lock = self.inner.read().expect("Should not be poisoned");
+		let lock = self.0.read().expect("Should not be poisoned");
 		lock.transaction_version
 	}
 
 	pub fn metadata(&self) -> Metadata {
-		let lock = self.inner.read().expect("Should not be poisoned");
+		let lock = self.0.read().expect("Should not be poisoned");
 		lock.metadata.clone()
 	}
 
 	pub fn set_genesis_hash(&self, value: H256) {
-		let mut lock = self.inner.write().expect("Should not be poisoned");
+		let mut lock = self.0.write().expect("Should not be poisoned");
 		lock.genesis_hash = value;
 	}
 
 	pub fn set_spec_version(&self, value: u32) {
-		let mut lock = self.inner.write().expect("Should not be poisoned");
+		let mut lock = self.0.write().expect("Should not be poisoned");
 		lock.spec_version = value;
 	}
 
 	pub fn set_transaction_version(&self, value: u32) {
-		let mut lock = self.inner.write().expect("Should not be poisoned");
+		let mut lock = self.0.write().expect("Should not be poisoned");
 		lock.transaction_version = value;
 	}
 
 	pub fn set_metadata(&self, value: Metadata) {
-		let mut lock = self.inner.write().expect("Should not be poisoned");
+		let mut lock = self.0.write().expect("Should not be poisoned");
 		lock.metadata = value;
+	}
+
+	pub fn is_global_retries_enabled(&self) -> bool {
+		self.0.read().map(|x| x.global_retries).unwrap_or(true)
+	}
+
+	pub fn set_global_retries_enabled(&self, value: bool) {
+		let mut lock = self.0.write().expect("Should not be poisoned");
+		lock.global_retries = value;
 	}
 }

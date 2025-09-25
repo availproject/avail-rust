@@ -11,7 +11,7 @@ async fn main() -> Result<(), Error> {
 	// `Sub` is the atomic building block for all other subs
 	//
 	// By default it:
-	// - Follows finalized blocks (use `set_follow(true)` for best blocks)
+	// - Follows finalized blocks (use `use_best_block(true)` for best blocks)
 	// - Starts from the latest block (or pick one with `set_block_height(h)`)
 	// - Retries on RPC errors and polls every 3s (customize with `set_retry_on_error` / `set_pool_rate`)
 	//
@@ -50,10 +50,10 @@ async fn main() -> Result<(), Error> {
 	let next = sub.next().await?;
 	assert_eq!(next.height, finalized_height);
 
-	// If `sub.set_follow(true);` is called (before `next` or `prev`)
+	// If `sub.use_best_block(true);` is called (before `next` or `prev`)
 	// then calling `sub.next()` will fetch the latest best block (hash, height)
 	let mut sub = Sub::new(client.clone());
-	sub.set_follow(true);
+	sub.use_best_block(true);
 
 	let best_height = client.best().block_height().await?;
 	let next = sub.next().await?;
