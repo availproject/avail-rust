@@ -9,6 +9,10 @@ use avail_rust_core::{BlockRef, HasHeader};
 use codec::Decode;
 use std::{marker::PhantomData, time::Duration};
 
+/// Subscription that mirrors [`Sub`] but yields decoded transactions via [`BlockWithTx`].
+///
+/// The iterator skips blocks without matching transactions so callers only handle blocks that
+/// produced data when applying the configured [`BlockExtOptionsSimple`].
 #[derive(Clone)]
 pub struct TransactionSub<T: HasHeader + Decode> {
 	sub: Sub,
@@ -17,10 +21,15 @@ pub struct TransactionSub<T: HasHeader + Decode> {
 }
 
 impl<T: HasHeader + Decode> TransactionSub<T> {
+	/// Creates a new [`TransactionSub`] subscription.
 	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
+	/// Returns the next set of block transactions and the corresponding [`BlockRef`].
+	///
+	/// Empty responses are skipped automatically. When fetching fails the internal block height is
+	/// rewound so the same block can be retried on the following call.
 	pub async fn next(&mut self) -> Result<(Vec<BlockTransaction<T>>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
@@ -44,27 +53,36 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		}
 	}
 
+	/// Replaces the transaction query options used on subsequent calls to [`TransactionSub::next`].
 	pub fn set_opts(&mut self, value: BlockExtOptionsSimple) {
 		self.opts = value;
 	}
 
+	/// Delegates to [`Sub::use_best_block`].
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
+	/// Delegates to [`Sub::set_block_height`].
 	pub fn set_block_height(&mut self, value: u32) {
 		self.sub.set_block_height(value);
 	}
 
+	/// Delegates to [`Sub::set_pool_rate`].
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
+	/// Delegates to [`Sub::set_retry_on_error`].
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
 }
 
+/// Subscription that mirrors [`Sub`] but yields decoded extrinsics via [`BlockWithExt`].
+///
+/// Blocks without matching extrinsics are skipped so every returned item contains data along with
+/// its [`BlockRef`].
 #[derive(Clone)]
 pub struct ExtrinsicSub<T: HasHeader + Decode> {
 	sub: Sub,
@@ -73,10 +91,15 @@ pub struct ExtrinsicSub<T: HasHeader + Decode> {
 }
 
 impl<T: HasHeader + Decode> ExtrinsicSub<T> {
+	/// Creates a new [`ExtrinsicSub`] subscription.
 	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
+	/// Returns the next collection of extrinsics and its [`BlockRef`].
+	///
+	/// Empty responses trigger another iteration. Failed RPC calls reset the internal block height so
+	/// the same block can be retried.
 	pub async fn next(&mut self) -> Result<(Vec<BlockExtrinsic<T>>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
@@ -100,23 +123,32 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		}
 	}
 
+	/// Delegates to [`Sub::use_best_block`].
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
+	/// Delegates to [`Sub::set_block_height`].
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
+	/// Delegates to [`Sub::set_pool_rate`].
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
+	/// Delegates to [`Sub::set_retry_on_error`].
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
 }
 
+/// Subscription that mirrors [`Sub`] but provides raw extrinsic payloads via [`BlockWithRawExt`].
+///
+/// Useful when you want the raw data from the extrinsic rpc.
+/// Blocks without matching extrinsics are skipped so every returned item contains data along with
+/// its [`BlockRef`].
 #[derive(Clone)]
 pub struct RawExtrinsicSub {
 	sub: Sub,
@@ -124,10 +156,15 @@ pub struct RawExtrinsicSub {
 }
 
 impl RawExtrinsicSub {
+	/// Creates a new [`RawExtrinsicSub`] subscription.
 	pub fn new(client: Client, opts: BlockExtOptionsExpanded) -> Self {
 		Self { sub: Sub::new(client), opts }
 	}
 
+	/// Returns the next batch of raw extrinsics and its [`BlockRef`].
+	///
+	/// Empty results are skipped. Failed RPC calls reset the internal block height so the same block
+	/// can be retried.
 	pub async fn next(&mut self) -> Result<(Vec<BlockRawExtrinsic>, BlockRef), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
@@ -151,18 +188,22 @@ impl RawExtrinsicSub {
 		}
 	}
 
+	/// Delegates to [`Sub::use_best_block`].
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
+	/// Delegates to [`Sub::set_block_height`].
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
+	/// Delegates to [`Sub::set_pool_rate`].
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
+	/// Delegates to [`Sub::set_retry_on_error`].
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
