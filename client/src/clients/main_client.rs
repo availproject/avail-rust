@@ -157,7 +157,7 @@ impl Rpc {
 		inner(self, at.map(|x| x.into())).await
 	}
 
-	pub async fn block_with_justification(&self, at: Option<H256>) -> Result<Option<LegacyBlock>, RpcError> {
+	pub async fn legacy_block(&self, at: Option<H256>) -> Result<Option<LegacyBlock>, RpcError> {
 		let retry_on_error = should_retry(&self.client, self.retry_on_error);
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 

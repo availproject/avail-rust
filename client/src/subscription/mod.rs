@@ -3,7 +3,7 @@ pub mod extrinsic;
 pub mod justification;
 pub mod sub;
 
-pub use block::{BlockHeaderSub, BlockSub, EventsSub, LegacyBlockSub};
+pub use block::{BlockEventsSub, BlockHeaderSub, BlockSub, LegacyBlockSub};
 pub use extrinsic::{ExtrinsicSub, RawExtrinsicSub, TransactionSub};
 pub use justification::GrandpaJustificationSub;
 pub use sub::Sub;

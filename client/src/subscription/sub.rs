@@ -435,55 +435,123 @@ impl BestBlockSub {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{clients::mock_client::MockClient, error::Error, prelude::*, subxt_rpcs::RpcClient};
+	use crate::{error::Error, prelude::*};
+
+	#[tokio::test]
+	pub async fn sub_test() -> Result<(), Error> {
+		let client = Client::new(TURING_ENDPOINT).await?;
+		let mut sub = Sub::new(client.clone());
+
+		//
+		//	Test Case 1: By default retires should be based around the global setting
+		//
+		client.set_global_retries_enabled(true);
+		assert_eq!(sub.should_retry_on_error(), true);
+
+		client.set_global_retries_enabled(false);
+		assert_eq!(sub.should_retry_on_error(), false);
+
+		//
+		//	Test Case 2: Forcefully setting it to false should always yield false
+		//
+		sub.set_retry_on_error(Some(false));
+
+		client.set_global_retries_enabled(true);
+		assert_eq!(sub.should_retry_on_error(), false);
+
+		client.set_global_retries_enabled(false);
+		assert_eq!(sub.should_retry_on_error(), false);
+
+		//
+		//	Test Case 2: Forcefully setting it to true should always yield true
+		//
+		sub.set_retry_on_error(Some(true));
+
+		client.set_global_retries_enabled(true);
+		assert_eq!(sub.should_retry_on_error(), true);
+
+		client.set_global_retries_enabled(false);
+		assert_eq!(sub.should_retry_on_error(), true);
+
+		Ok(())
+	}
 
 	// This test will be by flaky and that is OK.
 	#[tokio::test]
 	pub async fn best_sub_test() -> Result<(), Error> {
-		let (rpc_client, _commander) = MockClient::new(TURING_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+		let client = Client::new(TURING_ENDPOINT).await?;
 
-		// Historical block
+		//
+		// Test Case 1: Latest Block Height + Next
+		//
 		let mut sub = Sub::new(client.clone());
 		sub.use_best_block(true);
-		sub.set_block_height(1900000);
 
-		let block = sub.prev().await?;
-		assert_eq!(block.height, 1899999);
+		let block_height = client.best().block_height().await?;
+		let value = sub.next().await?;
+		assert_eq!(value.height, block_height);
 
-		let block = sub.next().await?;
-		assert_eq!(block.height, 1900000);
-
-		let block = sub.next().await?;
-		assert_eq!(block.height, 1900001);
-
-		let block = sub.prev().await?;
-		assert_eq!(block.height, 1900000);
-
-		let block = sub.prev().await?;
-		assert_eq!(block.height, 1899999);
-
-		// Historical block #2
+		//
+		// Test Case 2: Latest Block Height + Prev
+		//
 		let mut sub = Sub::new(client.clone());
 		sub.use_best_block(true);
-		sub.set_block_height(1900000);
 
-		let block = sub.next().await?;
-		assert_eq!(block.height, 1900000);
+		let block_height = client.best().block_height().await?;
+		let value = sub.prev().await?;
+		assert_eq!(value.height, block_height - 1);
 
-		// Latest Block #1
-		let best_height = client.best().block_height().await?;
+		//
+		// Test Case 3: Set Block Height + Next + Next + Next
+		//
+		let block_height = 1900000u32;
 		let mut sub = Sub::new(client.clone());
 		sub.use_best_block(true);
-		let block = sub.prev().await?;
-		assert_eq!(block.height, best_height - 1);
+		sub.set_block_height(block_height);
+		for i in 0..3 {
+			let value = sub.next().await?;
+			assert_eq!(value.height, block_height + i);
+		}
 
-		// Latest Block #2
-		let best_height = client.best().block_height().await?;
+		//
+		// Test Case 4: Set Block Height + Prev + Prev + Prev
+		//
+		let block_height = 1900000u32;
 		let mut sub = Sub::new(client.clone());
 		sub.use_best_block(true);
-		let block = sub.next().await?;
-		assert_eq!(block.height, best_height);
+		sub.set_block_height(block_height);
+		for i in 0..3 {
+			let value = sub.prev().await?;
+			assert_eq!(value.height, block_height - i - 1);
+		}
+
+		//
+		// Test Case 5: Set Block Height + Next + Prev
+		//
+		let block_height = 1900000u32;
+		let mut sub = Sub::new(client.clone());
+		sub.use_best_block(true);
+		sub.set_block_height(block_height);
+
+		let value = sub.next().await?;
+		assert_eq!(value.height, block_height);
+
+		let value = sub.prev().await?;
+		assert_eq!(value.height, block_height - 1);
+
+		//
+		// Test Case 6: Set Block Height + Prev + Next
+		//
+		let block_height = 1900000u32;
+		let mut sub = Sub::new(client.clone());
+		sub.use_best_block(true);
+		sub.set_block_height(block_height);
+
+		let value = sub.prev().await?;
+		assert_eq!(value.height, block_height - 1);
+
+		let value = sub.next().await?;
+		assert_eq!(value.height, block_height);
 
 		Ok(())
 	}
@@ -491,46 +559,73 @@ mod tests {
 	// This test will be by flaky and that is OK.
 	#[tokio::test]
 	pub async fn finalized_sub_test() -> Result<(), Error> {
-		let (rpc_client, _commander) = MockClient::new(TURING_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+		let client = Client::new(TURING_ENDPOINT).await?;
 
-		// Historical block
+		//
+		// Test Case 1: Latest Block Height + Next
+		//
 		let mut sub = Sub::new(client.clone());
-		sub.set_block_height(1900000);
 
-		let block = sub.prev().await?;
-		assert_eq!(block.height, 1899999);
+		let block_height = client.finalized().block_height().await?;
+		let value = sub.next().await?;
+		assert_eq!(value.height, block_height);
 
-		let block = sub.next().await?;
-		assert_eq!(block.height, 1900000);
-
-		let block = sub.next().await?;
-		assert_eq!(block.height, 1900001);
-
-		let block = sub.prev().await?;
-		assert_eq!(block.height, 1900000);
-
-		let block = sub.prev().await?;
-		assert_eq!(block.height, 1899999);
-
-		// Historical block #2
+		//
+		// Test Case 2: Latest Block Height + Prev
+		//
 		let mut sub = Sub::new(client.clone());
-		sub.set_block_height(1900000);
 
-		let block = sub.next().await?;
-		assert_eq!(block.height, 1900000);
+		let block_height = client.finalized().block_height().await?;
+		let value = sub.prev().await?;
+		assert_eq!(value.height, block_height - 1);
 
-		// Latest Block #1
-		let finalized_height = client.finalized().block_height().await?;
+		//
+		// Test Case 3: Set Block Height + Next + Next + Next
+		//
+		let block_height = 1900000u32;
 		let mut sub = Sub::new(client.clone());
-		let block = sub.prev().await?;
-		assert_eq!(block.height, finalized_height - 1);
+		sub.set_block_height(block_height);
+		for i in 0..3 {
+			let value = sub.next().await?;
+			assert_eq!(value.height, block_height + i);
+		}
 
-		// Latest Block #2
-		let finalized_height = client.finalized().block_height().await?;
+		//
+		// Test Case 4: Set Block Height + Prev + Prev + Prev
+		//
+		let block_height = 1900000u32;
 		let mut sub = Sub::new(client.clone());
-		let block = sub.next().await?;
-		assert_eq!(block.height, finalized_height);
+		sub.set_block_height(block_height);
+		for i in 0..3 {
+			let value = sub.prev().await?;
+			assert_eq!(value.height, block_height - i - 1);
+		}
+
+		//
+		// Test Case 5: Set Block Height + Next + Prev
+		//
+		let block_height = 1900000u32;
+		let mut sub = Sub::new(client.clone());
+		sub.set_block_height(block_height);
+
+		let value = sub.next().await?;
+		assert_eq!(value.height, block_height);
+
+		let value = sub.prev().await?;
+		assert_eq!(value.height, block_height - 1);
+
+		//
+		// Test Case 6: Set Block Height + Prev + Next
+		//
+		let block_height = 1900000u32;
+		let mut sub = Sub::new(client.clone());
+		sub.set_block_height(block_height);
+
+		let value = sub.prev().await?;
+		assert_eq!(value.height, block_height - 1);
+
+		let value = sub.next().await?;
+		assert_eq!(value.height, block_height);
 
 		Ok(())
 	}
