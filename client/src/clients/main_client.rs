@@ -392,7 +392,7 @@ impl Rpc {
 		inner(&self, at.into(), &opts, retry_on_error).await
 	}
 
-	pub async fn blob_submit_blob(&self, metadata_signed_transaction: Vec<u8>, blob: Vec<u8>) -> Result<(), Error> {
+	pub async fn blob_submit_blob(&self, metadata_signed_transaction: &[u8], blob: &[u8]) -> Result<(), Error> {
 		Ok(rpc::blob::submit_blob(&self.client.rpc_client, metadata_signed_transaction, blob).await?)
 	}
 

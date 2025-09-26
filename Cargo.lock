@@ -251,6 +251,7 @@ dependencies = [
 name = "avail-rust-core"
 version = "0.3.0"
 dependencies = [
+ "base64",
  "const-hex",
  "impl-serde",
  "parity-scale-codec",
