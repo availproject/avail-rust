@@ -41,7 +41,7 @@ subxt-rpcs = { version = "0.41.0", default-features = false }
 thiserror = { version = "2", default-features = false }
 
 # Enabled with reqwest
-reqwest = { version = "0.12.22", default-features = false, features = ["json", "default-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "default-tls"] }
 
 # Enabled with Wasm
 wasm-bindgen-futures = { version =  "0.4.50" }
