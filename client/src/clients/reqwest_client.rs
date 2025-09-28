@@ -1,5 +1,5 @@
 use crate::{
-	platform::spawn,
+	platform::{AsyncOp, AsyncReceiver, AsyncSender, async_channel, async_recv},
 	subxt_rpcs::{self, RpcClientT, UserError},
 };
 use serde::Serialize;
@@ -8,7 +8,6 @@ use std::{
 	borrow::Cow,
 	sync::{Arc, Mutex},
 };
-use tokio::sync::mpsc::{Receiver, Sender};
 
 /// Serializable [JSON-RPC object](https://www.jsonrpc.org/specification#request-object).
 #[derive(Serialize, Debug, Clone)]
@@ -49,27 +48,28 @@ impl std::fmt::Display for ResponseError {
 impl std::error::Error for ResponseError {}
 
 type ResponseMessage = Result<Box<serde_json::Value>, reqwest::Error>;
-type ChannelMessage = (Vec<u8>, Sender<ResponseMessage>);
+type ChannelMessage = (Vec<u8>, AsyncSender<ResponseMessage>);
 
 #[derive(Clone)]
 pub struct ReqwestClient {
-	tx: Sender<ChannelMessage>,
+	tx: AsyncSender<ChannelMessage>,
 	id: Arc<Mutex<u64>>,
 }
 
 impl ReqwestClient {
-	pub fn new(endpoint: &str) -> Self {
+	pub fn new(endpoint: &str, async_op: Arc<dyn AsyncOp>) -> Self {
 		let client = Arc::new(reqwest::Client::new());
-		let (tx, rx) = tokio::sync::mpsc::channel(1024);
+		let (tx, rx) = async_channel(1024);
 		let endpoint = String::from(endpoint);
-		_ = spawn(async move { Self::task(client, endpoint, rx).await });
+		let task = async move { Self::task(client, endpoint, rx).await };
+		async_op.spawn(Box::pin(task));
 
 		let id = Arc::new(Mutex::new(0));
 		Self { tx, id }
 	}
 
-	async fn task(client: Arc<reqwest::Client>, endpoint: String, mut rx: Receiver<ChannelMessage>) {
-		while let Some((body, tx_response)) = rx.recv().await {
+	async fn task(client: Arc<reqwest::Client>, endpoint: String, mut rx: AsyncReceiver<ChannelMessage>) {
+		while let Some((body, tx_response)) = async_recv(&mut rx).await {
 			let request = client
 				.post(&endpoint)
 				.header("Content-Type", "application/json")
@@ -129,13 +129,13 @@ impl RpcClientT for ReqwestClient {
 			};
 			request.shrink_to_fit();
 
-			let (tx, mut rx) = tokio::sync::mpsc::channel(32);
+			let (tx, mut rx) = async_channel(32);
 			let message = (request, tx);
 			if self.tx.send(message).await.is_err() {
 				let err = ResponseError("Failed to send request".into());
 				return Err(subxt_rpcs::Error::Client(Box::new(err)));
 			}
-			let response = match rx.recv().await {
+			let response = match async_recv(&mut rx).await {
 				Some(x) => x,
 				None => {
 					let err = ResponseError("Failed to receive message".into());

@@ -35,6 +35,9 @@ impl-serde = { version = "0.5", default-features = false }
 const-hex = { version = "1.16", default-features = false, features = ["alloc"] }
 primitive-types = { version = "0.13", default-features = false }
 futures = { version = "0.3", default-features = false }
+async-trait = { version  = "0.1" }
+smol = { version = "2.0", default-features = false }
+async-channel = { version = "2.2", default-features = false }
 
 # Logs
 tracing = { version = "0.1", default-features = false }

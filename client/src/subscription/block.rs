@@ -270,6 +270,8 @@ impl BlockHeaderSub {
 
 #[cfg(test)]
 mod tests {
+	use std::sync::Arc;
+
 	use super::*;
 	use crate::{clients::mock_client::MockClient, error::Error, prelude::*, subxt_rpcs::RpcClient};
 
@@ -351,7 +353,7 @@ mod tests {
 	#[tokio::test]
 	pub async fn header_sub_test() -> Result<(), Error> {
 		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+		let client = Client::from_rpc_client(RpcClient::new(rpc_client), Arc::new(StandardAsyncOp)).await?;
 
 		//
 		// Test Case 1: Latest Block Height + Next
@@ -446,7 +448,7 @@ mod tests {
 	#[tokio::test]
 	pub async fn legacy_block_sub_test() -> Result<(), Error> {
 		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+		let client = Client::from_rpc_client(RpcClient::new(rpc_client), Arc::new(StandardAsyncOp)).await?;
 
 		//
 		// Test Case 1: Latest Block Height + Next

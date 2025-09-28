@@ -34,9 +34,13 @@ pub use block::{
 	Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt, BlockWithTx,
 };
 pub use error::{Error, UserError};
+pub use platform::AsyncOp;
 pub use primitive_types::{H256, U256};
 pub use subscription::Sub;
 pub use subxt_signer::{SecretUri, sr25519::Keypair};
+
+#[cfg(any(all(feature = "native", any(feature = "tokio", feature = "smol")), feature = "wasm"))]
+pub use platform::StandardAsyncOp;
 
 // External
 pub mod ext {

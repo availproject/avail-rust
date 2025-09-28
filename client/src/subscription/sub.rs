@@ -1,5 +1,5 @@
 use super::should_retry;
-use crate::{BlockRef, Client, H256, RpcError, platform::sleep};
+use crate::{BlockRef, Client, H256, RpcError};
 use std::time::Duration;
 
 /// The [Sub] subscription behaves as follows by default:
@@ -292,7 +292,7 @@ impl FinalizedBlockSub {
 
 			let is_past_block = self.next_block_height > head.height;
 			if is_past_block {
-				sleep(self.poll_rate).await;
+				self.client.sleep(self.poll_rate).await;
 				continue;
 			}
 
@@ -393,7 +393,7 @@ impl BestBlockSub {
 			let is_past_block = self.current_block_height > head.height;
 			let block_already_processed = self.block_processed.contains(&head.hash);
 			if is_past_block || block_already_processed {
-				sleep(self.poll_rate).await;
+				self.client.sleep(self.poll_rate).await;
 				continue;
 			}
 

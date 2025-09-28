@@ -109,6 +109,8 @@ impl GrandpaJustificationJsonSub {
 
 #[cfg(test)]
 mod tests {
+	use std::sync::Arc;
+
 	use super::*;
 
 	use crate::{clients::mock_client::MockClient, error::Error, prelude::*, subxt_rpcs::RpcClient};
@@ -117,7 +119,7 @@ mod tests {
 	async fn grandpa_justification_sub_test() -> Result<(), Error> {
 		_ = Client::init_tracing(false);
 		let (rpc_client, mut commander) = MockClient::new(MAINNET_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+		let client = Client::from_rpc_client(RpcClient::new(rpc_client), Arc::new(StandardAsyncOp)).await?;
 
 		// Historical block
 		let mut sub = GrandpaJustificationSub::new(client.clone());
@@ -163,7 +165,7 @@ mod tests {
 	#[tokio::test]
 	async fn grandpa_justification_json_sub_test() -> Result<(), Error> {
 		let (rpc_client, mut commander) = MockClient::new(MAINNET_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+		let client = Client::from_rpc_client(RpcClient::new(rpc_client), Arc::new(StandardAsyncOp)).await?;
 
 		// Historical block
 		let mut sub = GrandpaJustificationJsonSub::new(client.clone());

@@ -1,6 +1,7 @@
 use crate::{
 	clients::ReqwestClient,
 	ext::subxt_rpcs::{self, RpcClientT},
+	platform::StandardAsyncOp,
 };
 use avail_rust_core::grandpa::GrandpaJustification;
 use codec::Encode;
@@ -18,7 +19,7 @@ pub struct MockClient {
 
 impl MockClient {
 	pub fn new(endpoint: &str) -> (Self, CommandManagerHelper) {
-		let org = ReqwestClient::new(endpoint);
+		let org = ReqwestClient::new(endpoint, Arc::new(StandardAsyncOp));
 		let commander = Arc::new(Mutex::new(CommandManager::default()));
 		let wrapper = CommandManagerHelper { 0: commander.clone() };
 		(Self { org, commander }, wrapper)

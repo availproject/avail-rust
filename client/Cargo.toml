@@ -12,12 +12,12 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 impl-serde = { workspace = true }
 const-hex = { workspace = true, default-features = false }
-tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 frame-metadata = { workspace = true }
 futures = { workspace = true }
 codec = { workspace = true  }
+async-trait = { workspace = true }
 
 # Logging
 tracing = { workspace = true, optional = true }
@@ -31,6 +31,13 @@ thiserror = { workspace = true }
 wasm-bindgen-futures = { workspace = true, optional = true  }
 wasmtimer = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
+async-channel = { workspace = true, optional = true }
+
+## Enabled With Tokio
+tokio = { workspace = true, optional = true }
+smol = { workspace = true, optional = true }
+
+## Enabled With Smol
 
 avail-rust-core = { path = "./../core", version = "0.4.0-rc.2", default-features = false }
 
@@ -38,13 +45,14 @@ avail-rust-core = { path = "./../core", version = "0.4.0-rc.2", default-features
 tokio = { workspace = true, features = ["sync", "time", "rt", "macros"] }
 
 [features]
-default = [ "native", "reqwest", "tracing" ]
+default = [ "native", "reqwest", "tracing", "tokio" ]
 tracing = [
 	"dep:tracing",
 	"tracing-subscriber"
 ]
 reqwest = [
-	"dep:reqwest"
+	"dep:reqwest",
+	"async-channel",
 ]
 native = [
 	"avail-rust-core/native"
@@ -53,4 +61,13 @@ wasm = [
 	"avail-rust-core/wasm",
 	"wasmtimer",
 	"wasm-bindgen-futures",
+	"async-channel",
+]
+
+tokio = [
+	"dep:tokio"
+]
+smol = [
+	"dep:smol",
+	"async-channel",
 ]

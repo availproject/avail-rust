@@ -211,6 +211,8 @@ impl RawExtrinsicSub {
 
 #[cfg(test)]
 mod tests {
+	use std::sync::Arc;
+
 	use super::*;
 	use crate::{
 		block::BlockExtOptionsExpanded, clients::mock_client::MockClient, error::Error, prelude::*,
@@ -223,7 +225,7 @@ mod tests {
 	#[tokio::test]
 	async fn transaction_sub_test() -> Result<(), Error> {
 		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+		let client = Client::from_rpc_client(RpcClient::new(rpc_client), Arc::new(StandardAsyncOp)).await?;
 
 		// Historical blocks
 		let mut sub = TransactionSub::<SubmitData>::new(client.clone(), Default::default());
@@ -274,7 +276,7 @@ mod tests {
 	#[tokio::test]
 	async fn extrinsic_sub_test() -> Result<(), Error> {
 		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+		let client = Client::from_rpc_client(RpcClient::new(rpc_client), Arc::new(StandardAsyncOp)).await?;
 
 		// Historical blocks
 		let mut sub = ExtrinsicSub::<SubmitData>::new(client.clone(), Default::default());
@@ -325,7 +327,7 @@ mod tests {
 	#[tokio::test]
 	async fn raw_extrinsic_sub_test() -> Result<(), Error> {
 		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+		let client = Client::from_rpc_client(RpcClient::new(rpc_client), Arc::new(StandardAsyncOp)).await?;
 
 		// Historical blocks
 		let opts = BlockExtOptionsExpanded { filter: Some((29u8, 1u8).into()), ..Default::default() };

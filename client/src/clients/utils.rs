@@ -1,12 +1,13 @@
-use crate::platform::sleep;
-use std::{fmt::Debug, time::Duration};
+use std::{fmt::Debug, sync::Arc, time::Duration};
+
+use crate::AsyncOp;
 
 #[cfg(feature = "tracing")]
 pub(crate) fn trace_warn(message: &str) {
 	tracing::warn!(target: "lib", message);
 }
 
-pub async fn with_retry_on_error<F, Fut, O, E>(f: F, retry_on_error: bool, _error_message: &str) -> Result<O, E>
+pub async fn with_retry_on_error<F, Fut, O, E>(f: F, retry_on_error: bool, op: Arc<dyn AsyncOp>) -> Result<O, E>
 where
 	F: Fn() -> Fut,
 	Fut: Future<Output = Result<O, E>>,
@@ -27,7 +28,7 @@ where
 
 				#[cfg(feature = "tracing")]
 				trace_warn(&std::format!("{:?}", err));
-				sleep(Duration::from_secs(duration)).await;
+				op.sleep(Duration::from_secs(duration)).await;
 			},
 		};
 	}
@@ -37,7 +38,7 @@ pub async fn with_retry_on_error_and_none<F, Fut, O, E>(
 	f: F,
 	retry_on_error: bool,
 	retry_on_none: bool,
-	_error_message: &str,
+	op: Arc<dyn AsyncOp>,
 ) -> Result<Option<O>, E>
 where
 	F: Fn() -> Fut,
@@ -58,7 +59,7 @@ where
 
 				#[cfg(feature = "tracing")]
 				trace_warn(&std::format!("Error: {}", "Something TODO"));
-				sleep(Duration::from_secs(duration)).await;
+				op.sleep(Duration::from_secs(duration)).await;
 			},
 			Err(err) if !retry_on_error => {
 				return Err(err);
@@ -70,7 +71,7 @@ where
 
 				#[cfg(feature = "tracing")]
 				trace_warn(&std::format!("{:?}", err));
-				sleep(Duration::from_secs(duration)).await;
+				op.sleep(Duration::from_secs(duration)).await;
 			},
 		};
 	}
