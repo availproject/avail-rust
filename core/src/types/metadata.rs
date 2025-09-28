@@ -10,6 +10,15 @@ use crate::{AccountId, MultiAddress, utils::account_id_from_str};
 pub struct AppId(#[codec(compact)] pub u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub struct ChainInfo {
+	pub best_hash: H256,
+	pub best_height: u32,
+	pub finalized_hash: H256,
+	pub finalized_height: u32,
+	pub genesis_hash: H256,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct BlockRef {
 	pub hash: H256,
 	pub height: u32,

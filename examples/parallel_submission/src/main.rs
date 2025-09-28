@@ -1,10 +1,10 @@
-use avail_rust_client::prelude::*;
+use avail_rust::prelude::*;
 use tokio::task::JoinHandle;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
 	// We enable logging so that we can observe transactions being submitted at the same time
-	Client::toggle_tracing(true, false);
+	Client::init_tracing(false).expect("Should work");
 
 	// alice, bob, charlie and dave will do data submission at the same time
 	let mut futures: Vec<JoinHandle<Result<(), Error>>> = Vec::new();
