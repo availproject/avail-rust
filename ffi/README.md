@@ -1,9 +1,9 @@
 # Avail Rust FFI Playground
 
-This little crate wraps the `avail-rust` client so you can poke at Avail from C
-or Perl without having to understand the whole Rust codebase first. The
-standalone examples under `c/` and `perl/` are kept runnable and have been
-smoke-tested after the latest changes.
+This little crate wraps the `avail-rust` client so you can poke at Avail from C,
+Perl, or Python without having to understand the whole Rust codebase first. The
+standalone examples under `c/`, `perl/`, and `python/` are kept runnable and
+have been smoke-tested after the latest changes.
 
 ## What the FFI exposes
 
@@ -50,6 +50,17 @@ Invoke with `perl perl/main.pl`. It attaches to the Rust library, submits a
 message, then displays block height, transaction index, and the two hashes as
 hex strings. This was exercised alongside the C run to confirm the shared code
 paths behave.
+
+## Python example (manually tested)
+
+- Script: `python/main.py`
+- Helper script: `run_py.sh`
+- Requires: `cffi`
+
+Run `./run_py.sh` (or `python python/main.py` once dependencies are installed).
+It loads the shared library, walks through the same submission flow, and prints
+the block and transaction hashes as lowercase hex. Tested with the C and Perl
+examples to ensure consistent outputs.
 
 ## Housekeeping tips
 
