@@ -14,7 +14,7 @@ use avail::{
 	system::{storage as SystemStorage, types::AccountInfo},
 };
 use avail_rust_core::{
-	AccountId, AccountIdLike, AvailHeader, BlockRef, H256, HashNumber, StorageMap,
+	AccountId, AccountIdLike, AvailHeader, BlockInfo, H256, HashNumber, StorageMap,
 	grandpa::GrandpaJustification,
 	rpc::{self, BlockPhaseEvent, Error as RpcError, ExtrinsicInfo, LegacyBlock, runtime_api},
 	types::{
@@ -296,7 +296,7 @@ impl RpcApi {
 		inner(self, at.into()).await
 	}
 
-	pub async fn block_info(&self, use_best_block: bool) -> Result<BlockRef, RpcError> {
+	pub async fn block_info(&self, use_best_block: bool) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = self
 			.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled());
@@ -629,7 +629,7 @@ impl Best {
 		Ok(Block::new(self.client.clone(), block_hash))
 	}
 
-	pub async fn block_info(&self) -> Result<BlockRef, RpcError> {
+	pub async fn block_info(&self) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = self
 			.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled());
@@ -731,7 +731,7 @@ impl Finalized {
 		Ok(Block::new(self.client.clone(), block_hash))
 	}
 
-	pub async fn block_info(&self) -> Result<BlockRef, RpcError> {
+	pub async fn block_info(&self) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = self
 			.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled());

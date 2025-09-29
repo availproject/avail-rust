@@ -1,5 +1,5 @@
 use crate::{
-	BlockRef, Client, Sub,
+	BlockInfo, Client, Sub,
 	block::{
 		BlockExtOptionsExpanded, BlockExtOptionsSimple, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction,
 		BlockWithExt, BlockWithRawExt, BlockWithTx,
@@ -26,11 +26,11 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
-	/// Returns the next set of block transactions and the corresponding [`BlockRef`].
+	/// Returns the next set of block transactions and the corresponding [`BlockInfo`].
 	///
 	/// Empty responses are skipped automatically. When fetching fails the internal block height is
 	/// rewound so the same block can be retried on the following call.
-	pub async fn next(&mut self) -> Result<(Vec<BlockTransaction<T>>, BlockRef), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<BlockTransaction<T>>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
 			let mut block = BlockWithTx::new(self.sub.client_ref().clone(), info.hash);
@@ -82,7 +82,7 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 /// Subscription that mirrors [`Sub`] but yields decoded extrinsics via [`BlockWithExt`].
 ///
 /// Blocks without matching extrinsics are skipped so every returned item contains data along with
-/// its [`BlockRef`].
+/// its [`BlockInfo`].
 #[derive(Clone)]
 pub struct ExtrinsicSub<T: HasHeader + Decode> {
 	sub: Sub,
@@ -96,11 +96,11 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
-	/// Returns the next collection of extrinsics and its [`BlockRef`].
+	/// Returns the next collection of extrinsics and its [`BlockInfo`].
 	///
 	/// Empty responses trigger another iteration. Failed RPC calls reset the internal block height so
 	/// the same block can be retried.
-	pub async fn next(&mut self) -> Result<(Vec<BlockExtrinsic<T>>, BlockRef), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<BlockExtrinsic<T>>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
 			let mut block = BlockWithExt::new(self.sub.client_ref().clone(), info.hash);
@@ -148,7 +148,7 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 ///
 /// Useful when you want the raw data from the extrinsic rpc.
 /// Blocks without matching extrinsics are skipped so every returned item contains data along with
-/// its [`BlockRef`].
+/// its [`BlockInfo`].
 #[derive(Clone)]
 pub struct RawExtrinsicSub {
 	sub: Sub,
@@ -161,11 +161,11 @@ impl RawExtrinsicSub {
 		Self { sub: Sub::new(client), opts }
 	}
 
-	/// Returns the next batch of raw extrinsics and its [`BlockRef`].
+	/// Returns the next batch of raw extrinsics and its [`BlockInfo`].
 	///
 	/// Empty results are skipped. Failed RPC calls reset the internal block height so the same block
 	/// can be retried.
-	pub async fn next(&mut self) -> Result<(Vec<BlockRawExtrinsic>, BlockRef), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<BlockRawExtrinsic>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
 			let mut block = BlockWithRawExt::new(self.sub.client_ref().clone(), info.hash);

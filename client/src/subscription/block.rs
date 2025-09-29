@@ -1,5 +1,5 @@
 use crate::{
-	AvailHeader, BlockRef, Client, LegacyBlock, RpcError, Sub,
+	AvailHeader, BlockInfo, Client, LegacyBlock, RpcError, Sub,
 	block::{Block, BlockEvents, BlockEventsOptions},
 };
 use avail_rust_core::rpc::BlockPhaseEvent;
@@ -100,14 +100,14 @@ impl BlockSub {
 		Self { sub: Sub::new(client) }
 	}
 
-	/// Advances the subscription and returns a [`Block`] view alongside the originating [`BlockRef`].
-	pub async fn next(&mut self) -> Result<(Block, BlockRef), RpcError> {
+	/// Advances the subscription and returns a [`Block`] view alongside the originating [`BlockInfo`].
+	pub async fn next(&mut self) -> Result<(Block, BlockInfo), RpcError> {
 		let info = self.sub.next().await?;
 		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
 	}
 
-	/// Moves the subscription backwards and returns a [`Block`] view alongside the originating [`BlockRef`]..
-	pub async fn prev(&mut self) -> Result<(Block, BlockRef), RpcError> {
+	/// Moves the subscription backwards and returns a [`Block`] view alongside the originating [`BlockInfo`]..
+	pub async fn prev(&mut self) -> Result<(Block, BlockInfo), RpcError> {
 		let info = self.sub.prev().await?;
 		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
 	}

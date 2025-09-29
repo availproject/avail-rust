@@ -1,5 +1,5 @@
 use super::should_retry;
-use crate::{BlockRef, Client, H256, RpcError, platform::sleep};
+use crate::{BlockInfo, Client, H256, RpcError, platform::sleep};
 use std::time::Duration;
 
 /// The [Sub] subscription behaves as follows by default:
@@ -51,7 +51,7 @@ impl Sub {
 	///	- If you’ve already called [Sub::next] or [Sub::prev] once, this moves forward.  
 	///	- If you set a starting height, [Sub::set_block_height], it begins from there.  
 	///	- Otherwise, it starts at the latest finalized (or best) block.
-	pub async fn next(&mut self) -> Result<BlockRef, RpcError> {
+	pub async fn next(&mut self) -> Result<BlockInfo, RpcError> {
 		if let Self::UnInit(u) = self {
 			let concrete = u.build().await?;
 			*self = concrete;
@@ -68,7 +68,7 @@ impl Sub {
 	///	- If you’ve already called [Sub::next] or [Sub::prev] once, this moves backwards.  
 	/// - If you set a starting height, [Sub::set_block_height], it begins from `(height - 1)`.  
 	/// - Otherwise, it starts from `(latest finalized/best height - 1)`.
-	pub async fn prev(&mut self) -> Result<BlockRef, RpcError> {
+	pub async fn prev(&mut self) -> Result<BlockInfo, RpcError> {
 		if let Self::UnInit(u) = self {
 			let concrete = u.build().await?;
 			*self = concrete;
@@ -235,7 +235,7 @@ pub struct FinalizedBlockSub {
 }
 
 impl FinalizedBlockSub {
-	pub async fn next(&mut self) -> Result<BlockRef, RpcError> {
+	pub async fn next(&mut self) -> Result<BlockInfo, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
 		let result = if latest_finalized_height >= self.next_block_height {
@@ -249,7 +249,7 @@ impl FinalizedBlockSub {
 		Ok(result)
 	}
 
-	pub async fn prev(&mut self) -> Result<BlockRef, RpcError> {
+	pub async fn prev(&mut self) -> Result<BlockInfo, RpcError> {
 		self.next_block_height = self.next_block_height.saturating_sub(1);
 		if self.processed_previous_block {
 			self.next_block_height = self.next_block_height.saturating_sub(1);
@@ -270,7 +270,7 @@ impl FinalizedBlockSub {
 		Ok(latest_finalized_height)
 	}
 
-	async fn run_historical(&mut self) -> Result<BlockRef, RpcError> {
+	async fn run_historical(&mut self) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
 
 		let height = self.next_block_height;
@@ -282,10 +282,10 @@ impl FinalizedBlockSub {
 			.await?;
 		let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
-		Ok(BlockRef { hash, height })
+		Ok(BlockInfo { hash, height })
 	}
 
-	async fn run_head(&mut self) -> Result<BlockRef, RpcError> {
+	async fn run_head(&mut self) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
 
 		loop {
@@ -310,7 +310,7 @@ impl FinalizedBlockSub {
 				.await?;
 			let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
-			return Ok(BlockRef { hash, height });
+			return Ok(BlockInfo { hash, height });
 		}
 	}
 }
@@ -329,7 +329,7 @@ pub struct BestBlockSub {
 }
 
 impl BestBlockSub {
-	pub async fn next(&mut self) -> Result<BlockRef, RpcError> {
+	pub async fn next(&mut self) -> Result<BlockInfo, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
 		// Dealing with historical blocks
@@ -353,7 +353,7 @@ impl BestBlockSub {
 		Ok(info)
 	}
 
-	pub async fn prev(&mut self) -> Result<BlockRef, RpcError> {
+	pub async fn prev(&mut self) -> Result<BlockInfo, RpcError> {
 		self.current_block_height = self.current_block_height.saturating_sub(1);
 		self.block_processed.clear();
 		self.next().await
@@ -370,7 +370,7 @@ impl BestBlockSub {
 		Ok(latest_finalized_height)
 	}
 
-	async fn run_historical(&mut self) -> Result<BlockRef, RpcError> {
+	async fn run_historical(&mut self) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
 
 		let mut height = self.current_block_height;
@@ -386,10 +386,10 @@ impl BestBlockSub {
 			.await?;
 		let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
-		Ok(BlockRef { hash, height })
+		Ok(BlockInfo { hash, height })
 	}
 
-	async fn run_head(&mut self) -> Result<BlockRef, RpcError> {
+	async fn run_head(&mut self) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
 
 		loop {
@@ -412,7 +412,7 @@ impl BestBlockSub {
 					.await?;
 				let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
-				return Ok(BlockRef { hash, height: self.current_block_height });
+				return Ok(BlockInfo { hash, height: self.current_block_height });
 			}
 
 			let is_current_block = self.current_block_height == head.height;
@@ -430,7 +430,7 @@ impl BestBlockSub {
 				.await?;
 			let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
 
-			return Ok(BlockRef { hash, height });
+			return Ok(BlockInfo { hash, height });
 		}
 	}
 }

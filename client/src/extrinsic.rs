@@ -9,7 +9,7 @@ use crate::{
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
 };
 use avail_rust_core::{
-	AccountId, BlockRef, EncodeSelector, H256, HasHeader, RpcError,
+	AccountId, BlockInfo, EncodeSelector, H256, HasHeader, RpcError,
 	ext::codec::Encode,
 	substrate::extrinsic::{ExtrinsicAdditional, ExtrinsicCall, GenericExtrinsic},
 	types::{
@@ -158,12 +158,12 @@ pub enum BlockState {
 #[derive(Clone)]
 pub struct TransactionReceipt {
 	client: Client,
-	pub block_ref: BlockRef,
+	pub block_ref: BlockInfo,
 	pub tx_ref: TransactionRef,
 }
 
 impl TransactionReceipt {
-	pub fn new(client: Client, block: BlockRef, tx: TransactionRef) -> Self {
+	pub fn new(client: Client, block: BlockInfo, tx: TransactionRef) -> Self {
 		Self { client, block_ref: block, tx_ref: tx }
 	}
 
@@ -286,7 +286,7 @@ impl Utils {
 		account_id: &AccountId,
 		mortality: &RefinedMortality,
 		use_best_block: bool,
-	) -> Result<Option<BlockRef>, Error> {
+	) -> Result<Option<BlockInfo>, Error> {
 		let mortality_ends_height = mortality.block_height + mortality.period as u32;
 
 		let mut sub = Sub::new(client.clone());
@@ -334,7 +334,7 @@ impl Utils {
 	}
 }
 
-fn trace_new_block(nonce: u32, state_nonce: u32, account_id: &AccountId, block_info: BlockRef, search_done: bool) {
+fn trace_new_block(nonce: u32, state_nonce: u32, account_id: &AccountId, block_info: BlockInfo, search_done: bool) {
 	#[cfg(feature = "tracing")]
 	{
 		if search_done {

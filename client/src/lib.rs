@@ -21,7 +21,7 @@ pub use extrinsic::{BlockState, SubmittableTransaction, SubmittedTransaction, Tr
 pub use transaction_options::{MortalityOption, Options, RefinedMortality, RefinedOptions};
 
 pub use avail_rust_core::{
-	self, AccountId, AvailHeader, BlockRef, CompactDataLookup, EncodeSelector, Extrinsic, ExtrinsicCall,
+	self, AccountId, AvailHeader, BlockInfo, CompactDataLookup, EncodeSelector, Extrinsic, ExtrinsicCall,
 	ExtrinsicExtra, ExtrinsicSignature, HasHeader, HashNumber, HeaderExtension, KateCommitment, MultiAddress,
 	RawExtrinsic, RpcError, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator,
 	StorageValue, TransactionDecodable, TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
