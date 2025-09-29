@@ -131,6 +131,15 @@ pub enum HashString {
 	String(String),
 }
 
+impl HashString {
+	pub fn to_string(&self) -> String {
+		match self {
+			HashString::Hash(x) => const_hex::encode_prefixed(x.0),
+			HashString::String(x) => x.clone(),
+		}
+	}
+}
+
 impl TryInto<H256> for HashString {
 	type Error = String;
 

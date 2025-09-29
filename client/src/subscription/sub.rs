@@ -106,15 +106,15 @@ impl Sub {
 	}
 
 	/// Sets the initial block height used when iterating with [`Sub::next`] or [`Sub::prev`].
-	pub fn set_block_height(&mut self, block_height: u32) {
+	pub fn set_block_height(&mut self, value: u32) {
 		match self {
-			Self::UnInit(u) => u.block_height = Some(block_height),
+			Self::UnInit(u) => u.block_height = Some(value),
 			Self::BestBlock(x) => {
+				x.current_block_height = value;
 				x.block_processed.clear();
-				x.current_block_height = block_height;
 			},
 			Self::FinalizedBlock(x) => {
-				x.next_block_height = block_height;
+				x.next_block_height = value;
 				x.processed_previous_block = false;
 			},
 		}
@@ -253,8 +253,8 @@ impl FinalizedBlockSub {
 		self.next_block_height = self.next_block_height.saturating_sub(1);
 		if self.processed_previous_block {
 			self.next_block_height = self.next_block_height.saturating_sub(1);
-			self.processed_previous_block = false;
 		}
+		self.processed_previous_block = false;
 
 		self.next().await
 	}
@@ -264,7 +264,8 @@ impl FinalizedBlockSub {
 			return Ok(*height);
 		}
 
-		let latest_finalized_height = self.client.finalized().block_height().await?;
+		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
+		let latest_finalized_height = self.client.finalized().retry_on(retry_on_error).block_height().await?;
 		self.latest_finalized_height = Some(latest_finalized_height);
 		Ok(latest_finalized_height)
 	}
@@ -334,9 +335,9 @@ impl BestBlockSub {
 		// Dealing with historical blocks
 		if latest_finalized_height >= self.current_block_height {
 			let info = self.run_historical().await?;
-			self.current_block_height = info.height;
 			self.block_processed.clear();
 			self.block_processed.push(info.hash);
+			self.current_block_height = info.height;
 			return Ok(info);
 		}
 
@@ -344,7 +345,8 @@ impl BestBlockSub {
 		if info.height == self.current_block_height {
 			self.block_processed.push(info.hash);
 		} else {
-			self.block_processed = vec![info.hash];
+			self.block_processed.clear();
+			self.block_processed.push(info.hash);
 			self.current_block_height = info.height;
 		}
 
@@ -362,7 +364,8 @@ impl BestBlockSub {
 			return Ok(*height);
 		}
 
-		let latest_finalized_height = self.client.finalized().block_height().await?;
+		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
+		let latest_finalized_height = self.client.finalized().retry_on(retry_on_error).block_height().await?;
 		self.latest_finalized_height = Some(latest_finalized_height);
 		Ok(latest_finalized_height)
 	}
@@ -387,8 +390,10 @@ impl BestBlockSub {
 	}
 
 	async fn run_head(&mut self) -> Result<BlockRef, RpcError> {
+		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
+
 		loop {
-			let head = self.client.best().block_info().await?;
+			let head = self.client.best().retry_on(retry_on_error).block_info().await?;
 
 			let is_past_block = self.current_block_height > head.height;
 			let block_already_processed = self.block_processed.contains(&head.hash);
@@ -397,14 +402,12 @@ impl BestBlockSub {
 				continue;
 			}
 
-			let is_current_block = self.current_block_height == head.height;
-
 			let no_block_processed_yet = self.block_processed.is_empty();
 			if no_block_processed_yet {
 				let hash = self
 					.client
 					.rpc()
-					.retry_on(Some(true), Some(true))
+					.retry_on(retry_on_error, Some(true))
 					.block_hash(Some(self.current_block_height))
 					.await?;
 				let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
@@ -412,6 +415,7 @@ impl BestBlockSub {
 				return Ok(BlockRef { hash, height: self.current_block_height });
 			}
 
+			let is_current_block = self.current_block_height == head.height;
 			let is_next_block = self.current_block_height + 1 == head.height;
 			if is_current_block || is_next_block {
 				return Ok(head);

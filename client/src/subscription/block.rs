@@ -63,6 +63,10 @@ impl LegacyBlockSub {
 		Ok(block)
 	}
 
+	pub fn should_retry_on_error(&self) -> bool {
+		self.sub.should_retry_on_error()
+	}
+
 	/// Delegates to [`Sub::use_best_block`].
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
@@ -106,6 +110,10 @@ impl BlockSub {
 	pub async fn prev(&mut self) -> Result<(Block, BlockRef), RpcError> {
 		let info = self.sub.prev().await?;
 		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
+	}
+
+	pub fn should_retry_on_error(&self) -> bool {
+		self.sub.should_retry_on_error()
 	}
 
 	/// Delegates to [`Sub::use_best_block`].
@@ -164,6 +172,10 @@ impl BlockEventsSub {
 
 			return Ok(events);
 		}
+	}
+
+	pub fn should_retry_on_error(&self) -> bool {
+		self.sub.should_retry_on_error()
 	}
 
 	/// Delegates to [`Sub::use_best_block`].
@@ -245,6 +257,10 @@ impl BlockHeaderSub {
 		};
 
 		Ok(header)
+	}
+
+	pub fn should_retry_on_error(&self) -> bool {
+		self.sub.should_retry_on_error()
 	}
 
 	/// Delegates to [`Sub::use_best_block`].

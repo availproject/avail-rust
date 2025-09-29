@@ -125,7 +125,9 @@ impl RpcApi {
 	}
 
 	pub async fn block_hash(&self, block_height: Option<u32>) -> Result<Option<H256>, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
 		let f = || async move { rpc::chain::get_block_hash(&self.client.rpc_client, block_height).await };
@@ -159,7 +161,9 @@ impl RpcApi {
 	}
 
 	pub async fn legacy_block(&self, at: Option<H256>) -> Result<Option<LegacyBlock>, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
 		let f = || async move { rpc::chain::get_block(&self.client.rpc_client, at).await };
@@ -178,7 +182,7 @@ impl RpcApi {
 	// Nonce
 	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
 		async fn inner(r: &RpcApi, account_id: AccountIdLike) -> Result<u32, Error> {
-			let retry_on_error = should_retry(&r.client, r.retry_on_error);
+			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
 			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
 
 			let a = &account_id;
@@ -207,7 +211,7 @@ impl RpcApi {
 		at: impl Into<HashStringNumber>,
 	) -> Result<AccountInfo, Error> {
 		async fn inner(r: &RpcApi, account_id: AccountIdLike, at: HashStringNumber) -> Result<AccountInfo, Error> {
-			let retry_on_error = should_retry(&r.client, r.retry_on_error);
+			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
 
 			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
 			let block_id: HashNumber = at.try_into().map_err(UserError::Other)?;
@@ -293,14 +297,17 @@ impl RpcApi {
 	}
 
 	pub async fn block_info(&self, use_best_block: bool) -> Result<BlockRef, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
-
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 		let f = || async move { rpc::system::latest_block_info(&self.client.rpc_client, use_best_block).await };
 		with_retry_on_error(f, retry_on_error).await
 	}
 
 	pub async fn chain_info(&self) -> Result<ChainInfo, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		let f = || async move { rpc::system::latest_chain_info(&self.client.rpc_client).await };
 		with_retry_on_error(f, retry_on_error).await
@@ -308,7 +315,9 @@ impl RpcApi {
 
 	// Sign and submit
 	pub async fn submit(&self, tx: &avail_rust_core::GenericExtrinsic<'_>) -> Result<H256, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		let encoded = tx.encode();
 		#[cfg(feature = "tracing")]
@@ -351,7 +360,10 @@ impl RpcApi {
 		tx_call: &'a avail_rust_core::ExtrinsicCall,
 		options: Options,
 	) -> Result<avail_rust_core::GenericExtrinsic<'a>, Error> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, retry_on_error).await?;
 
@@ -388,7 +400,10 @@ impl RpcApi {
 		tx_call: &avail_rust_core::ExtrinsicCall,
 		options: Options,
 	) -> Result<SubmittedTransaction, Error> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, retry_on_error).await?;
 
@@ -409,21 +424,27 @@ impl RpcApi {
 
 	// Rest
 	pub async fn state_call(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<String, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		let f = || async move { rpc::state::call(&self.client.rpc_client, method, data, at).await };
 		with_retry_on_error(f, retry_on_error).await
 	}
 
 	pub async fn state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		let f = || async move { rpc::state::get_metadata(&self.client.rpc_client, at).await };
 		with_retry_on_error(f, retry_on_error).await
 	}
 
 	pub async fn state_get_storage(&self, key: &str, at: Option<H256>) -> Result<Option<Vec<u8>>, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		let f = || async move { rpc::state::get_storage(&self.client.rpc_client, key, at).await };
 		with_retry_on_error(f, retry_on_error).await
@@ -436,7 +457,9 @@ impl RpcApi {
 		start_key: Option<&str>,
 		at: Option<H256>,
 	) -> Result<Vec<String>, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		let f =
 			|| async move { rpc::state::get_keys_paged(&self.client.rpc_client, prefix, count, start_key, at).await };
@@ -450,13 +473,14 @@ impl RpcApi {
 		opts: rpc::ExtrinsicOpts,
 	) -> Result<Vec<ExtrinsicInfo>, Error> {
 		async fn inner(
-			c: &RpcApi,
+			r: &RpcApi,
 			block_id: HashStringNumber,
 			opts: &rpc::ExtrinsicOpts,
 		) -> Result<Vec<ExtrinsicInfo>, Error> {
-			let retry_on_error = should_retry(&c.client, c.retry_on_error);
+			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
+
 			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
-			let f = || async move { rpc::system::fetch_extrinsics_v1(&c.client.rpc_client, block_id, opts).await };
+			let f = || async move { rpc::system::fetch_extrinsics_v1(&r.client.rpc_client, block_id, opts).await };
 			with_retry_on_error(f, retry_on_error).await.map_err(|e| e.into())
 		}
 
@@ -469,21 +493,22 @@ impl RpcApi {
 		opts: rpc::EventOpts,
 	) -> Result<Vec<BlockPhaseEvent>, Error> {
 		async fn inner(
-			c: &RpcApi,
+			r: &RpcApi,
 			block_id: HashStringNumber,
 			opts: &rpc::EventOpts,
 		) -> Result<Vec<BlockPhaseEvent>, Error> {
-			let retry_on_error = should_retry(&c.client, c.retry_on_error);
+			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
+
 			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
 			let at = match block_id {
 				HashNumber::Hash(x) => x,
 				HashNumber::Number(x) => {
-					let hash = c.block_hash(Some(x)).await?;
+					let hash = r.block_hash(Some(x)).await?;
 					hash.ok_or(RpcError::ExpectedData("Failed to fetch block height".into()))?
 				},
 			};
 
-			let f = || async move { rpc::system::fetch_events_v1(&c.client.rpc_client, at, opts).await };
+			let f = || async move { rpc::system::fetch_events_v1(&r.client.rpc_client, at, opts).await };
 			with_retry_on_error(f, retry_on_error).await.map_err(|e| e.into())
 		}
 
@@ -491,7 +516,10 @@ impl RpcApi {
 	}
 
 	pub async fn grandpa_block_justification(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
 		let f = || async move { rpc::grandpa::block_justification(&self.client.rpc_client, at).await };
 		let result = with_retry_on_error(f, retry_on_error).await?;
 
@@ -508,7 +536,10 @@ impl RpcApi {
 	}
 
 	pub async fn grandpa_block_justification_json(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
 		let f = || async move { rpc::grandpa::block_justification_json(&self.client.rpc_client, at).await };
 		let result = with_retry_on_error(f, retry_on_error).await?;
 
@@ -562,28 +593,28 @@ impl RpcApi {
 pub struct Best {
 	client: Client,
 	retry_on_error: Option<bool>,
-	retry_on_none: Option<bool>,
 }
 impl Best {
 	pub fn new(client: Client) -> Self {
-		Self { client, retry_on_error: None, retry_on_none: None }
+		Self { client, retry_on_error: None }
 	}
 
-	pub fn retry_on(mut self, error: Option<bool>, none: Option<bool>) -> Self {
+	pub fn retry_on(mut self, error: Option<bool>) -> Self {
 		self.retry_on_error = error;
-		self.retry_on_none = none;
 		self
 	}
 
+	// Block stuff
 	pub async fn block_header(&self) -> Result<AvailHeader, Error> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
-		let retry_on_none = self.retry_on_none.unwrap_or(true);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		let block_hash = self.block_hash().await?;
 		let block_header = self
 			.client
 			.rpc()
-			.retry_on(Some(retry_on_error), Some(retry_on_none))
+			.retry_on(Some(retry_on_error), Some(true))
 			.block_header(Some(block_hash))
 			.await?;
 		let Some(block_header) = block_header else {
@@ -598,30 +629,14 @@ impl Best {
 		Ok(Block::new(self.client.clone(), block_hash))
 	}
 
-	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
-		self.account_info(account_id).await.map(|v| v.nonce)
-	}
-
-	pub async fn account_balance(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountData, Error> {
-		self.account_info(account_id).await.map(|x| x.data)
-	}
-
-	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
-
-		let at = self.block_hash().await?;
-		self.client
-			.rpc()
-			.retry_on(Some(retry_on_error), None)
-			.account_info(account_id, at)
-			.await
-	}
-
 	pub async fn block_info(&self) -> Result<BlockRef, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
 		self.client
 			.rpc()
-			.retry_on(Some(retry_on_error), None)
+			.retry_on(Some(retry_on_error), Some(true))
 			.block_info(true)
 			.await
 	}
@@ -633,34 +648,75 @@ impl Best {
 	pub async fn block_height(&self) -> Result<u32, RpcError> {
 		self.block_info().await.map(|x| x.height)
 	}
+
+	pub async fn legacy_block(&self) -> Result<LegacyBlock, RpcError> {
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let block_hash = self.block_hash().await?;
+		let block = self
+			.client
+			.rpc()
+			.retry_on(Some(retry_on_error), Some(true))
+			.legacy_block(Some(block_hash))
+			.await?;
+		let Some(block) = block else {
+			return Err(RpcError::ExpectedData("Failed to fetch latest legacy block".into()));
+		};
+
+		Ok(block)
+	}
+
+	// Account stuff
+	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
+		self.account_info(account_id).await.map(|v| v.nonce)
+	}
+
+	pub async fn account_balance(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountData, Error> {
+		self.account_info(account_id).await.map(|x| x.data)
+	}
+
+	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let at = self.block_hash().await?;
+		self.client
+			.rpc()
+			.retry_on(Some(retry_on_error), Some(true))
+			.account_info(account_id, at)
+			.await
+	}
 }
 
 pub struct Finalized {
 	client: Client,
 	retry_on_error: Option<bool>,
-	retry_on_none: Option<bool>,
 }
 
 impl Finalized {
 	pub fn new(client: Client) -> Self {
-		Self { client, retry_on_error: None, retry_on_none: None }
+		Self { client, retry_on_error: None }
 	}
 
-	pub fn retry_on(mut self, error: Option<bool>, none: Option<bool>) -> Self {
+	pub fn retry_on(mut self, error: Option<bool>) -> Self {
 		self.retry_on_error = error;
-		self.retry_on_none = none;
 		self
 	}
 
+	// Block stuff
 	pub async fn block_header(&self) -> Result<AvailHeader, Error> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
-		let retry_on_none = self.retry_on_none.unwrap_or(true);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		let block_hash = self.block_hash().await?;
 		let block_header = self
 			.client
 			.rpc()
-			.retry_on(Some(retry_on_error), Some(retry_on_none))
+			.retry_on(Some(retry_on_error), Some(true))
 			.block_header(Some(block_hash))
 			.await?;
 		let Some(block_header) = block_header else {
@@ -675,30 +731,14 @@ impl Finalized {
 		Ok(Block::new(self.client.clone(), block_hash))
 	}
 
-	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
-		self.account_info(account_id).await.map(|v| v.nonce)
-	}
-
-	pub async fn account_balance(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountData, Error> {
-		self.account_info(account_id).await.map(|x| x.data)
-	}
-
-	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
-
-		let at = self.block_hash().await?;
-		self.client
-			.rpc()
-			.retry_on(Some(retry_on_error), None)
-			.account_info(account_id, at)
-			.await
-	}
-
 	pub async fn block_info(&self) -> Result<BlockRef, RpcError> {
-		let retry_on_error = should_retry(&self.client, self.retry_on_error);
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
 		self.client
 			.rpc()
-			.retry_on(Some(retry_on_error), None)
+			.retry_on(Some(retry_on_error), self.retry_on_error)
 			.block_info(false)
 			.await
 	}
@@ -710,10 +750,47 @@ impl Finalized {
 	pub async fn block_height(&self) -> Result<u32, RpcError> {
 		self.block_info().await.map(|x| x.height)
 	}
-}
 
-fn should_retry(client: &Client, value: Option<bool>) -> bool {
-	value.unwrap_or(client.is_global_retries_enabled())
+	pub async fn legacy_block(&self) -> Result<LegacyBlock, RpcError> {
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let block_hash = self.block_hash().await?;
+		let block = self
+			.client
+			.rpc()
+			.retry_on(Some(retry_on_error), Some(true))
+			.legacy_block(Some(block_hash))
+			.await?;
+		let Some(block) = block else {
+			return Err(RpcError::ExpectedData("Failed to fetch latest legacy block".into()));
+		};
+
+		Ok(block)
+	}
+
+	// Account Stuff
+	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
+		self.account_info(account_id).await.map(|v| v.nonce)
+	}
+
+	pub async fn account_balance(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountData, Error> {
+		self.account_info(account_id).await.map(|x| x.data)
+	}
+
+	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let at = self.block_hash().await?;
+		self.client
+			.rpc()
+			.retry_on(Some(retry_on_error), Some(true))
+			.account_info(account_id, at)
+			.await
+	}
 }
 
 // use crate::{ExtrinsicEvent, ExtrinsicEvents, clients::Client, subxt_core::events::Phase};
