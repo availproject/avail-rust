@@ -1,13 +1,13 @@
 use super::online_client::OnlineClient;
 use crate::{
 	BlockState, Error, UserError, avail,
-	block::BlockApi,
+	block_api::BlockApi,
 	clients::utils::{with_retry_on_error, with_retry_on_error_and_none},
-	extrinsic::SubmittedTransaction,
+	submission_api::SubmittedTransaction,
 	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
+	transaction_api::TransactionApi,
 	transaction_options::Options,
-	transactions::TransactionApi,
 };
 use avail::{
 	balances::types::AccountData,

@@ -1,6 +1,6 @@
 use crate::{
 	BlockInfo, Client, Sub,
-	block::{
+	block_api::{
 		BlockExtOptionsExpanded, BlockExtOptionsSimple, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction,
 		BlockWithExt, BlockWithRawExt, BlockWithTx,
 	},
@@ -215,7 +215,7 @@ impl RawExtrinsicSub {
 mod tests {
 	use super::*;
 	use crate::{
-		block::BlockExtOptionsExpanded, clients::mock_client::MockClient, error::Error, prelude::*,
+		block_api::BlockExtOptionsExpanded, clients::mock_client::MockClient, error::Error, prelude::*,
 		subxt_rpcs::RpcClient,
 	};
 	use avail_rust_core::{

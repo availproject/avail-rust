@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block::{BlockEvents, BlockWithTx},
+	block_api::{BlockEvents, BlockWithTx},
 	error::Error,
 	prelude::*,
 };

@@ -362,21 +362,17 @@ impl BlockWithTx {
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
 	) -> Result<Option<BlockTransaction<T>>, Error> {
-		async fn inner<T: HasHeader + Decode>(
-			s: &BlockWithTx,
-			extrinsic_id: HashStringNumber,
-		) -> Result<Option<BlockTransaction<T>>, Error> {
-			let filter = match extrinsic_id {
-				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
-				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
-				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
-			};
-			let filter = Some(filter);
-			Ok(s.first::<T>(BlockExtOptionsSimple { filter, ..Default::default() })
-				.await?)
-		}
+		let ext = self.ext.get(extrinsic_id).await?;
+		let Some(ext) = ext else {
+			return Ok(None);
+		};
 
-		inner::<T>(self, extrinsic_id.into()).await
+		let Some(signature) = ext.signature else {
+			return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
+		};
+
+		let ext = BlockTransaction::new(signature, ext.call, ext.metadata);
+		Ok(Some(ext))
 	}
 
 	/// Returns the first matching signed transaction.

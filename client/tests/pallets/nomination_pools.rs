@@ -1,4 +1,4 @@
-use avail_rust_client::{block::BlockWithTx, error::Error, prelude::*};
+use avail_rust_client::{block_api::BlockWithTx, error::Error, prelude::*};
 use avail_rust_core::avail::nomination_pools::{
 	tx::{
 		BondExtra, BondExtraOther, Chill, ClaimCommission, ClaimPayout, ClaimPayoutOther, Create, CreateWithPoolId,
