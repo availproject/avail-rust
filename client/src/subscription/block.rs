@@ -1,6 +1,6 @@
 use crate::{
 	AvailHeader, BlockInfo, Client, LegacyBlock, RpcError, Sub,
-	block::{Block, BlockEvents, BlockEventsOptions},
+	block::{BlockApi, BlockEvents, BlockEventsOptions},
 };
 use avail_rust_core::rpc::BlockPhaseEvent;
 use std::time::Duration;
@@ -23,7 +23,7 @@ impl LegacyBlockSub {
 		let block = match self
 			.sub
 			.client_ref()
-			.rpc()
+			.chain()
 			.retry_on(Some(self.sub.should_retry_on_error()), Some(true))
 			.legacy_block(Some(info.hash))
 			.await
@@ -44,7 +44,7 @@ impl LegacyBlockSub {
 		let block = match self
 			.sub
 			.client_ref()
-			.rpc()
+			.chain()
 			.retry_on(Some(self.sub.should_retry_on_error()), Some(true))
 			.legacy_block(Some(info.hash))
 			.await
@@ -99,15 +99,15 @@ impl BlockSub {
 	}
 
 	/// Fetches the next block handle along with its `BlockInfo`.
-	pub async fn next(&mut self) -> Result<(Block, BlockInfo), RpcError> {
+	pub async fn next(&mut self) -> Result<(BlockApi, BlockInfo), RpcError> {
 		let info = self.sub.next().await?;
-		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
+		Ok((BlockApi::new(self.sub.client_ref().clone(), info.hash), info))
 	}
 
 	/// Fetches the previous block handle along with its `BlockInfo`.
-	pub async fn prev(&mut self) -> Result<(Block, BlockInfo), RpcError> {
+	pub async fn prev(&mut self) -> Result<(BlockApi, BlockInfo), RpcError> {
 		let info = self.sub.prev().await?;
-		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
+		Ok((BlockApi::new(self.sub.client_ref().clone(), info.hash), info))
 	}
 
 	/// Reports whether failed RPC calls will be retried.
@@ -218,7 +218,7 @@ impl BlockHeaderSub {
 		let header = match self
 			.sub
 			.client_ref()
-			.rpc()
+			.chain()
 			.retry_on(Some(self.sub.should_retry_on_error()), Some(true))
 			.block_header(Some(info.hash))
 			.await
@@ -242,7 +242,7 @@ impl BlockHeaderSub {
 		let header = match self
 			.sub
 			.client_ref()
-			.rpc()
+			.chain()
 			.retry_on(Some(self.sub.should_retry_on_error()), Some(true))
 			.block_header(Some(info.hash))
 			.await

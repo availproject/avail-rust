@@ -9,7 +9,6 @@ shell commands. You can install both tools by running and executing
 `./install_dependencies.sh`. It should work as long as you have cargo installed.
 
 Here is the list of available `just` commands (`just -l`):
-- book
 - build
 - check
 - doc

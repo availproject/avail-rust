@@ -8,16 +8,16 @@ use avail_rust_core::{
 };
 use codec::Decode;
 
-pub struct Block {
+pub struct BlockApi {
 	client: Client,
 	block_id: HashStringNumber,
 	retry_on_error: Option<bool>,
 }
 
-impl Block {
+impl BlockApi {
 	/// Creates a block helper for the given height or hash.
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		Block { client, block_id: block_id.into(), retry_on_error: None }
+		BlockApi { client, block_id: block_id.into(), retry_on_error: None }
 	}
 
 	/// Returns a view that focuses on decoded transactions.
@@ -54,7 +54,7 @@ impl Block {
 		let at = match block_id {
 			HashNumber::Hash(h) => self
 				.client
-				.rpc()
+				.chain()
 				.retry_on(retry_on_error, None)
 				.block_height(h)
 				.await?
@@ -63,7 +63,7 @@ impl Block {
 		};
 
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(retry_on_error, None)
 			.grandpa_block_justification(at)
 			.await
@@ -119,7 +119,7 @@ impl BlockWithRawExt {
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
 		let mut result = self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(retry_on_error, None)
 			.system_fetch_extrinsics(block_id, opts.into())
 			.await?;
@@ -146,7 +146,7 @@ impl BlockWithRawExt {
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
 		let mut result = self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(retry_on_error, None)
 			.system_fetch_extrinsics(block_id, opts.into())
 			.await?;
@@ -173,7 +173,7 @@ impl BlockWithRawExt {
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
 		let result = self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(retry_on_error, None)
 			.system_fetch_extrinsics(block_id, opts.into())
 			.await?;
@@ -502,7 +502,7 @@ impl BlockEvents {
 		}
 
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(retry_on_error, None)
 			.system_fetch_events(self.block_id.clone(), opts.into())
 			.await

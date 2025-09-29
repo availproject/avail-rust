@@ -289,7 +289,7 @@ impl FinalizedBlockSub {
 		let height = self.next_block_height;
 		let hash = self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(retry_on_error, None)
 			.block_hash(Some(height))
 			.await?;
@@ -317,7 +317,7 @@ impl FinalizedBlockSub {
 			let height = self.next_block_height;
 			let hash = self
 				.client
-				.rpc()
+				.chain()
 				.retry_on(retry_on_error, Some(true))
 				.block_hash(Some(height))
 				.await?;
@@ -395,7 +395,7 @@ impl BestBlockSub {
 
 		let hash = self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(retry_on_error, None)
 			.block_hash(Some(height))
 			.await?;
@@ -421,7 +421,7 @@ impl BestBlockSub {
 			if no_block_processed_yet {
 				let hash = self
 					.client
-					.rpc()
+					.chain()
 					.retry_on(retry_on_error, Some(true))
 					.block_hash(Some(self.current_block_height))
 					.await?;
@@ -439,7 +439,7 @@ impl BestBlockSub {
 			let height = self.current_block_height + 1;
 			let hash = self
 				.client
-				.rpc()
+				.chain()
 				.retry_on(Some(true), Some(true))
 				.block_hash(Some(height))
 				.await?;

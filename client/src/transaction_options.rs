@@ -46,7 +46,7 @@ impl Options {
 			Some(x) => x,
 			None => {
 				client
-					.rpc()
+					.chain()
 					.retry_on(Some(retry_on_error), None)
 					.account_nonce(account_id.clone())
 					.await?

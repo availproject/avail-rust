@@ -53,7 +53,7 @@ impl GrandpaJustificationSub {
 	async fn fetch_justification(&self, height: u32, retry: bool) -> Result<Option<GrandpaJustification>, RpcError> {
 		self.sub
 			.client_ref()
-			.rpc()
+			.chain()
 			.retry_on(Some(retry), None)
 			.grandpa_block_justification(height)
 			.await
@@ -112,7 +112,7 @@ impl GrandpaJustificationJsonSub {
 	async fn fetch_justification(&self, height: u32, retry: bool) -> Result<Option<GrandpaJustification>, RpcError> {
 		self.sub
 			.client_ref()
-			.rpc()
+			.chain()
 			.retry_on(Some(retry), None)
 			.grandpa_block_justification_json(height)
 			.await

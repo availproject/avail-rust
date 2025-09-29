@@ -1,7 +1,7 @@
 use crate::{
 	Client, Error, UserError,
 	block::{
-		Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt,
+		BlockApi, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt,
 		BlockWithTx, ExtrinsicEvents,
 	},
 	subscription::Sub,
@@ -35,7 +35,7 @@ impl SubmittableTransaction {
 
 	pub async fn sign_and_submit(&self, signer: &Keypair, options: Options) -> Result<SubmittedTransaction, Error> {
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(self.retry_on_error, None)
 			.sign_and_submit_call(signer, &self.call, options)
 			.await
@@ -43,7 +43,7 @@ impl SubmittableTransaction {
 
 	pub async fn sign(&self, signer: &Keypair, options: Options) -> Result<GenericExtrinsic<'_>, Error> {
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(self.retry_on_error, None)
 			.sign_call(signer, &self.call, options)
 			.await
@@ -52,7 +52,7 @@ impl SubmittableTransaction {
 	pub async fn estimate_call_fees(&self, at: Option<H256>) -> Result<FeeDetails, RpcError> {
 		let call = self.call.encode();
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(self.retry_on_error, None)
 			.transaction_payment_query_call_fee_details(call, at)
 			.await
@@ -68,7 +68,7 @@ impl SubmittableTransaction {
 		let transaction = transaction.encode();
 		Ok(self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(self.retry_on_error, None)
 			.transaction_payment_query_fee_details(transaction, at)
 			.await?)
@@ -77,7 +77,7 @@ impl SubmittableTransaction {
 	pub async fn call_info(&self, at: Option<H256>) -> Result<RuntimeDispatchInfo, RpcError> {
 		let call = self.call.encode();
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(self.retry_on_error, None)
 			.transaction_payment_query_call_info(call, at)
 			.await
@@ -87,11 +87,11 @@ impl SubmittableTransaction {
 		should_retry(&self.client, self.retry_on_error)
 	}
 
-/// Controls retry behaviour for RPC calls sent via this builder: `Some(true)` forces retries,
-/// `Some(false)` disables them, and `None` keeps the client's default.
-pub fn set_retry_on_error(&mut self, value: Option<bool>) {
-	self.retry_on_error = value;
-}
+	/// Controls retry behaviour for RPC calls sent via this builder: `Some(true)` forces retries,
+	/// `Some(false)` disables them, and `None` keeps the client's default.
+	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
+		self.retry_on_error = value;
+	}
 
 	pub fn from_encodable<T: HasHeader + Encode>(client: Client, value: T) -> SubmittableTransaction {
 		let call = ExtrinsicCall::new(T::HEADER_INDEX.0, T::HEADER_INDEX.1, value.encode());
@@ -170,7 +170,7 @@ impl TransactionReceipt {
 	}
 
 	pub async fn block_state(&self) -> Result<BlockState, Error> {
-		self.client.rpc().block_state(self.block_ref.hash).await
+		self.client.chain().block_state(self.block_ref.hash).await
 	}
 
 	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<BlockTransaction<T>, Error> {
@@ -270,7 +270,7 @@ impl Utils {
 			return Ok(None);
 		};
 
-		let block = Block::new(client.clone(), block_ref.hash);
+		let block = BlockApi::new(client.clone(), block_ref.hash);
 		let ext = block.raw_ext().get(tx_hash, EncodeSelector::None).await?;
 
 		let Some(ext) = ext else {
@@ -315,13 +315,13 @@ impl Utils {
 			let info = sub.next().await?;
 			current_block_height = info.height;
 
-			let state_nonce = client.rpc().block_nonce(account_id.clone(), info.hash).await?;
+			let state_nonce = client.chain().block_nonce(account_id.clone(), info.hash).await?;
 			if state_nonce > nonce {
 				trace_new_block(nonce, state_nonce, account_id, info, true);
 				return Ok(Some(info));
 			}
 			if state_nonce == 0 {
-				let block = Block::new(client.clone(), info.hash);
+				let block = BlockApi::new(client.clone(), info.hash);
 				let ext = block.raw_ext().get(tx_hash, EncodeSelector::None).await?;
 				if ext.is_some() {
 					trace_new_block(nonce, state_nonce, account_id, info, true);

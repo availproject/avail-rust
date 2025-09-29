@@ -31,7 +31,8 @@ pub use avail_rust_core::{
 	rpc::LegacyBlock,
 };
 pub use block::{
-	Block, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt, BlockWithTx,
+	BlockApi, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt,
+	BlockWithTx,
 };
 pub use error::{Error, UserError};
 pub use primitive_types::{H256, U256};

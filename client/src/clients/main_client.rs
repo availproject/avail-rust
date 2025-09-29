@@ -1,7 +1,7 @@
 use super::online_client::OnlineClient;
 use crate::{
 	BlockState, Error, UserError, avail,
-	block::Block,
+	block::BlockApi,
 	clients::utils::{with_retry_on_error, with_retry_on_error_and_none},
 	extrinsic::SubmittedTransaction,
 	subxt_rpcs::RpcClient,
@@ -80,24 +80,24 @@ impl Client {
 		}
 	}
 
-	/// Gives you a helper for crafting and sending transactions.
-	pub fn tx(&self) -> TransactionApi {
-		TransactionApi(self.clone())
-	}
-
 	/// Hands back the underlying `OnlineClient` for advanced uses.
 	pub fn online_client(&self) -> OnlineClient {
 		self.online_client.clone()
 	}
 
+	/// Gives you a helper for crafting and sending transactions.
+	pub fn tx(&self) -> TransactionApi {
+		TransactionApi(self.clone())
+	}
+
 	/// Builds a block helper rooted at the height or hash you pass in.
-	pub fn block(&self, block_id: impl Into<HashStringNumber>) -> Block {
-		Block::new(self.clone(), block_id)
+	pub fn block(&self, block_id: impl Into<HashStringNumber>) -> BlockApi {
+		BlockApi::new(self.clone(), block_id)
 	}
 
 	/// Provides low-level RPC helpers when you need finer control.
-	pub fn rpc(&self) -> RpcApi {
-		RpcApi::new(self.clone())
+	pub fn chain(&self) -> ChainApi {
+		ChainApi::new(self.clone())
 	}
 
 	/// Provides quick access to the best (head) block view.
@@ -121,12 +121,12 @@ impl Client {
 	}
 }
 
-pub struct RpcApi {
+pub struct ChainApi {
 	client: Client,
 	retry_on_error: Option<bool>,
 	retry_on_none: Option<bool>,
 }
-impl RpcApi {
+impl ChainApi {
 	/// Creates a helper for low-level RPC calls.
 	pub fn new(client: Client) -> Self {
 		Self { client, retry_on_error: None, retry_on_none: None }
@@ -152,7 +152,7 @@ impl RpcApi {
 
 	/// Grabs a block header by hash or height.
 	pub async fn block_header(&self, at: Option<impl Into<HashStringNumber>>) -> Result<Option<AvailHeader>, Error> {
-		async fn inner(r: &RpcApi, at: Option<HashStringNumber>) -> Result<Option<AvailHeader>, Error> {
+		async fn inner(r: &ChainApi, at: Option<HashStringNumber>) -> Result<Option<AvailHeader>, Error> {
 			let retry_on_error = r.retry_on_error.unwrap_or(true);
 			let retry_on_none = r.retry_on_none.unwrap_or(false);
 
@@ -199,7 +199,7 @@ impl RpcApi {
 
 	/// Returns the latest account nonce as seen by the node.
 	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
-		async fn inner(r: &RpcApi, account_id: AccountIdLike) -> Result<u32, Error> {
+		async fn inner(r: &ChainApi, account_id: AccountIdLike) -> Result<u32, Error> {
 			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
 			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
 
@@ -228,7 +228,7 @@ impl RpcApi {
 		account_id: impl Into<AccountIdLike>,
 		at: impl Into<HashStringNumber>,
 	) -> Result<AccountInfo, Error> {
-		async fn inner(r: &RpcApi, account_id: AccountIdLike, at: HashStringNumber) -> Result<AccountInfo, Error> {
+		async fn inner(r: &ChainApi, account_id: AccountIdLike, at: HashStringNumber) -> Result<AccountInfo, Error> {
 			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
 
 			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
@@ -256,7 +256,7 @@ impl RpcApi {
 
 	/// Tells you if a block is pending, finalized, or missing.
 	pub async fn block_state(&self, block_id: impl Into<HashStringNumber>) -> Result<BlockState, Error> {
-		async fn inner(r: &RpcApi, block_id: HashStringNumber) -> Result<BlockState, Error> {
+		async fn inner(r: &ChainApi, block_id: HashStringNumber) -> Result<BlockState, Error> {
 			let block_id = HashNumber::try_from(block_id).map_err(UserError::Other)?;
 			let chain_info = r.chain_info().await?;
 			let n = match block_id {
@@ -302,7 +302,7 @@ impl RpcApi {
 
 	/// Converts a block hash into its block height when possible.
 	pub async fn block_height(&self, at: impl Into<HashString>) -> Result<Option<u32>, Error> {
-		async fn inner(r: &RpcApi, at: HashString) -> Result<Option<u32>, Error> {
+		async fn inner(r: &ChainApi, at: HashString) -> Result<Option<u32>, Error> {
 			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
 			let retry_on_none = r.retry_on_none.unwrap_or(false);
 
@@ -501,7 +501,7 @@ impl RpcApi {
 		opts: rpc::ExtrinsicOpts,
 	) -> Result<Vec<ExtrinsicInfo>, Error> {
 		async fn inner(
-			r: &RpcApi,
+			r: &ChainApi,
 			block_id: HashStringNumber,
 			opts: &rpc::ExtrinsicOpts,
 		) -> Result<Vec<ExtrinsicInfo>, Error> {
@@ -522,7 +522,7 @@ impl RpcApi {
 		opts: rpc::EventOpts,
 	) -> Result<Vec<BlockPhaseEvent>, Error> {
 		async fn inner(
-			r: &RpcApi,
+			r: &ChainApi,
 			block_id: HashStringNumber,
 			opts: &rpc::EventOpts,
 		) -> Result<Vec<BlockPhaseEvent>, Error> {
@@ -651,7 +651,7 @@ impl Best {
 		let block_hash = self.block_hash().await?;
 		let block_header = self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(Some(retry_on_error), Some(true))
 			.block_header(Some(block_hash))
 			.await?;
@@ -663,9 +663,9 @@ impl Best {
 	}
 
 	/// Gives you a block handle for the best block.
-	pub async fn block(&self) -> Result<Block, Error> {
+	pub async fn block(&self) -> Result<BlockApi, Error> {
 		let block_hash = self.block_hash().await?;
-		Ok(Block::new(self.client.clone(), block_hash))
+		Ok(BlockApi::new(self.client.clone(), block_hash))
 	}
 
 	/// Returns height and hash for the best block.
@@ -675,7 +675,7 @@ impl Best {
 			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(Some(retry_on_error), Some(true))
 			.block_info(true)
 			.await
@@ -700,7 +700,7 @@ impl Best {
 		let block_hash = self.block_hash().await?;
 		let block = self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(Some(retry_on_error), Some(true))
 			.legacy_block(Some(block_hash))
 			.await?;
@@ -729,7 +729,7 @@ impl Best {
 
 		let at = self.block_hash().await?;
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(Some(retry_on_error), Some(true))
 			.account_info(account_id, at)
 			.await
@@ -762,7 +762,7 @@ impl Finalized {
 		let block_hash = self.block_hash().await?;
 		let block_header = self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(Some(retry_on_error), Some(true))
 			.block_header(Some(block_hash))
 			.await?;
@@ -774,9 +774,9 @@ impl Finalized {
 	}
 
 	/// Gives you a block handle for the latest finalized block.
-	pub async fn block(&self) -> Result<Block, Error> {
+	pub async fn block(&self) -> Result<BlockApi, Error> {
 		let block_hash = self.block_hash().await?;
-		Ok(Block::new(self.client.clone(), block_hash))
+		Ok(BlockApi::new(self.client.clone(), block_hash))
 	}
 
 	/// Returns height and hash for the latest finalized block.
@@ -786,7 +786,7 @@ impl Finalized {
 			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(Some(retry_on_error), self.retry_on_error)
 			.block_info(false)
 			.await
@@ -811,7 +811,7 @@ impl Finalized {
 		let block_hash = self.block_hash().await?;
 		let block = self
 			.client
-			.rpc()
+			.chain()
 			.retry_on(Some(retry_on_error), Some(true))
 			.legacy_block(Some(block_hash))
 			.await?;
@@ -840,7 +840,7 @@ impl Finalized {
 
 		let at = self.block_hash().await?;
 		self.client
-			.rpc()
+			.chain()
 			.retry_on(Some(retry_on_error), Some(true))
 			.account_info(account_id, at)
 			.await
