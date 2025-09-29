@@ -6,7 +6,7 @@ pub(crate) fn trace_warn(message: &str) {
 	tracing::warn!(target: "lib", message);
 }
 
-pub async fn with_retry_on_error<F, Fut, O, E>(f: F, retry_on_error: bool, _error_message: &str) -> Result<O, E>
+pub async fn with_retry_on_error<F, Fut, O, E>(f: F, retry_on_error: bool) -> Result<O, E>
 where
 	F: Fn() -> Fut,
 	Fut: Future<Output = Result<O, E>>,
@@ -37,7 +37,6 @@ pub async fn with_retry_on_error_and_none<F, Fut, O, E>(
 	f: F,
 	retry_on_error: bool,
 	retry_on_none: bool,
-	_error_message: &str,
 ) -> Result<Option<O>, E>
 where
 	F: Fn() -> Fut,
@@ -57,7 +56,7 @@ where
 				};
 
 				#[cfg(feature = "tracing")]
-				trace_warn(&std::format!("Error: {}", "Something TODO"));
+				trace_warn(&std::format!("Error: {}", "TODO"));
 				sleep(Duration::from_secs(duration)).await;
 			},
 			Err(err) if !retry_on_error => {
