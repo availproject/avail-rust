@@ -87,9 +87,11 @@ impl SubmittableTransaction {
 		should_retry(&self.client, self.retry_on_error)
 	}
 
-	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
-		self.retry_on_error = value;
-	}
+/// Controls retry behaviour for RPC calls sent via this builder: `Some(true)` forces retries,
+/// `Some(false)` disables them, and `None` keeps the client's default.
+pub fn set_retry_on_error(&mut self, value: Option<bool>) {
+	self.retry_on_error = value;
+}
 
 	pub fn from_encodable<T: HasHeader + Encode>(client: Client, value: T) -> SubmittableTransaction {
 		let call = ExtrinsicCall::new(T::HEADER_INDEX.0, T::HEADER_INDEX.1, value.encode());

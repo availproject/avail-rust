@@ -95,7 +95,10 @@ impl Sub {
 		should_retry(self.client_ref(), value)
 	}
 
-	/// Switches the subscription to track best (non-finalized) blocks when `value` is `true`.
+	/// Switches the subscription mode based on `value`.
+	///
+	/// - `true` → Track best (non-finalized) blocks instead of finalized ones.
+	/// - `false` → Stick with the default of finalized blocks.
 	///
 	/// This configuration must be applied before the subscription is initialized by a call to
 	/// [`Sub::next`] or [`Sub::prev`]; later calls have no effect.
@@ -105,7 +108,10 @@ impl Sub {
 		}
 	}
 
-	/// Sets the initial block height used when iterating with [`Sub::next`] or [`Sub::prev`].
+	/// Sets the starting block height according to `value`.
+	///
+	/// Subsequent calls to [`Sub::next`] and [`Sub::prev`] honour this height, rewinding or
+	/// fast-forwarding the internal cursor so iteration resumes relative to `value`.
 	pub fn set_block_height(&mut self, value: u32) {
 		match self {
 			Self::UnInit(u) => u.block_height = Some(value),
@@ -120,7 +126,10 @@ impl Sub {
 		}
 	}
 
-	/// Updates the polling interval used when waiting for new block data.
+	/// Updates the polling interval using the provided `value`.
+	///
+	/// The change takes effect immediately and drives how often the subscription waits before
+	/// attempting to fetch fresh block data.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		match self {
 			Self::UnInit(u) => u.poll_rate = value,
@@ -129,10 +138,11 @@ impl Sub {
 		}
 	}
 
-	/// Overrides the retry policy for subsequent RPC calls made by the subscription.
+	/// Controls retry behaviour for this subscription based on `value`.
 	///
-	/// Passing `Some(true)` forces retries, `Some(false)` disables them, and `None` restores
-	/// the default behaviour derived from the [`Client`] configuration.
+	/// - `Some(true)` → Always retry failed RPC calls.
+	/// - `Some(false)` → Never retry failed RPC calls.
+	/// - `None` → Defer to the [`Client`]'s global retry setting.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		match self {
 			Self::UnInit(u) => u.retry_on_error = value,
@@ -189,6 +199,7 @@ impl UnInitSub {
 		}
 	}
 
+	/// Materializes the concrete subscription based on the collected settings.
 	pub async fn build(&self) -> Result<Sub, RpcError> {
 		let block_height = match self.block_height {
 			Some(x) => x,
@@ -235,6 +246,7 @@ pub struct FinalizedBlockSub {
 }
 
 impl FinalizedBlockSub {
+	/// Moves forward to the next finalized block.
 	pub async fn next(&mut self) -> Result<BlockInfo, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
@@ -249,6 +261,7 @@ impl FinalizedBlockSub {
 		Ok(result)
 	}
 
+	/// Steps back to the previous finalized block.
 	pub async fn prev(&mut self) -> Result<BlockInfo, RpcError> {
 		self.next_block_height = self.next_block_height.saturating_sub(1);
 		if self.processed_previous_block {
@@ -329,6 +342,7 @@ pub struct BestBlockSub {
 }
 
 impl BestBlockSub {
+	/// Moves forward to the next best (head) block.
 	pub async fn next(&mut self) -> Result<BlockInfo, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
@@ -353,6 +367,7 @@ impl BestBlockSub {
 		Ok(info)
 	}
 
+	/// Steps back to the previous best (head) block.
 	pub async fn prev(&mut self) -> Result<BlockInfo, RpcError> {
 		self.current_block_height = self.current_block_height.saturating_sub(1);
 		self.block_processed.clear();

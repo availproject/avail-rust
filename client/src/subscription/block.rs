@@ -5,21 +5,19 @@ use crate::{
 use avail_rust_core::rpc::BlockPhaseEvent;
 use std::time::Duration;
 
-/// Subscription that mirrors [`Sub`] but yields [`LegacyBlock`].
+/// Subscription wrapper that streams [`LegacyBlock`] values.
 #[derive(Clone)]
 pub struct LegacyBlockSub {
 	sub: Sub,
 }
 
 impl LegacyBlockSub {
-	/// Creates a new [`LegacyBlock`] subscription.
+	/// Creates a subscription that yields legacy blocks as you iterate.
 	pub fn new(client: Client) -> Self {
 		Self { sub: Sub::new(client) }
 	}
 
-	/// Returns the next [`LegacyBlock`] matching the underlying [`Sub::next`] cursor.
-	///
-	/// When the RPC call fails, the internal height is rewound so the same block can be retried.
+	/// Fetches the next legacy block; rewinds the cursor if the RPC call fails.
 	pub async fn next(&mut self) -> Result<Option<LegacyBlock>, RpcError> {
 		let info = self.sub.next().await?;
 		let block = match self
@@ -40,9 +38,7 @@ impl LegacyBlockSub {
 		Ok(block)
 	}
 
-	/// Returns the previous [`LegacyBlock`] using [`Sub::prev`] as the cursor source.
-	///
-	/// When the RPC call fails, the internal height is rewound so the same block can be retried.
+	/// Fetches the previous legacy block; rewinds the cursor if the RPC call fails.
 	pub async fn prev(&mut self) -> Result<Option<LegacyBlock>, RpcError> {
 		let info = self.sub.prev().await?;
 		let block = match self
@@ -63,81 +59,85 @@ impl LegacyBlockSub {
 		Ok(block)
 	}
 
+	/// Reports whether failed RPC calls will be retried.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.sub.should_retry_on_error()
 	}
 
-	/// Delegates to [`Sub::use_best_block`].
+	/// Follow best blocks instead of finalized ones.
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
-	/// Delegates to [`Sub::set_block_height`].
+	/// Jump the cursor to a specific starting height.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Delegates to [`Sub::set_pool_rate`].
+	/// Change how often we poll for new blocks.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Delegates to [`Sub::set_retry_on_error`].
+	/// Controls retry behaviour: `Some(true)` forces retries, `Some(false)` disables them, and `None`
+	/// keeps the client's default.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
 }
 
-/// Subscription that mirrors [`Sub`] but yields [`Block`].
+/// Subscription wrapper that streams [`Block`] handles.
 #[derive(Clone)]
 pub struct BlockSub {
 	sub: Sub,
 }
 
 impl BlockSub {
-	/// Creates a new [`Block`] subscription.
+	/// Creates a subscription that yields [`Block`] handles as you iterate.
 	pub fn new(client: Client) -> Self {
 		Self { sub: Sub::new(client) }
 	}
 
-	/// Advances the subscription and returns a [`Block`] view alongside the originating [`BlockInfo`].
+	/// Fetches the next block handle along with its `BlockInfo`.
 	pub async fn next(&mut self) -> Result<(Block, BlockInfo), RpcError> {
 		let info = self.sub.next().await?;
 		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
 	}
 
-	/// Moves the subscription backwards and returns a [`Block`] view alongside the originating [`BlockInfo`]..
+	/// Fetches the previous block handle along with its `BlockInfo`.
 	pub async fn prev(&mut self) -> Result<(Block, BlockInfo), RpcError> {
 		let info = self.sub.prev().await?;
 		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
 	}
 
+	/// Reports whether failed RPC calls will be retried.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.sub.should_retry_on_error()
 	}
 
-	/// Delegates to [`Sub::use_best_block`].
+	/// Follow best blocks instead of finalized ones.
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
-	/// Delegates to [`Sub::set_block_height`].
+	/// Jump the cursor to a specific starting height.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Delegates to [`Sub::set_pool_rate`].
+	/// Change how often we poll for new blocks.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Delegates to [`Sub::set_retry_on_error`].
+	/// Controls retry behaviour: `Some(true)` forces retries, `Some(false)` disables them, and `None`
+	/// keeps the client's default.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
 }
 
-/// Subscription that mirrors [`Sub`] but yields an array of[`BlockPhaseEvent`].
+/// Subscription wrapper that streams [`BlockPhaseEvent`] lists.
 #[derive(Clone)]
 pub struct BlockEventsSub {
 	sub: Sub,
@@ -145,14 +145,12 @@ pub struct BlockEventsSub {
 }
 
 impl BlockEventsSub {
-	/// Creates a new [`BlockPhaseEvent`] subscription.
+	/// Creates a subscription that yields event batches filtered by the supplied options.
 	pub fn new(client: Client, opts: BlockEventsOptions) -> Self {
 		Self { sub: Sub::new(client), opts }
 	}
 
-	/// Advances to the next block that yields one or more events matching the configured options.
-	///
-	/// When the RPC call fails, the internal height is rewound so the same block can be retried.
+	/// Fetches the next block with matching events; rewinds on RPC failure.
 	pub async fn next(&mut self) -> Result<Vec<BlockPhaseEvent>, crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
@@ -174,26 +172,27 @@ impl BlockEventsSub {
 		}
 	}
 
+	/// Reports whether failed RPC calls will be retried.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.sub.should_retry_on_error()
 	}
 
-	/// Delegates to [`Sub::use_best_block`].
+	/// Follow best blocks instead of finalized ones.
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
-	/// Delegates to [`Sub::set_block_height`].
+	/// Jump the cursor to a specific starting height.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Delegates to [`Sub::set_pool_rate`].
+	/// Change how often we poll for new blocks.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Delegates to [`Sub::set_retry_on_error`].
+	/// Override the retry behaviour (`Some(true)` = force, `Some(false)` = disable).
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
@@ -263,22 +262,22 @@ impl BlockHeaderSub {
 		self.sub.should_retry_on_error()
 	}
 
-	/// Delegates to [`Sub::use_best_block`].
+	/// Follow best blocks instead of finalized ones.
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
-	/// Delegates to [`Sub::set_block_height`].
+	/// Jump the cursor to a specific starting height.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Delegates to [`Sub::set_pool_rate`].
+	/// Change how often we poll for new blocks.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Delegates to [`Sub::set_retry_on_error`].
+	/// Choose whether this subscription should retry after RPC failures.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}

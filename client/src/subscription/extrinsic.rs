@@ -58,22 +58,23 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		self.opts = value;
 	}
 
-	/// Delegates to [`Sub::use_best_block`].
+	/// Follow best blocks instead of finalized ones.
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
-	/// Delegates to [`Sub::set_block_height`].
+	/// Jump the cursor to a specific starting height.
 	pub fn set_block_height(&mut self, value: u32) {
 		self.sub.set_block_height(value);
 	}
 
-	/// Delegates to [`Sub::set_pool_rate`].
+	/// Change how often we poll for new blocks.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Delegates to [`Sub::set_retry_on_error`].
+	/// Controls retry behaviour: `Some(true)` forces retries, `Some(false)` disables them, and `None`
+	/// keeps the client's default.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
@@ -128,17 +129,18 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		self.sub.use_best_block(value);
 	}
 
-	/// Delegates to [`Sub::set_block_height`].
+	/// Jump the cursor to a specific starting height.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Delegates to [`Sub::set_pool_rate`].
+	/// Change how often we poll for new blocks.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Delegates to [`Sub::set_retry_on_error`].
+	/// Controls retry behaviour: `Some(true)` forces retries, `Some(false)` disables them, and `None`
+	/// keeps the client's default.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
@@ -203,7 +205,7 @@ impl RawExtrinsicSub {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Delegates to [`Sub::set_retry_on_error`].
+	/// Choose whether this subscription should retry after RPC failures.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}

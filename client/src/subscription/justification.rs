@@ -7,10 +7,12 @@ pub struct GrandpaJustificationSub {
 }
 
 impl GrandpaJustificationSub {
+	/// Creates a subscription that yields decoded GRANDPA justifications.
 	pub fn new(client: Client) -> Self {
 		Self { sub: Sub::new(client) }
 	}
 
+	/// Fetches the next available justification; rewinds on RPC failure and skips blanks.
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let info = self.sub.next().await?;
@@ -32,14 +34,18 @@ impl GrandpaJustificationSub {
 		}
 	}
 
+	/// Jump the cursor to a specific starting height.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
+	/// Change how often we poll for new justifications.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
+	/// Controls retry behaviour: `Some(true)` forces retries, `Some(false)` disables them, and `None`
+	/// keeps the client's default.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
@@ -60,10 +66,12 @@ pub struct GrandpaJustificationJsonSub {
 }
 
 impl GrandpaJustificationJsonSub {
+	/// Creates a subscription that yields JSON GRANDPA justifications.
 	pub fn new(client: Client) -> Self {
 		Self { sub: Sub::new(client) }
 	}
 
+	/// Fetches the next available justification; rewinds on RPC failure and skips blanks.
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let info = self.sub.next().await?;
@@ -85,14 +93,18 @@ impl GrandpaJustificationJsonSub {
 		}
 	}
 
+	/// Jump the cursor to a specific starting height.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
+	/// Change how often we poll for new justifications.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
+	/// Controls retry behaviour: `Some(true)` forces retries, `Some(false)` disables them, and `None`
+	/// keeps the client's default.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
