@@ -432,7 +432,9 @@ impl BlockWithTx {
 		};
 
 		let Some(signature) = ext.signature else {
-			return Err(UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into());
+			return Err(
+				UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into()
+			);
 		};
 
 		let ext = BlockTransaction::new(signature, ext.call, ext.metadata);
@@ -452,7 +454,9 @@ impl BlockWithTx {
 		};
 
 		let Some(signature) = ext.signature else {
-			return Err(UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into());
+			return Err(
+				UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into()
+			);
 		};
 
 		let ext = BlockTransaction::new(signature, ext.call, ext.metadata);
@@ -472,7 +476,9 @@ impl BlockWithTx {
 		};
 
 		let Some(signature) = ext.signature else {
-			return Err(UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into());
+			return Err(
+				UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into()
+			);
 		};
 
 		let ext = BlockTransaction::new(signature, ext.call, ext.metadata);
@@ -490,7 +496,10 @@ impl BlockWithTx {
 		let mut result = Vec::with_capacity(all.len());
 		for ext in all {
 			let Some(signature) = ext.signature else {
-				return Err(UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into());
+				return Err(UserError::Other(
+					"Extrinsic is unsigned; cannot decode it as a signed transaction.".into(),
+				)
+				.into());
 			};
 			result.push(BlockTransaction::new(signature, ext.call, ext.metadata));
 		}
@@ -552,7 +561,9 @@ impl BlockEvents {
 		let mut result: Vec<ExtrinsicEvent> = Vec::with_capacity(first.events.len());
 		for phase_event in &mut first.events {
 			let Some(data) = phase_event.encoded_data.take() else {
-				return Err(RpcError::ExpectedData("The node did not return encoded data for this event.".into()).into());
+				return Err(
+					RpcError::ExpectedData("The node did not return encoded data for this event.".into()).into()
+				);
 			};
 
 			let ext_event = ExtrinsicEvent {
