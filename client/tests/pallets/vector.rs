@@ -1,4 +1,4 @@
-use avail_rust_client::{block::BlockWithTx, error::Error, prelude::*};
+use avail_rust_client::{block_api::BlockWithTx, error::Error, prelude::*};
 use avail_rust_core::avail::vector::{
 	tx::{Execute, FailedSendMessageTxs, SendMessage},
 	types::{AddressedMessage, Message},

@@ -1,16 +1,29 @@
+//! Subscriptions that stream GRANDPA justifications in both binary and JSON-encoded forms.
+
 use crate::{Client, GrandpaJustification, RpcError, Sub};
 use std::time::Duration;
 
+/// Streams decoded GRANDPA justifications while handling retries and cursor management.
 #[derive(Clone)]
 pub struct GrandpaJustificationSub {
 	sub: Sub,
 }
 
 impl GrandpaJustificationSub {
+	/// Creates a subscription that yields decoded GRANDPA justifications.
+	///
+	/// The client is cloned; no network calls are made until [`GrandpaJustificationSub::next`] is
+	/// awaited.
 	pub fn new(client: Client) -> Self {
 		Self { sub: Sub::new(client) }
 	}
 
+	/// Fetches the next available justification; rewinds on RPC failure and skips blanks.
+	///
+	/// # Returns
+	/// - `Ok(GrandpaJustification)` when a justification is retrieved for the current cursor.
+	/// - `Err(RpcError)` when the RPC request fails. The internal block height rewinds so the same
+	///   block is retried on the next call.
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let info = self.sub.next().await?;
@@ -32,14 +45,19 @@ impl GrandpaJustificationSub {
 		}
 	}
 
+	/// Jump the cursor to a specific starting height. The next call to [`GrandpaJustificationSub::next`]
+	/// examines this height first.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
+	/// Change how often the subscription polls for new justifications when tailing the head.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
+	/// Controls retry behaviour for subsequent RPC calls (`Some(true)` = force, `Some(false)` = disable,
+	/// `None` = inherit client default).
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
@@ -47,23 +65,29 @@ impl GrandpaJustificationSub {
 	async fn fetch_justification(&self, height: u32, retry: bool) -> Result<Option<GrandpaJustification>, RpcError> {
 		self.sub
 			.client_ref()
-			.rpc()
+			.chain()
 			.retry_on(Some(retry), None)
 			.grandpa_block_justification(height)
 			.await
 	}
 }
 
+/// Streams GRANDPA justifications encoded as JSON structures.
 #[derive(Clone)]
 pub struct GrandpaJustificationJsonSub {
 	sub: Sub,
 }
 
 impl GrandpaJustificationJsonSub {
+	/// Creates a subscription that yields JSON GRANDPA justifications. Network calls are deferred until
+	/// [`GrandpaJustificationJsonSub::next`] is awaited.
 	pub fn new(client: Client) -> Self {
 		Self { sub: Sub::new(client) }
 	}
 
+	/// Fetches the next available justification; rewinds on RPC failure and skips blanks.
+	///
+	/// Return semantics mirror [`GrandpaJustificationSub::next`].
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let info = self.sub.next().await?;
@@ -85,14 +109,18 @@ impl GrandpaJustificationJsonSub {
 		}
 	}
 
+	/// Jump the cursor to a specific starting height.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
+	/// Change how often the subscription polls for new justifications when following the head.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
+	/// Controls retry behaviour (`Some(true)` = force retries, `Some(false)` = disable, `None` =
+	/// inherit client default).
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
@@ -100,7 +128,7 @@ impl GrandpaJustificationJsonSub {
 	async fn fetch_justification(&self, height: u32, retry: bool) -> Result<Option<GrandpaJustification>, RpcError> {
 		self.sub
 			.client_ref()
-			.rpc()
+			.chain()
 			.retry_on(Some(retry), None)
 			.grandpa_block_justification_json(height)
 			.await

@@ -1,7 +1,7 @@
 pub mod fetch_events;
 pub mod fetch_extrinsics;
 
-use crate::{BlockRef, rpc::Error, types::metadata::ChainInfo};
+use crate::{BlockInfo, rpc::Error, types::metadata::ChainInfo};
 use primitive_types::H256;
 use serde::Deserialize;
 use subxt_rpcs::{RpcClient, methods::legacy::SystemHealth, rpc_params};
@@ -125,7 +125,7 @@ pub async fn get_block_number(client: &RpcClient, at: H256) -> Result<Option<u32
 	Ok(value)
 }
 
-pub async fn latest_block_info(client: &RpcClient, use_best_block: bool) -> Result<BlockRef, Error> {
+pub async fn latest_block_info(client: &RpcClient, use_best_block: bool) -> Result<BlockInfo, Error> {
 	let params = rpc_params![use_best_block];
 	let value = client.request("system_latestBlockInfo", params).await?;
 	Ok(value)

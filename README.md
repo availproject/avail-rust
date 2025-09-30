@@ -1,6 +1,9 @@
 # For Library Users
 
-**[Your documentation is in another castle.](https://github.com/availproject/avail-rust/blob/main/client/README.md)**
+**[Your documentation is in another castle.](https://github.com/availproject/avail-rust/blob/main/client/README.md).**
+
+Looking for focused guides (submission flow, retries, failure modes, etc.)?
+Check the [documentation index](docs/README.md).
 
 # For Library Developers
 
@@ -9,7 +12,6 @@ shell commands. You can install both tools by running and executing
 `./install_dependencies.sh`. It should work as long as you have cargo installed.
 
 Here is the list of available `just` commands (`just -l`):
-
 - build
 - check
 - doc

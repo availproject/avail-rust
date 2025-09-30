@@ -19,19 +19,19 @@ pub struct ChainInfo {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub struct BlockRef {
+pub struct BlockInfo {
 	pub hash: H256,
 	pub height: u32,
 }
 
-impl From<(H256, u32)> for BlockRef {
+impl From<(H256, u32)> for BlockInfo {
 	fn from(value: (H256, u32)) -> Self {
 		Self { hash: value.0, height: value.1 }
 	}
 }
 
-impl From<BlockRef> for H256 {
-	fn from(value: BlockRef) -> Self {
+impl From<BlockInfo> for H256 {
+	fn from(value: BlockInfo) -> Self {
 		value.hash
 	}
 }
@@ -60,8 +60,8 @@ pub enum HashNumber {
 	Number(u32),
 }
 
-impl From<BlockRef> for HashNumber {
-	fn from(value: BlockRef) -> Self {
+impl From<BlockInfo> for HashNumber {
+	fn from(value: BlockInfo) -> Self {
 		Self::Hash(value.hash)
 	}
 }
@@ -182,8 +182,8 @@ pub enum HashStringNumber {
 	Number(u32),
 }
 
-impl From<BlockRef> for HashStringNumber {
-	fn from(value: BlockRef) -> Self {
+impl From<BlockInfo> for HashStringNumber {
+	fn from(value: BlockInfo) -> Self {
 		Self::Hash(value.hash)
 	}
 }

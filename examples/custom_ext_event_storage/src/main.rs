@@ -85,7 +85,11 @@ async fn main() -> Result<(), Error> {
 	*/
 
 	// Fetching Custom Simple Storage
-	let block_hash = client.rpc().block_hash(Some(1922190)).await?.expect("Should be there");
+	let block_hash = client
+		.chain()
+		.block_hash(Some(1922190))
+		.await?
+		.expect("Should be there");
 	let now = TimestampNow::fetch(&client.rpc_client, Some(block_hash)).await?;
 	let now = now.expect("Should be there");
 	println!("Timestamp: {}", now);
