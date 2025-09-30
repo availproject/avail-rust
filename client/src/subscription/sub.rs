@@ -47,10 +47,16 @@ impl Sub {
 		Self::UnInit(UnInitSub::new(client))
 	}
 
-	/// Returns the **next block reference** `(hash, height)`.  
-	///	- If you’ve already called [Sub::next] or [Sub::prev] once, this moves forward.  
-	///	- If you set a starting height, [Sub::set_block_height], it begins from there.  
-	///	- Otherwise, it starts at the latest finalized (or best) block.
+	/// Returns the **next block reference** `(hash, height)`.
+	///
+	/// - If you’ve already called [`Sub::next`] or [`Sub::prev`] once, this moves forward.
+	/// - If you set a starting height via [`Sub::set_block_height`], it begins from there.
+	/// - Otherwise, it starts at the latest finalized (or best) block depending on
+	///   [`Sub::use_best_block`].
+	///
+	/// # Errors
+	/// Returns `Err(RpcError)` when the underlying RPC requests fail; the internal cursor remains
+	/// unchanged so the next call can retry.
 	pub async fn next(&mut self) -> Result<BlockInfo, RpcError> {
 		if let Self::UnInit(u) = self {
 			let concrete = u.build().await?;
@@ -64,10 +70,15 @@ impl Sub {
 		}
 	}
 
-	/// Returns the **previous block reference** `(hash, height)`.  
-	///	- If you’ve already called [Sub::next] or [Sub::prev] once, this moves backwards.  
-	/// - If you set a starting height, [Sub::set_block_height], it begins from `(height - 1)`.  
+	/// Returns the **previous block reference** `(hash, height)`.
+	///
+	/// - If you’ve already called [`Sub::next`] or [`Sub::prev`] once, this moves backwards.
+	/// - If you set a starting height via [`Sub::set_block_height`], it begins from `(height - 1)`.
 	/// - Otherwise, it starts from `(latest finalized/best height - 1)`.
+
+	/// # Errors
+	/// Returns `Err(RpcError)` when the underlying RPC interaction fails; the cursor is left at the
+	/// same position so the call can be retried.
 	pub async fn prev(&mut self) -> Result<BlockInfo, RpcError> {
 		if let Self::UnInit(u) = self {
 			let concrete = u.build().await?;
@@ -176,9 +187,9 @@ impl Sub {
 	}
 }
 
-/// Dummy subscription. Not meant to be used directly.
-///
-/// Use [Sub] instead.
+	/// Dummy subscription. Not meant to be used directly.
+	///
+	/// Use [`Sub`] instead.
 #[derive(Clone)]
 pub struct UnInitSub {
 	client: Client,
@@ -189,6 +200,7 @@ pub struct UnInitSub {
 }
 
 impl UnInitSub {
+	/// Creates an uninitialised subscription placeholder.
 	pub fn new(client: Client) -> Self {
 		Self {
 			client,
@@ -200,6 +212,11 @@ impl UnInitSub {
 	}
 
 	/// Materializes the concrete subscription based on the collected settings.
+	///
+	/// # Returns
+	/// - `Ok(Sub)` wrapping either a `BestBlock` or `FinalizedBlock` variant when the node responds
+	///   successfully.
+	/// - `Err(RpcError)` if the initial height lookup fails.
 	pub async fn build(&self) -> Result<Sub, RpcError> {
 		let block_height = match self.block_height {
 			Some(x) => x,
@@ -234,7 +251,7 @@ impl UnInitSub {
 
 /// Subscription to fetch finalized block. Not meant to be used directly.
 ///
-/// Use [Sub] instead.
+/// Use [`Sub`] instead.
 #[derive(Clone)]
 pub struct FinalizedBlockSub {
 	client: Client,
@@ -247,6 +264,10 @@ pub struct FinalizedBlockSub {
 
 impl FinalizedBlockSub {
 	/// Moves forward to the next finalized block.
+	///
+	/// # Returns
+	/// - `Ok(BlockInfo)` containing the next finalized block reference.
+	/// - `Err(RpcError)` if any RPC request fails.
 	pub async fn next(&mut self) -> Result<BlockInfo, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
@@ -262,6 +283,9 @@ impl FinalizedBlockSub {
 	}
 
 	/// Steps back to the previous finalized block.
+	///
+	/// # Returns
+	/// Behaves like [`FinalizedBlockSub::next`] after adjusting the internal cursor backward.
 	pub async fn prev(&mut self) -> Result<BlockInfo, RpcError> {
 		self.next_block_height = self.next_block_height.saturating_sub(1);
 		if self.processed_previous_block {
@@ -272,6 +296,7 @@ impl FinalizedBlockSub {
 		self.next().await
 	}
 
+	/// Fetches and caches the latest finalized height, respecting retry configuration.
 	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, RpcError> {
 		if let Some(height) = self.latest_finalized_height.as_ref() {
 			return Ok(*height);
@@ -283,6 +308,7 @@ impl FinalizedBlockSub {
 		Ok(latest_finalized_height)
 	}
 
+	/// Fetches historical blocks below the current head.
 	async fn run_historical(&mut self) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
 
@@ -298,6 +324,8 @@ impl FinalizedBlockSub {
 		Ok(BlockInfo { hash, height })
 	}
 
+	/// Polls for new finalized blocks when caught up with the head.
+	/// Polls for new best blocks once historical replay has caught up.
 	async fn run_head(&mut self) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
 
@@ -330,7 +358,7 @@ impl FinalizedBlockSub {
 
 /// Subscription to fetch best block. Not meant to be used directly.
 ///
-/// Use [Sub] instead.
+/// Use [`Sub`] instead.
 #[derive(Clone)]
 pub struct BestBlockSub {
 	client: Client,
@@ -343,6 +371,10 @@ pub struct BestBlockSub {
 
 impl BestBlockSub {
 	/// Moves forward to the next best (head) block.
+	///
+	/// # Returns
+	/// - `Ok(BlockInfo)` pointing to the next best block.
+	/// - `Err(RpcError)` when RPC calls fail.
 	pub async fn next(&mut self) -> Result<BlockInfo, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
@@ -368,12 +400,16 @@ impl BestBlockSub {
 	}
 
 	/// Steps back to the previous best (head) block.
+	///
+	/// # Returns
+	/// Behaves like [`BestBlockSub::next`] after adjusting the internal cursor backward.
 	pub async fn prev(&mut self) -> Result<BlockInfo, RpcError> {
 		self.current_block_height = self.current_block_height.saturating_sub(1);
 		self.block_processed.clear();
 		self.next().await
 	}
 
+	/// Fetches and caches the latest finalized height, respecting retry configuration.
 	async fn fetch_latest_finalized_height(&mut self) -> Result<u32, RpcError> {
 		if let Some(height) = self.latest_finalized_height.as_ref() {
 			return Ok(*height);
@@ -385,6 +421,7 @@ impl BestBlockSub {
 		Ok(latest_finalized_height)
 	}
 
+	/// Fetches historical best blocks when replaying past heights.
 	async fn run_historical(&mut self) -> Result<BlockInfo, RpcError> {
 		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
 

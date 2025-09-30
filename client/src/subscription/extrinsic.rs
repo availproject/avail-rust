@@ -1,3 +1,5 @@
+//! Subscription adapters that surface extrinsics and transactions in decoded or raw form.
+
 use crate::{
 	BlockInfo, Client, Sub,
 	block_api::{
@@ -11,8 +13,8 @@ use std::{marker::PhantomData, time::Duration};
 
 /// Subscription that mirrors [`Sub`] but yields decoded transactions via [`BlockWithTx`].
 ///
-/// The iterator skips blocks without matching transactions so callers only handle blocks that
-/// produced data when applying the configured [`BlockExtOptionsSimple`].
+/// Blocks that do not produce transactions matching the provided options are skipped automatically,
+/// ensuring callers only handle meaningful batches.
 #[derive(Clone)]
 pub struct TransactionSub<T: HasHeader + Decode> {
 	sub: Sub,
@@ -22,14 +24,22 @@ pub struct TransactionSub<T: HasHeader + Decode> {
 
 impl<T: HasHeader + Decode> TransactionSub<T> {
 	/// Creates a new [`TransactionSub`] subscription.
+	///
+	/// The client is cloned and no network calls are performed until [`TransactionSub::next`] is
+	/// awaited. `opts` controls which transactions are retrieved from each block.
 	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
 	/// Returns the next set of block transactions and the corresponding [`BlockInfo`].
 	///
-	/// Empty responses are skipped automatically. When fetching fails the internal block height is
-	/// rewound so the same block can be retried on the following call.
+	/// # Returns
+	/// - `Ok((Vec<BlockTransaction<T>>, BlockInfo))` when a block with matching transactions is found;
+	///   the vector is guaranteed to be non-empty.
+	/// - `Err(crate::Error)` when fetching fails. The cursor rewinds to the same block so a subsequent
+	///   call can retry.
+	///
+	/// On success the subscription advances to the next block height.
 	pub async fn next(&mut self) -> Result<(Vec<BlockTransaction<T>>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
@@ -54,27 +64,34 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 	}
 
 	/// Replaces the transaction query options used on subsequent calls to [`TransactionSub::next`].
+	/// The change takes effect immediately.
 	pub fn set_opts(&mut self, value: BlockExtOptionsSimple) {
 		self.opts = value;
 	}
 
-	/// Follow best blocks instead of finalized ones.
+	/// Follow best blocks instead of finalized ones for future iterations that have not yet been
+	/// executed.
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
-	/// Jump the cursor to a specific starting height.
+	/// Jump the cursor to a specific starting height. The next call to [`TransactionSub::next`] begins
+	/// evaluating from `value`.
 	pub fn set_block_height(&mut self, value: u32) {
 		self.sub.set_block_height(value);
 	}
 
-	/// Change how often we poll for new blocks.
+	/// Change how often new blocks are polled when tailing the chain. Historical replays are not
+	/// affected by this interval.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Controls retry behaviour: `Some(true)` forces retries, `Some(false)` disables them, and `None`
-	/// keeps the client's default.
+	/// Controls retry behaviour for future RPC calls issued by the subscription.
+	///
+	/// - `Some(true)`: force retries regardless of the client's global setting.
+	/// - `Some(false)`: disable retries entirely.
+	/// - `None`: defer to the client's configuration.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
@@ -93,14 +110,19 @@ pub struct ExtrinsicSub<T: HasHeader + Decode> {
 
 impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 	/// Creates a new [`ExtrinsicSub`] subscription.
+	///
+	/// No network calls are issued until the first [`ExtrinsicSub::next`] invocation.
 	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
 	/// Returns the next collection of extrinsics and its [`BlockInfo`].
 	///
-	/// Empty responses trigger another iteration. Failed RPC calls reset the internal block height so
-	/// the same block can be retried.
+	/// # Returns
+	/// - `Ok((Vec<BlockExtrinsic<T>>, BlockInfo))` when a block contains extrinsics matching the
+	///   configured options.
+	/// - `Err(crate::Error)` when the RPC query fails. The internal cursor rewinds so a retry will re-
+	///   attempt the same block.
 	pub async fn next(&mut self) -> Result<(Vec<BlockExtrinsic<T>>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
@@ -124,7 +146,7 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		}
 	}
 
-	/// Delegates to [`Sub::use_best_block`].
+	/// Follow best blocks instead of finalized ones for future iterations.
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
@@ -134,13 +156,12 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Change how often we poll for new blocks.
+	/// Change how often the subscription polls for new blocks when tailing the chain.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Controls retry behaviour: `Some(true)` forces retries, `Some(false)` disables them, and `None`
-	/// keeps the client's default.
+	/// Controls retry behaviour for future RPC calls (`Some(true)` = force, `Some(false)` = disable).
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
@@ -159,14 +180,20 @@ pub struct RawExtrinsicSub {
 
 impl RawExtrinsicSub {
 	/// Creates a new [`RawExtrinsicSub`] subscription.
+	///
+	/// The supplied options control filters and encoding preferences. No network calls are made until
+	/// [`RawExtrinsicSub::next`] is awaited.
 	pub fn new(client: Client, opts: BlockExtOptionsExpanded) -> Self {
 		Self { sub: Sub::new(client), opts }
 	}
 
 	/// Returns the next batch of raw extrinsics and its [`BlockInfo`].
 	///
-	/// Empty results are skipped. Failed RPC calls reset the internal block height so the same block
-	/// can be retried.
+	/// # Returns
+	/// - `Ok((Vec<BlockRawExtrinsic>, BlockInfo))` with at least one element when a block matches the
+	///   filter.
+	/// - `Err(crate::Error)` when fetching fails; the cursor rewinds to retry the same block on the next
+	///   call.
 	pub async fn next(&mut self) -> Result<(Vec<BlockRawExtrinsic>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
@@ -190,22 +217,23 @@ impl RawExtrinsicSub {
 		}
 	}
 
-	/// Delegates to [`Sub::use_best_block`].
+	/// Follow best blocks instead of finalized ones when scanning forward.
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
 	}
 
-	/// Delegates to [`Sub::set_block_height`].
+	/// Jump the cursor to a specific starting height before the next fetch.
 	pub fn set_block_height(&mut self, block_height: u32) {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Delegates to [`Sub::set_pool_rate`].
+	/// Change how often the subscription polls for new blocks when following the head.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
 
-	/// Choose whether this subscription should retry after RPC failures.
+	/// Choose whether this subscription should retry after RPC failures (`Some(true)` = force,
+	/// `Some(false)` = disable, `None` = inherit client default).
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}

@@ -1,3 +1,5 @@
+//! Subscription adapters focused on block headers, bodies, and emitted events.
+
 use crate::{
 	AvailHeader, BlockInfo, Client, LegacyBlock, RpcError, Sub,
 	block_api::{BlockApi, BlockEvents, BlockEventsOptions},
@@ -13,11 +15,20 @@ pub struct LegacyBlockSub {
 
 impl LegacyBlockSub {
 	/// Creates a subscription that yields legacy blocks as you iterate.
+	///
+	/// The client is cloned and no network traffic occurs until [`LegacyBlockSub::next`] or
+	/// [`LegacyBlockSub::prev`] is awaited.
 	pub fn new(client: Client) -> Self {
 		Self { sub: Sub::new(client) }
 	}
 
 	/// Fetches the next legacy block; rewinds the cursor if the RPC call fails.
+	///
+	/// # Returns
+	/// - `Ok(Some(LegacyBlock))` when the node provides a block for the current cursor.
+	/// - `Ok(None)` when the block exists but contains no legacy payload.
+	/// - `Err(RpcError)` when the RPC call fails; the internal block height resets so a retry will
+	///   reattempt the same block.
 	pub async fn next(&mut self) -> Result<Option<LegacyBlock>, RpcError> {
 		let info = self.sub.next().await?;
 		let block = match self
@@ -39,6 +50,8 @@ impl LegacyBlockSub {
 	}
 
 	/// Fetches the previous legacy block; rewinds the cursor if the RPC call fails.
+	///
+	/// The result semantics mirror [`LegacyBlockSub::next`].
 	pub async fn prev(&mut self) -> Result<Option<LegacyBlock>, RpcError> {
 		let info = self.sub.prev().await?;
 		let block = match self
@@ -74,7 +87,7 @@ impl LegacyBlockSub {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Change how often we poll for new blocks.
+	/// Change how often we poll for new blocks when following the chain head.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
@@ -86,25 +99,32 @@ impl LegacyBlockSub {
 	}
 }
 
-/// Subscription wrapper that streams [`Block`] handles.
+/// Subscription wrapper that streams block handles (`BlockApi`).
 #[derive(Clone)]
 pub struct BlockSub {
 	sub: Sub,
 }
 
 impl BlockSub {
-	/// Creates a subscription that yields [`Block`] handles as you iterate.
+	/// Creates a subscription that yields [`BlockApi`] handles as you iterate. The handlers can be
+	/// used to inspect extrinsics, events, or raw data.
 	pub fn new(client: Client) -> Self {
 		Self { sub: Sub::new(client) }
 	}
 
 	/// Fetches the next block handle along with its `BlockInfo`.
+	///
+	/// # Returns
+	/// - `Ok((BlockApi, BlockInfo))` when a block is available at the current cursor.
+	/// - `Err(RpcError)` when the underlying subscription fails to advance.
 	pub async fn next(&mut self) -> Result<(BlockApi, BlockInfo), RpcError> {
 		let info = self.sub.next().await?;
 		Ok((BlockApi::new(self.sub.client_ref().clone(), info.hash), info))
 	}
 
 	/// Fetches the previous block handle along with its `BlockInfo`.
+	///
+	/// Return semantics mirror [`BlockSub::next`].
 	pub async fn prev(&mut self) -> Result<(BlockApi, BlockInfo), RpcError> {
 		let info = self.sub.prev().await?;
 		Ok((BlockApi::new(self.sub.client_ref().clone(), info.hash), info))
@@ -125,7 +145,7 @@ impl BlockSub {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Change how often we poll for new blocks.
+	/// Change how often we poll for new blocks when tailing the head.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
@@ -145,12 +165,20 @@ pub struct BlockEventsSub {
 }
 
 impl BlockEventsSub {
-	/// Creates a subscription that yields event batches filtered by the supplied options.
+	/// Creates a subscription that yields event batches filtered by the supplied options. No network
+	/// calls are made until [`BlockEventsSub::next`] is awaited.
 	pub fn new(client: Client, opts: BlockEventsOptions) -> Self {
 		Self { sub: Sub::new(client), opts }
 	}
 
 	/// Fetches the next block with matching events; rewinds on RPC failure.
+	///
+	/// # Returns
+	/// - `Ok(Vec<BlockPhaseEvent>)` when events matching the configured filters are found.
+	/// - `Err(crate::Error)` when the RPC request fails; the internal cursor rewinds so the block can be
+	///   retried.
+	///
+	/// Empty event lists are skipped automatically.
 	pub async fn next(&mut self) -> Result<Vec<BlockPhaseEvent>, crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
@@ -187,7 +215,7 @@ impl BlockEventsSub {
 		self.sub.set_block_height(block_height);
 	}
 
-	/// Change how often we poll for new blocks.
+	/// Change how often the subscription polls for new blocks when following the head.
 	pub fn set_pool_rate(&mut self, value: Duration) {
 		self.sub.set_pool_rate(value);
 	}
