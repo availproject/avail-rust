@@ -187,9 +187,9 @@ impl Sub {
 	}
 }
 
-	/// Dummy subscription. Not meant to be used directly.
-	///
-	/// Use [`Sub`] instead.
+/// Dummy subscription. Not meant to be used directly.
+///
+/// Use [`Sub`] instead.
 #[derive(Clone)]
 pub struct UnInitSub {
 	client: Client,

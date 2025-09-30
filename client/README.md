@@ -2,6 +2,9 @@
 
 **Avail Rust is a Rust library for communicating with Avail networks.**
 
+Additional workflow-specific guides (submission flow, retries, failure modes,
+etc.) are available in [`docs/`](../docs/README.md).
+
 ## In Action
 
 This example uses the [Tokio](https://crates.io/crates/tokio) runtime, but you
@@ -9,7 +12,7 @@ can use any runtime you like. Your `Cargo.toml` file could look like this:
 
 ```toml
 [dependencies]
-avail-rust-client = { version = "0.2.1", default-features = false, features = ["native", "reqwest"] }
+avail-rust-client = { version = "0.4.0-rc.3", default-features = false, features = ["native", "reqwest"] }
 tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
 ```
 
@@ -22,7 +25,7 @@ And then the code:
 use avail_rust_client::prelude::*;
 
 #[tokio::main]
-async fn main() -> Result<(), ClientError> {
+async fn main() -> Result<(), Error> {
     let client = Client::new(TURING_ENDPOINT).await?;
 
     // Transaction Creation
@@ -47,9 +50,9 @@ async fn main() -> Result<(), ClientError> {
     }
 
     // Fetching and displaying Transaction Events
-    let events = receipt.tx_events().await?;
-    for event in events {
-        println!("Pallet Index: {}, Variant index: {}", event.emitted_index.0, event.emitted_index.1);
+    let events = receipt.events().await?;
+    for event in events.events {
+        println!("Pallet Index: {}, Variant index: {}", event.pallet_id, event.variant_id);
     }
 
     Ok(())
@@ -57,7 +60,7 @@ async fn main() -> Result<(), ClientError> {
 ```
 
 You can find
-[this](https://github.com/availproject/avail-rust/tree/main/examples/transaction_submission)
+[this](https://github.com/availproject/avail-rust/tree/main/examples/submission_api)
 example and similar ones in the
 [example directory](https://github.com/availproject/avail-rust/tree/main/examples).
 
@@ -86,30 +89,25 @@ you need that isn’t covered, let us know—we might add it. :)
 Here is an incomplete list of current examples:
 
 - [Batching transactions](https://github.com/availproject/avail-rust/tree/main/examples/batch)
-- [Executing transactions in parallel](https://github.com/availproject/avail-rust/tree/main/examples/parallel_transaction_submission)
-- Writing your own custom
-  [transaction](https://github.com/availproject/avail-rust/tree/main/examples/custom_transaction),
-  [event](https://github.com/availproject/avail-rust/tree/main/examples/custom_event)
-  or
-  [storage](https://github.com/availproject/avail-rust/tree/main/examples/custom_storage)
-- Dealing with
-  [blocks](https://github.com/availproject/avail-rust/tree/main/examples/block_client)
-  and
-  [events](https://github.com/availproject/avail-rust/tree/main/examples/event_client)
-- [A full example on how to submit a transaction from start to finish](https://github.com/availproject/avail-rust/tree/main/examples/transaction_submission)
-- [Subscribing to block headers, blocks, and justifications](https://github.com/availproject/avail-rust/tree/main/examples/transaction_submission)
+- [Executing transactions in parallel](https://github.com/availproject/avail-rust/tree/main/examples/parallel_submission)
+- [Custom extrinsics, events, and storage definitions](https://github.com/availproject/avail-rust/tree/main/examples/custom_ext_event_storage)
+- [Working with block helpers](https://github.com/availproject/avail-rust/tree/main/examples/block_api)
+- [Chain RPC helpers](https://github.com/availproject/avail-rust/tree/main/examples/chain_api)
+- [Estimating fees before submitting](https://github.com/availproject/avail-rust/tree/main/examples/estimating_fees)
+- [Full transaction submission walkthrough](https://github.com/availproject/avail-rust/tree/main/examples/submission_api)
+- [Subscriptions for blocks, headers, and justifications](https://github.com/availproject/avail-rust/tree/main/examples/subscriptions)
 
 ## Logging/Tracing
 
 To enable tracing, use the `tracing` feature flag and call
-`Client::enable_tracing(boolean)` in your code, where `boolean` is `true` or
+`Client::init_tracing(boolean)` in your code, where `boolean` is `true` or
 `false` depending on whether you want to enable JSON-format structured logging.
 
 Example:
 
 ```toml
 [dependencies]
-avail-rust-client = { version = "0.2.1", default-features = false, features = ["native", "reqwest", "tracing"] }
+avail-rust-client = { version = "0.4.0-rc.3", default-features = false, features = ["native", "reqwest", "tracing"] }
 tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
 ```
 
@@ -117,8 +115,8 @@ tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
 use avail_rust_client::prelude::*;
 
 #[tokio::main]
-async fn main() -> Result<(), ClientError> {
-    Client::enable_tracing(false);
+async fn main() -> Result<(), Error> {
+    Client::init_tracing(false)?;
     let client = Client::new(LOCAL_ENDPOINT).await?;
     ...
 }
@@ -154,7 +152,7 @@ impl HasHeader for CustomTransaction {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), ClientError> {
+async fn main() -> Result<(), Error> {
     let client = Client::new(LOCAL_ENDPOINT).await?;
 
     let custom_tx = CustomTransaction { data: vec![0, 1, 2, 3] };
@@ -179,7 +177,7 @@ impl HasHeader for CustomEvent {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), ClientError> {
+async fn main() -> Result<(), Error> {
     // For brevity, the method of obtaining the encoded event is omitted.
     // In short, you can get it from the event client or from receipt.tx_events().
     let encoded_event = vec![0, 1, 2, 3];
@@ -217,7 +215,7 @@ pub struct AppKey {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), ClientError> {
+async fn main() -> Result<(), Error> {
 	let client = Client::new(TURING_ENDPOINT).await?;
 	let block_hash = client.finalized_block_hash().await.unwrap();
 

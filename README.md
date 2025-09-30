@@ -1,6 +1,9 @@
 # For Library Users
 
-**[Your documentation is in another castle.](https://github.com/availproject/avail-rust/blob/main/client/README.md)**
+**[Your documentation is in another castle.](https://github.com/availproject/avail-rust/blob/main/client/README.md).**
+
+Looking for focused guides (submission flow, retries, failure modes, etc.)?
+Check the [documentation index](docs/README.md).
 
 # For Library Developers
 
