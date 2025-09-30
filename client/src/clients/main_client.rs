@@ -731,6 +731,10 @@ impl ChainApi {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Retrieves the KATE block layout metadata (rows, cols, chunk size) for the block at `at`.
+	///
+	/// # Errors
+	/// Returns `Err(RpcError)` when the KATE RPC call fails; respects the helper's retry policy.
 	pub async fn kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, RpcError> {
 		let retry = self.should_retry();
 
@@ -738,6 +742,10 @@ impl ChainApi {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Produces the KATE data proof (and optional addressed message) for the given extrinsic index.
+	///
+	/// # Errors
+	/// Returns `Err(RpcError)` when the proof cannot be fetched or deserialised; obeys the retry setting.
 	pub async fn kate_query_data_proof(
 		&self,
 		transaction_index: u32,
@@ -749,6 +757,10 @@ impl ChainApi {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Fetches individual KATE proofs for the provided list of cells.
+	///
+	/// # Errors
+	/// Bubbles `Err(RpcError)` if the RPC call fails; retries follow the configured policy.
 	pub async fn kate_query_proof(&self, cells: Vec<Cell>, at: Option<H256>) -> Result<Vec<GDataProof>, RpcError> {
 		let retry = self.should_retry();
 
@@ -757,6 +769,10 @@ impl ChainApi {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Returns KATE row data for the requested row indices (up to the chain-imposed limit).
+	///
+	/// # Errors
+	/// Propagates `Err(RpcError)` when the row query fails; adheres to the retry preference.
 	pub async fn kate_query_rows(&self, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, RpcError> {
 		let retry = self.should_retry();
 
@@ -765,6 +781,10 @@ impl ChainApi {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Requests multi-proofs for the supplied KATE cells, paired with the corresponding cell block metadata.
+	///
+	/// # Errors
+	/// Returns `Err(RpcError)` when the RPC transport or decoding fails; follows the retry configuration.
 	pub async fn kate_query_multi_proof(
 		&self,
 		cells: Vec<Cell>,
