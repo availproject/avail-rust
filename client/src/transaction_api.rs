@@ -695,6 +695,11 @@ impl DataAvailability {
 		let value = avail::data_availability::tx::SubmitData { data };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
+
+	pub fn submit_blob_metadata(&self, blob_hash: H256, size: u64, commitments: Vec<u8>) -> SubmittableTransaction {
+		let value = avail::data_availability::tx::SubmitBlobMetadata { blob_hash, size, commitments };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
 }
 
 /// Builds extrinsics for the `utility` pallet.

@@ -1,4 +1,5 @@
 pub mod author;
+pub mod blob;
 pub mod chain;
 pub mod chainspec;
 pub mod error;

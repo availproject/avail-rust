@@ -722,6 +722,17 @@ impl ChainApi {
 	) -> Result<FeeDetails, RpcError> {
 		runtime_api::api_transaction_payment_query_call_fee_details(&self.client.rpc_client, call, at).await
 	}
+
+	pub async fn blob_submit_blob(&self, metadata_signed_transaction: &[u8], blob: &[u8]) -> Result<(), Error> {
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let f =
+			|| async move { rpc::blob::submit_blob(&self.client.rpc_client, metadata_signed_transaction, blob).await };
+
+		Ok(with_retry_on_error(f, retry_on_error).await?)
+	}
 }
 
 /// Helper bound to the chain's best (head) block view.

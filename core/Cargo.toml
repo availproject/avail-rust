@@ -28,6 +28,7 @@ scale-encode = { workspace = true }
 subxt-core = { workspace = true }
 subxt-signer = {workspace = true }
 subxt-rpcs = { workspace = true }
+base64 = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["sync", "time", "rt", "macros"]  }
