@@ -681,10 +681,18 @@ impl ChainApi {
 	}
 
 	/// Calls into the runtime API and decodes the answer for you.
-	///
-	/// This helper does not apply retries; use [`ChainApi::retry_on`] beforehand if desired.
-	pub async fn call<T: codec::Decode>(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<T, RpcError> {
-		runtime_api::call_raw(&self.client.rpc_client, method, data, at).await
+	pub async fn runtime_api_call<T: codec::Decode>(
+		&self,
+		method: &str,
+		data: &[u8],
+		at: Option<H256>,
+	) -> Result<T, RpcError> {
+		let retry = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let f = || async move { runtime_api::call_raw(&self.client.rpc_client, method, data, at).await };
+		with_retry_on_error(f, retry).await
 	}
 
 	/// Estimates fees for a signed extrinsic.
@@ -693,7 +701,15 @@ impl ChainApi {
 		extrinsic: Vec<u8>,
 		at: Option<H256>,
 	) -> Result<RuntimeDispatchInfo, RpcError> {
-		runtime_api::api_transaction_payment_query_info(&self.client.rpc_client, extrinsic, at).await
+		let retry = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let ext = &extrinsic;
+		let f = || async move {
+			runtime_api::api_transaction_payment_query_info(&self.client.rpc_client, ext.clone(), at).await
+		};
+		with_retry_on_error(f, retry).await
 	}
 
 	/// Breaks down the fee details for a signed extrinsic.
@@ -702,7 +718,15 @@ impl ChainApi {
 		extrinsic: Vec<u8>,
 		at: Option<H256>,
 	) -> Result<FeeDetails, RpcError> {
-		runtime_api::api_transaction_payment_query_fee_details(&self.client.rpc_client, extrinsic, at).await
+		let retry = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let ext = &extrinsic;
+		let f = || async move {
+			runtime_api::api_transaction_payment_query_fee_details(&self.client.rpc_client, ext.clone(), at).await
+		};
+		with_retry_on_error(f, retry).await
 	}
 
 	/// Estimates fees for an unsigned call payload.
@@ -711,7 +735,15 @@ impl ChainApi {
 		call: Vec<u8>,
 		at: Option<H256>,
 	) -> Result<RuntimeDispatchInfo, RpcError> {
-		runtime_api::api_transaction_payment_query_call_info(&self.client.rpc_client, call, at).await
+		let retry = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let c = &call;
+		let f = || async move {
+			runtime_api::api_transaction_payment_query_call_info(&self.client.rpc_client, c.clone(), at).await
+		};
+		with_retry_on_error(f, retry).await
 	}
 
 	/// Breaks down the fee details for an unsigned call payload.
@@ -720,7 +752,15 @@ impl ChainApi {
 		call: Vec<u8>,
 		at: Option<H256>,
 	) -> Result<FeeDetails, RpcError> {
-		runtime_api::api_transaction_payment_query_call_fee_details(&self.client.rpc_client, call, at).await
+		let retry = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let c = &call;
+		let f = || async move {
+			runtime_api::api_transaction_payment_query_call_fee_details(&self.client.rpc_client, c.clone(), at).await
+		};
+		with_retry_on_error(f, retry).await
 	}
 }
 

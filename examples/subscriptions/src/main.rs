@@ -1,4 +1,4 @@
-use avail_rust::{prelude::*, subscription::BlockHeaderSub};
+use avail_rust::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -58,12 +58,6 @@ async fn main() -> Result<(), Error> {
 	let best_height = client.best().block_height().await?;
 	let next = sub.next().await?;
 	assert_eq!(next.height, best_height);
-
-	//
-	// Compound Subscriptions
-	//
-
-	//let sub = BlockHeaderSub::new(client.clone());
 
 	Ok(())
 }

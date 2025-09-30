@@ -26,7 +26,7 @@ where
 				};
 
 				#[cfg(feature = "tracing")]
-				trace_warn(&std::format!("{:?}", err));
+				trace_warn(&std::format!("Retrying after error: {:?}; next attempt in {}s", err, duration));
 				sleep(Duration::from_secs(duration)).await;
 			},
 		};
@@ -56,7 +56,10 @@ where
 				};
 
 				#[cfg(feature = "tracing")]
-				trace_warn(&std::format!("Error: {}", "TODO"));
+				trace_warn(&std::format!(
+					"Received None result; retrying in {}s because retry_on_none is enabled",
+					duration
+				));
 				sleep(Duration::from_secs(duration)).await;
 			},
 			Err(err) if !retry_on_error => {
@@ -68,7 +71,11 @@ where
 				};
 
 				#[cfg(feature = "tracing")]
-				trace_warn(&std::format!("{:?}", err));
+				trace_warn(&std::format!(
+					"Retrying after error while awaiting Option result: {:?}; next attempt in {}s",
+					err,
+					duration
+				));
 				sleep(Duration::from_secs(duration)).await;
 			},
 		};
