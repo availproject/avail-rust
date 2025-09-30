@@ -34,6 +34,7 @@ pub use block_api::{
 	BlockApi, BlockEvents, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction, BlockWithExt, BlockWithRawExt,
 	BlockWithTx,
 };
+pub use constants::dev_accounts;
 pub use error::{Error, UserError};
 pub use primitive_types::{H256, U256};
 pub use subscription::Sub;

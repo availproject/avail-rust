@@ -271,7 +271,7 @@ impl FinalizedBlockSub {
 	pub async fn next(&mut self) -> Result<BlockInfo, RpcError> {
 		let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
-		let result = if latest_finalized_height >= self.next_block_height {
+		let result = if latest_finalized_height > self.next_block_height {
 			self.run_historical().await?
 		} else {
 			self.run_head().await?
@@ -379,7 +379,7 @@ impl BestBlockSub {
 		let latest_finalized_height = self.fetch_latest_finalized_height().await?;
 
 		// Dealing with historical blocks
-		if latest_finalized_height >= self.current_block_height {
+		if latest_finalized_height > self.current_block_height {
 			let info = self.run_historical().await?;
 			self.block_processed.clear();
 			self.block_processed.push(info.hash);
