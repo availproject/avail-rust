@@ -26,36 +26,37 @@ use avail_rust_client::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let client = Client::new(TURING_ENDPOINT).await?;
+	// Establishing a connection
+	let client = Client::new(TURING_ENDPOINT).await?;
 
-    // Transaction Creation
-    let submittable_tx = client.tx().data_availability().submit_data(vec![0, 1, 2, 3, 4, 5]);
+	// Defining account that will sign future transaction
+	let signer = Keypair::from_str("bottom drive obey lake curtain smoke basket hold race lonely fit walk")?;
+	// Or use one of dev accounts -> let signer = alice();
 
-    // Transaction Submission
-    let submitted_tx = submittable_tx.sign_and_submit(&alice(), Options::new(2)).await?;
+	// Transaction Creation
+	let submittable_tx = client.tx().data_availability().submit_data("My First Data Submission");
 
-    // Fetching Transaction Receipt
-    let receipt = submitted_tx.receipt(false).await?;
-    let Some(receipt) = receipt else {
-        return Err("Transaction got dropped.".into());
-    };
+	// Transaction Submission
+	let submitted_tx = submittable_tx.sign_and_submit(&signer, Options::new(2)).await?;
+	println!("Tx Hash: {:?}", submitted_tx.tx_hash);
 
-    // Fetching Block State
-    let block_state = receipt.block_state().await?;
-    match block_state {
-        BlockState::Included => println!("Block is included but not finalized"),
-        BlockState::Finalized => println!("Block is finalized"),
-        BlockState::Discarded => println!("Block is discarded"),
-        BlockState::DoesNotExist => println!("Block does not exist"),
-    }
+	// Transaction Receipt
+	let receipt = submitted_tx.receipt(false).await?;
+	let Some(receipt) = receipt else {
+		panic!("Oops, looks like our transaction was dropped")
+	};
+	println!("Block Hash: {:?}, Block Height: {}", receipt.block_ref.hash, receipt.block_ref.height);
+	println!("Tx Hash: {:?}, Tx Index: {}", receipt.tx_ref.hash, receipt.tx_ref.index);
 
-    // Fetching and displaying Transaction Events
-    let events = receipt.events().await?;
-    for event in events.events {
-        println!("Pallet Index: {}, Variant index: {}", event.pallet_id, event.variant_id);
-    }
+	let block_state = receipt.block_state().await?;
+	match block_state {
+		BlockState::Included => println!("Block Not Yet Finalized"),
+		BlockState::Finalized => println!("Block Finalized"),
+		BlockState::Discarded => println!("Block Discarded"),
+		BlockState::DoesNotExist => println!("Block Does not Exist"),
+	};
 
-    Ok(())
+	Ok(())
 }
 ```
 
@@ -131,23 +132,20 @@ RUST_LOG=info cargo run
 ## Custom Transactions and Events
 
 Sometimes you need a specific transaction or event type not included in the
-default metadata. In such cases, you can define a custom
-transaction or event and use it just like any predefined type. Both are simple
-to implement and use.
+default metadata. In such cases, you can define a custom transaction or event
+and use it just like any predefined type. Both are simple to implement and use.
 
-Create a [custom transaction](https://github.com/availproject/avail-rust/tree/main/examples/custom_transaction):
+Create a
+[custom transaction](https://github.com/availproject/avail-rust/tree/main/examples/custom_transaction):
 
 ```rust
-use avail_rust_client::{
-    avail::{TransactionCallLike, HasHeader},
-    prelude::*,
-};
+use avail_rust_client::prelude::*;
 
 #[derive(codec::Decode, codec::Encode, PartialEq, Eq)]
-pub struct CustomTransaction {
+pub struct CustomExtrinsic {
     pub data: Vec<u8>,
 }
-impl HasHeader for CustomTransaction {
+impl HasHeader for CustomExtrinsic {
     const HEADER_INDEX: (u8, u8) = (29u8, 1u8);
 }
 
@@ -155,14 +153,16 @@ impl HasHeader for CustomTransaction {
 async fn main() -> Result<(), Error> {
     let client = Client::new(LOCAL_ENDPOINT).await?;
 
-    let custom_tx = CustomTransaction { data: vec![0, 1, 2, 3] };
-    let submittable = custom_tx.to_submittable(client.clone());
-    let submitted = submittable.sign_and_submit(&alice(), Options::new(2)).await?;
-    let receipt = submitted.receipt(true).await?.expect("Must be there");
+	let custom_call = CustomExtrinsic { data: vec![0, 1, 2, 3] };
+	let submittable = SubmittableTransaction::new(client.clone(), ExtrinsicCall::from(&custom_call));
+	let submitted = submittable.sign_and_submit(&alice(), Options::new(2)).await?;
+	let receipt = submitted.receipt(true).await?.expect("Must be there");
+	println!("Block Hash: {:?}", receipt.block_ref.hash);
 }
 ```
 
-Create a [custom event](https://github.com/availproject/avail-rust/tree/main/examples/custom_event):
+Create a
+[custom event](https://github.com/availproject/avail-rust/tree/main/examples/custom_event):
 
 ```rust
 use avail_rust_client::prelude::*;
@@ -181,7 +181,7 @@ async fn main() -> Result<(), Error> {
     // For brevity, the method of obtaining the encoded event is omitted.
     // In short, you can get it from the event client or from receipt.tx_events().
     let encoded_event = vec![0, 1, 2, 3];
-    let event = CustomEvent::from_raw(&encoded_event).expect("Must be Ok");
+    let event = CustomEvent::from_event(&encoded_event).expect("Must be Ok");
     println!("Account: {}, Hash: {}", event.who, event.data_hash);
 
     Ok(())
@@ -194,7 +194,8 @@ The easiest way to fetch storage from the chain is by custom defining it and
 implementing either the StorageValue, StorageMap or StorageDoubleMap trait for
 it.
 
-Create a [custom storage](https://github.com/availproject/avail-rust/tree/main/examples/custom_storage):
+Create a
+[custom storage](https://github.com/availproject/avail-rust/tree/main/examples/custom_storage):
 
 ```rust
 use avail_rust_client::prelude::*;
@@ -217,16 +218,13 @@ pub struct AppKey {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
 	let client = Client::new(TURING_ENDPOINT).await?;
-	let block_hash = client.finalized_block_hash().await.unwrap();
+	let block_hash = client.finalized().block_hash().await?;
 
+	let key = "MyAwesomeKey".to_string().into_bytes();
 	// Fetching Storage Map
-	let value = DataAvailabilityAppKeys::fetch(
-		&client.rpc_client,
-		"MyAwesomeKey".to_string().into_bytes(),
-		Some(block_hash),
-	)
-	.await?
-	.expect("Needs to be there");
+	let value = DataAvailabilityAppKeys::fetch(&client.rpc_client, &key, Some(block_hash))
+		.await?
+		.expect("Needs to be there");
 	println!("Owner: {}, id: {}", value.owner, value.id);
 
 	// Iterating Storage Map
@@ -236,12 +234,7 @@ async fn main() -> Result<(), Error> {
 		println!("Owner: {}, id: {}", value.owner, value.id);
 
 		let (key, value) = iter.next_key_value().await?.expect("Needs to be there");
-		println!(
-			"Key: {}, Owner: {}, id: {}",
-			String::from_utf8(key).expect(""),
-			value.owner,
-			value.id
-		);
+		println!("Key: {}, Owner: {}, id: {}", String::from_utf8(key).expect(""), value.owner, value.id);
 	}
 
 	Ok(())

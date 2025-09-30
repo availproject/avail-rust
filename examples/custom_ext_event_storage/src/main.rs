@@ -66,9 +66,18 @@ impl StorageDoubleMap for StakingErasValidatorPrefs {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+	let client = Client::new(TURING_ENDPOINT).await?;
+
+	// Custom Extrinsic Submitting
+	let custom_call = CustomExtrinsic { data: vec![0, 1, 2, 3] };
+	let submittable = SubmittableTransaction::new(client.clone(), ExtrinsicCall::from(&custom_call));
+	let submitted = submittable.sign_and_submit(&alice(), Options::new(2)).await?;
+	let receipt = submitted.receipt(true).await?.expect("Must be there");
+	println!("Block Hash: {:?}", receipt.block_ref.hash);
+
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 
-	// Custom Extrinsic
+	// Custom Extrinsic Fetching
 	let block = BlockWithTx::new(client.clone(), 1922190);
 	let block_tx = block.get::<CustomExtrinsic>(1).await?.expect("Should be decodable");
 	println!("Data Len: {}", block_tx.call.data.len());

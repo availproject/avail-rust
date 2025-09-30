@@ -1,0 +1,8 @@
+[package]
+name = "client-readme"
+edition = "2024"
+
+[dependencies]
+avail-rust-client = { path = "./../../client", default-features = false, features = ["native", "reqwest"] }
+tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
+codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
