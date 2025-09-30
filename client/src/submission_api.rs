@@ -272,7 +272,7 @@ impl TransactionReceipt {
 		let block = BlockWithTx::new(self.client.clone(), self.block_ref.height);
 		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
-			return Err(RpcError::ExpectedData("No transaction was found.".into()).into());
+			return Err(RpcError::ExpectedData("No transaction found at the requested index.".into()).into());
 		};
 
 		Ok(tx)
@@ -287,7 +287,7 @@ impl TransactionReceipt {
 		let block = BlockWithExt::new(self.client.clone(), self.block_ref.height);
 		let ext: Option<BlockExtrinsic<T>> = block.get(self.tx_ref.index).await?;
 		let Some(ext) = ext else {
-			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
+			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
 		};
 
 		Ok(ext)
@@ -302,7 +302,7 @@ impl TransactionReceipt {
 		let block = BlockWithExt::new(self.client.clone(), self.block_ref.height);
 		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
-			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
+			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
 		};
 
 		Ok(tx.call)
@@ -317,7 +317,7 @@ impl TransactionReceipt {
 		let block = BlockWithRawExt::new(self.client.clone(), self.block_ref.height);
 		let ext = block.get(self.tx_ref.index, encode_as).await?;
 		let Some(ext) = ext else {
-			return Err(RpcError::ExpectedData("No extrinsic was found.".into()).into());
+			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
 		};
 
 		Ok(ext)
@@ -332,7 +332,7 @@ impl TransactionReceipt {
 		let block = BlockEvents::new(self.client.clone(), self.block_ref.hash);
 		let events = block.ext(self.tx_ref.index).await?;
 		let Some(events) = events else {
-			return Err(RpcError::ExpectedData("No events was found.".into()).into());
+			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
 		};
 		Ok(events)
 	}

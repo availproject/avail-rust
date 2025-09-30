@@ -432,7 +432,7 @@ impl BlockWithTx {
 		};
 
 		let Some(signature) = ext.signature else {
-			return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
+			return Err(UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into());
 		};
 
 		let ext = BlockTransaction::new(signature, ext.call, ext.metadata);
@@ -452,7 +452,7 @@ impl BlockWithTx {
 		};
 
 		let Some(signature) = ext.signature else {
-			return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
+			return Err(UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into());
 		};
 
 		let ext = BlockTransaction::new(signature, ext.call, ext.metadata);
@@ -472,7 +472,7 @@ impl BlockWithTx {
 		};
 
 		let Some(signature) = ext.signature else {
-			return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
+			return Err(UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into());
 		};
 
 		let ext = BlockTransaction::new(signature, ext.call, ext.metadata);
@@ -490,7 +490,7 @@ impl BlockWithTx {
 		let mut result = Vec::with_capacity(all.len());
 		for ext in all {
 			let Some(signature) = ext.signature else {
-				return Err(UserError::Other("Cannot decode extrinsic as signed as it was not signed".into()).into());
+				return Err(UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into());
 			};
 			result.push(BlockTransaction::new(signature, ext.call, ext.metadata));
 		}
@@ -552,7 +552,7 @@ impl BlockEvents {
 		let mut result: Vec<ExtrinsicEvent> = Vec::with_capacity(first.events.len());
 		for phase_event in &mut first.events {
 			let Some(data) = phase_event.encoded_data.take() else {
-				return Err(RpcError::ExpectedData("No data was provided from event".into()).into());
+				return Err(RpcError::ExpectedData("The node did not return encoded data for this event.".into()).into());
 			};
 
 			let ext_event = ExtrinsicEvent {
@@ -688,7 +688,7 @@ impl BlockRawExtrinsic {
 			.ext(self.ext_index())
 			.await?;
 		let Some(events) = events else {
-			return Err(RpcError::ExpectedData("No events found for extrinsic".into()).into());
+			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
 		};
 
 		Ok(events)
@@ -785,7 +785,7 @@ impl<T: HasHeader + Decode> TryFrom<BlockRawExtrinsic> for BlockExtrinsic<T> {
 
 	fn try_from(value: BlockRawExtrinsic) -> Result<Self, Self::Error> {
 		let Some(data) = &value.data else {
-			return Err("No data found in extrinsic info")?;
+			return Err("Encoded extrinsic payload is missing from the RPC response.")?;
 		};
 
 		let extrinsic = Extrinsic::<T>::try_from(data.as_str())?;
@@ -813,7 +813,7 @@ impl<T: HasHeader + Decode> BlockTransaction<T> {
 			.ext(self.ext_index())
 			.await?;
 		let Some(events) = events else {
-			return Err(RpcError::ExpectedData("No events found for extrinsic".into()).into());
+			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
 		};
 
 		Ok(events)
@@ -858,7 +858,7 @@ impl<T: HasHeader + Decode> TryFrom<BlockExtrinsic<T>> for BlockTransaction<T> {
 
 	fn try_from(value: BlockExtrinsic<T>) -> Result<Self, Self::Error> {
 		let Some(signature) = value.signature else {
-			return Err("No signature found in extrinsic")?;
+			return Err("Extrinsic is unsigned; expected a signature.")?;
 		};
 
 		Ok(Self::new(signature, value.call, value.metadata))
