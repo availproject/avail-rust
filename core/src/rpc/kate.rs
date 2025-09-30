@@ -146,8 +146,8 @@ pub async fn query_rows(client: &RpcClient, rows: Vec<u32>, at: Option<H256>) ->
 
 pub async fn query_multi_proof(
 	client: &RpcClient,
-	at: Option<H256>,
 	cells: Vec<Cell>,
+	at: Option<H256>,
 ) -> Result<Vec<(GMultiProof, GCellBlock)>, Error> {
 	let params = rpc_params![cells.to_vec(), at];
 	let proofs: Vec<(GMultiProof, GCellBlock)> = client.request("kate_queryMultiProof", params).await?;
