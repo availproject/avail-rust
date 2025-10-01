@@ -904,7 +904,7 @@ impl Best {
 			.await
 	}
 
-	/// Returns the effective retry preference for best-block queries.
+	/// Returns true when best-block queries retry after RPC errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())
@@ -1015,7 +1015,7 @@ impl Finalized {
 			.await
 	}
 
-	/// Returns the effective retry preference for finalized-block queries.
+	/// Returns true when finalized-block queries retry after RPC errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())

@@ -96,7 +96,7 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		self.sub.set_retry_on_error(value);
 	}
 
-	/// Returns the effective retry preference that will be applied to subsequent RPC calls.
+	/// Returns true when this subscription will retry failed RPC calls.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.sub.should_retry_on_error()
 	}
@@ -171,7 +171,7 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		self.sub.set_retry_on_error(value);
 	}
 
-	/// Returns the effective retry preference that will be applied to subsequent RPC calls.
+	/// Returns true when this subscription will retry failed RPC calls.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.sub.should_retry_on_error()
 	}
@@ -248,7 +248,7 @@ impl RawExtrinsicSub {
 		self.sub.set_retry_on_error(value);
 	}
 
-	/// Returns the effective retry preference that will be applied to subsequent RPC calls.
+	/// Returns true when this subscription will retry failed RPC calls.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.sub.should_retry_on_error()
 	}

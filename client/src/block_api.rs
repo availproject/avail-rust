@@ -84,7 +84,7 @@ impl BlockApi {
 			.map_err(|e| e.into())
 	}
 
-	/// Returns the effective retry preference for RPC calls made by this block view.
+	/// Returns true when this block view will retry failed RPC calls.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())
@@ -245,7 +245,7 @@ impl BlockWithRawExt {
 		self.retry_on_error = value;
 	}
 
-	/// Returns the effective retry preference for RPC calls issued by this helper.
+	/// Returns true when raw extrinsic lookups retry after RPC errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())
@@ -406,7 +406,7 @@ impl BlockWithExt {
 		self.rxt.set_retry_on_error(value);
 	}
 
-	/// Returns the effective retry preference for RPC requests performed while decoding extrinsics.
+	/// Returns true when decoded extrinsic lookups retry after RPC errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.rxt.should_retry_on_error()
 	}
@@ -532,7 +532,7 @@ impl BlockWithTx {
 		self.ext.set_retry_on_error(value);
 	}
 
-	/// Returns the effective retry preference for RPC lookups of signed transactions.
+	/// Returns true when signed transaction lookups retry after RPC errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.ext.should_retry_on_error()
 	}
@@ -613,7 +613,7 @@ impl BlockEvents {
 		self.retry_on_error = value;
 	}
 
-	/// Returns the effective retry preference for event queries, defaulting to the client-wide value.
+	/// Returns true when event queries retry after RPC errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())

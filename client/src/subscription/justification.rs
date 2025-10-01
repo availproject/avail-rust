@@ -61,7 +61,7 @@ impl GrandpaJustificationSub {
 		self.sub.set_retry_on_error(value);
 	}
 
-	/// Returns the effective retry preference for subsequent justification RPCs.
+	/// Returns true when this stream retries failed justification RPC calls.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.sub.should_retry_on_error()
 	}
@@ -128,7 +128,7 @@ impl GrandpaJustificationJsonSub {
 		self.sub.set_retry_on_error(value);
 	}
 
-	/// Returns the effective retry preference for subsequent justification RPCs.
+	/// Returns true when this stream retries failed justification RPC calls.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.sub.should_retry_on_error()
 	}
