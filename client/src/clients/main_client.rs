@@ -451,10 +451,8 @@ impl ChainApi {
 		tx_call: &'a avail_rust_core::ExtrinsicCall,
 		options: Options,
 	) -> Result<avail_rust_core::GenericExtrinsic<'a>, Error> {
-		let retry = self.should_retry();
-
 		let account_id = signer.public_key().to_account_id();
-		let refined_options = options.build(&self.client, &account_id, retry).await?;
+		let refined_options = options.build(&self.client, &account_id, self.retry_on_error).await?;
 
 		let tx_extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
 		let tx_additional = avail_rust_core::ExtrinsicAdditional {
@@ -496,10 +494,8 @@ impl ChainApi {
 		tx_call: &avail_rust_core::ExtrinsicCall,
 		options: Options,
 	) -> Result<SubmittedTransaction, Error> {
-		let retry = self.should_retry();
-
 		let account_id = signer.public_key().to_account_id();
-		let refined_options = options.build(&self.client, &account_id, retry).await?;
+		let refined_options = options.build(&self.client, &account_id, self.retry_on_error).await?;
 
 		let tx_extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
 		let tx_additional = avail_rust_core::ExtrinsicAdditional {
@@ -825,13 +821,11 @@ impl Best {
 	/// # Errors
 	/// Returns `Err(Error)` when the head hash cannot be fetched or the header lookup fails.
 	pub async fn block_header(&self) -> Result<AvailHeader, Error> {
-		let retry = self.should_retry();
-
 		let block_hash = self.block_hash().await?;
 		let block_header = self
 			.client
 			.chain()
-			.retry_on(Some(retry), Some(true))
+			.retry_on(self.retry_on_error, Some(true))
 			.block_header(Some(block_hash))
 			.await?;
 		let Some(block_header) = block_header else {
@@ -851,11 +845,9 @@ impl Best {
 	///
 	/// Equivalent to `chain().block_info(true)` but respecting this helper's retry setting.
 	pub async fn block_info(&self) -> Result<BlockInfo, RpcError> {
-		let retry = self.should_retry();
-
 		self.client
 			.chain()
-			.retry_on(Some(retry), Some(true))
+			.retry_on(self.retry_on_error, Some(true))
 			.block_info(true)
 			.await
 	}
@@ -875,13 +867,11 @@ impl Best {
 	/// # Errors
 	/// Returns `Err(RpcError::ExpectedData)` when the node reports no legacy block for the head.
 	pub async fn legacy_block(&self) -> Result<LegacyBlock, RpcError> {
-		let retry = self.should_retry();
-
 		let block_hash = self.block_hash().await?;
 		let block = self
 			.client
 			.chain()
-			.retry_on(Some(retry), Some(true))
+			.retry_on(self.retry_on_error, Some(true))
 			.legacy_block(Some(block_hash))
 			.await?;
 		let Some(block) = block else {
@@ -906,17 +896,16 @@ impl Best {
 	/// # Errors
 	/// Mirrors [`ChainApi::account_info`].
 	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
-		let retry = self.should_retry();
-
 		let at = self.block_hash().await?;
 		self.client
 			.chain()
-			.retry_on(Some(retry), Some(true))
+			.retry_on(self.retry_on_error, Some(true))
 			.account_info(account_id, at)
 			.await
 	}
 
-	fn should_retry(&self) -> bool {
+	/// Returns the effective retry preference for best-block queries.
+	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())
 	}
@@ -945,13 +934,11 @@ impl Finalized {
 	/// # Errors
 	/// Returns `Err(Error)` if fetching the hash or header fails.
 	pub async fn block_header(&self) -> Result<AvailHeader, Error> {
-		let retry = self.should_retry();
-
 		let block_hash = self.block_hash().await?;
 		let block_header = self
 			.client
 			.chain()
-			.retry_on(Some(retry), Some(true))
+			.retry_on(self.retry_on_error, Some(true))
 			.block_header(Some(block_hash))
 			.await?;
 		let Some(block_header) = block_header else {
@@ -971,11 +958,9 @@ impl Finalized {
 	///
 	/// Equivalent to `chain().block_info(false)` with retry controls preserved.
 	pub async fn block_info(&self) -> Result<BlockInfo, RpcError> {
-		let retry = self.should_retry();
-
 		self.client
 			.chain()
-			.retry_on(Some(retry), self.retry_on_error)
+			.retry_on(self.retry_on_error, self.retry_on_error)
 			.block_info(false)
 			.await
 	}
@@ -994,13 +979,11 @@ impl Finalized {
 	///
 	/// Returns `Err(RpcError::ExpectedData)` when the node does not provide a legacy block.
 	pub async fn legacy_block(&self) -> Result<LegacyBlock, RpcError> {
-		let retry = self.should_retry();
-
 		let block_hash = self.block_hash().await?;
 		let block = self
 			.client
 			.chain()
-			.retry_on(Some(retry), Some(true))
+			.retry_on(self.retry_on_error, Some(true))
 			.legacy_block(Some(block_hash))
 			.await?;
 		let Some(block) = block else {
@@ -1024,17 +1007,16 @@ impl Finalized {
 	///
 	/// Errors mirror [`ChainApi::account_info`].
 	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
-		let retry = self.should_retry();
-
 		let at = self.block_hash().await?;
 		self.client
 			.chain()
-			.retry_on(Some(retry), Some(true))
+			.retry_on(self.retry_on_error, Some(true))
 			.account_info(account_id, at)
 			.await
 	}
 
-	fn should_retry(&self) -> bool {
+	/// Returns the effective retry preference for finalized-block queries.
+	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())
 	}

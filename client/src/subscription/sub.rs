@@ -310,13 +310,11 @@ impl FinalizedBlockSub {
 
 	/// Fetches historical blocks below the current head.
 	async fn run_historical(&mut self) -> Result<BlockInfo, RpcError> {
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-
 		let height = self.next_block_height;
 		let hash = self
 			.client
 			.chain()
-			.retry_on(retry_on_error, None)
+			.retry_on(self.retry_on_error, None)
 			.block_hash(Some(height))
 			.await?;
 		let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
@@ -327,8 +325,6 @@ impl FinalizedBlockSub {
 	/// Polls for new finalized blocks when caught up with the head.
 	/// Polls for new best blocks once historical replay has caught up.
 	async fn run_head(&mut self) -> Result<BlockInfo, RpcError> {
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-
 		loop {
 			let head = self.client.finalized().block_info().await?;
 
@@ -346,7 +342,7 @@ impl FinalizedBlockSub {
 			let hash = self
 				.client
 				.chain()
-				.retry_on(retry_on_error, Some(true))
+				.retry_on(self.retry_on_error, Some(true))
 				.block_hash(Some(height))
 				.await?;
 			let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
@@ -415,16 +411,18 @@ impl BestBlockSub {
 			return Ok(*height);
 		}
 
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-		let latest_finalized_height = self.client.finalized().retry_on(retry_on_error).block_height().await?;
+		let latest_finalized_height = self
+			.client
+			.finalized()
+			.retry_on(self.retry_on_error)
+			.block_height()
+			.await?;
 		self.latest_finalized_height = Some(latest_finalized_height);
 		Ok(latest_finalized_height)
 	}
 
 	/// Fetches historical best blocks when replaying past heights.
 	async fn run_historical(&mut self) -> Result<BlockInfo, RpcError> {
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-
 		let mut height = self.current_block_height;
 		if !self.block_processed.is_empty() {
 			height += 1;
@@ -433,7 +431,7 @@ impl BestBlockSub {
 		let hash = self
 			.client
 			.chain()
-			.retry_on(retry_on_error, None)
+			.retry_on(self.retry_on_error, None)
 			.block_hash(Some(height))
 			.await?;
 		let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;
@@ -442,10 +440,8 @@ impl BestBlockSub {
 	}
 
 	async fn run_head(&mut self) -> Result<BlockInfo, RpcError> {
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-
 		loop {
-			let head = self.client.best().retry_on(retry_on_error).block_info().await?;
+			let head = self.client.best().retry_on(self.retry_on_error).block_info().await?;
 
 			let is_past_block = self.current_block_height > head.height;
 			let block_already_processed = self.block_processed.contains(&head.hash);
@@ -459,7 +455,7 @@ impl BestBlockSub {
 				let hash = self
 					.client
 					.chain()
-					.retry_on(retry_on_error, Some(true))
+					.retry_on(self.retry_on_error, Some(true))
 					.block_hash(Some(self.current_block_height))
 					.await?;
 				let hash = hash.ok_or(RpcError::ExpectedData("Expected to fetch block hash".into()))?;

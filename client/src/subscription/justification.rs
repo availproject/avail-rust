@@ -27,8 +27,7 @@ impl GrandpaJustificationSub {
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let info = self.sub.next().await?;
-			let retry = self.sub.should_retry_on_error();
-			let just = match self.fetch_justification(info.height, retry).await {
+			let just = match self.fetch_justification(info.height).await {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
@@ -62,11 +61,16 @@ impl GrandpaJustificationSub {
 		self.sub.set_retry_on_error(value);
 	}
 
-	async fn fetch_justification(&self, height: u32, retry: bool) -> Result<Option<GrandpaJustification>, RpcError> {
+	/// Returns the effective retry preference for subsequent justification RPCs.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.sub.should_retry_on_error()
+	}
+
+	async fn fetch_justification(&self, height: u32) -> Result<Option<GrandpaJustification>, RpcError> {
 		self.sub
 			.client_ref()
 			.chain()
-			.retry_on(Some(retry), None)
+			.retry_on(Some(self.should_retry_on_error()), None)
 			.grandpa_block_justification(height)
 			.await
 	}
@@ -91,8 +95,7 @@ impl GrandpaJustificationJsonSub {
 	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
 		loop {
 			let info = self.sub.next().await?;
-			let retry = self.sub.should_retry_on_error();
-			let just = match self.fetch_justification(info.height, retry).await {
+			let just = match self.fetch_justification(info.height).await {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
@@ -125,11 +128,16 @@ impl GrandpaJustificationJsonSub {
 		self.sub.set_retry_on_error(value);
 	}
 
-	async fn fetch_justification(&self, height: u32, retry: bool) -> Result<Option<GrandpaJustification>, RpcError> {
+	/// Returns the effective retry preference for subsequent justification RPCs.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.sub.should_retry_on_error()
+	}
+
+	async fn fetch_justification(&self, height: u32) -> Result<Option<GrandpaJustification>, RpcError> {
 		self.sub
 			.client_ref()
 			.chain()
-			.retry_on(Some(retry), None)
+			.retry_on(Some(self.should_retry_on_error()), None)
 			.grandpa_block_justification_json(height)
 			.await
 	}

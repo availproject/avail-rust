@@ -64,14 +64,12 @@ impl BlockApi {
 	/// - `Ok(None)` when no justification exists for the requested block.
 	/// - `Err(Error)` if the RPC layer fails or the supplied block id cannot be resolved.
 	pub async fn justification(&self) -> Result<Option<GrandpaJustification>, Error> {
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
 		let at = match block_id {
 			HashNumber::Hash(h) => self
 				.client
 				.chain()
-				.retry_on(retry_on_error, None)
+				.retry_on(self.retry_on_error, None)
 				.block_height(h)
 				.await?
 				.ok_or(Error::Other("Failed to find block from the provided hash".into()))?,
@@ -80,10 +78,16 @@ impl BlockApi {
 
 		self.client
 			.chain()
-			.retry_on(retry_on_error, None)
+			.retry_on(self.retry_on_error, None)
 			.grandpa_block_justification(at)
 			.await
 			.map_err(|e| e.into())
+	}
+
+	/// Returns the effective retry preference for RPC calls made by this block view.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled())
 	}
 }
 
@@ -139,8 +143,6 @@ impl BlockWithRawExt {
 	/// - `Ok(None)` when nothing matches the provided filters.
 	/// - `Err(Error)` on RPC failures or when the block identifier cannot be decoded.
 	pub async fn first(&self, mut opts: BlockExtOptionsExpanded) -> Result<Option<BlockRawExtrinsic>, Error> {
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-
 		if opts.encode_as.is_none() {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
@@ -149,7 +151,7 @@ impl BlockWithRawExt {
 		let mut result = self
 			.client
 			.chain()
-			.retry_on(retry_on_error, None)
+			.retry_on(self.retry_on_error, None)
 			.system_fetch_extrinsics(block_id, opts.into())
 			.await?;
 
@@ -168,8 +170,6 @@ impl BlockWithRawExt {
 	///
 	/// Return semantics mirror [`BlockWithRawExt::first`], but the final matching element is returned.
 	pub async fn last(&self, mut opts: BlockExtOptionsExpanded) -> Result<Option<BlockRawExtrinsic>, Error> {
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-
 		if opts.encode_as.is_none() {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
@@ -178,7 +178,7 @@ impl BlockWithRawExt {
 		let mut result = self
 			.client
 			.chain()
-			.retry_on(retry_on_error, None)
+			.retry_on(self.retry_on_error, None)
 			.system_fetch_extrinsics(block_id, opts.into())
 			.await?;
 
@@ -197,8 +197,6 @@ impl BlockWithRawExt {
 	///
 	/// The resulting vector may be empty when no extrinsics satisfy the filters.
 	pub async fn all(&self, mut opts: BlockExtOptionsExpanded) -> Result<Vec<BlockRawExtrinsic>, Error> {
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-
 		if opts.encode_as.is_none() {
 			opts.encode_as = Some(EncodeSelector::Extrinsic)
 		}
@@ -207,7 +205,7 @@ impl BlockWithRawExt {
 		let result = self
 			.client
 			.chain()
-			.retry_on(retry_on_error, None)
+			.retry_on(self.retry_on_error, None)
 			.system_fetch_extrinsics(block_id, opts.into())
 			.await?;
 
@@ -245,6 +243,12 @@ impl BlockWithRawExt {
 	/// `Some(false)` disables them, and `None` keeps the client's default.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.retry_on_error = value;
+	}
+
+	/// Returns the effective retry preference for RPC calls issued by this helper.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled())
 	}
 }
 
@@ -401,6 +405,11 @@ impl BlockWithExt {
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.rxt.set_retry_on_error(value);
 	}
+
+	/// Returns the effective retry preference for RPC requests performed while decoding extrinsics.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.rxt.should_retry_on_error()
+	}
 }
 
 /// View of block extrinsics restricted to signed transactions.
@@ -522,6 +531,11 @@ impl BlockWithTx {
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.ext.set_retry_on_error(value);
 	}
+
+	/// Returns the effective retry preference for RPC lookups of signed transactions.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.ext.should_retry_on_error()
+	}
 }
 
 /// View that fetches events emitted by a block, optionally filtered by extrinsic.
@@ -582,15 +596,13 @@ impl BlockEvents {
 	///
 	/// By default encoding is enabled; callers can override this via `opts`.
 	pub async fn block(&self, mut opts: BlockEventsOptions) -> Result<Vec<rpc::BlockPhaseEvent>, Error> {
-		let retry_on_error = Some(should_retry(&self.client, self.retry_on_error));
-
 		if opts.enable_encoding.is_none() {
 			opts.enable_encoding = Some(true);
 		}
 
 		self.client
 			.chain()
-			.retry_on(retry_on_error, None)
+			.retry_on(self.retry_on_error, None)
 			.system_fetch_events(self.block_id.clone(), opts.into())
 			.await
 	}
@@ -599,6 +611,12 @@ impl BlockEvents {
 	/// them, and `None` keeps the client's default.
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.retry_on_error = value;
+	}
+
+	/// Returns the effective retry preference for event queries, defaulting to the client-wide value.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled())
 	}
 }
 
@@ -978,8 +996,4 @@ impl ExtrinsicEvents {
 
 		count
 	}
-}
-
-fn should_retry(client: &Client, value: Option<bool>) -> bool {
-	value.unwrap_or(client.is_global_retries_enabled())
 }
