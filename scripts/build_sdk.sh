@@ -5,6 +5,7 @@ set -e
 # SDK
 cargo check
 cargo check --no-default-features --features "native"
+cargo check --no-default-features --features "native, next"
 cargo check --no-default-features --features "native, tracing"
 cargo check --no-default-features --features "native, reqwest"
 cargo check --no-default-features --features "native, reqwest, tracing"

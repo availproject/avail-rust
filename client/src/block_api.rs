@@ -124,16 +124,19 @@ impl BlockWithRawExt {
 		) -> Result<Option<BlockRawExtrinsic>, Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
-				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(|x| UserError::Decoding(x))?,
+				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
-			let mut opts = BlockExtOptionsExpanded::default();
-			opts.filter = Some(filter);
-			opts.encode_as = Some(encode_as);
-			Ok(s.first(opts).await?)
+			let opts = BlockExtOptionsExpanded {
+				filter: Some(filter),
+				encode_as: Some(encode_as),
+				..Default::default()
+			};
+
+			s.first(opts).await
 		}
 
-		inner(&self, extrinsic_id.into(), encode_as).await
+		inner(self, extrinsic_id.into(), encode_as).await
 	}
 
 	/// Returns the first matching extrinsic, if any.
@@ -285,11 +288,11 @@ impl BlockWithExt {
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
 			let filter = Some(filter);
-			Ok(s.first::<T>(BlockExtOptionsSimple { filter, ..Default::default() })
-				.await?)
+			s.first::<T>(BlockExtOptionsSimple { filter, ..Default::default() })
+				.await
 		}
 
-		inner::<T>(&self, extrinsic_id.into()).await
+		inner::<T>(self, extrinsic_id.into()).await
 	}
 
 	/// Returns the first matching extrinsic decoded into the target type.
@@ -627,12 +630,12 @@ pub struct BlockEventsOptions {
 	enable_decoding: Option<bool>,
 }
 
-impl Into<rpc::EventOpts> for BlockEventsOptions {
-	fn into(self) -> rpc::EventOpts {
+impl From<BlockEventsOptions> for rpc::EventOpts {
+	fn from(value: BlockEventsOptions) -> Self {
 		rpc::EventOpts {
-			filter: self.filter,
-			enable_encoding: self.enable_encoding,
-			enable_decoding: self.enable_decoding,
+			filter: value.filter,
+			enable_encoding: value.enable_encoding,
+			enable_decoding: value.enable_decoding,
 		}
 	}
 }
@@ -654,14 +657,14 @@ pub struct BlockExtOptionsExpanded {
 	pub encode_as: Option<EncodeSelector>,
 }
 
-impl Into<rpc::ExtrinsicOpts> for BlockExtOptionsExpanded {
-	fn into(self) -> rpc::ExtrinsicOpts {
+impl From<BlockExtOptionsExpanded> for rpc::ExtrinsicOpts {
+	fn from(value: BlockExtOptionsExpanded) -> Self {
 		rpc::ExtrinsicOpts {
-			transaction_filter: self.filter.unwrap_or_default(),
-			ss58_address: self.ss58_address,
-			app_id: self.app_id,
-			nonce: self.nonce,
-			encode_as: self.encode_as.unwrap_or_default(),
+			transaction_filter: value.filter.unwrap_or_default(),
+			ss58_address: value.ss58_address,
+			app_id: value.app_id,
+			nonce: value.nonce,
+			encode_as: value.encode_as.unwrap_or_default(),
 		}
 	}
 }
@@ -713,7 +716,7 @@ impl BlockRawExtrinsic {
 	/// - `Ok(ExtrinsicEvents)` when the block exposes matching events.
 	/// - `Err(Error)` when the extrinsic emitted no events or the RPC layer fails.
 	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, Error> {
-		let events = BlockEvents::new(client, self.metadata.block_id.clone())
+		let events = BlockEvents::new(client, self.metadata.block_id)
 			.ext(self.ext_index())
 			.await?;
 		let Some(events) = events else {
@@ -765,7 +768,7 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 
 	/// Fetches events emitted by this extrinsic.
 	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, Error> {
-		let events = BlockEvents::new(client, self.metadata.block_id.clone())
+		let events = BlockEvents::new(client, self.metadata.block_id)
 			.ext(self.ext_index())
 			.await?;
 		let Some(events) = events else {

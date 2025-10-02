@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use codec::{Decode, Encode};
 use primitive_types::H256;
@@ -131,11 +131,11 @@ pub enum HashString {
 	String(String),
 }
 
-impl HashString {
-	pub fn to_string(&self) -> String {
+impl Display for HashString {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			HashString::Hash(x) => const_hex::encode_prefixed(x.0),
-			HashString::String(x) => x.clone(),
+			HashString::Hash(x) => write!(f, "{}", const_hex::encode_prefixed(x.0)),
+			HashString::String(x) => write!(f, "{}", x),
 		}
 	}
 }
@@ -250,9 +250,9 @@ pub enum StringOrBytes<'a> {
 	BoxedBytes(Box<[u8]>),
 }
 
-impl<'a> Into<Vec<u8>> for StringOrBytes<'a> {
-	fn into(self) -> Vec<u8> {
-		match self {
+impl<'a> From<StringOrBytes<'a>> for Vec<u8> {
+	fn from(value: StringOrBytes<'a>) -> Self {
+		match value {
 			StringOrBytes::StringRef(x) => x.as_bytes().to_vec(),
 			StringOrBytes::BoxedString(x) => x.as_bytes().to_vec(),
 			StringOrBytes::Bytes(x) => x.to_vec(),
@@ -308,7 +308,7 @@ impl TryFrom<MultiAddressLike> for MultiAddress {
 	fn try_from(value: MultiAddressLike) -> Result<Self, Self::Error> {
 		match value {
 			MultiAddressLike::MultiAddress(a) => Ok(a),
-			MultiAddressLike::BoxedString(s) => account_id_from_str(&*s).map(MultiAddress::from),
+			MultiAddressLike::BoxedString(s) => account_id_from_str(&s).map(MultiAddress::from),
 		}
 	}
 }
@@ -354,7 +354,7 @@ impl TryFrom<AccountIdLike> for AccountId {
 	fn try_from(value: AccountIdLike) -> Result<Self, Self::Error> {
 		match value {
 			AccountIdLike::AccountId(a) => Ok(a),
-			AccountIdLike::BoxedString(s) => account_id_from_str(&*s),
+			AccountIdLike::BoxedString(s) => account_id_from_str(&s),
 		}
 	}
 }

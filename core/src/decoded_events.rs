@@ -36,7 +36,7 @@ impl<T: HasHeader + Decode> TransactionEventDecodable for T {
 				StringOrBytes::BoxedString(s) => {
 					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
 				},
-				StringOrBytes::Bytes(b) => *b,
+				StringOrBytes::Bytes(b) => b,
 				StringOrBytes::BoxedBytes(b) => b,
 			};
 

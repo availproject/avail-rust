@@ -45,7 +45,7 @@ impl<T: HasHeader + Decode> TransactionDecodable for T {
 				StringOrBytes::BoxedString(s) => {
 					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
 				},
-				StringOrBytes::Bytes(b) => *b,
+				StringOrBytes::Bytes(b) => b,
 				StringOrBytes::BoxedBytes(b) => b,
 			};
 
@@ -71,8 +71,8 @@ impl<T: HasHeader + Decode> TransactionDecodable for T {
 				StringOrBytes::BoxedString(s) => {
 					&const_hex::decode(s.trim_start_matches("0x")).map_err(|x| x.to_string())?
 				},
-				StringOrBytes::Bytes(b) => *b,
-				StringOrBytes::BoxedBytes(b) => &*b,
+				StringOrBytes::Bytes(b) => b,
+				StringOrBytes::BoxedBytes(b) => b,
 			};
 
 			let ext = Extrinsic::<T>::try_from(ext)?;

@@ -257,5 +257,6 @@ your idea in the
 [discussions](https://github.com/availproject/avail-rust/discussions) or
 [issues](https://github.com/availproject/avail-rust/issues).
 
-Pull requests that only fix grammatical mistakes, resolve cargo clippy warnings,
-or do not add any substantial value will be closed immediately without feedback.
+# License
+This project is primarily distributed under the terms of MIT license.
+See [LICENSE](https://github.com/availproject/avail-rust/blob/main/LICENSE) 

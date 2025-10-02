@@ -29,6 +29,9 @@ subxt-core = { workspace = true }
 subxt-signer = {workspace = true }
 subxt-rpcs = { workspace = true }
 
+# Enabled with next
+base64 = { workspace = true, optional = true }
+
 [dev-dependencies]
 tokio = { workspace = true, features = ["sync", "time", "rt", "macros"]  }
 
@@ -42,4 +45,7 @@ native = [
 wasm = [
 	"subxt-signer/web",
 	"subxt-rpcs/web",
+]
+next = [
+	"dep:base64"
 ]

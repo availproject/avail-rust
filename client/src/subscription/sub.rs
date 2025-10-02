@@ -75,7 +75,6 @@ impl Sub {
 	/// - If you’ve already called [`Sub::next`] or [`Sub::prev`] once, this moves backwards.
 	/// - If you set a starting height via [`Sub::set_block_height`], it begins from `(height - 1)`.
 	/// - Otherwise, it starts from `(latest finalized/best height - 1)`.
-
 	/// # Errors
 	/// Returns `Err(RpcError)` when the underlying RPC interaction fails; the cursor is left at the
 	/// same position so the call can be retried.

@@ -7,7 +7,7 @@ pub type AuthorityIndex = u64;
 pub type AuthorityWeight = u64;
 pub type AuthorityList = Vec<(AuthorityId, AuthorityWeight)>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct AuthorityId(pub [u8; 32]);
 pub type Public = AuthorityId;
 
@@ -38,12 +38,6 @@ impl<'de> Deserialize<'de> for AuthorityId {
 	{
 		let account_id = AccountId::deserialize(deserializer)?;
 		Ok(Self(account_id.0))
-	}
-}
-
-impl Default for AuthorityId {
-	fn default() -> Self {
-		Self([0u8; 32])
 	}
 }
 

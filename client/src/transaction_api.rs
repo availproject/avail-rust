@@ -562,7 +562,7 @@ impl Multisig {
 			let other_signatories: Result<Vec<AccountId>, _> =
 				other_signatories.into_iter().map(|x| x.try_into()).collect();
 			let mut other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
-			other_signatories.sort_by(|x, y| x.cmp(&y));
+			other_signatories.sort();
 
 			let call_hash: H256 = call_hash.try_into().expect("Malformed string is passed for H256");
 
@@ -604,7 +604,7 @@ impl Multisig {
 			let other_signatories: Result<Vec<AccountId>, _> =
 				other_signatories.into_iter().map(|x| x.try_into()).collect();
 			let mut other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
-			other_signatories.sort_by(|x, y| x.cmp(&y));
+			other_signatories.sort();
 
 			let value = avail::multisig::tx::AsMulti {
 				threshold,
@@ -633,7 +633,7 @@ impl Multisig {
 			let other_signatories: Result<Vec<AccountId>, _> =
 				other_signatories.into_iter().map(|x| x.try_into()).collect();
 			let mut other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
-			other_signatories.sort_by(|x, y| x.cmp(&y));
+			other_signatories.sort();
 
 			let value = avail::multisig::tx::AsMultiThreshold1 { other_signatories, call };
 			SubmittableTransaction::from_encodable(client, value)
@@ -665,7 +665,7 @@ impl Multisig {
 			let other_signatories: Result<Vec<AccountId>, _> =
 				other_signatories.into_iter().map(|x| x.try_into()).collect();
 			let mut other_signatories = other_signatories.expect("Malformed string is passed for AccountId");
-			other_signatories.sort_by(|x, y| x.cmp(&y));
+			other_signatories.sort();
 
 			let call_hash: H256 = call_hash.try_into().expect("Malformed string is passed for H256");
 
@@ -693,6 +693,12 @@ impl DataAvailability {
 	pub fn submit_data<'a>(&self, data: impl Into<StringOrBytes<'a>>) -> SubmittableTransaction {
 		let data: Vec<u8> = Into::<StringOrBytes>::into(data).into();
 		let value = avail::data_availability::tx::SubmitData { data };
+		SubmittableTransaction::from_encodable(self.0.clone(), value)
+	}
+
+	#[cfg(feature = "next")]
+	pub fn submit_blob_metadata(&self, blob_hash: H256, size: u64, commitments: Vec<u8>) -> SubmittableTransaction {
+		let value = avail::data_availability::tx::SubmitBlobMetadata { blob_hash, size, commitments };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 }

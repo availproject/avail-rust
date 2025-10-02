@@ -357,7 +357,7 @@ impl ChainApi {
 				return Ok(BlockState::Included);
 			}
 
-			return Ok(BlockState::Finalized);
+			Ok(BlockState::Finalized)
 		}
 
 		inner(self, block_id.into()).await
@@ -371,7 +371,7 @@ impl ChainApi {
 			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
 			let retry_on_none = r.retry_on_none.unwrap_or(false);
 
-			let at: H256 = at.try_into().map_err(|x| UserError::Other(x))?;
+			let at: H256 = at.try_into().map_err(UserError::Other)?;
 			let f = || async move { rpc::system::get_block_number(&r.client.rpc_client, at).await };
 			Ok(with_retry_on_error_and_none(f, retry_on_error, retry_on_none).await?)
 		}
@@ -575,7 +575,7 @@ impl ChainApi {
 			with_retry_on_error(f, retry).await.map_err(|e| e.into())
 		}
 
-		inner(&self, block_id.into(), &opts).await
+		inner(self, block_id.into(), &opts).await
 	}
 
 	/// Pulls events for a block with optional filtering.
@@ -791,6 +791,18 @@ impl ChainApi {
 		let cells_ref = &cells;
 		let f = || async move { rpc::kate::query_multi_proof(&self.client.rpc_client, cells_ref.clone(), at).await };
 		with_retry_on_error(f, retry).await
+	}
+
+	#[cfg(feature = "next")]
+	pub async fn blob_submit_blob(&self, metadata_signed_transaction: &[u8], blob: &[u8]) -> Result<(), Error> {
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let f =
+			|| async move { rpc::blob::submit_blob(&self.client.rpc_client, metadata_signed_transaction, blob).await };
+
+		Ok(with_retry_on_error(f, retry_on_error).await?)
 	}
 
 	fn should_retry(&self) -> bool {
