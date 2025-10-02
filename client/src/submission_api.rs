@@ -163,15 +163,15 @@ impl SubmittableTransaction {
 	}
 }
 
-impl Into<ExtrinsicCall> for SubmittableTransaction {
-	fn into(self) -> ExtrinsicCall {
-		self.call
+impl From<SubmittableTransaction> for ExtrinsicCall {
+	fn from(value: SubmittableTransaction) -> Self {
+		value.call
 	}
 }
 
-impl Into<ExtrinsicCall> for &SubmittableTransaction {
-	fn into(self) -> ExtrinsicCall {
-		self.call.clone()
+impl From<&SubmittableTransaction> for ExtrinsicCall {
+	fn from(value: &SubmittableTransaction) -> Self {
+		value.call.clone()
 	}
 }
 

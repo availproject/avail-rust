@@ -95,6 +95,11 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
 	}
+
+	/// Returns true when this subscription will retry failed RPC calls.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.sub.should_retry_on_error()
+	}
 }
 
 /// Subscription that mirrors [`Sub`] but yields decoded extrinsics via [`BlockWithExt`].
@@ -164,6 +169,11 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 	/// Controls retry behaviour for future RPC calls (`Some(true)` = force, `Some(false)` = disable).
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
+	}
+
+	/// Returns true when this subscription will retry failed RPC calls.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.sub.should_retry_on_error()
 	}
 }
 
@@ -236,6 +246,11 @@ impl RawExtrinsicSub {
 	/// `Some(false)` = disable, `None` = inherit client default).
 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
 		self.sub.set_retry_on_error(value);
+	}
+
+	/// Returns true when this subscription will retry failed RPC calls.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.sub.should_retry_on_error()
 	}
 }
 

@@ -23,8 +23,8 @@ resolver = "2"
 
 [workspace.package]
 edition = "2024"
-version = "0.4.0-rc.5"
-license = "ISC"
+version = "0.4.0"
+license = "MIT"
 repository = "https://github.com/availproject/avail-rust"
 
 [workspace.dependencies]
@@ -61,3 +61,6 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "def
 # Enabled with Wasm
 wasm-bindgen-futures = { version =  "0.4" }
 wasmtimer = { version = "0.4" }
+
+# Enabled with next
+base64 = { version = "0.22.1" }

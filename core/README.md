@@ -35,3 +35,6 @@ transport for you so that it can stay lightweight.
 - [`avail-rust` examples](https://github.com/availproject/avail-rust/tree/main/examples):
   Real-world programs that showcase how the core types are meant to be used.
 
+# License
+This project is primarily distributed under the terms of MIT license.
+See [LICENSE](https://github.com/availproject/avail-rust/blob/main/LICENSE) 

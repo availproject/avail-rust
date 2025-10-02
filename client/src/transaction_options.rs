@@ -58,7 +58,7 @@ impl Options {
 		self,
 		client: &Client,
 		account_id: &AccountId,
-		retry_on_error: bool,
+		retry_on_error: Option<bool>,
 	) -> Result<RefinedOptions, crate::Error> {
 		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
@@ -67,7 +67,7 @@ impl Options {
 			None => {
 				client
 					.chain()
-					.retry_on(Some(retry_on_error), None)
+					.retry_on(retry_on_error, None)
 					.account_nonce(account_id.clone())
 					.await?
 			},

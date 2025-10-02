@@ -37,13 +37,13 @@ pub fn account_id_from_slice(value: &[u8]) -> Result<AccountId, String> {
 /// Derive a multi-account ID from the sorted list of accounts and the threshold that are
 /// required.
 pub fn multi_account_id(who: &[impl Into<AccountIdLike> + Clone], threshold: u16) -> AccountId {
-	let who: Vec<AccountIdLike> = who.into_iter().map(|x| x.clone().into()).collect();
+	let who: Vec<AccountIdLike> = who.iter().map(|x| x.clone().into()).collect();
 	let mut who: Vec<AccountId> = who
 		.into_iter()
 		.map(|x| AccountId::try_from(x).expect("Malformed string is passed for AccountId"))
 		.collect();
 
-	who.sort_by(|x, y| x.cmp(&y));
+	who.sort();
 
 	let entropy = (b"modlpy/utilisuba", who, threshold).using_encoded(blake2_256);
 	Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
