@@ -62,6 +62,16 @@ It loads the shared library, walks through the same submission flow, and prints
 the block and transaction hashes as lowercase hex. Tested with the C and Perl
 examples to ensure consistent outputs.
 
+## Ruby example
+
+- Script: `ruby/main.rb`
+- Helper script: `run_rb.sh`
+- Requires: Ruby 3.x (uses the standard `fiddle` library, no extra gems needed)
+
+Running `./run_rb.sh` builds the shared library (debug profile) and executes the
+script with `ruby`. By default it demonstrates that `hello_from_rust()` works.
+Uncomment the networked calls when you have an Avail RPC endpoint accessible.
+
 ## Housekeeping tips
 
 - Always call `receipt_free` once you are done with a receipt pointer.
