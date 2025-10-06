@@ -21,7 +21,7 @@ pub use system::{
 	fetch_extrinsics::{EncodeSelector, ExtrinsicFilter, ExtrinsicInfo, Options as ExtrinsicOpts, SignerPayload},
 };
 
-pub async fn call_raw<T: serde::de::DeserializeOwned>(
+pub async fn raw_call<T: serde::de::DeserializeOwned>(
 	client: &RpcClient,
 	method: &str,
 	params: RpcParams,

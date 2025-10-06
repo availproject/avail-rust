@@ -1,4 +1,6 @@
 pub mod block_api;
+pub mod chain;
+pub mod client;
 pub mod clients;
 pub mod config;
 pub mod constants;
@@ -9,9 +11,10 @@ pub mod submission_api;
 pub mod subscription;
 pub mod transaction_api;
 pub mod transaction_options;
+pub mod utils;
 
 pub use block_api::{ExtrinsicEvent, ExtrinsicEvents};
-pub use clients::Client;
+pub use client::Client;
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, ONE_AVAIL, ONE_HUNDRED_AVAIL,
 	ONE_THOUSAND_AVAIL, TEN_AVAIL, TURING_ENDPOINT, TURING_WS_ENDPOINT,

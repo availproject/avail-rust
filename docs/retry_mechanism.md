@@ -20,7 +20,7 @@ builders described below.
 
 ## Chain API (`Client::chain()`)
 
-`ChainApi` exposes fine-grained control:
+`Chain` exposes fine-grained control:
 
 ```rust
 let chain = client.chain().retry_on(Some(true), Some(true));
@@ -35,7 +35,7 @@ and assumes `retry_on_none = false`.
 
 ## Other Helpers
 
-Most higher-level builders delegate to `ChainApi` and therefore inherit its
+Most higher-level builders delegate to `Chain` and therefore inherit its
 behaviour:
 
 - `BlockApi`, `BlockWith*`, `BlockEvents`

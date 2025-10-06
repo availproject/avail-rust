@@ -32,7 +32,7 @@ Below is a quick reference grouped by interface.
   `RwLock` is poisoned (should never happen unless the process panicked during a
   write).
 
-## Chain RPC (`Client::chain()` / `ChainApi`)
+## Chain RPC (`Client::chain()` / `Chain`)
 
 - `block_hash`, `block_header`, `legacy_block` – network failures, invalid hash
   conversions, or the node returning `None`. When `retry_on_none` is `false`,
@@ -48,7 +48,7 @@ Below is a quick reference grouped by interface.
 ## Block Helpers (`BlockApi`)
 
 - All views (`tx`, `ext`, `raw_ext`, `events`) ultimately depend on
-  `ChainApi`; they fail for the same reasons plus:
+  `Chain`; they fail for the same reasons plus:
   - Filtering by index/hash that does not exist returns `Ok(None)`.
   - Decoding payloads into a target type can fail with
     `UserError::Decoding` or `RpcError::ExpectedData` when the node omits
@@ -58,7 +58,7 @@ Below is a quick reference grouped by interface.
 
 ## Subscriptions (`Sub`, `BlockEventsSub`, etc.)
 
-- Underlying errors come from `ChainApi` (network, decoding). When a pull fails
+- Underlying errors come from `Chain` (network, decoding). When a pull fails
   we rewind the internal cursor and propagate the error so callers can retry.
 - Subscriptions skip empty results; if the node continuously returns empty data
   the call will loop until something appears or an RPC error is raised.

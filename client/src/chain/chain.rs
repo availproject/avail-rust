@@ -1,15 +1,9 @@
-//! High-level Avail client combining RPC access with helper APIs for blocks and transactions.
-
-use super::online_client::OnlineClient;
 use crate::{
-	BlockState, Error, UserError, avail,
-	block_api::BlockApi,
-	clients::utils::{with_retry_on_error, with_retry_on_error_and_none},
+	BlockState, Client, Error, UserError, avail,
 	submission_api::SubmittedTransaction,
-	subxt_rpcs::RpcClient,
 	subxt_signer::sr25519::Keypair,
-	transaction_api::TransactionApi,
 	transaction_options::Options,
+	utils::{with_retry_on_error, with_retry_on_error_and_none},
 };
 use avail::{
 	balances::types::AccountData,
@@ -17,6 +11,7 @@ use avail::{
 };
 use avail_rust_core::{
 	AccountId, AccountIdLike, AvailHeader, BlockInfo, H256, HashNumber, StorageMap,
+	ext::subxt_rpcs::client::RpcParams,
 	grandpa::GrandpaJustification,
 	rpc::{
 		self, BlockPhaseEvent, Error as RpcError, ExtrinsicInfo, LegacyBlock,
@@ -30,137 +25,14 @@ use avail_rust_core::{
 	},
 };
 use codec::Decode;
-#[cfg(feature = "tracing")]
-use tracing_subscriber::util::TryInitError;
-
-/// Primary entry point used throughout the SDK to interact with the node.
-#[derive(Clone)]
-pub struct Client {
-	online_client: OnlineClient,
-	pub rpc_client: RpcClient,
-}
-
-impl Client {
-	#[cfg(feature = "reqwest")]
-	/// Connects to an endpoint and returns a ready-to-use client.
-	///
-	/// Retries automatically if the `reqwest` feature is enabled and `retry` defaults to `true`.
-	///
-	/// # Errors
-	/// Returns `Err(Error)` if the transport cannot be initialized or the handshake fails.
-	pub async fn new(endpoint: &str) -> Result<Client, Error> {
-		Self::new_ext(endpoint, true).await
-	}
-
-	#[cfg(feature = "reqwest")]
-	/// Connects to an endpoint; set `retry` to `false` if you prefer failing fast during startup.
-	///
-	/// Internally wraps [`with_retry_on_error`] so transient errors (network hiccups, etc.) are retried
-	/// when `retry` is `true`.
-	pub async fn new_ext(endpoint: &str, retry: bool) -> Result<Client, Error> {
-		use super::reqwest_client::ReqwestClient;
-
-		let op = async || -> Result<Client, Error> {
-			let rpc_client = ReqwestClient::new(endpoint);
-			let rpc_client = RpcClient::new(rpc_client);
-
-			Self::from_rpc_client(rpc_client).await.map_err(|e| e.into())
-		};
-
-		with_retry_on_error(op, retry).await
-	}
-
-	/// Builds a client from an existing RPC transport.
-	///
-	/// # Errors
-	/// Propagates any failure returned by [`OnlineClient::new`].
-	pub async fn from_rpc_client(rpc_client: RpcClient) -> Result<Client, RpcError> {
-		let online_client = OnlineClient::new(&rpc_client).await?;
-		Self::from_components(rpc_client, online_client).await
-	}
-
-	/// Wraps pre-built components into a handy client handle.
-	///
-	/// Useful when creating mock transports for testing.
-	pub async fn from_components(rpc_client: RpcClient, online_client: OnlineClient) -> Result<Client, RpcError> {
-		Ok(Self { online_client, rpc_client })
-	}
-
-	#[cfg(feature = "tracing")]
-	/// Initializes tracing in plain text or JSON format.
-	///
-	/// Calling this more than once will return an error from `tracing_subscriber`.
-	pub fn init_tracing(json_format: bool) -> Result<(), TryInitError> {
-		use tracing_subscriber::util::SubscriberInitExt;
-
-		let builder = tracing_subscriber::fmt::SubscriberBuilder::default();
-		if json_format {
-			let builder = builder.json();
-			builder.finish().try_init()
-		} else {
-			builder.finish().try_init()
-		}
-	}
-
-	/// Hands back the underlying `OnlineClient` for advanced uses.
-	pub fn online_client(&self) -> OnlineClient {
-		self.online_client.clone()
-	}
-
-	/// Gives you a helper for crafting and sending transactions.
-	///
-	/// The returned [`TransactionApi`] clones this client and issues RPCs lazily.
-	pub fn tx(&self) -> TransactionApi {
-		TransactionApi(self.clone())
-	}
-
-	/// Builds a block helper rooted at the height or hash you pass in.
-	///
-	/// See [`BlockApi`] for available views (transactions, events, raw extrinsics).
-	pub fn block(&self, block_id: impl Into<HashStringNumber>) -> BlockApi {
-		BlockApi::new(self.clone(), block_id)
-	}
-
-	/// Provides low-level RPC helpers when you need finer control.
-	///
-	/// The returned [`ChainApi`] exposes retry toggles and raw RPC wrappers.
-	pub fn chain(&self) -> ChainApi {
-		ChainApi::new(self.clone())
-	}
-
-	/// Provides quick access to the best (head) block view.
-	///
-	/// Use the returned [`Best`] helper to fetch head metadata or block info repeatedly.
-	pub fn best(&self) -> Best {
-		Best::new(self.clone())
-	}
-
-	/// Provides quick access to finalized block information.
-	///
-	/// The returned [`Finalized`] helper exposes convenience methods similar to [`Best`].
-	pub fn finalized(&self) -> Finalized {
-		Finalized::new(self.clone())
-	}
-
-	/// Reports whether automatic retries are currently enabled.
-	pub fn is_global_retries_enabled(&self) -> bool {
-		self.online_client.is_global_retries_enabled()
-	}
-
-	/// Turns automatic retries on or off for new requests.
-	pub fn set_global_retries_enabled(&self, value: bool) {
-		self.online_client.set_global_retries_enabled(value);
-	}
-}
 
 /// Low-level RPC surface with fine-grained retry controls.
-pub struct ChainApi {
+pub struct Chain {
 	client: Client,
 	retry_on_error: Option<bool>,
 	retry_on_none: Option<bool>,
 }
-impl ChainApi {
-	/// Creates a helper for low-level RPC calls.
+impl Chain {
 	pub fn new(client: Client) -> Self {
 		Self { client, retry_on_error: None, retry_on_none: None }
 	}
@@ -179,10 +51,10 @@ impl ChainApi {
 	///
 	/// # Returns
 	/// - `Ok(Some(H256))` when the chain knows about the requested height.
-	/// - `Ok(None)` when the block does not exist (and `retry_on_none` is `false`).
+	/// - `Ok(None)` when the block does not exist
 	/// - `Err(RpcError)` when the underlying RPC call fails.
 	pub async fn block_hash(&self, block_height: Option<u32>) -> Result<Option<H256>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
 		let f = || async move { rpc::chain::get_block_hash(&self.client.rpc_client, block_height).await };
@@ -193,11 +65,11 @@ impl ChainApi {
 	///
 	/// # Returns
 	/// - `Ok(Some(AvailHeader))` when the header exists.
-	/// - `Ok(None)` when the header is missing (and `retry_on_none` is `false`).
+	/// - `Ok(None)` when the header is missing
 	/// - `Err(Error)` when conversions or RPC calls fail.
 	pub async fn block_header(&self, at: Option<impl Into<HashStringNumber>>) -> Result<Option<AvailHeader>, Error> {
-		async fn inner(r: &ChainApi, at: Option<HashStringNumber>) -> Result<Option<AvailHeader>, Error> {
-			let retry_on_error = r.should_retry();
+		async fn inner(r: &Chain, at: Option<HashStringNumber>) -> Result<Option<AvailHeader>, Error> {
+			let retry_on_error = r.should_retry_on_error();
 			let retry_on_none = r.retry_on_none.unwrap_or(false);
 
 			let at = if let Some(at) = at {
@@ -221,11 +93,14 @@ impl ChainApi {
 		inner(self, at.map(|x| x.into())).await
 	}
 
-	/// Retrieves the full legacy block when you need the old format.
+	/// Retrieves the full legacy block
 	///
-	/// Return semantics match [`ChainApi::block_hash`] regarding retries and `None` handling.
+	/// # Returns
+	/// - `Ok(Some(LegacyBlock))` when the block exists.
+	/// - `Ok(None)` when the block is missing
+	/// - `Err(Error)` when RPC calls fail.
 	pub async fn legacy_block(&self, at: Option<H256>) -> Result<Option<LegacyBlock>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 		let retry_on_none = self.retry_on_none.unwrap_or(false);
 
 		let f = || async move { rpc::chain::get_block(&self.client.rpc_client, at).await };
@@ -247,10 +122,10 @@ impl ChainApi {
 	/// Returns the latest account nonce as seen by the node.
 	///
 	/// # Errors
-	/// Returns `Err(Error)` when the account identifier is invalid or the RPC call fails.
+	/// Returns `Err(Error)` when the account id cannot be parsed or the RPC call fails.
 	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
-		async fn inner(r: &ChainApi, account_id: AccountIdLike) -> Result<u32, Error> {
-			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
+		async fn inner(r: &Chain, account_id: AccountIdLike) -> Result<u32, Error> {
+			let retry_on_error = r.should_retry_on_error();
 			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
 
 			let a = &account_id;
@@ -265,7 +140,7 @@ impl ChainApi {
 
 	/// Reports the free balance for an account at a specific block.
 	///
-	/// Errors mirror [`ChainApi::account_info`].
+	/// Errors mirror [`Chain::account_info`].
 	pub async fn account_balance(
 		&self,
 		account_id: impl Into<AccountIdLike>,
@@ -284,8 +159,8 @@ impl ChainApi {
 		account_id: impl Into<AccountIdLike>,
 		at: impl Into<HashStringNumber>,
 	) -> Result<AccountInfo, Error> {
-		async fn inner(r: &ChainApi, account_id: AccountIdLike, at: HashStringNumber) -> Result<AccountInfo, Error> {
-			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
+		async fn inner(r: &Chain, account_id: AccountIdLike, at: HashStringNumber) -> Result<AccountInfo, Error> {
+			let retry_on_error = r.should_retry_on_error();
 
 			let account_id: AccountId = account_id.try_into().map_err(UserError::Other)?;
 			let block_id: HashNumber = at.try_into().map_err(UserError::Other)?;
@@ -294,7 +169,7 @@ impl ChainApi {
 				HashNumber::Number(n) => r
 					.block_hash(Some(n))
 					.await?
-					.ok_or(UserError::Other("No block bound for that block height".into()))?,
+					.ok_or(UserError::Other("No block hash found for that block height".into()))?,
 			};
 
 			let a = &account_id;
@@ -319,7 +194,7 @@ impl ChainApi {
 	/// # Errors
 	/// Returns `Err(Error)` if the supplied identifier cannot be converted or RPC calls fail.
 	pub async fn block_state(&self, block_id: impl Into<HashStringNumber>) -> Result<BlockState, Error> {
-		async fn inner(r: &ChainApi, block_id: HashStringNumber) -> Result<BlockState, Error> {
+		async fn inner(r: &Chain, block_id: HashStringNumber) -> Result<BlockState, Error> {
 			let block_id = HashNumber::try_from(block_id).map_err(UserError::Other)?;
 			let chain_info = r.chain_info().await?;
 			let n = match block_id {
@@ -365,10 +240,13 @@ impl ChainApi {
 
 	/// Converts a block hash into its block height when possible.
 	///
-	/// Returns `Ok(None)` when the node does not recognise the hash and `retry_on_none` is `false`.
+	/// # Returns
+	/// - `Ok(Some(u32))` when the block height exists.
+	/// - `Ok(None)` when the block height is missing
+	/// - `Err(Error)` when RPC calls fail.
 	pub async fn block_height(&self, at: impl Into<HashString>) -> Result<Option<u32>, Error> {
-		async fn inner(r: &ChainApi, at: HashString) -> Result<Option<u32>, Error> {
-			let retry_on_error = r.retry_on_error.unwrap_or_else(|| r.client.is_global_retries_enabled());
+		async fn inner(r: &Chain, at: HashString) -> Result<Option<u32>, Error> {
+			let retry_on_error = r.should_retry_on_error();
 			let retry_on_none = r.retry_on_none.unwrap_or(false);
 
 			let at: H256 = at.try_into().map_err(UserError::Other)?;
@@ -380,19 +258,15 @@ impl ChainApi {
 	}
 
 	/// Returns the latest block info, either best or finalized.
-	///
-	/// This is a thin wrapper over `system_latest_block_info` with retry support.
 	pub async fn block_info(&self, use_best_block: bool) -> Result<BlockInfo, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 		let f = || async move { rpc::system::latest_block_info(&self.client.rpc_client, use_best_block).await };
 		with_retry_on_error(f, retry).await
 	}
 
 	/// Quick snapshot of both the best and finalized heads.
-	///
-	/// Mirrors `system_latest_chain_info`, exposing height/hash pairs for head and finalized.
 	pub async fn chain_info(&self) -> Result<ChainInfo, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let f = || async move { rpc::system::latest_chain_info(&self.client.rpc_client).await };
 		with_retry_on_error(f, retry).await
@@ -403,9 +277,9 @@ impl ChainApi {
 	/// # Errors
 	/// Returns `Err(RpcError)` when the node rejects the extrinsic or the RPC transport fails.
 	pub async fn submit(&self, tx: &avail_rust_core::GenericExtrinsic<'_>) -> Result<H256, RpcError> {
-		let retry = self.should_retry();
-
+		let retry = self.should_retry_on_error();
 		let encoded = tx.encode();
+
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
@@ -456,9 +330,9 @@ impl ChainApi {
 
 		let tx_extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
 		let tx_additional = avail_rust_core::ExtrinsicAdditional {
-			spec_version: self.client.online_client.spec_version(),
-			tx_version: self.client.online_client.transaction_version(),
-			genesis_hash: self.client.online_client.genesis_hash(),
+			spec_version: self.client.online_client().spec_version(),
+			tx_version: self.client.online_client().transaction_version(),
+			genesis_hash: self.client.online_client().genesis_hash(),
 			fork_hash: refined_options.mortality.block_hash,
 		};
 
@@ -499,9 +373,9 @@ impl ChainApi {
 
 		let tx_extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
 		let tx_additional = avail_rust_core::ExtrinsicAdditional {
-			spec_version: self.client.online_client.spec_version(),
-			tx_version: self.client.online_client.transaction_version(),
-			genesis_hash: self.client.online_client.genesis_hash(),
+			spec_version: self.client.online_client().spec_version(),
+			tx_version: self.client.online_client().transaction_version(),
+			genesis_hash: self.client.online_client().genesis_hash(),
 			fork_hash: refined_options.mortality.block_hash,
 		};
 
@@ -516,7 +390,7 @@ impl ChainApi {
 	///
 	/// Retries according to the helper's configuration before surfacing `Err(RpcError)`.
 	pub async fn state_call(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<String, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let f = || async move { rpc::state::call(&self.client.rpc_client, method, data, at).await };
 		with_retry_on_error(f, retry).await
@@ -524,7 +398,7 @@ impl ChainApi {
 
 	/// Downloads runtime metadata as bytes.
 	pub async fn state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let f = || async move { rpc::state::get_metadata(&self.client.rpc_client, at).await };
 		with_retry_on_error(f, retry).await
@@ -532,7 +406,7 @@ impl ChainApi {
 
 	/// Reads a storage entry, returning the raw bytes if present.
 	pub async fn state_get_storage(&self, key: &str, at: Option<H256>) -> Result<Option<Vec<u8>>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let f = || async move { rpc::state::get_storage(&self.client.rpc_client, key, at).await };
 		with_retry_on_error(f, retry).await
@@ -546,7 +420,7 @@ impl ChainApi {
 		start_key: Option<&str>,
 		at: Option<H256>,
 	) -> Result<Vec<String>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let f =
 			|| async move { rpc::state::get_keys_paged(&self.client.rpc_client, prefix, count, start_key, at).await };
@@ -564,11 +438,11 @@ impl ChainApi {
 		opts: rpc::ExtrinsicOpts,
 	) -> Result<Vec<ExtrinsicInfo>, Error> {
 		async fn inner(
-			r: &ChainApi,
+			r: &Chain,
 			block_id: HashStringNumber,
 			opts: &rpc::ExtrinsicOpts,
 		) -> Result<Vec<ExtrinsicInfo>, Error> {
-			let retry = r.should_retry();
+			let retry = r.should_retry_on_error();
 
 			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
 			let f = || async move { rpc::system::fetch_extrinsics_v1(&r.client.rpc_client, block_id, opts).await };
@@ -588,11 +462,11 @@ impl ChainApi {
 		opts: rpc::EventOpts,
 	) -> Result<Vec<BlockPhaseEvent>, Error> {
 		async fn inner(
-			r: &ChainApi,
+			r: &Chain,
 			block_id: HashStringNumber,
 			opts: &rpc::EventOpts,
 		) -> Result<Vec<BlockPhaseEvent>, Error> {
-			let retry = r.should_retry();
+			let retry = r.should_retry_on_error();
 
 			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
 			let at = match block_id {
@@ -617,7 +491,7 @@ impl ChainApi {
 	/// - `Ok(None)` when the runtime returns no justification.
 	/// - `Err(RpcError)` if decoding the response or the RPC call fails.
 	pub async fn grandpa_block_justification(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let f = || async move { rpc::grandpa::block_justification(&self.client.rpc_client, at).await };
 		let result = with_retry_on_error(f, retry).await?;
@@ -636,10 +510,10 @@ impl ChainApi {
 
 	/// Fetches a JSON GRANDPA justification for the given block number.
 	///
-	/// Return semantics mirror [`ChainApi::grandpa_block_justification`], but the payload is parsed
+	/// Return semantics mirror [`Chain::grandpa_block_justification`], but the payload is parsed
 	/// from JSON.
 	pub async fn grandpa_block_justification_json(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let f = || async move { rpc::grandpa::block_justification_json(&self.client.rpc_client, at).await };
 		let result = with_retry_on_error(f, retry).await?;
@@ -654,16 +528,28 @@ impl ChainApi {
 		Ok(Some(justification))
 	}
 
+	pub async fn rpc_raw_call<T: serde::de::DeserializeOwned>(
+		&self,
+		method: &str,
+		params: RpcParams,
+	) -> Result<T, RpcError> {
+		let retry = self.should_retry_on_error();
+
+		let p = &params;
+		let f = || async move { rpc::raw_call(&self.client.rpc_client, method, p.clone()).await };
+		with_retry_on_error(f, retry).await
+	}
+
 	/// Calls into the runtime API and decodes the answer for you.
-	pub async fn runtime_api_call<T: codec::Decode>(
+	pub async fn runtime_api_raw_call<T: codec::Decode>(
 		&self,
 		method: &str,
 		data: &[u8],
 		at: Option<H256>,
 	) -> Result<T, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
-		let f = || async move { runtime_api::call_raw(&self.client.rpc_client, method, data, at).await };
+		let f = || async move { runtime_api::raw_call(&self.client.rpc_client, method, data, at).await };
 		with_retry_on_error(f, retry).await
 	}
 
@@ -673,7 +559,7 @@ impl ChainApi {
 		extrinsic: Vec<u8>,
 		at: Option<H256>,
 	) -> Result<RuntimeDispatchInfo, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let ext = &extrinsic;
 		let f = || async move {
@@ -688,7 +574,7 @@ impl ChainApi {
 		extrinsic: Vec<u8>,
 		at: Option<H256>,
 	) -> Result<FeeDetails, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let ext = &extrinsic;
 		let f = || async move {
@@ -703,7 +589,7 @@ impl ChainApi {
 		call: Vec<u8>,
 		at: Option<H256>,
 	) -> Result<RuntimeDispatchInfo, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let c = &call;
 		let f = || async move {
@@ -718,7 +604,7 @@ impl ChainApi {
 		call: Vec<u8>,
 		at: Option<H256>,
 	) -> Result<FeeDetails, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let c = &call;
 		let f = || async move {
@@ -732,7 +618,7 @@ impl ChainApi {
 	/// # Errors
 	/// Returns `Err(RpcError)` when the KATE RPC call fails; respects the helper's retry policy.
 	pub async fn kate_block_length(&self, at: Option<H256>) -> Result<BlockLength, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let f = || async move { rpc::kate::block_length(&self.client.rpc_client, at).await };
 		with_retry_on_error(f, retry).await
@@ -747,7 +633,7 @@ impl ChainApi {
 		transaction_index: u32,
 		at: Option<H256>,
 	) -> Result<ProofResponse, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let f = || async move { rpc::kate::query_data_proof(&self.client.rpc_client, transaction_index, at).await };
 		with_retry_on_error(f, retry).await
@@ -758,7 +644,7 @@ impl ChainApi {
 	/// # Errors
 	/// Bubbles `Err(RpcError)` if the RPC call fails; retries follow the configured policy.
 	pub async fn kate_query_proof(&self, cells: Vec<Cell>, at: Option<H256>) -> Result<Vec<GDataProof>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let cells_ref = &cells;
 		let f = || async move { rpc::kate::query_proof(&self.client.rpc_client, cells_ref.clone(), at).await };
@@ -770,7 +656,7 @@ impl ChainApi {
 	/// # Errors
 	/// Propagates `Err(RpcError)` when the row query fails; adheres to the retry preference.
 	pub async fn kate_query_rows(&self, rows: Vec<u32>, at: Option<H256>) -> Result<Vec<GRow>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let rows_ref = &rows;
 		let f = || async move { rpc::kate::query_rows(&self.client.rpc_client, rows_ref.clone(), at).await };
@@ -786,7 +672,7 @@ impl ChainApi {
 		cells: Vec<Cell>,
 		at: Option<H256>,
 	) -> Result<Vec<(GMultiProof, GCellBlock)>, RpcError> {
-		let retry = self.should_retry();
+		let retry = self.should_retry_on_error();
 
 		let cells_ref = &cells;
 		let f = || async move { rpc::kate::query_multi_proof(&self.client.rpc_client, cells_ref.clone(), at).await };
@@ -805,314 +691,8 @@ impl ChainApi {
 		Ok(with_retry_on_error(f, retry_on_error).await?)
 	}
 
-	fn should_retry(&self) -> bool {
-		self.retry_on_error
-			.unwrap_or_else(|| self.client.is_global_retries_enabled())
-	}
-}
-
-/// Helper bound to the chain's best (head) block view.
-pub struct Best {
-	client: Client,
-	retry_on_error: Option<bool>,
-}
-impl Best {
-	/// Builds a helper focused on the best (head) block.
-	pub fn new(client: Client) -> Self {
-		Self { client, retry_on_error: None }
-	}
-
-	/// Lets you toggle automatic retries for the calls that follow.
-	pub fn retry_on(mut self, error: Option<bool>) -> Self {
-		self.retry_on_error = error;
-		self
-	}
-
-	/// Returns the current best block header.
-	///
-	/// # Errors
-	/// Returns `Err(Error)` when the head hash cannot be fetched or the header lookup fails.
-	pub async fn block_header(&self) -> Result<AvailHeader, Error> {
-		let block_hash = self.block_hash().await?;
-		let block_header = self
-			.client
-			.chain()
-			.retry_on(self.retry_on_error, Some(true))
-			.block_header(Some(block_hash))
-			.await?;
-		let Some(block_header) = block_header else {
-			return Err(RpcError::ExpectedData("Failed to fetch best block header".into()).into());
-		};
-
-		Ok(block_header)
-	}
-
-	/// Gives you a block handle for the best block.
-	pub async fn block(&self) -> Result<BlockApi, Error> {
-		let block_hash = self.block_hash().await?;
-		Ok(BlockApi::new(self.client.clone(), block_hash))
-	}
-
-	/// Returns height and hash for the best block.
-	///
-	/// Equivalent to `chain().block_info(true)` but respecting this helper's retry setting.
-	pub async fn block_info(&self) -> Result<BlockInfo, RpcError> {
-		self.client
-			.chain()
-			.retry_on(self.retry_on_error, Some(true))
-			.block_info(true)
-			.await
-	}
-
-	/// Returns the hash of the best block.
-	pub async fn block_hash(&self) -> Result<H256, RpcError> {
-		self.block_info().await.map(|x| x.hash)
-	}
-
-	/// Returns the height of the best block.
-	pub async fn block_height(&self) -> Result<u32, RpcError> {
-		self.block_info().await.map(|x| x.height)
-	}
-
-	/// Loads the legacy block view for the best block.
-	///
-	/// # Errors
-	/// Returns `Err(RpcError::ExpectedData)` when the node reports no legacy block for the head.
-	pub async fn legacy_block(&self) -> Result<LegacyBlock, RpcError> {
-		let block_hash = self.block_hash().await?;
-		let block = self
-			.client
-			.chain()
-			.retry_on(self.retry_on_error, Some(true))
-			.legacy_block(Some(block_hash))
-			.await?;
-		let Some(block) = block else {
-			return Err(RpcError::ExpectedData("Failed to fetch latest legacy block".into()));
-		};
-
-		Ok(block)
-	}
-
-	/// Returns the latest nonce for the account at the best block.
-	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
-		self.account_info(account_id).await.map(|v| v.nonce)
-	}
-
-	/// Returns the account balances at the best block.
-	pub async fn account_balance(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountData, Error> {
-		self.account_info(account_id).await.map(|x| x.data)
-	}
-
-	/// Returns the full account record at the best block.
-	///
-	/// # Errors
-	/// Mirrors [`ChainApi::account_info`].
-	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
-		let at = self.block_hash().await?;
-		self.client
-			.chain()
-			.retry_on(self.retry_on_error, Some(true))
-			.account_info(account_id, at)
-			.await
-	}
-
-	/// Returns true when best-block queries retry after RPC errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())
 	}
 }
-
-/// Helper bound to the chain's latest finalized block view.
-pub struct Finalized {
-	client: Client,
-	retry_on_error: Option<bool>,
-}
-
-impl Finalized {
-	/// Builds a helper focused on finalized blocks.
-	pub fn new(client: Client) -> Self {
-		Self { client, retry_on_error: None }
-	}
-
-	/// Lets you toggle automatic retries for the calls that follow.
-	pub fn retry_on(mut self, error: Option<bool>) -> Self {
-		self.retry_on_error = error;
-		self
-	}
-
-	/// Returns the latest finalized block header.
-	///
-	/// # Errors
-	/// Returns `Err(Error)` if fetching the hash or header fails.
-	pub async fn block_header(&self) -> Result<AvailHeader, Error> {
-		let block_hash = self.block_hash().await?;
-		let block_header = self
-			.client
-			.chain()
-			.retry_on(self.retry_on_error, Some(true))
-			.block_header(Some(block_hash))
-			.await?;
-		let Some(block_header) = block_header else {
-			return Err(RpcError::ExpectedData("Failed to fetch finalized block header".into()).into());
-		};
-
-		Ok(block_header)
-	}
-
-	/// Gives you a block handle for the latest finalized block.
-	pub async fn block(&self) -> Result<BlockApi, Error> {
-		let block_hash = self.block_hash().await?;
-		Ok(BlockApi::new(self.client.clone(), block_hash))
-	}
-
-	/// Returns height and hash for the latest finalized block.
-	///
-	/// Equivalent to `chain().block_info(false)` with retry controls preserved.
-	pub async fn block_info(&self) -> Result<BlockInfo, RpcError> {
-		self.client
-			.chain()
-			.retry_on(self.retry_on_error, self.retry_on_error)
-			.block_info(false)
-			.await
-	}
-
-	/// Returns the hash of the latest finalized block.
-	pub async fn block_hash(&self) -> Result<H256, RpcError> {
-		self.block_info().await.map(|x| x.hash)
-	}
-
-	/// Returns the height of the latest finalized block.
-	pub async fn block_height(&self) -> Result<u32, RpcError> {
-		self.block_info().await.map(|x| x.height)
-	}
-
-	/// Loads the legacy block view for the latest finalized block.
-	///
-	/// Returns `Err(RpcError::ExpectedData)` when the node does not provide a legacy block.
-	pub async fn legacy_block(&self) -> Result<LegacyBlock, RpcError> {
-		let block_hash = self.block_hash().await?;
-		let block = self
-			.client
-			.chain()
-			.retry_on(self.retry_on_error, Some(true))
-			.legacy_block(Some(block_hash))
-			.await?;
-		let Some(block) = block else {
-			return Err(RpcError::ExpectedData("Failed to fetch latest legacy block".into()));
-		};
-
-		Ok(block)
-	}
-
-	/// Returns the latest finalized nonce for the account.
-	pub async fn account_nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
-		self.account_info(account_id).await.map(|v| v.nonce)
-	}
-
-	/// Returns account balances from the latest finalized block.
-	pub async fn account_balance(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountData, Error> {
-		self.account_info(account_id).await.map(|x| x.data)
-	}
-
-	/// Returns the full account record from the latest finalized block.
-	///
-	/// Errors mirror [`ChainApi::account_info`].
-	pub async fn account_info(&self, account_id: impl Into<AccountIdLike>) -> Result<AccountInfo, Error> {
-		let at = self.block_hash().await?;
-		self.client
-			.chain()
-			.retry_on(self.retry_on_error, Some(true))
-			.account_info(account_id, at)
-			.await
-	}
-
-	/// Returns true when finalized-block queries retry after RPC errors.
-	pub fn should_retry_on_error(&self) -> bool {
-		self.retry_on_error
-			.unwrap_or_else(|| self.client.is_global_retries_enabled())
-	}
-}
-
-// use crate::{ExtrinsicEvent, ExtrinsicEvents, clients::Client, subxt_core::events::Phase};
-// use avail_rust_core::{H256, HashNumber, decoded_events::RawEvent, rpc::system::fetch_events};
-
-// pub const EVENTS_STORAGE_ADDRESS: &str = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
-
-// #[derive(Debug, Clone)]
-// pub struct HistoricalEvent {
-// 	pub phase: Phase,
-// 	// [Pallet_index, Variant_index, Event_data...]
-// 	pub bytes: RawEvent,
-// 	pub topics: Vec<H256>,
-// }
-
-// impl HistoricalEvent {
-// 	pub fn emitted_index(&self) -> (u8, u8) {
-// 		(self.bytes.pallet_index(), self.bytes.variant_index())
-// 	}
-
-// 	pub fn pallet_index(&self) -> u8 {
-// 		self.bytes.pallet_index()
-// 	}
-
-// 	pub fn variant_index(&self) -> u8 {
-// 		self.bytes.variant_index()
-// 	}
-
-// 	pub fn event_bytes(&self) -> &[u8] {
-// 		&self.bytes.0
-// 	}
-
-// 	pub fn event_data(&self) -> &[u8] {
-// 		self.bytes.event_data()
-// 	}
-// }
-
-// #[derive(Clone)]
-// pub struct EventClient {
-// 	client: Client,
-// }
-
-// impl EventClient {
-// 	pub fn new(client: Client) -> Self {
-// 		Self { client }
-// 	}
-
-// 	/// Use this function in case where `transaction_events` or `block_events` do not work.
-// 	/// Both mentioned functions require the runtime to have a specific runtime api available which
-// 	/// older blocks (runtime) do not have.
-// 	pub async fn historical_block_events(&self, at: H256) -> Result<Vec<HistoricalEvent>, RpcError> {
-// 		use crate::{config::AvailConfig, subxt_core::events::Events};
-
-// 		let entries = self
-// 			.client
-// 			.rpc()
-// 			.state_get_storage(EVENTS_STORAGE_ADDRESS, Some(at))
-// 			.await?;
-// 		let Some(event_bytes) = entries else {
-// 			return Ok(Vec::new());
-// 		};
-
-// 		let mut result: Vec<HistoricalEvent> = Vec::with_capacity(5);
-// 		let raw_events = Events::<AvailConfig>::decode_from(event_bytes, self.client.online_client().metadata());
-// 		for raw in raw_events.iter() {
-// 			let Ok(raw) = raw else {
-// 				continue;
-// 			};
-// 			let mut bytes: Vec<u8> = Vec::with_capacity(raw.field_bytes().len() + 2);
-// 			bytes.push(raw.pallet_index());
-// 			bytes.push(raw.variant_index());
-// 			bytes.append(&mut raw.field_bytes().to_vec());
-
-// 			let Ok(bytes) = RawEvent::try_from(bytes) else {
-// 				continue;
-// 			};
-
-// 			let value = HistoricalEvent { phase: raw.phase(), bytes, topics: raw.topics().to_vec() };
-// 			result.push(value);
-// 		}
-
-// 		Ok(result)
-// 	}
-// }
