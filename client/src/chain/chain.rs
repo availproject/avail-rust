@@ -387,8 +387,6 @@ impl Chain {
 	}
 
 	/// Runs a `state_call` and returns the raw response string.
-	///
-	/// Retries according to the helper's configuration before surfacing `Err(RpcError)`.
 	pub async fn state_call(&self, method: &str, data: &[u8], at: Option<H256>) -> Result<String, RpcError> {
 		let retry = self.should_retry_on_error();
 
@@ -428,106 +426,7 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
-	/// Collects extrinsics from a block using the provided filters.
-	///
-	/// # Errors
-	/// Returns `Err(Error)` when the block id cannot be decoded or the RPC request fails.
-	pub async fn system_fetch_extrinsics(
-		&self,
-		block_id: impl Into<HashStringNumber>,
-		opts: rpc::ExtrinsicOpts,
-	) -> Result<Vec<ExtrinsicInfo>, Error> {
-		async fn inner(
-			r: &Chain,
-			block_id: HashStringNumber,
-			opts: &rpc::ExtrinsicOpts,
-		) -> Result<Vec<ExtrinsicInfo>, Error> {
-			let retry = r.should_retry_on_error();
-
-			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
-			let f = || async move { rpc::system::fetch_extrinsics_v1(&r.client.rpc_client, block_id, opts).await };
-			with_retry_on_error(f, retry).await.map_err(|e| e.into())
-		}
-
-		inner(self, block_id.into(), &opts).await
-	}
-
-	/// Pulls events for a block with optional filtering.
-	///
-	/// # Errors
-	/// Returns `Err(Error)` when the block id cannot be resolved or the RPC call fails.
-	pub async fn system_fetch_events(
-		&self,
-		at: impl Into<HashStringNumber>,
-		opts: rpc::EventOpts,
-	) -> Result<Vec<BlockPhaseEvent>, Error> {
-		async fn inner(
-			r: &Chain,
-			block_id: HashStringNumber,
-			opts: &rpc::EventOpts,
-		) -> Result<Vec<BlockPhaseEvent>, Error> {
-			let retry = r.should_retry_on_error();
-
-			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
-			let at = match block_id {
-				HashNumber::Hash(x) => x,
-				HashNumber::Number(x) => {
-					let hash = r.block_hash(Some(x)).await?;
-					hash.ok_or(RpcError::ExpectedData("Failed to fetch block height".into()))?
-				},
-			};
-
-			let f = || async move { rpc::system::fetch_events_v1(&r.client.rpc_client, at, opts).await };
-			with_retry_on_error(f, retry).await.map_err(|e| e.into())
-		}
-
-		inner(self, at.into(), &opts).await
-	}
-
-	/// Fetches a binary GRANDPA justification for the given block number.
-	///
-	/// # Returns
-	/// - `Ok(Some(GrandpaJustification))` when a justification is present.
-	/// - `Ok(None)` when the runtime returns no justification.
-	/// - `Err(RpcError)` if decoding the response or the RPC call fails.
-	pub async fn grandpa_block_justification(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
-		let retry = self.should_retry_on_error();
-
-		let f = || async move { rpc::grandpa::block_justification(&self.client.rpc_client, at).await };
-		let result = with_retry_on_error(f, retry).await?;
-
-		let Some(result) = result else {
-			return Ok(None);
-		};
-
-		let justification = const_hex::decode(result.trim_start_matches("0x"))
-			.map_err(|x| RpcError::MalformedResponse(x.to_string()))?;
-
-		let justification = GrandpaJustification::decode(&mut justification.as_slice());
-		let justification = justification.map_err(|e| RpcError::MalformedResponse(e.to_string()))?;
-		Ok(Some(justification))
-	}
-
-	/// Fetches a JSON GRANDPA justification for the given block number.
-	///
-	/// Return semantics mirror [`Chain::grandpa_block_justification`], but the payload is parsed
-	/// from JSON.
-	pub async fn grandpa_block_justification_json(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
-		let retry = self.should_retry_on_error();
-
-		let f = || async move { rpc::grandpa::block_justification_json(&self.client.rpc_client, at).await };
-		let result = with_retry_on_error(f, retry).await?;
-
-		let Some(result) = result else {
-			return Ok(None);
-		};
-
-		let justification: Result<GrandpaJustification, _> = serde_json::from_str(result.as_str());
-		let justification: GrandpaJustification =
-			justification.map_err(|e| RpcError::MalformedResponse(e.to_string()))?;
-		Ok(Some(justification))
-	}
-
+	/// Performs a raw RPC invocation against the connected node and deserializes the response.
 	pub async fn rpc_raw_call<T: serde::de::DeserializeOwned>(
 		&self,
 		method: &str,
@@ -553,7 +452,30 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
-	/// Estimates fees for a signed extrinsic.
+	/// Fetches GRANDPA justification for the given block number.
+	///
+	/// # Returns
+	/// - `Ok(Some(GrandpaJustification))` when a justification is present.
+	/// - `Ok(None)` when the runtime returns no justification.
+	/// - `Err(RpcError)` if decoding the response or the RPC call fails.
+	pub async fn grandpa_block_justification(&self, at: u32) -> Result<Option<GrandpaJustification>, RpcError> {
+		let retry = self.should_retry_on_error();
+
+		let f = || async move { rpc::grandpa::block_justification(&self.client.rpc_client, at).await };
+		let result = with_retry_on_error(f, retry).await?;
+
+		let Some(result) = result else {
+			return Ok(None);
+		};
+
+		let justification = const_hex::decode(result.trim_start_matches("0x"))
+			.map_err(|x| RpcError::MalformedResponse(x.to_string()))?;
+
+		let justification = GrandpaJustification::decode(&mut justification.as_slice());
+		let justification = justification.map_err(|e| RpcError::MalformedResponse(e.to_string()))?;
+		Ok(Some(justification))
+	}
+
 	pub async fn transaction_payment_query_info(
 		&self,
 		extrinsic: Vec<u8>,
@@ -568,7 +490,6 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
-	/// Breaks down the fee details for a signed extrinsic.
 	pub async fn transaction_payment_query_fee_details(
 		&self,
 		extrinsic: Vec<u8>,
@@ -583,7 +504,6 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
-	/// Estimates fees for an unsigned call payload.
 	pub async fn transaction_payment_query_call_info(
 		&self,
 		call: Vec<u8>,
@@ -598,7 +518,6 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
-	/// Breaks down the fee details for an unsigned call payload.
 	pub async fn transaction_payment_query_call_fee_details(
 		&self,
 		call: Vec<u8>,
@@ -689,6 +608,62 @@ impl Chain {
 			|| async move { rpc::blob::submit_blob(&self.client.rpc_client, metadata_signed_transaction, blob).await };
 
 		Ok(with_retry_on_error(f, retry_on_error).await?)
+	}
+
+	/// Fetches extrinsics from a block using the provided filters.
+	///
+	/// # Errors
+	/// Returns `Err(Error)` when the block id cannot be decoded or the RPC request fails.
+	pub async fn system_fetch_extrinsics(
+		&self,
+		block_id: impl Into<HashStringNumber>,
+		opts: rpc::ExtrinsicOpts,
+	) -> Result<Vec<ExtrinsicInfo>, Error> {
+		async fn inner(
+			r: &Chain,
+			block_id: HashStringNumber,
+			opts: &rpc::ExtrinsicOpts,
+		) -> Result<Vec<ExtrinsicInfo>, Error> {
+			let retry = r.should_retry_on_error();
+
+			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
+			let f = || async move { rpc::system::fetch_extrinsics_v1(&r.client.rpc_client, block_id, opts).await };
+			with_retry_on_error(f, retry).await.map_err(|e| e.into())
+		}
+
+		inner(self, block_id.into(), &opts).await
+	}
+
+	/// Pulls events for a block with optional filtering.
+	///
+	/// # Errors
+	/// Returns `Err(Error)` when the block id cannot be resolved or the RPC call fails.
+	pub async fn system_fetch_events(
+		&self,
+		at: impl Into<HashStringNumber>,
+		opts: rpc::EventOpts,
+	) -> Result<Vec<BlockPhaseEvent>, Error> {
+		async fn inner(
+			r: &Chain,
+			block_id: HashStringNumber,
+			opts: &rpc::EventOpts,
+		) -> Result<Vec<BlockPhaseEvent>, Error> {
+			let retry = r.should_retry_on_error();
+
+			let block_id: HashNumber = block_id.try_into().map_err(UserError::Decoding)?;
+			let at = match block_id {
+				HashNumber::Hash(x) => x,
+				HashNumber::Number(x) => {
+					let hash = r.block_hash(Some(x)).await?;
+					hash.ok_or(RpcError::ExpectedData("Failed to fetch block height".into()))?
+				},
+			};
+
+			let f = || async move { rpc::system::fetch_events_v1(&r.client.rpc_client, at, opts).await };
+			with_retry_on_error(f, retry).await.map_err(|e| e.into())
+		}
+
+		inner(self, at.into(), &opts).await
 	}
 
 	pub fn should_retry_on_error(&self) -> bool {

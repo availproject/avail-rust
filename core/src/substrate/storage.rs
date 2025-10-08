@@ -451,6 +451,7 @@ impl<T: StorageMap> StorageMapIterator<T> {
 		let Some(storage_value) = storage_value else {
 			return Ok(None);
 		};
+
 		let storage_value =
 			T::decode_storage_value(&mut storage_value.as_slice()).map_err(|x| Error::DecodingFailed(x.to_string()))?;
 
