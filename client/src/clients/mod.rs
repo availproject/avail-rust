@@ -1,6 +1,6 @@
 pub mod online_client;
 
-#[cfg(test)]
+#[cfg(all(feature = "reqwest", any(test, feature = "mocks")))]
 pub mod mock_client;
 
 #[cfg(feature = "reqwest")]

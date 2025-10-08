@@ -7,9 +7,7 @@ use codec::Encode;
 use serde_json::value::RawValue;
 use std::sync::{Arc, Mutex};
 
-#[cfg(test)]
 use avail_rust_core::rpc::system::fetch_extrinsics::ExtrinsicInformation;
-
 #[derive(Clone)]
 pub struct MockClient {
 	org: ReqwestClient,

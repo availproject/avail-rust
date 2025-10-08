@@ -23,7 +23,7 @@ resolver = "2"
 
 [workspace.package]
 edition = "2024"
-version = "0.4.0"
+version = "0.4.1-rc.1"
 license = "MIT"
 repository = "https://github.com/availproject/avail-rust"
 
