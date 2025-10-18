@@ -12,7 +12,7 @@ following assumptions hold**:
    transaction was included.
 
 2. **The runtime exposes `system_fetch_extrinsics_v1`** – `receipt()` ultimately
-   calls `BlockApi::raw_ext().get` which depends on this runtime API. Older
+   calls `Block::encoded().get` which depends on this runtime API. Older
    runtimes or archive nodes without the extension will surface `Error`.
 
 3. **The transaction lands within its mortality window** – the search starts at

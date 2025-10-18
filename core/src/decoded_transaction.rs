@@ -19,7 +19,7 @@ pub trait TransactionEncodable {
 	fn to_call(&self) -> Vec<u8>;
 }
 
-pub trait TransactionDecodable: Sized {
+pub trait ExtrinsicDecodable: Sized {
 	fn from_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Result<Self, String>;
 	fn from_ext<'a>(call: impl Into<StringOrBytes<'a>>) -> Result<Self, String>;
 }
@@ -35,7 +35,7 @@ impl<T: HasHeader + Encode> TransactionEncodable for T {
 	}
 }
 
-impl<T: HasHeader + Decode> TransactionDecodable for T {
+impl<T: HasHeader + Decode> ExtrinsicDecodable for T {
 	fn from_call<'a>(call: impl Into<StringOrBytes<'a>>) -> Result<T, String> {
 		fn inner<T: HasHeader + Decode>(call: StringOrBytes) -> Result<T, String> {
 			let call: &[u8] = match &call {
@@ -84,7 +84,7 @@ impl<T: HasHeader + Decode> TransactionDecodable for T {
 }
 
 #[derive(Clone)]
-pub struct RawExtrinsic {
+pub struct EncodedExtrinsic {
 	/// The signature, address, number of extrinsics have come before from
 	/// the same signer and an era describing the longevity of this transaction,
 	/// if this is a signed extrinsic.
@@ -93,7 +93,7 @@ pub struct RawExtrinsic {
 	pub call: Vec<u8>,
 }
 
-impl<'a> TryFrom<StringOrBytes<'a>> for RawExtrinsic {
+impl<'a> TryFrom<StringOrBytes<'a>> for EncodedExtrinsic {
 	type Error = String;
 
 	fn try_from(value: StringOrBytes<'a>) -> Result<Self, Self::Error> {
@@ -106,7 +106,7 @@ impl<'a> TryFrom<StringOrBytes<'a>> for RawExtrinsic {
 	}
 }
 
-impl TryFrom<Vec<u8>> for RawExtrinsic {
+impl TryFrom<Vec<u8>> for EncodedExtrinsic {
 	type Error = String;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -114,7 +114,7 @@ impl TryFrom<Vec<u8>> for RawExtrinsic {
 	}
 }
 
-impl TryFrom<&Vec<u8>> for RawExtrinsic {
+impl TryFrom<&Vec<u8>> for EncodedExtrinsic {
 	type Error = String;
 
 	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
@@ -122,7 +122,7 @@ impl TryFrom<&Vec<u8>> for RawExtrinsic {
 	}
 }
 
-impl TryFrom<&[u8]> for RawExtrinsic {
+impl TryFrom<&[u8]> for EncodedExtrinsic {
 	type Error = String;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
@@ -131,7 +131,7 @@ impl TryFrom<&[u8]> for RawExtrinsic {
 	}
 }
 
-impl TryFrom<String> for RawExtrinsic {
+impl TryFrom<String> for EncodedExtrinsic {
 	type Error = String;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -139,7 +139,7 @@ impl TryFrom<String> for RawExtrinsic {
 	}
 }
 
-impl TryFrom<&str> for RawExtrinsic {
+impl TryFrom<&str> for EncodedExtrinsic {
 	type Error = String;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -151,7 +151,7 @@ impl TryFrom<&str> for RawExtrinsic {
 	}
 }
 
-impl Decode for RawExtrinsic {
+impl Decode for EncodedExtrinsic {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		// This is a little more complicated than usual since the binary format must be compatible
 		// with SCALE's generic `Vec<u8>` type. Basically this just means accepting that there
@@ -183,7 +183,7 @@ impl Decode for RawExtrinsic {
 	}
 }
 
-impl Encode for RawExtrinsic {
+impl Encode for EncodedExtrinsic {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		let mut encoded_tx_inner = Vec::new();
 		if let Some(signed) = &self.signature {
@@ -203,7 +203,7 @@ impl Encode for RawExtrinsic {
 	}
 }
 
-impl Serialize for RawExtrinsic {
+impl Serialize for EncodedExtrinsic {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -213,7 +213,7 @@ impl Serialize for RawExtrinsic {
 	}
 }
 
-impl<'a> Deserialize<'a> for RawExtrinsic {
+impl<'a> Deserialize<'a> for EncodedExtrinsic {
 	fn deserialize<D>(de: D) -> Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'a>,
@@ -262,7 +262,7 @@ impl<T: HasHeader + Decode> TryFrom<&[u8]> for SignedExtrinsic<T> {
 	type Error = String;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let ext = RawExtrinsic::try_from(value)?;
+		let ext = EncodedExtrinsic::try_from(value)?;
 		Self::try_from(ext)
 	}
 }
@@ -287,25 +287,25 @@ impl<T: HasHeader + Decode> TryFrom<&str> for SignedExtrinsic<T> {
 	type Error = String;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
-		let ext = RawExtrinsic::try_from(value)?;
+		let ext = EncodedExtrinsic::try_from(value)?;
 		Self::try_from(ext)
 	}
 }
 
-impl<T: HasHeader + Decode> TryFrom<RawExtrinsic> for SignedExtrinsic<T> {
+impl<T: HasHeader + Decode> TryFrom<EncodedExtrinsic> for SignedExtrinsic<T> {
 	type Error = String;
 
-	fn try_from(value: RawExtrinsic) -> Result<Self, Self::Error> {
+	fn try_from(value: EncodedExtrinsic) -> Result<Self, Self::Error> {
 		let signature = value.signature.ok_or("Extrinsic has no signature")?;
 		let call = T::from_call(&value.call)?;
 		Ok(Self { signature, call })
 	}
 }
 
-impl<T: HasHeader + Decode> TryFrom<&RawExtrinsic> for SignedExtrinsic<T> {
+impl<T: HasHeader + Decode> TryFrom<&EncodedExtrinsic> for SignedExtrinsic<T> {
 	type Error = String;
 
-	fn try_from(value: &RawExtrinsic) -> Result<Self, Self::Error> {
+	fn try_from(value: &EncodedExtrinsic) -> Result<Self, Self::Error> {
 		let signature = value.signature.as_ref().ok_or("Extrinsic has no signature")?.clone();
 		let call = T::from_call(&value.call)?;
 		Ok(Self { signature, call })
@@ -351,7 +351,7 @@ impl<T: HasHeader + Decode> TryFrom<&[u8]> for Extrinsic<T> {
 	type Error = String;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let ext = RawExtrinsic::try_from(value)?;
+		let ext = EncodedExtrinsic::try_from(value)?;
 		Self::try_from(ext)
 	}
 }
@@ -376,23 +376,23 @@ impl<T: HasHeader + Decode> TryFrom<&str> for Extrinsic<T> {
 	type Error = String;
 
 	fn try_from(value: &str) -> Result<Self, Self::Error> {
-		let ext = RawExtrinsic::try_from(value)?;
+		let ext = EncodedExtrinsic::try_from(value)?;
 		Self::try_from(ext)
 	}
 }
 
-impl<T: HasHeader + Decode> TryFrom<RawExtrinsic> for Extrinsic<T> {
+impl<T: HasHeader + Decode> TryFrom<EncodedExtrinsic> for Extrinsic<T> {
 	type Error = String;
 
-	fn try_from(value: RawExtrinsic) -> Result<Self, Self::Error> {
+	fn try_from(value: EncodedExtrinsic) -> Result<Self, Self::Error> {
 		Self::try_from(&value)
 	}
 }
 
-impl<T: HasHeader + Decode> TryFrom<&RawExtrinsic> for Extrinsic<T> {
+impl<T: HasHeader + Decode> TryFrom<&EncodedExtrinsic> for Extrinsic<T> {
 	type Error = String;
 
-	fn try_from(value: &RawExtrinsic) -> Result<Self, Self::Error> {
+	fn try_from(value: &EncodedExtrinsic) -> Result<Self, Self::Error> {
 		let call = T::from_call(&value.call)?;
 		Ok(Self { signature: value.signature.clone(), call })
 	}
@@ -425,7 +425,7 @@ pub mod test {
 		let encoded_tx = tx.encode();
 
 		// Opaque Transaction
-		let opaque = RawExtrinsic::try_from(&encoded_tx).unwrap();
+		let opaque = EncodedExtrinsic::try_from(&encoded_tx).unwrap();
 		let opaque_encoded = opaque.encode();
 
 		assert_eq!(encoded_tx, opaque_encoded);
@@ -465,12 +465,12 @@ pub mod test {
 		assert_eq!(encoded_tx, tx_deserialized.encode());
 
 		// Opaque Serialized
-		let opaque = RawExtrinsic::try_from(&encoded_tx).unwrap();
+		let opaque = EncodedExtrinsic::try_from(&encoded_tx).unwrap();
 		let serialized = serde_json::to_string(&opaque).unwrap();
 		assert_eq!(serialized.trim_matches('"'), expected_serialized);
 
 		// Opaque Deserialized
-		let opaque_deserialized: RawExtrinsic = serde_json::from_str(&serialized).unwrap();
+		let opaque_deserialized: EncodedExtrinsic = serde_json::from_str(&serialized).unwrap();
 		assert_eq!(encoded_tx, opaque_deserialized.encode());
 	} */
 }

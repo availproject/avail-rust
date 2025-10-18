@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block_api::{BlockEvents, BlockWithTx},
+	block::{Events, SignedExtrinsics},
 	error::Error,
 	prelude::*,
 };
@@ -20,7 +20,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// CreateApplicationKey
 	{
-		let block = BlockWithTx::new(client.clone(), 1783406);
+		let block = SignedExtrinsics::new(client.clone(), 1783406);
 
 		let submittable = client.tx().data_availability().create_application_key("kraken");
 		let expected_call = CreateApplicationKey::from_call(&submittable.call.encode()).unwrap();
@@ -30,7 +30,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Submit Data
 	{
-		let block = BlockWithTx::new(client.clone(), 0);
+		let block = SignedExtrinsics::new(client.clone(), 0);
 
 		let submittable = client
 			.tx()
@@ -47,7 +47,7 @@ pub async fn event_test() -> Result<(), Error> {
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 
 	// ApplicationKeyCreated
-	let block = BlockEvents::new(client.clone(), 1783406);
+	let block = Events::new(client.clone(), 1783406);
 
 	let events = block.ext(1).await?.unwrap();
 	let owner = AccountId::from_str("0x268d78a6783f236eca1e54e8053aa42d8bd138d549e2473c898b482e270f2c56").unwrap();
@@ -56,7 +56,7 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// DataSubmitted
-	let block = BlockEvents::new(client.clone(), 1861947);
+	let block = Events::new(client.clone(), 1861947);
 
 	let events = block.ext(1).await?.unwrap();
 	let data_hash = H256::from_str("0x04771cf2fabb927e3a3bbbc1096c9ad85d5e3c98ffdc9c26c574e6a079fb3914").unwrap();

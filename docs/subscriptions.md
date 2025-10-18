@@ -10,7 +10,7 @@ practices.
 - `Sub` – lazy subscription factory that tracks either the finalized or best
   chain. It controls the polling interval, starting height, and retry policy.
 - `BlockSub`, `LegacyBlockSub` – stream block handles or legacy blocks.
-- `BlockEventsSub`, `TransactionSub`, `ExtrinsicSub`, `RawExtrinsicSub` – stream
+- `BlockEventsSub`, `TransactionSub`, `ExtrinsicSub`, `EncodedExtrinsicSub` – stream
   filtered data per block.
 - `GrandpaJustification{,Json}Sub` – stream GRANDPA justifications.
 

@@ -21,7 +21,7 @@ pub use substrate::{
 	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
 };
 
-pub use decoded_transaction::{Extrinsic, HasHeader, RawExtrinsic, TransactionDecodable};
+pub use decoded_transaction::{EncodedExtrinsic, Extrinsic, ExtrinsicDecodable, HasHeader};
 pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
 pub use rpc::{EncodeSelector, Error as RpcError};

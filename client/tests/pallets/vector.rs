@@ -1,4 +1,4 @@
-use avail_rust_client::{block_api::BlockWithTx, error::Error, prelude::*};
+use avail_rust_client::{block::SignedExtrinsics, error::Error, prelude::*};
 use avail_rust_core::avail::vector::{
 	tx::{Execute, FailedSendMessageTxs, SendMessage},
 	types::{AddressedMessage, Message},
@@ -15,7 +15,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// SendMessage
 	{
-		let block = BlockWithTx::new(client.clone(), 1903463);
+		let block = SignedExtrinsics::new(client.clone(), 1903463);
 
 		let asset_id = H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap();
 		let message = Message::FungibleToken { asset_id, amount: 25800000000000000000000 };
@@ -31,7 +31,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Execute
 	{
-		let block = BlockWithTx::new(client.clone(), 1903968);
+		let block = SignedExtrinsics::new(client.clone(), 1903968);
 
 		let asset_id = H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap();
 		let message = Message::FungibleToken { asset_id, amount: 2936130000000000000000 };
@@ -83,7 +83,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// SendMessage
 	{
-		let block = BlockWithExt::new(client.clone(), 1381297);
+		let block = block::SignedExtrinsics::new(client.clone(), 1381297);
 
 		let submittable = client.tx().vector().failed_send_message_txs(vec![]);
 		let expected_call = FailedSendMessageTxs::from_call(&submittable.call.encode()).unwrap();

@@ -2,48 +2,47 @@
 
 use crate::{
 	BlockInfo, Client, Sub,
-	block_api::{
-		BlockExtOptionsExpanded, BlockExtOptionsSimple, BlockExtrinsic, BlockRawExtrinsic, BlockTransaction,
-		BlockWithExt, BlockWithRawExt, BlockWithTx,
+	block::{
+		EncodedExtrinsic, EncodedExtrinsics, Extrinsic, Extrinsics, ExtrinsicsOpts, SignedExtrinsic, SignedExtrinsics,
 	},
 };
 use avail_rust_core::HasHeader;
 use codec::Decode;
 use std::{marker::PhantomData, time::Duration};
 
-/// Subscription that mirrors [`Sub`] but yields decoded transactions via [`BlockWithTx`].
+/// Subscription that mirrors [`Sub`] but yields decoded transactions via [`SignedExtrinsics`].
 ///
 /// Blocks that do not produce transactions matching the provided options are skipped automatically,
 /// ensuring callers only handle meaningful batches.
 #[derive(Clone)]
-pub struct TransactionSub<T: HasHeader + Decode> {
+pub struct SignedExtrinsicSub<T: HasHeader + Decode> {
 	sub: Sub,
-	opts: BlockExtOptionsSimple,
+	opts: ExtrinsicsOpts,
 	_phantom: PhantomData<T>,
 }
 
-impl<T: HasHeader + Decode> TransactionSub<T> {
-	/// Creates a new [`TransactionSub`] subscription.
+impl<T: HasHeader + Decode> SignedExtrinsicSub<T> {
+	/// Creates a new [`SignedExtrinsicSub`] subscription.
 	///
-	/// The client is cloned and no network calls are performed until [`TransactionSub::next`] is
+	/// The client is cloned and no network calls are performed until [`SignedExtrinsicSub::next`] is
 	/// awaited. `opts` controls which transactions are retrieved from each block.
-	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
+	pub fn new(client: Client, opts: ExtrinsicsOpts) -> Self {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
 	/// Returns the next set of block transactions and the corresponding [`BlockInfo`].
 	///
 	/// # Returns
-	/// - `Ok((Vec<BlockTransaction<T>>, BlockInfo))` when a block with matching transactions is found;
+	/// - `Ok((Vec<SignedExtrinsic<T>>, BlockInfo))` when a block with matching transactions is found;
 	///   the vector is guaranteed to be non-empty.
 	/// - `Err(crate::Error)` when fetching fails. The cursor rewinds to the same block so a subsequent
 	///   call can retry.
 	///
 	/// On success the subscription advances to the next block height.
-	pub async fn next(&mut self) -> Result<(Vec<BlockTransaction<T>>, BlockInfo), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<SignedExtrinsic<T>>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
-			let mut block = BlockWithTx::new(self.sub.client_ref().clone(), info.hash);
+			let mut block = SignedExtrinsics::new(self.sub.client_ref().clone(), info.hash);
 			block.set_retry_on_error(Some(self.sub.should_retry_on_error()));
 
 			let txs = match block.all::<T>(self.opts.clone()).await {
@@ -63,9 +62,9 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		}
 	}
 
-	/// Replaces the transaction query options used on subsequent calls to [`TransactionSub::next`].
+	/// Replaces the transaction query options used on subsequent calls to [`SignedExtrinsicSub::next`].
 	/// The change takes effect immediately.
-	pub fn set_opts(&mut self, value: BlockExtOptionsSimple) {
+	pub fn set_opts(&mut self, value: ExtrinsicsOpts) {
 		self.opts = value;
 	}
 
@@ -75,7 +74,7 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 		self.sub.use_best_block(value);
 	}
 
-	/// Jump the cursor to a specific starting height. The next call to [`TransactionSub::next`] begins
+	/// Jump the cursor to a specific starting height. The next call to [`SignedExtrinsicSub::next`] begins
 	/// evaluating from `value`.
 	pub fn set_block_height(&mut self, value: u32) {
 		self.sub.set_block_height(value);
@@ -102,14 +101,14 @@ impl<T: HasHeader + Decode> TransactionSub<T> {
 	}
 }
 
-/// Subscription that mirrors [`Sub`] but yields decoded extrinsics via [`BlockWithExt`].
+/// Subscription that mirrors [`Sub`] but yields decoded extrinsics via [`Extrinsics`].
 ///
 /// Blocks without matching extrinsics are skipped so every returned item contains data along with
 /// its [`BlockInfo`].
 #[derive(Clone)]
 pub struct ExtrinsicSub<T: HasHeader + Decode> {
 	sub: Sub,
-	opts: BlockExtOptionsSimple,
+	opts: ExtrinsicsOpts,
 	_phantom: PhantomData<T>,
 }
 
@@ -117,21 +116,21 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 	/// Creates a new [`ExtrinsicSub`] subscription.
 	///
 	/// No network calls are issued until the first [`ExtrinsicSub::next`] invocation.
-	pub fn new(client: Client, opts: BlockExtOptionsSimple) -> Self {
+	pub fn new(client: Client, opts: ExtrinsicsOpts) -> Self {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
 	/// Returns the next collection of extrinsics and its [`BlockInfo`].
 	///
 	/// # Returns
-	/// - `Ok((Vec<BlockExtrinsic<T>>, BlockInfo))` when a block contains extrinsics matching the
+	/// - `Ok((Vec<Extrinsic<T>>, BlockInfo))` when a block contains extrinsics matching the
 	///   configured options.
 	/// - `Err(crate::Error)` when the RPC query fails. The internal cursor rewinds so a retry will re-
 	///   attempt the same block.
-	pub async fn next(&mut self) -> Result<(Vec<BlockExtrinsic<T>>, BlockInfo), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<Extrinsic<T>>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
-			let mut block = BlockWithExt::new(self.sub.client_ref().clone(), info.hash);
+			let mut block = Extrinsics::new(self.sub.client_ref().clone(), info.hash);
 			block.set_retry_on_error(Some(self.sub.should_retry_on_error()));
 
 			let txs = match block.all::<T>(self.opts.clone()).await {
@@ -177,37 +176,37 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 	}
 }
 
-/// Subscription that mirrors [`Sub`] but provides raw extrinsic payloads via [`BlockWithRawExt`].
+/// Subscription that mirrors [`Sub`] but provides raw extrinsic payloads via [`EncodedExtrinsics`].
 ///
 /// Useful when you want the raw data from the extrinsic rpc.
 /// Blocks without matching extrinsics are skipped so every returned item contains data along with
 /// its [`BlockInfo`].
 #[derive(Clone)]
-pub struct RawExtrinsicSub {
+pub struct EncodedExtrinsicSub {
 	sub: Sub,
-	opts: BlockExtOptionsExpanded,
+	opts: ExtrinsicsOpts,
 }
 
-impl RawExtrinsicSub {
-	/// Creates a new [`RawExtrinsicSub`] subscription.
+impl EncodedExtrinsicSub {
+	/// Creates a new [`EncodedExtrinsicSub`] subscription.
 	///
 	/// The supplied options control filters and encoding preferences. No network calls are made until
-	/// [`RawExtrinsicSub::next`] is awaited.
-	pub fn new(client: Client, opts: BlockExtOptionsExpanded) -> Self {
+	/// [`EncodedExtrinsicSub::next`] is awaited.
+	pub fn new(client: Client, opts: ExtrinsicsOpts) -> Self {
 		Self { sub: Sub::new(client), opts }
 	}
 
 	/// Returns the next batch of raw extrinsics and its [`BlockInfo`].
 	///
 	/// # Returns
-	/// - `Ok((Vec<BlockRawExtrinsic>, BlockInfo))` with at least one element when a block matches the
+	/// - `Ok((Vec<EncodedExtrinsic>, BlockInfo))` with at least one element when a block matches the
 	///   filter.
 	/// - `Err(crate::Error)` when fetching fails; the cursor rewinds to retry the same block on the next
 	///   call.
-	pub async fn next(&mut self) -> Result<(Vec<BlockRawExtrinsic>, BlockInfo), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<EncodedExtrinsic>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
-			let mut block = BlockWithRawExt::new(self.sub.client_ref().clone(), info.hash);
+			let mut block = EncodedExtrinsics::new(self.sub.client_ref().clone(), info.hash);
 			block.set_retry_on_error(Some(self.sub.should_retry_on_error()));
 
 			let txs = match block.all(self.opts.clone()).await {
@@ -258,8 +257,7 @@ impl RawExtrinsicSub {
 mod tests {
 	use super::*;
 	use crate::{
-		block_api::BlockExtOptionsExpanded, clients::mock_client::MockClient, error::Error, prelude::*,
-		subxt_rpcs::RpcClient,
+		block::ExtrinsicsOpts, clients::mock_client::MockClient, error::Error, prelude::*, subxt_rpcs::RpcClient,
 	};
 	use avail_rust_core::{
 		avail::data_availability::tx::SubmitData, rpc::system::fetch_extrinsics::ExtrinsicInformation,
@@ -271,7 +269,7 @@ mod tests {
 		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
 
 		// Historical blocks
-		let mut sub = TransactionSub::<SubmitData>::new(client.clone(), Default::default());
+		let mut sub = SignedExtrinsicSub::<SubmitData>::new(client.clone(), Default::default());
 
 		sub.set_block_height(2326671);
 		let (list, info) = sub.next().await?;
@@ -373,8 +371,8 @@ mod tests {
 		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
 
 		// Historical blocks
-		let opts = BlockExtOptionsExpanded { filter: Some((29u8, 1u8).into()), ..Default::default() };
-		let mut sub = RawExtrinsicSub::new(client.clone(), opts);
+		let opts = ExtrinsicsOpts { filter: Some((29u8, 1u8).into()), ..Default::default() };
+		let mut sub = EncodedExtrinsicSub::new(client.clone(), opts);
 
 		sub.set_block_height(2326671);
 		let (list, info) = sub.next().await?;

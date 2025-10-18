@@ -1,4 +1,4 @@
-use avail_rust_client::{block_api::BlockWithTx, error::Error, prelude::*};
+use avail_rust_client::{block::SignedExtrinsics, error::Error, prelude::*};
 use avail_rust_core::avail::utility::tx::{Batch, BatchAll, ForceBatch};
 use codec::Encode;
 
@@ -13,7 +13,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Batch
 	{
-		let block = BlockWithTx::new(client.clone(), 1828776);
+		let block = SignedExtrinsics::new(client.clone(), 1828776);
 
 		let c1 = client.tx().staking().chill();
 		let c2 = client.tx().staking().unbond(1020000000000000000000);
@@ -26,7 +26,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Batch All
 	{
-		let block = BlockWithTx::new(client.clone(), 1827667);
+		let block = SignedExtrinsics::new(client.clone(), 1827667);
 
 		let c1 = client.tx().staking().chill();
 		let c2 = client.tx().staking().unbond(8371491570236280685776);
@@ -39,7 +39,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Force Batch
 	{
-		let block = BlockWithTx::new(client.clone(), 1815311);
+		let block = SignedExtrinsics::new(client.clone(), 1815311);
 
 		let c1 = client
 			.tx()

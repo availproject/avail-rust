@@ -2,7 +2,7 @@
 
 use crate::{
 	AvailHeader, BlockInfo, Client, LegacyBlock, RpcError, Sub,
-	block_api::{BlockApi, BlockEvents, BlockEventsOptions},
+	block::{Block, Events, EventsOpts},
 };
 use avail_rust_core::rpc::BlockPhaseEvent;
 use std::time::Duration;
@@ -99,14 +99,14 @@ impl LegacyBlockSub {
 	}
 }
 
-/// Subscription wrapper that streams block handles (`BlockApi`).
+/// Subscription wrapper that streams block handles (`Block`).
 #[derive(Clone)]
 pub struct BlockSub {
 	sub: Sub,
 }
 
 impl BlockSub {
-	/// Creates a subscription that yields [`BlockApi`] handles as you iterate. The handlers can be
+	/// Creates a subscription that yields [`Block`] handles as you iterate. The handlers can be
 	/// used to inspect extrinsics, events, or raw data.
 	pub fn new(client: Client) -> Self {
 		Self { sub: Sub::new(client) }
@@ -115,19 +115,19 @@ impl BlockSub {
 	/// Fetches the next block handle along with its `BlockInfo`.
 	///
 	/// # Returns
-	/// - `Ok((BlockApi, BlockInfo))` when a block is available at the current cursor.
+	/// - `Ok((Block, BlockInfo))` when a block is available at the current cursor.
 	/// - `Err(RpcError)` when the underlying subscription fails to advance.
-	pub async fn next(&mut self) -> Result<(BlockApi, BlockInfo), RpcError> {
+	pub async fn next(&mut self) -> Result<(Block, BlockInfo), RpcError> {
 		let info = self.sub.next().await?;
-		Ok((BlockApi::new(self.sub.client_ref().clone(), info.hash), info))
+		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
 	}
 
 	/// Fetches the previous block handle along with its `BlockInfo`.
 	///
 	/// Return semantics mirror [`BlockSub::next`].
-	pub async fn prev(&mut self) -> Result<(BlockApi, BlockInfo), RpcError> {
+	pub async fn prev(&mut self) -> Result<(Block, BlockInfo), RpcError> {
 		let info = self.sub.prev().await?;
-		Ok((BlockApi::new(self.sub.client_ref().clone(), info.hash), info))
+		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
 	}
 
 	/// Reports whether failed RPC calls will be retried.
@@ -161,13 +161,13 @@ impl BlockSub {
 #[derive(Clone)]
 pub struct BlockEventsSub {
 	sub: Sub,
-	opts: BlockEventsOptions,
+	opts: EventsOpts,
 }
 
 impl BlockEventsSub {
 	/// Creates a subscription that yields event batches filtered by the supplied options. No network
 	/// calls are made until [`BlockEventsSub::next`] is awaited.
-	pub fn new(client: Client, opts: BlockEventsOptions) -> Self {
+	pub fn new(client: Client, opts: EventsOpts) -> Self {
 		Self { sub: Sub::new(client), opts }
 	}
 
@@ -182,7 +182,7 @@ impl BlockEventsSub {
 	pub async fn next(&mut self) -> Result<Vec<BlockPhaseEvent>, crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
-			let block = BlockEvents::new(self.sub.client_ref().clone(), info.hash);
+			let block = Events::new(self.sub.client_ref().clone(), info.hash);
 			let events = match block.block(self.opts.clone()).await {
 				Ok(x) => x,
 				Err(err) => {

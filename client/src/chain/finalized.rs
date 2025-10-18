@@ -1,4 +1,4 @@
-use crate::{BlockApi, Client, Error};
+use crate::{Client, Error, block};
 use avail_rust_core::{
 	AccountIdLike, AvailHeader, BlockInfo, H256, RpcError,
 	avail::{balances::types::AccountData, system::types::AccountInfo},
@@ -51,9 +51,9 @@ impl Finalized {
 	}
 
 	/// Gives you a block handle for the latest finalized block.
-	pub async fn block(&self) -> Result<BlockApi, Error> {
+	pub async fn block(&self) -> Result<block::Block, Error> {
 		let block_hash = self.block_hash().await?;
-		Ok(BlockApi::new(self.client.clone(), block_hash))
+		Ok(block::Block::new(self.client.clone(), block_hash))
 	}
 
 	/// Returns height and hash for the latest finalized block.

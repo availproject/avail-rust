@@ -128,9 +128,45 @@ impl From<H256> for ExtrinsicFilter {
 	}
 }
 
+impl From<Vec<H256>> for ExtrinsicFilter {
+	fn from(value: Vec<H256>) -> Self {
+		Self::TxHash(value)
+	}
+}
+
+impl From<&Vec<H256>> for ExtrinsicFilter {
+	fn from(value: &Vec<H256>) -> Self {
+		Self::TxHash(value.clone())
+	}
+}
+
+impl From<&[H256]> for ExtrinsicFilter {
+	fn from(value: &[H256]) -> Self {
+		Self::TxHash(value.to_vec())
+	}
+}
+
 impl From<u32> for ExtrinsicFilter {
 	fn from(value: u32) -> Self {
 		Self::TxIndex(vec![value])
+	}
+}
+
+impl From<Vec<u32>> for ExtrinsicFilter {
+	fn from(value: Vec<u32>) -> Self {
+		Self::TxIndex(value)
+	}
+}
+
+impl From<&Vec<u32>> for ExtrinsicFilter {
+	fn from(value: &Vec<u32>) -> Self {
+		Self::TxIndex(value.clone())
+	}
+}
+
+impl From<&[u32]> for ExtrinsicFilter {
+	fn from(value: &[u32]) -> Self {
+		Self::TxIndex(value.to_vec())
 	}
 }
 
@@ -143,6 +179,18 @@ impl From<u8> for ExtrinsicFilter {
 impl From<&[u8]> for ExtrinsicFilter {
 	fn from(value: &[u8]) -> Self {
 		Self::Pallet(value.to_vec())
+	}
+}
+
+impl From<Vec<u8>> for ExtrinsicFilter {
+	fn from(value: Vec<u8>) -> Self {
+		Self::Pallet(value)
+	}
+}
+
+impl From<&Vec<u8>> for ExtrinsicFilter {
+	fn from(value: &Vec<u8>) -> Self {
+		Self::Pallet(value.clone())
 	}
 }
 
@@ -161,6 +209,12 @@ impl From<&[(u8, u8)]> for ExtrinsicFilter {
 impl From<Vec<(u8, u8)>> for ExtrinsicFilter {
 	fn from(value: Vec<(u8, u8)>) -> Self {
 		Self::PalletCall(value)
+	}
+}
+
+impl From<&Vec<(u8, u8)>> for ExtrinsicFilter {
+	fn from(value: &Vec<(u8, u8)>) -> Self {
+		Self::PalletCall(value.clone())
 	}
 }
 

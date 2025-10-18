@@ -2,7 +2,7 @@
 
 use super::clients::OnlineClient;
 use crate::{
-	block_api::BlockApi,
+	block::Block,
 	chain::{Best, Chain, Finalized},
 	subxt_rpcs::RpcClient,
 	transaction_api::TransactionApi,
@@ -94,9 +94,9 @@ impl Client {
 
 	/// Builds a block helper rooted at the height or hash you pass in.
 	///
-	/// See [`BlockApi`] for available views (transactions, events, raw extrinsics).
-	pub fn block(&self, block_id: impl Into<HashStringNumber>) -> BlockApi {
-		BlockApi::new(self.clone(), block_id)
+	/// See [`Block`] for available views (transactions, events, raw extrinsics).
+	pub fn block(&self, block_id: impl Into<HashStringNumber>) -> Block {
+		Block::new(self.clone(), block_id)
 	}
 
 	/// Provides low-level RPC helpers when you need finer control.

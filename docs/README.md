@@ -14,8 +14,9 @@ your workflow:
   `SubmittedTransaction::receipt()` and when it can return `None` or error.
 - [Subscriptions](subscriptions.md) – shows how to configure and consume block,
   extrinsic, and justification subscriptions.
-- [Block API](block_api.md) – walks through block helpers (`BlockApi`,
-  `BlockWith*`, `BlockEvents`) and how to inspect block data.
+- [Block API](block_api.md) – walks through block helpers (`Block`,
+  `EncodedExtrinsics`/`Extrinsics`/`SignedExtrinsics`, `Events`) and how to
+  inspect block data.
 - [Error Handling](error_handling.md) – outlines the SDK error types and how to
   integrate them with your application's error handling strategy.
 - [Extrinsic Types](extrinsic_types.md) – explains raw, decoded, and signed

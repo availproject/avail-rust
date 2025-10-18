@@ -45,15 +45,15 @@ Below is a quick reference grouped by interface.
 - `grandpa_block_justification*` – node not running the GRANDPA RPC extension or
   failure decoding the returned justification.
 
-## Block Helpers (`BlockApi`)
+## Block Helpers (`Block`)
 
-- All views (`tx`, `ext`, `raw_ext`, `events`) ultimately depend on
+- All views (`signed`, `ext`, `encoded`, `events`) ultimately depend on
   `Chain`; they fail for the same reasons plus:
   - Filtering by index/hash that does not exist returns `Ok(None)`.
   - Decoding payloads into a target type can fail with
     `UserError::Decoding` or `RpcError::ExpectedData` when the node omits
     bytes.
-  - Signing-specific helpers (`BlockWithTx`) error when the extrinsic is
+  - Signing-specific helpers (`SignedExtrinsics`) error when the extrinsic is
     unsigned.
 
 ## Subscriptions (`Sub`, `BlockEventsSub`, etc.)

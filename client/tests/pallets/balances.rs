@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block_api::{BlockEvents, BlockWithTx},
+	block::{Events, SignedExtrinsics},
 	error::Error,
 	prelude::*,
 };
@@ -20,7 +20,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Transfer All
 	{
-		let block = BlockWithTx::new(client.clone(), 1828050);
+		let block = SignedExtrinsics::new(client.clone(), 1828050);
 
 		let account_id = "0x28806db1fa697e9c4967d8bd8ee78a994dfea2887486c39969a7d16bfebbf36f";
 		let submittable = client.tx().balances().transfer_all(account_id, false);
@@ -31,7 +31,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// TransferAllowDeath
 	{
-		let block = BlockWithTx::new(client.clone(), 1828972);
+		let block = SignedExtrinsics::new(client.clone(), 1828972);
 		let account_id = "0x0d584a4cbbfd9a4878d816512894e65918e54fae13df39a6f520fc90caea2fb0";
 		let amount = 2010899374608366600109698;
 		let submittable = client.tx().balances().transfer_allow_death(account_id, amount);
@@ -42,7 +42,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// TransferKeepAlive
 	{
-		let block = BlockWithTx::new(client.clone(), 1828947);
+		let block = SignedExtrinsics::new(client.clone(), 1828947);
 		let account_id = "0x00d6fb2b0c83e1bbf6938265912d900f57c9bee67bd8a8cb18ec50fefbf47931";
 		let amount = 616150000000000000000;
 		let submittable = client.tx().balances().transfer_keep_alive(account_id, amount);
@@ -56,7 +56,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 pub async fn event_test() -> Result<(), Error> {
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 
-	let block = BlockEvents::new(client.clone(), 1861163);
+	let block = Events::new(client.clone(), 1861163);
 	let events = block.ext(1).await?.unwrap();
 
 	// Withdraw
@@ -95,7 +95,7 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// Reserved
-	let block = BlockEvents::new(client.clone(), 1861590);
+	let block = Events::new(client.clone(), 1861590);
 	let events = block.ext(1).await?.unwrap();
 
 	let expected = Reserved {
@@ -106,7 +106,7 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// Unreserved
-	let block = BlockEvents::new(client.clone(), 1861592);
+	let block = Events::new(client.clone(), 1861592);
 	let events = block.ext(1).await?.unwrap();
 
 	let expected = Unreserved {
@@ -117,7 +117,7 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// Unlocked
-	let block = BlockEvents::new(client.clone(), 1861592);
+	let block = Events::new(client.clone(), 1861592);
 	let events = block.ext(1).await?.unwrap();
 
 	let expected = Unlocked {
@@ -129,7 +129,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Locked
 	let client = Client::new(TURING_ENDPOINT).await?;
-	let block = BlockEvents::new(client.clone(), 2280015);
+	let block = Events::new(client.clone(), 2280015);
 	let events = block.ext(1).await?.unwrap();
 
 	let expected = Locked {

@@ -38,7 +38,7 @@ and assumes `retry_on_none = false`.
 Most higher-level builders delegate to `Chain` and therefore inherit its
 behaviour:
 
-- `BlockApi`, `BlockWith*`, `BlockEvents`
+- `Block`, `EncodedExtrinsics`/`Extrinsics`/`SignedExtrinsics`, `Events`
 - Subscriptions (`Sub`, `BlockEventsSub`, etc.)
 - Transaction submission (`sign_and_submit_call`, `Options::build()`)
 

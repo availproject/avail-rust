@@ -1,4 +1,4 @@
-use crate::{Client, Error, avail, block_api::BlockApi};
+use crate::{Client, Error, avail, block};
 use avail::{balances::types::AccountData, system::types::AccountInfo};
 use avail_rust_core::{
 	AccountIdLike, AvailHeader, BlockInfo, H256,
@@ -50,9 +50,9 @@ impl Best {
 	}
 
 	/// Gives you a block handle for the best block.
-	pub async fn block(&self) -> Result<BlockApi, Error> {
+	pub async fn block(&self) -> Result<block::Block, Error> {
 		let block_hash = self.block_hash().await?;
-		Ok(BlockApi::new(self.client.clone(), block_hash))
+		Ok(block::Block::new(self.client.clone(), block_hash))
 	}
 
 	/// Returns height and hash for the best block.
