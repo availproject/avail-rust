@@ -23,7 +23,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			Vec::new(),
 		);
 		let expected_call = SetKeys::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetKeys>(1).await?.unwrap();
+		let actual_ext = block.get::<SetKeys>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -33,7 +33,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().session().purge_key();
 		let expected_call = PurgeKeys::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<PurgeKeys>(1).await?.unwrap();
+		let actual_ext = block.get::<PurgeKeys>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 

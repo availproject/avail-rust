@@ -36,6 +36,7 @@ avail-rust-core = { path = "./../core", version = "0.4.1-rc.1", default-features
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["sync", "time", "rt-multi-thread", "macros"] }
+chrono = { version = "0.4", default-features = false }
 
 [features]
 default = [ "native", "reqwest", "tracing" ]

@@ -228,6 +228,7 @@ name = "avail-rust-client"
 version = "0.4.1-rc.1"
 dependencies = [
  "avail-rust-core",
+ "chrono",
  "const-hex",
  "frame-metadata 20.0.0",
  "futures",
@@ -487,6 +488,15 @@ dependencies = [
  "cfg-if",
  "cipher",
  "cpufeatures",
+]
+
+[[package]]
+name = "chrono"
+version = "0.4.42"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "145052bdd345b87320e369255277e3fb5152762ad123a901ef5c262dd38fe8d2"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]

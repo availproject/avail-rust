@@ -27,7 +27,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.staking()
 			.bond(50100000000000000000000, RewardDestination::Staked);
 		let expected_call = Bond::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Bond>(1).await?.unwrap();
+		let actual_ext = block.get::<Bond>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -37,7 +37,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().staking().bond_extra(10000000000000000000);
 		let expected_call = BondExtra::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<BondExtra>(1).await?.unwrap();
+		let actual_ext = block.get::<BondExtra>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -47,7 +47,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().staking().chill();
 		let expected_call = Chill::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Chill>(1).await?.unwrap();
+		let actual_ext = block.get::<Chill>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -57,7 +57,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().staking().withdraw_unbonded(84);
 		let expected_call = WithdrawUnbonded::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<WithdrawUnbonded>(3).await?.unwrap();
+		let actual_ext = block.get::<WithdrawUnbonded>(3).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -67,7 +67,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().staking().validate(100000000, false);
 		let expected_call = Validate::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Validate>(1).await?.unwrap();
+		let actual_ext = block.get::<Validate>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -77,7 +77,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().staking().unbond(49990000000000000000000);
 		let expected_call = Unbond::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Unbond>(4).await?.unwrap();
+		let actual_ext = block.get::<Unbond>(4).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -89,7 +89,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			AccountId::from_str("0xdc38c8b63df616b7b9662544382c240f5f1c8eb47bc510b6077bd57fba077a5d").unwrap();
 		let submittable = client.tx().staking().set_payee(RewardDestination::Account(account_id));
 		let expected_call = SetPayee::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetPayee>(1).await?.unwrap();
+		let actual_ext = block.get::<SetPayee>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -99,7 +99,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().staking().rebond(2134432193417643036990);
 		let expected_call = Rebond::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Rebond>(1).await?.unwrap();
+		let actual_ext = block.get::<Rebond>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -110,7 +110,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 		let address = "0x37dfeeed435f0e9f205e1dfc55775fcd06518f63a5b1ccd53ce2d9e14ab783d3";
 		let submittable = client.tx().staking().payout_stakers_by_page(address, 417, 0);
 		let expected_call = PayoutStakersByPage::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<PayoutStakersByPage>(2).await?.unwrap();
+		let actual_ext = block.get::<PayoutStakersByPage>(2).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -121,7 +121,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 		let address = "0xa4605eebf32be28f4b30219a329d5f61d1b250c2780ca62f1875e84adeac8b42";
 		let submittable = client.tx().staking().payout_stakers(address, 422);
 		let expected_call = PayoutStakers::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<PayoutStakers>(6).await?.unwrap();
+		let actual_ext = block.get::<PayoutStakers>(6).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -137,7 +137,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 		];
 		let submittable = client.tx().staking().nominate(targets);
 		let expected_call = Nominate::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Nominate>(1).await?.unwrap();
+		let actual_ext = block.get::<Nominate>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -153,7 +153,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 		);
 		let submittable = client.tx().staking().kick(vec![address]);
 		let expected_call = Kick::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Kick>(1).await?.unwrap();
+		let actual_ext = block.get::<Kick>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -163,7 +163,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().staking().set_controller();
 		let expected_call = SetController::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetController>(1).await?.unwrap();
+		let actual_ext = block.get::<SetController>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -175,7 +175,11 @@ pub async fn event_test() -> Result<(), Error> {
 	// Bond
 	{
 		let client = Client::new(TURING_ENDPOINT).await?;
-		let events = block::Events::new(client.clone(), 2280015).ext(1).await?.unwrap();
+		let events = block::Events::new(client.clone(), 2280015)
+			.extrinsic(1)
+			.await
+			.unwrap()
+			.unwrap();
 
 		let expected = Bonded {
 			stash: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),
@@ -187,7 +191,11 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Unbond
 	{
-		let events = block::Events::new(client.clone(), 1835193).ext(1).await?.unwrap();
+		let events = block::Events::new(client.clone(), 1835193)
+			.extrinsic(1)
+			.await
+			.unwrap()
+			.unwrap();
 
 		let expected = Unbonded {
 			stash: AccountId::from_str("0x7e1180729a6eebfa4c3b2f6cf2f6c7bf4c09f10f3dc339c6de8e1c14c539e62d").unwrap(),
@@ -199,7 +207,11 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// ValidatorPrefsSet
 	{
-		let events = block::Events::new(client.clone(), 1814105).ext(1).await?.unwrap();
+		let events = block::Events::new(client.clone(), 1814105)
+			.extrinsic(1)
+			.await
+			.unwrap()
+			.unwrap();
 
 		let expected = ValidatorPrefsSet {
 			stash: AccountId::from_str("0xbaaf2475c394b0ab52a41966f1668950b4c896fbc365780d13f616bc7577fe3e").unwrap(),
@@ -211,7 +223,11 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Chilled
 	{
-		let events = block::Events::new(client.clone(), 1811904).ext(1).await?.unwrap();
+		let events = block::Events::new(client.clone(), 1811904)
+			.extrinsic(1)
+			.await
+			.unwrap()
+			.unwrap();
 
 		let expected = Chilled {
 			stash: AccountId::from_str("0xf2e800a72aa7b4e617f4f4a3f1fd3f02e92d1162049b9000de27d949f5d47c12").unwrap(),
@@ -222,7 +238,11 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Rewarded
 	{
-		let events = block::Events::new(client.clone(), 1861532).ext(1).await?.unwrap();
+		let events = block::Events::new(client.clone(), 1861532)
+			.extrinsic(1)
+			.await
+			.unwrap()
+			.unwrap();
 
 		let expected = Rewarded {
 			stash: AccountId::from_str("0x46fc4b4c46aa309f06f432e69e8447abfafcd083df55727d45cc0c8cfe40543e").unwrap(),
@@ -235,7 +255,11 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// PayoutStarted
 	{
-		let events = block::Events::new(client.clone(), 1861532).ext(1).await?.unwrap();
+		let events = block::Events::new(client.clone(), 1861532)
+			.extrinsic(1)
+			.await
+			.unwrap()
+			.unwrap();
 
 		let expected = PayoutStarted {
 			era_index: 430,
@@ -248,7 +272,11 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Withdrawn
 	{
-		let events = block::Events::new(client.clone(), 1861093).ext(1).await?.unwrap();
+		let events = block::Events::new(client.clone(), 1861093)
+			.extrinsic(1)
+			.await
+			.unwrap()
+			.unwrap();
 
 		let expected = Withdraw {
 			stash: AccountId::from_str("0xc270d5832919913ab755e7cc1823811588e8c2f79f8b68e908800014fd96881c").unwrap(),

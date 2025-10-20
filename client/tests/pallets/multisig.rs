@@ -37,7 +37,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.multisig()
 			.approve_as_multi(2, signatures, None, call_hash, weight);
 		let expected_call = ApproveAsMulti::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<ApproveAsMulti>(5).await?.unwrap();
+		let actual_ext = block.get::<ApproveAsMulti>(5).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -59,7 +59,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 		let weight = Weight { proof_size: 3593, ref_time: 196085000 };
 		let submittable = client.tx().multisig().as_multi(3, signatures, timepoint, call, weight);
 		let expected_call = AsMulti::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<AsMulti>(1).await?.unwrap();
+		let actual_ext = block.get::<AsMulti>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -78,7 +78,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.multisig()
 			.cancel_as_multi(2, signatures, timepoint, call_hash);
 		let expected_call = CancelAsMulti::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<CancelAsMulti>(1).await?.unwrap();
+		let actual_ext = block.get::<CancelAsMulti>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -90,7 +90,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// NewMultisig
 	{
 		let block = Events::new(client.clone(), 1861590);
-		let events = block.ext(1).await?.unwrap();
+		let events = block.extrinsic(1).await.unwrap().unwrap();
 
 		let expected = NewMultisig {
 			approving: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a")
@@ -106,7 +106,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// MultisigExecuted
 	{
 		let block = Events::new(client.clone(), 1861592);
-		let events = block.ext(1).await?.unwrap();
+		let events = block.extrinsic(1).await.unwrap().unwrap();
 
 		let expected = MultisigExecuted {
 			approving: AccountId::from_str("0xcf3cb26493846a0a5b758174dbc4dc3f42bf883bc50c8d5f4b4a4d1264dd908e")
@@ -124,7 +124,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// MultisigApproval
 	{
 		let block = Events::new(client.clone(), 1805938);
-		let events = block.ext(1).await?.unwrap();
+		let events = block.extrinsic(1).await.unwrap().unwrap();
 
 		let expected = MultisigApproval {
 			approving: AccountId::from_str("0xde54c7f5dbab3620e3093ee263983c0d77bc73e0a5a38391b778c99d2f23d60b")
@@ -141,7 +141,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// MultisigCancelled
 	{
 		let block = Events::new(client.clone(), 1861588);
-		let events = block.ext(1).await?.unwrap();
+		let events = block.extrinsic(1).await.unwrap().unwrap();
 
 		let expected = MultisigCancelled {
 			cancelling: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a")

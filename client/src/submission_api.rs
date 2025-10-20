@@ -330,7 +330,7 @@ impl TransactionReceipt {
 	/// - `Err(Error)` when the events cannot be located or fetched.
 	pub async fn events(&self) -> Result<ExtrinsicEvents, Error> {
 		let block = Events::new(self.client.clone(), self.block_ref.hash);
-		let events = block.ext(self.tx_ref.index).await?;
+		let events = block.extrinsic(self.tx_ref.index).await?;
 		let Some(events) = events else {
 			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
 		};

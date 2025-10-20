@@ -13,10 +13,10 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set keys
 	{
-		let block = block::SignedExtrinsics::new(client.clone(), 1896556);
+		let block = block::Extrinsics::new(client.clone(), 1896556);
 
 		let expected_call = Set { now: 1758027000000 };
-		let actual_ext = block.get::<Set>(0).await?.unwrap();
+		let actual_ext = block.get::<Set>(0).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 

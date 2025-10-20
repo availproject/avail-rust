@@ -11,7 +11,7 @@ pub async fn run_tests() -> Result<(), Error> {
 	Ok(())
 }
 pub async fn tx_tests() -> Result<(), Error> {
-	let client = Client::new(MAINNET_ENDPOINT).await?;
+	let client = Client::new(MAINNET_ENDPOINT).await.unwrap();
 
 	// SendMessage
 	{
@@ -25,7 +25,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			2,
 		);
 		let expected_call = SendMessage::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SendMessage>(1).await?.unwrap();
+		let actual_ext = block.get::<SendMessage>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -77,17 +77,17 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.vector()
 			.execute(12612416, addressed_message, account_proof, storage_proof);
 		let expected_call = Execute::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Execute>(1).await?.unwrap();
+		let actual_ext = block.get::<Execute>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// SendMessage
 	{
-		let block = block::SignedExtrinsics::new(client.clone(), 1381297);
+		let block = block::Extrinsics::new(client.clone(), 1381297);
 
 		let submittable = client.tx().vector().failed_send_message_txs(vec![]);
 		let expected_call = FailedSendMessageTxs::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<FailedSendMessageTxs>(1).await?.unwrap();
+		let actual_ext = block.get::<FailedSendMessageTxs>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 

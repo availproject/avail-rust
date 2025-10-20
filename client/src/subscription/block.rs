@@ -183,7 +183,7 @@ impl BlockEventsSub {
 		loop {
 			let info = self.sub.next().await?;
 			let block = Events::new(self.sub.client_ref().clone(), info.hash);
-			let events = match block.block(self.opts.clone()).await {
+			let events = match block.all(self.opts.clone()).await {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch events

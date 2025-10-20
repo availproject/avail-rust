@@ -7,7 +7,7 @@ use avail_rust_core::{
 	grandpa::GrandpaJustification,
 	rpc::{self, ExtrinsicFilter, SignerPayload},
 	types::{
-		HashStringNumber,
+		HashStringNumber, RuntimePhase,
 		substrate::{PerDispatchClassWeight, Weight},
 	},
 };
@@ -701,9 +701,9 @@ impl Events {
 	/// - `Ok(Some(ExtrinsicEvents))` when events exist for the given index.
 	/// - `Ok(None)` when the block contains no events at that index.
 	/// - `Err(Error)` when fetching or decoding event data fails.
-	pub async fn ext(&self, tx_index: u32) -> Result<Option<ExtrinsicEvents>, Error> {
+	pub async fn extrinsic(&self, tx_index: u32) -> Result<Option<ExtrinsicEvents>, Error> {
 		let mut events = self
-			.block(EventsOpts {
+			.all(EventsOpts {
 				filter: Some(tx_index.into()),
 				enable_encoding: Some(true),
 				enable_decoding: Some(false),
@@ -734,10 +734,49 @@ impl Events {
 		Ok(Some(ExtrinsicEvents::new(result)))
 	}
 
-	/// Fetches events for the block using the given options.
+	pub async fn block(&self) -> Result<BlockEvents, Error> {
+		let block_phase_events = self
+			.all(
+				EventsOpts::new()
+					.filter(rpc::EventFilter::OnlyNonExtrinsics)
+					.enable_encoding(true)
+					.enable_decoding(false),
+			)
+			.await?;
+
+		let mut result: Vec<BlockEvent> = Vec::new();
+		for block_phase_event in block_phase_events {
+			let phase = match block_phase_event.phase {
+				RuntimePhase::Finalization => BlockEventPhase::Finalization,
+				RuntimePhase::Initialization => BlockEventPhase::Initialization,
+				RuntimePhase::ApplyExtrinsic(_) => continue,
+			};
+
+			for mut phase_event in block_phase_event.events {
+				let Some(data) = phase_event.encoded_data.take() else {
+					return Err(
+						RpcError::ExpectedData("The node did not return encoded data for this event.".into()).into()
+					);
+				};
+
+				let ext_event = BlockEvent {
+					phase,
+					index: phase_event.index,
+					pallet_id: phase_event.pallet_id,
+					variant_id: phase_event.variant_id,
+					data,
+				};
+				result.push(ext_event);
+			}
+		}
+
+		Ok(BlockEvents::new(result))
+	}
+
+	/// Fetches all events for the block using the given options.
 	///
 	/// By default encoding is enabled; callers can override this via `opts`.
-	pub async fn block(&self, mut opts: EventsOpts) -> Result<Vec<rpc::BlockPhaseEvent>, Error> {
+	pub async fn all(&self, mut opts: EventsOpts) -> Result<Vec<rpc::BlockPhaseEvent>, Error> {
 		if opts.enable_encoding.is_none() {
 			opts.enable_encoding = Some(true);
 		}
@@ -766,7 +805,7 @@ impl Events {
 
 		let mut weight = Weight::default();
 		let events = self
-			.block(
+			.all(
 				EventsOpts::new()
 					.enable_encoding(true)
 					.filter(rpc::EventFilter::OnlyExtrinsics),
@@ -796,6 +835,11 @@ impl Events {
 		}
 
 		Ok(weight)
+	}
+
+	pub async fn event_count(&self) -> Result<u32, Error> {
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.block_event_count(self.block_id.clone()).await
 	}
 }
 
@@ -925,7 +969,7 @@ impl EncodedExtrinsic {
 	/// - `Err(Error)` when the extrinsic emitted no events or the RPC layer fails.
 	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, Error> {
 		let events = Events::new(client, self.metadata.block_id)
-			.ext(self.ext_index())
+			.extrinsic(self.ext_index())
 			.await?;
 		let Some(events) = events else {
 			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
@@ -993,7 +1037,7 @@ impl<T: HasHeader + Decode> Extrinsic<T> {
 	/// Fetches events emitted by this extrinsic.
 	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, Error> {
 		let events = Events::new(client, self.metadata.block_id)
-			.ext(self.ext_index())
+			.extrinsic(self.ext_index())
 			.await?;
 		let Some(events) = events else {
 			return Err(RpcError::ExpectedData("No events found for extrinsic".into()).into());
@@ -1086,7 +1130,7 @@ impl<T: HasHeader + Decode> SignedExtrinsic<T> {
 	/// Fetches events emitted by this transaction.
 	pub async fn events(&self, client: Client) -> Result<ExtrinsicEvents, Error> {
 		let events = Events::new(client, self.metadata.block_id)
-			.ext(self.ext_index())
+			.extrinsic(self.ext_index())
 			.await?;
 		let Some(events) = events else {
 			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
@@ -1171,6 +1215,122 @@ impl<T: HasHeader + Decode> TryFrom<&EncodedExtrinsic> for SignedExtrinsic<T> {
 	}
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum BlockEventPhase {
+	/// Finalizing the block.
+	Finalization,
+	/// Initializing the block.
+	Initialization,
+}
+
+#[derive(Debug, Clone)]
+pub struct BlockEvent {
+	pub phase: BlockEventPhase,
+	pub index: u32,
+	pub pallet_id: u8,
+	pub variant_id: u8,
+	pub data: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct BlockEvents {
+	pub events: Vec<BlockEvent>,
+}
+
+impl BlockEvents {
+	/// Wraps decoded events.
+	pub fn new(events: Vec<BlockEvent>) -> Self {
+		Self { events }
+	}
+
+	/// Returns the first event matching the requested type.
+	pub fn first<T: HasHeader + codec::Decode>(&self) -> Option<T> {
+		let event = self
+			.events
+			.iter()
+			.find(|x| x.pallet_id == T::HEADER_INDEX.0 && x.variant_id == T::HEADER_INDEX.1);
+		let event = event?;
+
+		T::from_event(&event.data).ok()
+	}
+
+	/// Returns the last event matching the requested type.
+	pub fn last<T: HasHeader + codec::Decode>(&self) -> Option<T> {
+		let event = self
+			.events
+			.iter()
+			.rev()
+			.find(|x| x.pallet_id == T::HEADER_INDEX.0 && x.variant_id == T::HEADER_INDEX.1);
+		let event = event?;
+
+		T::from_event(&event.data).ok()
+	}
+
+	/// Returns every event matching the requested type.
+	pub fn all<T: HasHeader + codec::Decode>(&self) -> Result<Vec<T>, Error> {
+		let mut result = Vec::new();
+		for event in &self.events {
+			if event.pallet_id != T::HEADER_INDEX.0 || event.variant_id != T::HEADER_INDEX.1 {
+				continue;
+			}
+
+			let decoded = T::from_event(event.data.as_str()).map_err(|x| Error::User(UserError::Decoding(x)))?;
+			result.push(decoded);
+		}
+
+		Ok(result)
+	}
+
+	/// Checks if an `ExtrinsicSuccess` event exists.
+	pub fn is_extrinsic_success_present(&self) -> bool {
+		self.is_present::<avail::system::events::ExtrinsicSuccess>()
+	}
+
+	/// Checks if an `ExtrinsicFailed` event exists.
+	pub fn is_extrinsic_failed_present(&self) -> bool {
+		self.is_present::<avail::system::events::ExtrinsicFailed>()
+	}
+
+	/// Returns whether a proxy call succeeded, when present.
+	pub fn proxy_executed_successfully(&self) -> Option<bool> {
+		let executed = self.first::<avail::proxy::events::ProxyExecuted>()?;
+		Some(executed.result.is_ok())
+	}
+
+	/// Returns whether a multisig call succeeded, when present.
+	pub fn multisig_executed_successfully(&self) -> Option<bool> {
+		let executed = self.first::<avail::multisig::events::MultisigExecuted>()?;
+		Some(executed.result.is_ok())
+	}
+
+	/// Returns true when at least one event of the given type exists.
+	pub fn is_present<T: HasHeader>(&self) -> bool {
+		self.count::<T>() > 0
+	}
+
+	/// Returns true when the given pallet and variant combination appears.
+	pub fn is_present_parts(&self, pallet_id: u8, variant_id: u8) -> bool {
+		self.count_parts(pallet_id, variant_id) > 0
+	}
+
+	/// Counts how many times the given event type appears.
+	pub fn count<T: HasHeader>(&self) -> u32 {
+		self.count_parts(T::HEADER_INDEX.0, T::HEADER_INDEX.1)
+	}
+
+	/// Counts how many events match the pallet and variant combo.
+	pub fn count_parts(&self, pallet_id: u8, variant_id: u8) -> u32 {
+		let mut count = 0;
+		self.events.iter().for_each(|x| {
+			if x.pallet_id == pallet_id && x.variant_id == variant_id {
+				count += 1
+			}
+		});
+
+		count
+	}
+}
+
 #[derive(Debug, Clone)]
 pub struct ExtrinsicEvent {
 	pub index: u32,
@@ -1201,15 +1361,27 @@ impl ExtrinsicEvents {
 		T::from_event(&event.data).ok()
 	}
 
+	/// Returns the last event matching the requested type.
+	pub fn last<T: HasHeader + codec::Decode>(&self) -> Option<T> {
+		let event = self
+			.events
+			.iter()
+			.rev()
+			.find(|x| x.pallet_id == T::HEADER_INDEX.0 && x.variant_id == T::HEADER_INDEX.1);
+		let event = event?;
+
+		T::from_event(&event.data).ok()
+	}
+
 	/// Returns every event matching the requested type.
-	pub fn all<T: HasHeader + codec::Decode>(&self) -> Result<Vec<T>, String> {
+	pub fn all<T: HasHeader + codec::Decode>(&self) -> Result<Vec<T>, Error> {
 		let mut result = Vec::new();
 		for event in &self.events {
 			if event.pallet_id != T::HEADER_INDEX.0 || event.variant_id != T::HEADER_INDEX.1 {
 				continue;
 			}
 
-			let decoded = T::from_event(event.data.as_str())?;
+			let decoded = T::from_event(event.data.as_str()).map_err(|x| Error::User(UserError::Decoding(x)))?;
 			result.push(decoded);
 		}
 

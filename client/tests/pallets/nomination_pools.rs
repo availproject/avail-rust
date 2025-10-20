@@ -24,7 +24,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().bond_extra(BondExtraValue::Rewards);
 		let expected_call = BondExtra::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<BondExtra>(1).await?.unwrap();
+		let actual_ext = block.get::<BondExtra>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -37,7 +37,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.bond_extra(BondExtraValue::FreBalance(6740000000000000000));
 		let expected_call = BondExtra::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<BondExtra>(1).await?.unwrap();
+		let actual_ext = block.get::<BondExtra>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -50,7 +50,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			BondExtraValue::Rewards,
 		);
 		let expected_call = BondExtraOther::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<BondExtraOther>(2).await?.unwrap();
+		let actual_ext = block.get::<BondExtraOther>(2).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -60,7 +60,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().chill(15);
 		let expected_call = Chill::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Chill>(1).await?.unwrap();
+		let actual_ext = block.get::<Chill>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -70,7 +70,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().claim_commission(78);
 		let expected_call = ClaimCommission::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<ClaimCommission>(1).await?.unwrap();
+		let actual_ext = block.get::<ClaimCommission>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -80,7 +80,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().claim_payout();
 		let expected_call = ClaimPayout::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<ClaimPayout>(1).await?.unwrap();
+		let actual_ext = block.get::<ClaimPayout>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -93,7 +93,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.claim_payout_other("0x7e1180729a6eebfa4c3b2f6cf2f6c7bf4c09f10f3dc339c6de8e1c14c539e62d");
 		let expected_call = ClaimPayoutOther::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<ClaimPayoutOther>(1).await?.unwrap();
+		let actual_ext = block.get::<ClaimPayoutOther>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -107,7 +107,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.create(10000000000000000000000, address, address, address);
 		let expected_call = Create::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Create>(14).await?.unwrap();
+		let actual_ext = block.get::<Create>(14).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -122,7 +122,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 				.nomination_pools()
 				.create_with_pool_id(10000000000000000000000, address, address, address, 37);
 		let expected_call = CreateWithPoolId::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<CreateWithPoolId>(1).await?.unwrap();
+		let actual_ext = block.get::<CreateWithPoolId>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -132,7 +132,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().join(365000000000000000000, 4);
 		let expected_call = Join::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Join>(2).await?.unwrap();
+		let actual_ext = block.get::<Join>(2).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -146,7 +146,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 		];
 		let submittable = client.tx().nomination_pools().nominate(50, validators);
 		let expected_call = Nominate::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Nominate>(1).await?.unwrap();
+		let actual_ext = block.get::<Nominate>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -159,7 +159,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.set_claim_permission(ClaimPermission::Permissioned);
 		let expected_call = SetClaimPermission::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetClaimPermission>(1).await?.unwrap();
+		let actual_ext = block.get::<SetClaimPermission>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -172,7 +172,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.set_claim_permission(ClaimPermission::PermissionlessCompound);
 		let expected_call = SetClaimPermission::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetClaimPermission>(1).await?.unwrap();
+		let actual_ext = block.get::<SetClaimPermission>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -185,7 +185,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.set_claim_permission(ClaimPermission::PermissionlessAll);
 		let expected_call = SetClaimPermission::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetClaimPermission>(1).await?.unwrap();
+		let actual_ext = block.get::<SetClaimPermission>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -200,7 +200,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.set_commission(73, Some((10000000, account_id.into())));
 		let expected_call = SetCommission::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetCommission>(1).await?.unwrap();
+		let actual_ext = block.get::<SetCommission>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -210,7 +210,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().set_commission(76, None);
 		let expected_call = SetCommission::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetCommission>(1).await?.unwrap();
+		let actual_ext = block.get::<SetCommission>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -223,7 +223,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.set_commission_change_rate(76, 1000000000, 4320);
 		let expected_call = SetCommissionChangeRate::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetCommissionChangeRate>(1).await?.unwrap();
+		let actual_ext = block.get::<SetCommissionChangeRate>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -233,7 +233,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().set_commission_max(76, 100000000);
 		let expected_call = SetCommissionMax::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetCommissionMax>(1).await?.unwrap();
+		let actual_ext = block.get::<SetCommissionMax>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -243,7 +243,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().set_metadata(78, "Green");
 		let expected_call = SetMetadata::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetMetadata>(1).await?.unwrap();
+		let actual_ext = block.get::<SetMetadata>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -253,7 +253,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().set_state(37, PoolState::Destroying);
 		let expected_call = SetState::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetState>(4).await?.unwrap();
+		let actual_ext = block.get::<SetState>(4).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -263,7 +263,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 		let submittable = client.tx().nomination_pools().set_state(55, PoolState::Blocked);
 		let expected_call = SetState::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SetState>(1).await?.unwrap();
+		let actual_ext = block.get::<SetState>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -277,7 +277,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.unbond(member_account, 333000000000000000000);
 		let expected_call = Unbond::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Unbond>(1).await?.unwrap();
+		let actual_ext = block.get::<Unbond>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -292,7 +292,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			ConfigOpAccount::Remove,
 		);
 		let expected_call = UpdateRoles::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<UpdateRoles>(1).await?.unwrap();
+		let actual_ext = block.get::<UpdateRoles>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -308,7 +308,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.update_roles(68, set.clone(), set.clone(), set);
 		let expected_call = UpdateRoles::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<UpdateRoles>(1).await?.unwrap();
+		let actual_ext = block.get::<UpdateRoles>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -321,7 +321,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.nomination_pools()
 			.withdraw_unbonded("0x48498d4fdb57d0c11c8e4ec98ffc0a7511563eb73cd2940c5208fc9170bed473", 0);
 		let expected_call = WithdrawUnbonded::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<WithdrawUnbonded>(1).await?.unwrap();
+		let actual_ext = block.get::<WithdrawUnbonded>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
