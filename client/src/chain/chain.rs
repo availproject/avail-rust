@@ -1,5 +1,5 @@
 use crate::{
-	BlockState, Client, Error, UserError, avail,
+	BlockState, Client, Error, H256Ext, UserError, avail,
 	submission_api::SubmittedTransaction,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::Options,
@@ -10,9 +10,10 @@ use avail::{
 	system::{storage as SystemStorage, types::AccountInfo},
 };
 use avail_rust_core::{
-	AccountId, AccountIdLike, AvailHeader, BlockInfo, H256, HashNumber, StorageMap,
+	AccountId, AccountIdLike, AvailHeader, BlockInfo, H256, HashNumber, StorageMap, StorageValue, consensus,
 	ext::subxt_rpcs::client::RpcParams,
 	grandpa::GrandpaJustification,
+	header::DigestItem,
 	rpc::{
 		self, BlockPhaseEvent, Error as RpcError, ExtrinsicInfo, LegacyBlock,
 		kate::{BlockLength, Cell, GCellBlock, GDataProof, GMultiProof, GRow, ProofResponse},
@@ -21,7 +22,7 @@ use avail_rust_core::{
 	types::{
 		HashString,
 		metadata::{ChainInfo, HashStringNumber},
-		substrate::{FeeDetails, RuntimeDispatchInfo},
+		substrate::{FeeDetails, PerDispatchClassWeight, RuntimeDispatchInfo},
 	},
 };
 use codec::Decode;
@@ -262,6 +263,156 @@ impl Chain {
 		let retry = self.should_retry_on_error();
 		let f = || async move { rpc::system::latest_block_info(&self.client.rpc_client, use_best_block).await };
 		with_retry_on_error(f, retry).await
+	}
+
+	pub async fn block_info_from(&self, block_id: impl Into<HashStringNumber>) -> Result<BlockInfo, Error> {
+		async fn inner(c: &Chain, block_id: HashStringNumber) -> Result<BlockInfo, Error> {
+			let (height, hash) = match block_id {
+				HashStringNumber::Hash(hash) => {
+					let height = c.client.chain().block_height(hash).await?;
+					let Some(height) = height else {
+						return Err(Error::User(UserError::Other(std::format!(
+							"No block height was found for hash: {}",
+							hash
+						))));
+					};
+					(height, hash)
+				},
+				HashStringNumber::String(hash) => {
+					let hash = H256::from_str(&hash).map_err(|x| Error::User(UserError::Other(x.to_string())))?;
+					let height = c.client.chain().block_height(hash).await?;
+					let Some(height) = height else {
+						return Err(Error::User(UserError::Other(std::format!(
+							"No block height was found for hash: {}",
+							hash
+						))));
+					};
+					(height, hash)
+				},
+				HashStringNumber::Number(height) => {
+					let hash = c.client.chain().block_hash(Some(height)).await?;
+					let Some(hash) = hash else {
+						return Err(Error::User(UserError::Other(std::format!(
+							"No block hash was found for height: {}",
+							height
+						))));
+					};
+					(height, hash)
+				},
+			};
+
+			Ok(BlockInfo::from((hash, height)))
+		}
+
+		inner(self, block_id.into()).await
+	}
+
+	pub async fn block_author(&self, block_id: impl Into<HashStringNumber>) -> Result<AccountId, Error> {
+		async fn inner(c: &Chain, block_id: HashStringNumber) -> Result<AccountId, Error> {
+			let hash = match block_id {
+				HashStringNumber::Hash(x) => x,
+				HashStringNumber::String(x) => H256::from_str(&x).map_err(Error::Other)?,
+				HashStringNumber::Number(x) => {
+					let hash = c.block_hash(Some(x)).await?;
+					let Some(hash) = hash else {
+						return Err(Error::Other(std::format!("No block hash was found for block height: {}", x)));
+					};
+					hash
+				},
+			};
+
+			let header = c.block_header(Some(hash)).await?;
+			let Some(header) = header else {
+				return Err(Error::Other(std::format!("No block header was found")));
+			};
+
+			for item in &header.digest.logs {
+				let (id, value) = match &item {
+					DigestItem::PreRuntime(id, value) => (id, value),
+					_ => continue,
+				};
+
+				if !id.eq(&consensus::babe::BABE_ENGINE_ID) {
+					continue;
+				}
+
+				let mut v = value.as_slice();
+				let pre_digest = consensus::babe::PreDigest::decode(&mut v).map_err(|e| Error::Other(e.to_string()))?;
+
+				let validators = avail::session::storage::Validators::fetch(&c.client.rpc_client, Some(hash)).await?;
+				let Some(validators) = validators else {
+					return Err(Error::Other(std::format!(
+						"No validators in storage was found for block hash: {:?}",
+						hash
+					)));
+				};
+
+				if let Some(account_id) = validators.get(pre_digest.authority_index() as usize) {
+					return Ok(account_id.clone());
+				}
+			}
+
+			Err(Error::Other(std::format!("Failed to find block author for block hash: {}", hash)))
+		}
+
+		inner(self, block_id.into()).await
+	}
+
+	pub async fn block_event_count(&self, block_id: impl Into<HashStringNumber>) -> Result<u32, Error> {
+		async fn inner(c: &Chain, block_id: HashStringNumber) -> Result<u32, Error> {
+			let hash = match block_id {
+				HashStringNumber::Hash(x) => x,
+				HashStringNumber::String(x) => H256::from_str(&x).map_err(Error::Other)?,
+				HashStringNumber::Number(x) => {
+					let hash = c.block_hash(Some(x)).await?;
+					let Some(hash) = hash else {
+						return Err(Error::Other(std::format!("No block hash was found for block height: {}", x)));
+					};
+					hash
+				},
+			};
+
+			let retry_on_error = c.should_retry_on_error();
+
+			let f = || async move { avail::system::storage::EventCount::fetch(&c.client.rpc_client, Some(hash)).await };
+			let count = with_retry_on_error_and_none(f, retry_on_error, false).await?;
+			let Some(count) = count else {
+				return Err(Error::Other(std::format!("Failed to find block event count at block hash: {:?}", hash)));
+			};
+
+			Ok(count)
+		}
+
+		inner(self, block_id.into()).await
+	}
+
+	pub async fn block_weight(&self, block_id: impl Into<HashStringNumber>) -> Result<PerDispatchClassWeight, Error> {
+		async fn inner(c: &Chain, block_id: HashStringNumber) -> Result<PerDispatchClassWeight, Error> {
+			let hash = match block_id {
+				HashStringNumber::Hash(x) => x,
+				HashStringNumber::String(x) => H256::from_str(&x).map_err(Error::Other)?,
+				HashStringNumber::Number(x) => {
+					let hash = c.block_hash(Some(x)).await?;
+					let Some(hash) = hash else {
+						return Err(Error::Other(std::format!("No block hash was found for block height: {}", x)));
+					};
+					hash
+				},
+			};
+
+			let retry_on_error = c.should_retry_on_error();
+
+			let f =
+				|| async move { avail::system::storage::BlockWeight::fetch(&c.client.rpc_client, Some(hash)).await };
+			let weight = with_retry_on_error_and_none(f, retry_on_error, false).await?;
+			let Some(weight) = weight else {
+				return Err(Error::Other(std::format!("Failed to find block weight at block hash: {:?}", hash)));
+			};
+
+			Ok(weight)
+		}
+
+		inner(self, block_id.into()).await
 	}
 
 	/// Quick snapshot of both the best and finalized heads.

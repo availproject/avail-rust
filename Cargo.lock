@@ -257,6 +257,7 @@ dependencies = [
  "scale-decode",
  "scale-encode",
  "scale-info",
+ "schnorrkel",
  "serde",
  "serde_json",
  "sp-crypto-hashing",

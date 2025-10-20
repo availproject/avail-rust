@@ -24,6 +24,12 @@ pub struct BlockInfo {
 	pub height: u32,
 }
 
+impl std::fmt::Display for BlockInfo {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "Height: {}, Hash: {:?}", self.height, self.hash)
+	}
+}
+
 impl From<(H256, u32)> for BlockInfo {
 	fn from(value: (H256, u32)) -> Self {
 		Self { hash: value.0, height: value.1 }
@@ -180,6 +186,16 @@ pub enum HashStringNumber {
 	Hash(H256),
 	String(String),
 	Number(u32),
+}
+
+impl std::fmt::Display for HashStringNumber {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			HashStringNumber::Hash(h) => write!(f, "Hash: {}", h),
+			HashStringNumber::String(h) => write!(f, "String Hash: {}", h),
+			HashStringNumber::Number(n) => write!(f, "Number: {}", n),
+		}
+	}
 }
 
 impl From<BlockInfo> for HashStringNumber {

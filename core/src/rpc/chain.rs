@@ -2,7 +2,10 @@ use super::{AvailHeader, Error};
 use crate::types::metadata::TransactionRef;
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer};
-use subxt_core::config::{Hasher, substrate::BlakeTwo256};
+use subxt_core::config::{
+	Hasher,
+	substrate::{BlakeTwo256, ConsensusEngineId},
+};
 use subxt_rpcs::{RpcClient, rpc_params};
 
 /// The response from `chain_getBlock`
@@ -51,8 +54,6 @@ where
 
 /// An abstraction over justification for a block's validity under a consensus algorithm.
 pub type BlockJustification = (ConsensusEngineId, EncodedJustification);
-/// Consensus engine unique ID.
-pub type ConsensusEngineId = [u8; 4];
 /// The encoded justification specific to a consensus engine.
 pub type EncodedJustification = Vec<u8>;
 

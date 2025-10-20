@@ -22,6 +22,15 @@ pub enum RuntimePhase {
 	Initialization,
 }
 
+impl RuntimePhase {
+	pub fn extrinsic_index(&self) -> Option<u32> {
+		match self {
+			RuntimePhase::ApplyExtrinsic(x) => Some(*x),
+			_ => None,
+		}
+	}
+}
+
 #[derive(Debug, Clone, Encode, Decode, PartialEq, Eq)]
 pub struct ExtrinsicExtra {
 	pub era: Era,
@@ -221,7 +230,7 @@ impl Decode for DispatchClass {
 	}
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Encode, Decode)]
+#[derive(Clone, Default, Copy, Debug, PartialEq, Deserialize, Encode, Decode)]
 pub struct Weight {
 	/// The weight of computational time used based on some reference hardware.
 	#[codec(compact)]
@@ -229,4 +238,11 @@ pub struct Weight {
 	/// The weight of storage space used by proof of validity.
 	#[codec(compact)]
 	pub proof_size: u64,
+}
+
+#[derive(Debug, Default, Clone, Copy, Deserialize, Encode, Decode)]
+pub struct PerDispatchClassWeight {
+	pub normal: Weight,
+	pub operational: Weight,
+	pub mandatory: Weight,
 }

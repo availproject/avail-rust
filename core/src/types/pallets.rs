@@ -1,7 +1,7 @@
 use super::{AccountId, MultiAddress};
 use crate::{
 	H256, HasHeader, StorageHasher, StorageMap, StorageValue, substrate::extrinsic::ExtrinsicCall,
-	utils::decode_already_decoded,
+	types::substrate::PerDispatchClassWeight, utils::decode_already_decoded,
 };
 use codec::{Compact, Decode, Encode};
 use scale_decode::DecodeAsType;
@@ -1110,6 +1110,18 @@ pub mod session {
 		}
 		impl HasHeader for PurgeKeys {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
+		}
+	}
+
+	pub mod storage {
+		use super::*;
+
+		pub struct Validators;
+		impl StorageValue for Validators {
+			type VALUE = Vec<AccountId>;
+
+			const PALLET_NAME: &str = "Session";
+			const STORAGE_NAME: &str = "Validators";
 		}
 	}
 }
@@ -3412,6 +3424,22 @@ pub mod system {
 			const KEY_HASHER: StorageHasher = StorageHasher::Blake2_128Concat;
 			const PALLET_NAME: &str = "System";
 			const STORAGE_NAME: &str = "Account";
+		}
+
+		pub struct EventCount;
+		impl StorageValue for EventCount {
+			type VALUE = u32;
+
+			const PALLET_NAME: &str = "System";
+			const STORAGE_NAME: &str = "EventCount";
+		}
+
+		pub struct BlockWeight;
+		impl StorageValue for BlockWeight {
+			type VALUE = PerDispatchClassWeight;
+
+			const PALLET_NAME: &str = "System";
+			const STORAGE_NAME: &str = "BlockWeight";
 		}
 	}
 

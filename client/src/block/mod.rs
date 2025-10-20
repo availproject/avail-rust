@@ -2,11 +2,14 @@
 
 use crate::{Client, Error, UserError};
 use avail_rust_core::{
-	EncodeSelector, Extrinsic as CoreExtrinsic, ExtrinsicSignature, H256, HasHeader, HashNumber, MultiAddress,
-	RpcError, TransactionEventDecodable, avail,
+	AccountId, AvailHeader, BlockInfo, EncodeSelector, Extrinsic as CoreExtrinsic, ExtrinsicDecodable,
+	ExtrinsicSignature, H256, HasHeader, HashNumber, MultiAddress, RpcError, TransactionEventDecodable, avail,
 	grandpa::GrandpaJustification,
 	rpc::{self, ExtrinsicFilter, SignerPayload},
-	types::HashStringNumber,
+	types::{
+		HashStringNumber,
+		substrate::{PerDispatchClassWeight, Weight},
+	},
 };
 use codec::Decode;
 
@@ -88,6 +91,42 @@ impl Block {
 	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())
+	}
+
+	pub async fn timestamp(&self) -> Result<u64, Error> {
+		self.encoded().timestamp().await
+	}
+
+	pub async fn info(&self) -> Result<BlockInfo, Error> {
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.block_info_from(self.block_id.clone()).await
+	}
+
+	pub async fn header(&self) -> Result<AvailHeader, Error> {
+		shared::header(&self.client, self.block_id.clone()).await
+	}
+
+	pub async fn author(&self) -> Result<AccountId, Error> {
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.block_author(self.block_id.clone()).await
+	}
+
+	pub async fn extrinsic_count(&self) -> Result<u32, Error> {
+		self.encoded().extrinsic_count().await
+	}
+
+	pub async fn event_count(&self) -> Result<u32, Error> {
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.block_event_count(self.block_id.clone()).await
+	}
+
+	pub async fn weight(&self) -> Result<PerDispatchClassWeight, Error> {
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.block_weight(self.block_id.clone()).await
+	}
+
+	pub async fn extrinsic_weight(&self) -> Result<Weight, Error> {
+		self.events().extrinsic_weight().await
 	}
 }
 
@@ -250,6 +289,61 @@ impl EncodedExtrinsics {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())
 	}
+
+	pub async fn timestamp(&self) -> Result<u64, Error> {
+		let opts = ExtrinsicsOpts::new()
+			.filter(avail::timestamp::tx::Set::HEADER_INDEX)
+			.encode_as(EncodeSelector::Call);
+		let timestamp = self.first(opts).await?;
+		let Some(timestamp) = timestamp else {
+			return Err(Error::User(UserError::Other(std::format!(
+				"No timestamp transaction found in block: {:?}",
+				self.block_id
+			))));
+		};
+
+		let Some(timestamp) = timestamp.data else {
+			return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
+		};
+
+		let timestamp = avail::timestamp::tx::Set::from_call(timestamp).map_err(Error::Other)?;
+
+		Ok(timestamp.now)
+	}
+
+	pub async fn info(&self) -> Result<BlockInfo, Error> {
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.block_info_from(self.block_id.clone()).await
+	}
+
+	pub async fn header(&self) -> Result<AvailHeader, Error> {
+		shared::header(&self.client, self.block_id.clone()).await
+	}
+
+	pub async fn author(&self) -> Result<AccountId, Error> {
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.block_author(self.block_id.clone()).await
+	}
+
+	pub async fn extrinsic_count(&self) -> Result<u32, Error> {
+		self.count(ExtrinsicsOpts::new()).await.map(|x| x as u32)
+	}
+
+	pub async fn event_count(&self) -> Result<u32, Error> {
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.block_event_count(self.block_id.clone()).await
+	}
+
+	pub async fn weight(&self) -> Result<PerDispatchClassWeight, Error> {
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.block_weight(self.block_id.clone()).await
+	}
+
+	pub async fn extrinsic_weight(&self) -> Result<Weight, Error> {
+		let mut events = Events::new(self.client.clone(), self.block_id.clone());
+		events.set_retry_on_error(self.retry_on_error);
+		events.extrinsic_weight().await
+	}
 }
 
 /// View of block extrinsics decoded into calls and optional signatures.
@@ -297,9 +391,7 @@ impl Extrinsics {
 	/// - `Ok(Some(Extrinsic<T>))` when an extrinsic matches the filters.
 	/// - `Ok(None)` when nothing matches.
 	/// - `Err(Error)` if RPC retrieval fails or decoding the extrinsic as `T` fails.
-	pub async fn first<T: HasHeader + Decode>(&self, opts: ExtrinsicsOpts) -> Result<Option<Extrinsic<T>>, Error> {
-		let mut opts: ExtrinsicsOpts = opts.into();
-
+	pub async fn first<T: HasHeader + Decode>(&self, mut opts: ExtrinsicsOpts) -> Result<Option<Extrinsic<T>>, Error> {
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
@@ -325,8 +417,7 @@ impl Extrinsics {
 	/// Returns the last matching extrinsic decoded into the target type.
 	///
 	/// Return semantics mirror [`Extrinsics::first`], but the final matching extrinsic is returned.
-	pub async fn last<T: HasHeader + Decode>(&self, opts: ExtrinsicsOpts) -> Result<Option<Extrinsic<T>>, Error> {
-		let mut opts: ExtrinsicsOpts = opts.into();
+	pub async fn last<T: HasHeader + Decode>(&self, mut opts: ExtrinsicsOpts) -> Result<Option<Extrinsic<T>>, Error> {
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
@@ -351,8 +442,7 @@ impl Extrinsics {
 	/// Returns every matching extrinsic decoded into the target type.
 	///
 	/// The result may be empty if no extrinsics match. Decoding failures are surfaced as `Err(Error)`.
-	pub async fn all<T: HasHeader + Decode>(&self, opts: ExtrinsicsOpts) -> Result<Vec<Extrinsic<T>>, Error> {
-		let mut opts: ExtrinsicsOpts = opts.into();
+	pub async fn all<T: HasHeader + Decode>(&self, mut opts: ExtrinsicsOpts) -> Result<Vec<Extrinsic<T>>, Error> {
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
@@ -403,6 +493,38 @@ impl Extrinsics {
 	/// Returns true when decoded extrinsic lookups retry after RPC errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.xt.should_retry_on_error()
+	}
+
+	pub async fn timestamp(&self) -> Result<u64, Error> {
+		self.xt.timestamp().await
+	}
+
+	pub async fn info(&self) -> Result<BlockInfo, Error> {
+		self.xt.info().await
+	}
+
+	pub async fn header(&self) -> Result<AvailHeader, Error> {
+		self.xt.header().await
+	}
+
+	pub async fn author(&self) -> Result<AccountId, Error> {
+		self.xt.author().await
+	}
+
+	pub async fn extrinsic_count(&self) -> Result<u32, Error> {
+		self.xt.extrinsic_count().await
+	}
+
+	pub async fn event_count(&self) -> Result<u32, Error> {
+		self.xt.event_count().await
+	}
+
+	pub async fn weight(&self) -> Result<PerDispatchClassWeight, Error> {
+		self.xt.weight().await
+	}
+
+	pub async fn extrinsic_weight(&self) -> Result<Weight, Error> {
+		self.xt.extrinsic_weight().await
 	}
 }
 
@@ -524,6 +646,38 @@ impl SignedExtrinsics {
 	pub fn should_retry_on_error(&self) -> bool {
 		self.xt.should_retry_on_error()
 	}
+
+	pub async fn timestamp(&self) -> Result<u64, Error> {
+		self.xt.timestamp().await
+	}
+
+	pub async fn info(&self) -> Result<BlockInfo, Error> {
+		self.xt.info().await
+	}
+
+	pub async fn header(&self) -> Result<AvailHeader, Error> {
+		self.xt.header().await
+	}
+
+	pub async fn author(&self) -> Result<AccountId, Error> {
+		self.xt.author().await
+	}
+
+	pub async fn extrinsic_count(&self) -> Result<u32, Error> {
+		self.xt.extrinsic_count().await
+	}
+
+	pub async fn event_count(&self) -> Result<u32, Error> {
+		self.xt.event_count().await
+	}
+
+	pub async fn weight(&self) -> Result<PerDispatchClassWeight, Error> {
+		self.xt.weight().await
+	}
+
+	pub async fn extrinsic_weight(&self) -> Result<Weight, Error> {
+		self.xt.extrinsic_weight().await
+	}
 }
 
 /// View that fetches events emitted by a block, optionally filtered by extrinsic.
@@ -606,6 +760,43 @@ impl Events {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())
 	}
+
+	pub async fn extrinsic_weight(&self) -> Result<Weight, Error> {
+		use avail::system::events::{ExtrinsicFailed, ExtrinsicSuccess};
+
+		let mut weight = Weight::default();
+		let events = self
+			.block(
+				EventsOpts::new()
+					.enable_encoding(true)
+					.filter(rpc::EventFilter::OnlyExtrinsics),
+			)
+			.await?;
+		for event_record in events {
+			if event_record.phase.extrinsic_index().is_none() {
+				continue;
+			}
+
+			for event in event_record.events {
+				let Some(data) = event.encoded_data else {
+					return Err(Error::RpcError(RpcError::ExpectedData(std::format!("Expected event data"))));
+				};
+
+				let header = (event.pallet_id, event.variant_id);
+				if header == ExtrinsicSuccess::HEADER_INDEX {
+					let e = ExtrinsicSuccess::from_event(data).map_err(Error::Other)?;
+					weight.ref_time += e.dispatch_info.weight.ref_time;
+					weight.proof_size += e.dispatch_info.weight.proof_size;
+				} else if header == ExtrinsicFailed::HEADER_INDEX {
+					let e = ExtrinsicFailed::from_event(data).map_err(Error::Other)?;
+					weight.ref_time += e.dispatch_info.weight.ref_time;
+					weight.proof_size += e.dispatch_info.weight.proof_size;
+				}
+			}
+		}
+
+		Ok(weight)
+	}
 }
 
 #[derive(Debug, Default, Clone)]
@@ -613,6 +804,27 @@ pub struct EventsOpts {
 	filter: Option<rpc::EventFilter>,
 	enable_encoding: Option<bool>,
 	enable_decoding: Option<bool>,
+}
+
+impl EventsOpts {
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub fn enable_encoding(mut self, value: bool) -> Self {
+		self.enable_encoding = Some(value);
+		self
+	}
+
+	pub fn enable_decoding(mut self, value: bool) -> Self {
+		self.enable_decoding = Some(value);
+		self
+	}
+
+	pub fn filter(mut self, value: rpc::EventFilter) -> Self {
+		self.filter = Some(value);
+		self
+	}
 }
 
 impl From<EventsOpts> for rpc::EventOpts {
@@ -656,6 +868,11 @@ impl ExtrinsicsOpts {
 
 	pub fn filter(mut self, value: impl Into<ExtrinsicFilter>) -> Self {
 		self.filter = Some(value.into());
+		self
+	}
+
+	pub fn encode_as(mut self, value: EncodeSelector) -> Self {
+		self.encode_as = Some(value);
 		self
 	}
 }
@@ -1046,5 +1263,21 @@ impl ExtrinsicEvents {
 		});
 
 		count
+	}
+}
+
+mod shared {
+	pub use super::*;
+
+	pub async fn header(client: &Client, block_id: HashStringNumber) -> Result<AvailHeader, Error> {
+		let header = client.chain().block_header(Some(block_id.clone())).await?;
+		let Some(header) = header else {
+			return Err(Error::User(UserError::Other(std::format!(
+				"No block header found for block id: {}",
+				block_id
+			))));
+		};
+
+		Ok(header)
 	}
 }

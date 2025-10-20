@@ -1,3 +1,4 @@
+pub mod consensus;
 pub mod decoded_events;
 pub mod decoded_transaction;
 pub mod extrinsics_params;
