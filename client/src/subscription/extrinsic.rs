@@ -371,7 +371,7 @@ mod tests {
 		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
 
 		// Historical blocks
-		let opts = ExtrinsicsOpts { filter: Some((29u8, 1u8).into()), ..Default::default() };
+		let opts = ExtrinsicsOpts::new().filter((29u8, 1u8));
 		let mut sub = EncodedExtrinsicSub::new(client.clone(), opts);
 
 		sub.set_block_height(2326671);

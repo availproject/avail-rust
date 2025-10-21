@@ -162,7 +162,7 @@ pub async fn main() -> Result<(), Error> {
 		}
 	}
 
-	println!("Iterating over all events (both extrinsic and system one).");
+	println!("Iterating over all events (both extrinsic and system events).");
 	let events = block.events().all(EventFilter::All).await?;
 	for event in events {
 		println!(

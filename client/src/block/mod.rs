@@ -2,8 +2,8 @@
 
 use crate::{Client, Error, UserError};
 use avail_rust_core::{
-	AccountId, AvailHeader, BlockInfo, EncodeSelector, Extrinsic as CoreExtrinsic, ExtrinsicDecodable,
-	ExtrinsicSignature, H256, HasHeader, HashNumber, MultiAddress, RpcError, TransactionEventDecodable, avail,
+	AccountId, AvailHeader, BlockInfo, EncodeSelector, Extrinsic as CoreExtrinsic, ExtrinsicSignature, H256, HasHeader,
+	HashNumber, MultiAddress, RpcError, TransactionEventDecodable, avail,
 	grandpa::GrandpaJustification,
 	rpc::{self, BlockPhaseEvent, ExtrinsicFilter, SignerPayload},
 	types::{
@@ -21,29 +21,30 @@ pub struct Block {
 }
 
 impl Block {
-	/// Creates a block helper for the given height or hash.
-	///
-	/// No network calls are issued up front; the `block_id` is stored for later RPC queries. Use the
-	/// view helpers such as [`Block::signed`] or [`Block::events`] to fetch concrete data.
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
 		Block { client, block_id: block_id.into(), retry_on_error: None }
 	}
 
-	/// Returns a view that focuses on decoded transactions.
-	///
-	/// The returned [`SignedExtrinsics`] view shares this helper's retry configuration.
 	pub fn signed(&self) -> SignedExtrinsics {
 		SignedExtrinsics::new(self.client.clone(), self.block_id.clone())
 	}
 
-	/// Returns a view that focuses on decoded extrinsics while retaining signature metadata.
 	pub fn extrinsics(&self) -> Extrinsics {
 		Extrinsics::new(self.client.clone(), self.block_id.clone())
 	}
 
-	/// Returns a view that keeps extrinsics as raw bytes and optional signer payload information.
 	pub fn encoded(&self) -> EncodedExtrinsics {
 		EncodedExtrinsics::new(self.client.clone(), self.block_id.clone())
+	}
+
+	pub fn calls(&self) -> ExtrinsicCalls {
+		ExtrinsicCalls::new(self.client.clone(), self.block_id.clone())
+	}
+
+	pub async fn raw_extrinsics(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		chain.system_fetch_extrinsics(block_id, opts).await
 	}
 
 	/// Returns a helper for fetching events from this block.
@@ -130,6 +131,141 @@ impl Block {
 	}
 }
 
+pub struct ExtrinsicCalls {
+	client: Client,
+	block_id: HashStringNumber,
+	retry_on_error: Option<bool>,
+}
+
+impl ExtrinsicCalls {
+	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
+		Self { client, block_id: block_id.into(), retry_on_error: None }
+	}
+
+	pub async fn get<T: HasHeader + Decode>(
+		&self,
+		extrinsic_id: impl Into<HashStringNumber>,
+	) -> Result<Option<T>, Error> {
+		async fn inner<T: HasHeader + Decode>(
+			s: &ExtrinsicCalls,
+			extrinsic_id: HashStringNumber,
+		) -> Result<Option<T>, Error> {
+			let filter = match extrinsic_id {
+				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
+				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
+				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
+			};
+			s.first::<T>(ExtrinsicsOpts::new().filter(filter)).await
+		}
+
+		inner::<T>(self, extrinsic_id.into()).await
+	}
+
+	pub async fn first<T: HasHeader + Decode>(&self, mut opts: ExtrinsicsOpts) -> Result<Option<T>, Error> {
+		if opts.filter.is_none() {
+			opts.filter = Some(T::HEADER_INDEX.into())
+		}
+		let opts = opts.to_rpc_opts(EncodeSelector::Call);
+
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		let mut result = chain.system_fetch_extrinsics(block_id, opts).await?;
+
+		let Some(first) = result.first_mut() else {
+			return Ok(None);
+		};
+
+		let Some(data) = first.data.take() else {
+			return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
+		};
+
+		let mut iter = data.as_bytes();
+		let data = T::decode(&mut iter)?;
+
+		Ok(Some(data))
+	}
+
+	/// Returns the last matching extrinsic decoded into the target type.
+	///
+	/// Return semantics mirror [`Extrinsics::first`], but the final matching extrinsic is returned.
+	pub async fn last<T: HasHeader + Decode>(&self, mut opts: ExtrinsicsOpts) -> Result<Option<T>, Error> {
+		if opts.filter.is_none() {
+			opts.filter = Some(T::HEADER_INDEX.into())
+		}
+		let opts = opts.to_rpc_opts(EncodeSelector::Call);
+
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		let mut result = chain.system_fetch_extrinsics(block_id, opts).await?;
+
+		let Some(first) = result.last_mut() else {
+			return Ok(None);
+		};
+
+		let Some(data) = first.data.take() else {
+			return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
+		};
+
+		let mut iter = data.as_bytes();
+		let data = T::decode(&mut iter)?;
+
+		Ok(Some(data))
+	}
+
+	/// Returns every matching extrinsic decoded into the target type.
+	///
+	/// The result may be empty if no extrinsics match. Decoding failures are surfaced as `Err(Error)`.
+	pub async fn all<T: HasHeader + Decode>(&self, mut opts: ExtrinsicsOpts) -> Result<Vec<T>, Error> {
+		if opts.filter.is_none() {
+			opts.filter = Some(T::HEADER_INDEX.into())
+		}
+		let opts = opts.to_rpc_opts(EncodeSelector::Call);
+
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		let extrinsics = chain.system_fetch_extrinsics(block_id, opts).await?;
+
+		let mut result = Vec::with_capacity(extrinsics.len());
+		for ext in extrinsics {
+			let Some(data) = ext.data else {
+				return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
+			};
+
+			let mut iter = data.as_bytes();
+			let data = T::decode(&mut iter)?;
+
+			result.push(data);
+		}
+
+		Ok(result)
+	}
+
+	pub async fn count<T: HasHeader>(&self, opts: ExtrinsicsOpts) -> Result<usize, Error> {
+		let mut opts: rpc::ExtrinsicOpts = opts.to_rpc_opts(EncodeSelector::None);
+		opts.transaction_filter = T::HEADER_INDEX.into();
+
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		let result = chain.system_fetch_extrinsics(block_id, opts).await?;
+
+		Ok(result.len())
+	}
+
+	pub async fn exists<T: HasHeader>(&self, opts: ExtrinsicsOpts) -> Result<bool, Error> {
+		self.count::<T>(opts).await.map(|x| x > 0)
+	}
+
+	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
+		self.retry_on_error = value;
+	}
+
+	/// Returns true when decoded extrinsic lookups retry after RPC errors.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled())
+	}
+}
+
 /// View of block extrinsics as raw payloads with associated metadata.
 pub struct EncodedExtrinsics {
 	client: Client,
@@ -151,31 +287,22 @@ impl EncodedExtrinsics {
 	/// - `Ok(Some(EncodedExtrinsic))` when the extrinsic is found.
 	/// - `Ok(None)` when no extrinsic matches the provided identifier.
 	/// - `Err(Error)` when decoding the identifier fails or the RPC call errors.
-	pub async fn get(
-		&self,
-		extrinsic_id: impl Into<HashStringNumber>,
-		encode_as: EncodeSelector,
-	) -> Result<Option<EncodedExtrinsic>, Error> {
+	pub async fn get(&self, extrinsic_id: impl Into<HashStringNumber>) -> Result<Option<EncodedExtrinsic>, Error> {
 		async fn inner(
 			s: &EncodedExtrinsics,
 			extrinsic_id: HashStringNumber,
-			encode_as: EncodeSelector,
 		) -> Result<Option<EncodedExtrinsic>, Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
 				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
-			let opts = ExtrinsicsOpts {
-				filter: Some(filter),
-				encode_as: Some(encode_as),
-				..Default::default()
-			};
+			let opts = ExtrinsicsOpts::new().filter(filter);
 
 			s.first(opts).await
 		}
 
-		inner(self, extrinsic_id.into(), encode_as).await
+		inner(self, extrinsic_id.into()).await
 	}
 
 	/// Returns the first matching extrinsic, if any.
@@ -184,25 +311,22 @@ impl EncodedExtrinsics {
 	/// - `Ok(Some(EncodedExtrinsic))` with metadata and optional payload.
 	/// - `Ok(None)` when nothing matches the provided filters.
 	/// - `Err(Error)` on RPC failures or when the block identifier cannot be decoded.
-	pub async fn first(&self, mut opts: ExtrinsicsOpts) -> Result<Option<EncodedExtrinsic>, Error> {
-		if opts.encode_as.is_none() {
-			opts.encode_as = Some(EncodeSelector::Extrinsic)
-		}
-
+	pub async fn first(&self, opts: ExtrinsicsOpts) -> Result<Option<EncodedExtrinsic>, Error> {
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
-		let mut result = self
-			.client
-			.chain()
-			.retry_on(self.retry_on_error, None)
-			.system_fetch_extrinsics(block_id, opts.into())
-			.await?;
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		let opts = opts.to_rpc_opts(EncodeSelector::Extrinsic);
+		let mut result = chain.system_fetch_extrinsics(block_id, opts).await?;
 
 		let Some(first) = result.first_mut() else {
 			return Ok(None);
 		};
 
+		let Some(data) = first.data.take() else {
+			return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
+		};
+
 		let metadata = Metadata::new(first.ext_hash, first.ext_index, first.pallet_id, first.variant_id, block_id);
-		let ext = EncodedExtrinsic::new(first.data.take(), metadata, first.signer_payload.take());
+		let ext = EncodedExtrinsic::new(data, metadata, first.signer_payload.take());
 
 		Ok(Some(ext))
 	}
@@ -210,25 +334,22 @@ impl EncodedExtrinsics {
 	/// Returns the last matching extrinsic, if any.
 	///
 	/// Return semantics mirror [`EncodedExtrinsics::first`], but the final matching element is returned.
-	pub async fn last(&self, mut opts: ExtrinsicsOpts) -> Result<Option<EncodedExtrinsic>, Error> {
-		if opts.encode_as.is_none() {
-			opts.encode_as = Some(EncodeSelector::Extrinsic)
-		}
-
+	pub async fn last(&self, opts: ExtrinsicsOpts) -> Result<Option<EncodedExtrinsic>, Error> {
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
-		let mut result = self
-			.client
-			.chain()
-			.retry_on(self.retry_on_error, None)
-			.system_fetch_extrinsics(block_id, opts.into())
-			.await?;
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		let opts = opts.to_rpc_opts(EncodeSelector::Extrinsic);
+		let mut result = chain.system_fetch_extrinsics(block_id, opts).await?;
 
 		let Some(last) = result.last_mut() else {
 			return Ok(None);
 		};
 
+		let Some(data) = last.data.take() else {
+			return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
+		};
+
 		let metadata = Metadata::new(last.ext_hash, last.ext_index, last.pallet_id, last.variant_id, block_id);
-		let ext = EncodedExtrinsic::new(last.data.take(), metadata, last.signer_payload.take());
+		let ext = EncodedExtrinsic::new(data, metadata, last.signer_payload.take());
 
 		Ok(Some(ext))
 	}
@@ -236,26 +357,22 @@ impl EncodedExtrinsics {
 	/// Returns all matching extrinsics.
 	///
 	/// The resulting vector may be empty when no extrinsics satisfy the filters.
-	pub async fn all(&self, mut opts: ExtrinsicsOpts) -> Result<Vec<EncodedExtrinsic>, Error> {
-		if opts.encode_as.is_none() {
-			opts.encode_as = Some(EncodeSelector::Extrinsic)
-		}
-
+	pub async fn all(&self, opts: ExtrinsicsOpts) -> Result<Vec<EncodedExtrinsic>, Error> {
 		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
-		let result = self
-			.client
-			.chain()
-			.retry_on(self.retry_on_error, None)
-			.system_fetch_extrinsics(block_id, opts.into())
-			.await?;
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		let opts = opts.to_rpc_opts(EncodeSelector::Extrinsic);
+		let extrinsics = chain.system_fetch_extrinsics(block_id, opts).await?;
 
-		let result = result
-			.into_iter()
-			.map(|x| {
-				let metadata = Metadata::new(x.ext_hash, x.ext_index, x.pallet_id, x.variant_id, block_id);
-				EncodedExtrinsic::new(x.data, metadata, x.signer_payload)
-			})
-			.collect();
+		let mut result = Vec::with_capacity(extrinsics.len());
+		for ext in extrinsics {
+			let metadata = Metadata::new(ext.ext_hash, ext.ext_index, ext.pallet_id, ext.variant_id, block_id);
+			let Some(data) = ext.data else {
+				return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
+			};
+
+			let enc_ext = EncodedExtrinsic::new(data, metadata, ext.signer_payload);
+			result.push(enc_ext);
+		}
 
 		Ok(result)
 	}
@@ -263,19 +380,19 @@ impl EncodedExtrinsics {
 	/// Counts matching extrinsics without fetching the payloads.
 	///
 	/// Equivalent to `self.all(opts).await.map(|v| v.len())` but avoids transferring payload bytes.
-	pub async fn count(&self, mut opts: ExtrinsicsOpts) -> Result<usize, Error> {
-		opts.encode_as = Some(EncodeSelector::None);
+	pub async fn count(&self, opts: ExtrinsicsOpts) -> Result<usize, Error> {
+		let opts: rpc::ExtrinsicOpts = opts.to_rpc_opts(EncodeSelector::None);
 
-		let result = self.all(opts).await?;
+		let block_id: HashNumber = self.block_id.clone().try_into().map_err(UserError::Decoding)?;
+		let chain = self.client.chain().retry_on(self.retry_on_error, None);
+		let result = chain.system_fetch_extrinsics(block_id, opts).await?;
+
 		Ok(result.len())
 	}
 
 	/// Checks whether at least one extrinsic matches.
-	pub async fn exists(&self, mut opts: ExtrinsicsOpts) -> Result<bool, Error> {
-		opts.encode_as = Some(EncodeSelector::None);
-
-		let result = self.first(opts).await?;
-		Ok(result.is_some())
+	pub async fn exists(&self, opts: ExtrinsicsOpts) -> Result<bool, Error> {
+		self.count(opts).await.map(|x| x > 0)
 	}
 
 	/// Controls retry behaviour for fetching raw extrinsics: `Some(true)` forces retries,
@@ -291,22 +408,15 @@ impl EncodedExtrinsics {
 	}
 
 	pub async fn timestamp(&self) -> Result<u64, Error> {
-		let opts = ExtrinsicsOpts::new()
-			.filter(avail::timestamp::tx::Set::HEADER_INDEX)
-			.encode_as(EncodeSelector::Call);
-		let timestamp = self.first(opts).await?;
+		let calls = ExtrinsicCalls::new(self.client.clone(), self.block_id.clone());
+
+		let timestamp = calls.first::<avail::timestamp::tx::Set>(Default::default()).await?;
 		let Some(timestamp) = timestamp else {
 			return Err(Error::User(UserError::Other(std::format!(
 				"No timestamp transaction found in block: {:?}",
 				self.block_id
 			))));
 		};
-
-		let Some(timestamp) = timestamp.data else {
-			return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
-		};
-
-		let timestamp = avail::timestamp::tx::Set::from_call(timestamp).map_err(Error::Other)?;
 
 		Ok(timestamp.now)
 	}
@@ -378,8 +488,7 @@ impl Extrinsics {
 				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
-			let filter = Some(filter);
-			s.first::<T>(ExtrinsicsOpts { filter, ..Default::default() }).await
+			s.first::<T>(ExtrinsicsOpts::new().filter(filter)).await
 		}
 
 		inner::<T>(self, extrinsic_id.into()).await
@@ -395,20 +504,13 @@ impl Extrinsics {
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
-		if opts.encode_as.is_none() {
-			opts.encode_as = Some(EncodeSelector::Extrinsic);
-		}
 
 		let first = self.xt.first(opts).await?;
 		let Some(first) = first else {
 			return Ok(None);
 		};
 
-		let Some(data) = first.data else {
-			return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
-		};
-
-		let ext = CoreExtrinsic::<T>::try_from(data.as_str()).map_err(UserError::Decoding)?;
+		let ext = CoreExtrinsic::<T>::try_from(first.data.as_str()).map_err(UserError::Decoding)?;
 		let ext = Extrinsic::new(ext.signature, ext.call, first.metadata);
 
 		Ok(Some(ext))
@@ -421,20 +523,13 @@ impl Extrinsics {
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
-		if opts.encode_as.is_none() {
-			opts.encode_as = Some(EncodeSelector::Extrinsic);
-		}
 
 		let last = self.xt.last(opts).await?;
 		let Some(last) = last else {
 			return Ok(None);
 		};
 
-		let Some(data) = last.data else {
-			return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
-		};
-
-		let ext = CoreExtrinsic::<T>::try_from(data.as_str()).map_err(UserError::Decoding)?;
+		let ext = CoreExtrinsic::<T>::try_from(last.data.as_str()).map_err(UserError::Decoding)?;
 		let ext = Extrinsic::new(ext.signature, ext.call, last.metadata);
 		Ok(Some(ext))
 	}
@@ -446,17 +541,11 @@ impl Extrinsics {
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
-		if opts.encode_as.is_none() {
-			opts.encode_as = Some(EncodeSelector::Extrinsic);
-		}
 
 		let all = self.xt.all(opts).await?;
 		let mut result = Vec::with_capacity(all.len());
 		for raw_ext in all {
-			let Some(data) = raw_ext.data else {
-				return Err(RpcError::ExpectedData("Fetched raw extrinsic had no data.".into()).into());
-			};
-			let ext = CoreExtrinsic::<T>::try_from(data.as_str()).map_err(UserError::Decoding)?;
+			let ext = CoreExtrinsic::<T>::try_from(raw_ext.data.as_str()).map_err(UserError::Decoding)?;
 			let ext = Extrinsic::new(ext.signature, ext.call, raw_ext.metadata);
 			result.push(ext);
 		}
@@ -468,7 +557,6 @@ impl Extrinsics {
 	///
 	/// This still performs an RPC round-trip but avoids transferring the encoded call data.
 	pub async fn count<T: HasHeader>(&self, mut opts: ExtrinsicsOpts) -> Result<usize, Error> {
-		opts.encode_as = Some(EncodeSelector::None);
 		opts.filter = Some(T::HEADER_INDEX.into());
 
 		return self.xt.count(opts).await;
@@ -478,7 +566,6 @@ impl Extrinsics {
 	///
 	/// Equivalent to calling [`Extrinsics::first`] and testing the result for `Some`.
 	pub async fn exists<T: HasHeader>(&self, mut opts: ExtrinsicsOpts) -> Result<bool, Error> {
-		opts.encode_as = Some(EncodeSelector::None);
 		opts.filter = Some(T::HEADER_INDEX.into());
 
 		return self.xt.exists(opts).await;
@@ -818,7 +905,6 @@ pub struct ExtrinsicsOpts {
 	pub ss58_address: Option<String>,
 	pub app_id: Option<u32>,
 	pub nonce: Option<u32>,
-	pub encode_as: Option<EncodeSelector>,
 }
 
 impl ExtrinsicsOpts {
@@ -846,20 +932,13 @@ impl ExtrinsicsOpts {
 		self
 	}
 
-	pub fn encode_as(mut self, value: EncodeSelector) -> Self {
-		self.encode_as = Some(value);
-		self
-	}
-}
-
-impl From<ExtrinsicsOpts> for rpc::ExtrinsicOpts {
-	fn from(value: ExtrinsicsOpts) -> Self {
+	pub fn to_rpc_opts(self, encode_as: EncodeSelector) -> rpc::ExtrinsicOpts {
 		rpc::ExtrinsicOpts {
-			transaction_filter: value.filter.unwrap_or_default(),
-			ss58_address: value.ss58_address,
-			app_id: value.app_id,
-			nonce: value.nonce,
-			encode_as: value.encode_as.unwrap_or_default(),
+			transaction_filter: self.filter.unwrap_or_default(),
+			ss58_address: self.ss58_address,
+			app_id: self.app_id,
+			nonce: self.nonce,
+			encode_as,
 		}
 	}
 }
@@ -882,14 +961,14 @@ impl Metadata {
 
 #[derive(Debug, Clone)]
 pub struct EncodedExtrinsic {
-	pub data: Option<String>,
+	pub data: String,
 	pub metadata: Metadata,
 	pub signer_payload: Option<SignerPayload>,
 }
 
 impl EncodedExtrinsic {
 	/// Creates a raw extrinsic wrapper.
-	pub fn new(data: Option<String>, metadata: Metadata, signer_payload: Option<SignerPayload>) -> Self {
+	pub fn new(data: String, metadata: Metadata, signer_payload: Option<SignerPayload>) -> Self {
 		Self { data, metadata, signer_payload }
 	}
 
@@ -939,7 +1018,7 @@ impl EncodedExtrinsic {
 		SignedExtrinsic::<T>::try_from(self)
 	}
 
-	pub fn as_ext<T: HasHeader + Decode>(&self) -> Result<Extrinsic<T>, String> {
+	pub fn as_extrinsic<T: HasHeader + Decode>(&self) -> Result<Extrinsic<T>, String> {
 		Extrinsic::<T>::try_from(self)
 	}
 
@@ -1024,11 +1103,7 @@ impl<T: HasHeader + Decode> TryFrom<EncodedExtrinsic> for Extrinsic<T> {
 	type Error = String;
 
 	fn try_from(value: EncodedExtrinsic) -> Result<Self, Self::Error> {
-		let Some(data) = &value.data else {
-			return Err("Encoded extrinsic payload is missing from the RPC response.")?;
-		};
-
-		let extrinsic = CoreExtrinsic::<T>::try_from(data.as_str())?;
+		let extrinsic = CoreExtrinsic::<T>::try_from(value.data.as_str())?;
 		Ok(Self::new(extrinsic.signature, extrinsic.call, value.metadata))
 	}
 }
@@ -1037,11 +1112,7 @@ impl<T: HasHeader + Decode> TryFrom<&EncodedExtrinsic> for Extrinsic<T> {
 	type Error = String;
 
 	fn try_from(value: &EncodedExtrinsic) -> Result<Self, Self::Error> {
-		let Some(data) = &value.data else {
-			return Err("Encoded extrinsic payload is missing from the RPC response.")?;
-		};
-
-		let extrinsic = CoreExtrinsic::<T>::try_from(data.as_str())?;
+		let extrinsic = CoreExtrinsic::<T>::try_from(value.data.as_str())?;
 		Ok(Self::new(extrinsic.signature, extrinsic.call, value.metadata.clone()))
 	}
 }

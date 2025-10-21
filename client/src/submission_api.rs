@@ -3,8 +3,8 @@
 use crate::{
 	Client, Error, UserError,
 	block::{
-		AllEvents, Block, EncodedExtrinsic, EncodedExtrinsics, Events, Extrinsic, Extrinsics, SignedExtrinsic,
-		SignedExtrinsics,
+		AllEvents, Block, EncodedExtrinsic, EncodedExtrinsics, Events, Extrinsic, ExtrinsicCalls, Extrinsics,
+		SignedExtrinsic, SignedExtrinsics,
 	},
 	subscription::Sub,
 	subxt_signer::sr25519::Keypair,
@@ -13,6 +13,7 @@ use crate::{
 use avail_rust_core::{
 	AccountId, BlockInfo, EncodeSelector, H256, HasHeader, RpcError,
 	ext::codec::Encode,
+	rpc::ExtrinsicOpts,
 	substrate::extrinsic::{ExtrinsicAdditional, ExtrinsicCall, GenericExtrinsic},
 	types::{
 		metadata::{HashString, TransactionRef},
@@ -268,7 +269,7 @@ impl TransactionReceipt {
 	/// # Returns
 	/// - `Ok(SignedExtrinsic<T>)` when the transaction exists and can be decoded as `T`.
 	/// - `Err(Error)` if the transaction is missing, cannot be decoded, or any RPC call fails.
-	pub async fn tx<T: HasHeader + Decode>(&self) -> Result<SignedExtrinsic<T>, Error> {
+	pub async fn signed<T: HasHeader + Decode>(&self) -> Result<SignedExtrinsic<T>, Error> {
 		let block = SignedExtrinsics::new(self.client.clone(), self.block_ref.height);
 		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
@@ -283,7 +284,7 @@ impl TransactionReceipt {
 	/// # Returns
 	/// - `Ok(Extrinsic<T>)` when the extrinsic exists and decodes as `T`.
 	/// - `Err(Error)` when the extrinsic is missing, cannot be decoded as `T`, or RPC access fails.
-	pub async fn ext<T: HasHeader + Decode>(&self) -> Result<Extrinsic<T>, Error> {
+	pub async fn extrinsic<T: HasHeader + Decode>(&self) -> Result<Extrinsic<T>, Error> {
 		let block = Extrinsics::new(self.client.clone(), self.block_ref.height);
 		let ext: Option<Extrinsic<T>> = block.get(self.tx_ref.index).await?;
 		let Some(ext) = ext else {
@@ -299,13 +300,13 @@ impl TransactionReceipt {
 	/// - `Ok(T)` when the extrinsic exists and its call decodes as `T`.
 	/// - `Err(Error)` otherwise (missing extrinsic, decode failure, or RPC error).
 	pub async fn call<T: HasHeader + Decode>(&self) -> Result<T, Error> {
-		let block = Extrinsics::new(self.client.clone(), self.block_ref.height);
-		let tx = block.get(self.tx_ref.index).await?;
-		let Some(tx) = tx else {
+		let block = ExtrinsicCalls::new(self.client.clone(), self.block_ref.height);
+		let call = block.get(self.tx_ref.index).await?;
+		let Some(call) = call else {
 			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
 		};
 
-		Ok(tx.call)
+		Ok(call)
 	}
 
 	/// Returns the raw extrinsic bytes or a different encoding if requested.
@@ -313,9 +314,9 @@ impl TransactionReceipt {
 	/// # Returns
 	/// - `Ok(EncodedExtrinsic)` with the requested encoding.
 	/// - `Err(Error)` when the extrinsic cannot be found or an RPC failure occurs.
-	pub async fn raw_ext(&self, encode_as: EncodeSelector) -> Result<EncodedExtrinsic, Error> {
+	pub async fn encoded(&self) -> Result<EncodedExtrinsic, Error> {
 		let block = EncodedExtrinsics::new(self.client.clone(), self.block_ref.height);
-		let ext = block.get(self.tx_ref.index, encode_as).await?;
+		let ext = block.get(self.tx_ref.index).await?;
 		let Some(ext) = ext else {
 			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
 		};
@@ -334,6 +335,7 @@ impl TransactionReceipt {
 		if events.is_empty() {
 			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
 		};
+
 		Ok(events)
 	}
 
@@ -358,6 +360,7 @@ impl TransactionReceipt {
 			return Err(UserError::ValidationFailed("Block Start cannot start after Block End".into()).into());
 		}
 		let tx_hash: HashString = tx_hash.into();
+		let tx_hash: H256 = tx_hash.try_into().map_err(|x| Error::User(UserError::Other(x)))?;
 		let mut sub = Sub::new(client.clone());
 		sub.use_best_block(use_best_block);
 		sub.set_block_height(block_start);
@@ -365,10 +368,13 @@ impl TransactionReceipt {
 		loop {
 			let block_ref = sub.next().await?;
 
-			let block = EncodedExtrinsics::new(client.clone(), block_ref.height);
-			let ext = block.get(tx_hash.clone(), EncodeSelector::None).await?;
-			if let Some(ext) = ext {
-				let tr = TransactionReceipt::new(client.clone(), block_ref, (ext.ext_hash(), ext.ext_index()).into());
+			let block = Block::new(client.clone(), block_ref.height);
+			let opts = ExtrinsicOpts::new().filter(tx_hash).encode_as(EncodeSelector::None);
+			let ext_info = block.raw_extrinsics(opts).await?;
+
+			if let Some(ext_info) = ext_info.first() {
+				let tr =
+					TransactionReceipt::new(client.clone(), block_ref, (ext_info.ext_hash, ext_info.ext_index).into());
 				return Ok(Some(tr));
 			}
 
@@ -403,13 +409,14 @@ impl Utils {
 		};
 
 		let block = Block::new(client.clone(), block_ref.hash);
-		let ext = block.encoded().get(tx_hash, EncodeSelector::None).await?;
+		let opts = ExtrinsicOpts::new().filter(tx_hash).encode_as(EncodeSelector::None);
+		let ext_info = block.raw_extrinsics(opts).await?;
 
-		let Some(ext) = ext else {
+		let Some(ext_info) = ext_info.first() else {
 			return Ok(None);
 		};
 
-		let tx_ref = TransactionRef::from((ext.ext_hash(), ext.ext_index()));
+		let tx_ref = TransactionRef::from((ext_info.ext_hash, ext_info.ext_index));
 		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref)))
 	}
 
@@ -464,8 +471,9 @@ impl Utils {
 			}
 			if state_nonce == 0 {
 				let block = Block::new(client.clone(), info.hash);
-				let ext = block.encoded().get(tx_hash, EncodeSelector::None).await?;
-				if ext.is_some() {
+				let opts = ExtrinsicOpts::new().filter(tx_hash).encode_as(EncodeSelector::None);
+				let ext = block.raw_extrinsics(opts).await?;
+				if ext.first().is_some() {
 					trace_new_block(nonce, state_nonce, account_id, info, true);
 					return Ok(Some(info));
 				}

@@ -26,13 +26,44 @@ pub async fn fetch_extrinsics_v1(
 	Ok(value)
 }
 
-#[derive(Clone, Default)]
+#[derive(Default, Clone)]
 pub struct Options {
 	pub transaction_filter: ExtrinsicFilter,
 	pub ss58_address: Option<String>,
 	pub app_id: Option<u32>,
 	pub nonce: Option<u32>,
 	pub encode_as: EncodeSelector,
+}
+
+impl Options {
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub fn nonce(mut self, value: u32) -> Self {
+		self.nonce = Some(value);
+		self
+	}
+
+	pub fn app_id(mut self, value: u32) -> Self {
+		self.app_id = Some(value);
+		self
+	}
+
+	pub fn ss58_address(mut self, value: impl Into<String>) -> Self {
+		self.ss58_address = Some(value.into());
+		self
+	}
+
+	pub fn filter(mut self, value: impl Into<ExtrinsicFilter>) -> Self {
+		self.transaction_filter = value.into();
+		self
+	}
+
+	pub fn encode_as(mut self, value: EncodeSelector) -> Self {
+		self.encode_as = value;
+		self
+	}
 }
 
 #[derive(Debug, Clone, Default, Copy, Serialize, Deserialize)]
