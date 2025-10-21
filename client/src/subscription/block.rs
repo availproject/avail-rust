@@ -2,7 +2,7 @@
 
 use crate::{
 	AvailHeader, BlockInfo, Client, LegacyBlock, RpcError, Sub,
-	block::{Block, Events, EventsOpts},
+	block::{Block, Events},
 };
 use avail_rust_core::rpc::BlockPhaseEvent;
 use std::time::Duration;
@@ -161,13 +161,13 @@ impl BlockSub {
 #[derive(Clone)]
 pub struct BlockEventsSub {
 	sub: Sub,
-	opts: EventsOpts,
+	opts: avail_rust_core::rpc::EventOpts,
 }
 
 impl BlockEventsSub {
 	/// Creates a subscription that yields event batches filtered by the supplied options. No network
 	/// calls are made until [`BlockEventsSub::next`] is awaited.
-	pub fn new(client: Client, opts: EventsOpts) -> Self {
+	pub fn new(client: Client, opts: avail_rust_core::rpc::EventOpts) -> Self {
 		Self { sub: Sub::new(client), opts }
 	}
 
@@ -183,7 +183,7 @@ impl BlockEventsSub {
 		loop {
 			let info = self.sub.next().await?;
 			let block = Events::new(self.sub.client_ref().clone(), info.hash);
-			let events = match block.all(self.opts.clone()).await {
+			let events = match block.raw(self.opts.clone()).await {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch events

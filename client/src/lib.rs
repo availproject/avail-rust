@@ -13,7 +13,7 @@ pub mod transaction_api;
 pub mod transaction_options;
 pub mod utils;
 
-pub use block::{ExtrinsicEvent, ExtrinsicEvents};
+pub use block::{AllEvents, Event, Events};
 pub use client::Client;
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, ONE_AVAIL, ONE_HUNDRED_AVAIL,

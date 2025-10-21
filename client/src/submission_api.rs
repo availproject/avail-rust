@@ -3,7 +3,7 @@
 use crate::{
 	Client, Error, UserError,
 	block::{
-		Block, EncodedExtrinsic, EncodedExtrinsics, Events, Extrinsic, ExtrinsicEvents, Extrinsics, SignedExtrinsic,
+		AllEvents, Block, EncodedExtrinsic, EncodedExtrinsics, Events, Extrinsic, Extrinsics, SignedExtrinsic,
 		SignedExtrinsics,
 	},
 	subscription::Sub,
@@ -328,10 +328,10 @@ impl TransactionReceipt {
 	/// # Returns
 	/// - `Ok(ExtrinsicEvents)` when the extrinsic exists and events are available.
 	/// - `Err(Error)` when the events cannot be located or fetched.
-	pub async fn events(&self) -> Result<ExtrinsicEvents, Error> {
+	pub async fn events(&self) -> Result<AllEvents, Error> {
 		let block = Events::new(self.client.clone(), self.block_ref.hash);
 		let events = block.extrinsic(self.tx_ref.index).await?;
-		let Some(events) = events else {
+		if events.is_empty() {
 			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
 		};
 		Ok(events)

@@ -57,7 +57,7 @@ pub async fn event_test() -> Result<(), Error> {
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 
 	let block = Events::new(client.clone(), 1861163);
-	let events = block.extrinsic(1).await.unwrap().unwrap();
+	let events = block.extrinsic(1).await.unwrap();
 
 	// Withdraw
 	let expected = Withdraw {
@@ -96,7 +96,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Reserved
 	let block = Events::new(client.clone(), 1861590);
-	let events = block.extrinsic(1).await.unwrap().unwrap();
+	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Reserved {
 		who: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a").unwrap(),
@@ -107,7 +107,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Unreserved
 	let block = Events::new(client.clone(), 1861592);
-	let events = block.extrinsic(1).await.unwrap().unwrap();
+	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Unreserved {
 		who: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a").unwrap(),
@@ -118,7 +118,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Unlocked
 	let block = Events::new(client.clone(), 1861592);
-	let events = block.extrinsic(1).await.unwrap().unwrap();
+	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Unlocked {
 		who: AccountId::from_str("0x248fa9bcba295608e1a3d36455a536ac4e4011e8366d8f56effb732b30dc372b").unwrap(),
@@ -130,7 +130,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// Locked
 	let client = Client::new(TURING_ENDPOINT).await?;
 	let block = Events::new(client.clone(), 2280015);
-	let events = block.extrinsic(1).await.unwrap().unwrap();
+	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Locked {
 		who: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),

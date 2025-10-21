@@ -90,7 +90,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// NewMultisig
 	{
 		let block = Events::new(client.clone(), 1861590);
-		let events = block.extrinsic(1).await.unwrap().unwrap();
+		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = NewMultisig {
 			approving: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a")
@@ -106,7 +106,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// MultisigExecuted
 	{
 		let block = Events::new(client.clone(), 1861592);
-		let events = block.extrinsic(1).await.unwrap().unwrap();
+		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = MultisigExecuted {
 			approving: AccountId::from_str("0xcf3cb26493846a0a5b758174dbc4dc3f42bf883bc50c8d5f4b4a4d1264dd908e")
@@ -124,7 +124,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// MultisigApproval
 	{
 		let block = Events::new(client.clone(), 1805938);
-		let events = block.extrinsic(1).await.unwrap().unwrap();
+		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = MultisigApproval {
 			approving: AccountId::from_str("0xde54c7f5dbab3620e3093ee263983c0d77bc73e0a5a38391b778c99d2f23d60b")
@@ -141,7 +141,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// MultisigCancelled
 	{
 		let block = Events::new(client.clone(), 1861588);
-		let events = block.extrinsic(1).await.unwrap().unwrap();
+		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = MultisigCancelled {
 			cancelling: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a")

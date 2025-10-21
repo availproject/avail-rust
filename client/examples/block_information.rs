@@ -6,18 +6,9 @@ pub async fn main() -> Result<(), Error> {
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 	let block = client.block(2042867);
 
-	// ANCHOR: available_api
-	// Timestamp is in milliseconds
+	// Timestamp
+	// Adding two hours to match my timezone. Change this so it matches your timezone.
 	let timestamp = block.timestamp().await?;
-	let info = block.info().await?;
-	let header = block.header().await?;
-	let author = block.author().await?;
-	let event_count = block.event_count().await?;
-	let extrinsic_count = block.extrinsic_count().await?;
-	let extrinsic_weight = block.extrinsic_weight().await?;
-	let block_weight = block.weight().await?;
-	// ANCHOR_END: available_api
-
 	// Formatting
 	let date_time = chrono::DateTime::from_timestamp_millis(timestamp as i64).expect("Conversion should work");
 
@@ -35,9 +26,16 @@ pub async fn main() -> Result<(), Error> {
 		date_time_local.minute(),
 		date_time_local.second()
 	);
-
 	println!("1. Timestamp: {}, Date Time: {}", timestamp, date_time);
+
+	// Event Count & Extrinsic Count
+	let event_count = block.event_count().await?;
+	let extrinsic_count = block.extrinsic_count().await?;
 	println!("2. Event Count: {}, Extrinsic Count: {}", event_count, extrinsic_count);
+
+	// Author, Header and Info
+	let author = block.author().await?;
+	let header = block.header().await?;
 	println!(
 		"3. Block Height: {}, Block Author: {},  Block Hash: {:?}, Block Parent Hash: {:?}, Extrinsics Root: {:?}, State Root: {:?}",
 		header.number,
@@ -48,11 +46,19 @@ pub async fn main() -> Result<(), Error> {
 		header.state_root,
 	);
 
+	// Simple block height and hash information
+	let info = block.info().await?;
+	println!("Block Height: {}, Block Hash: {:?}", info.height, info.hash);
+
+	// Extrinsic and Block Weight
+	let extrinsic_weight = block.extrinsic_weight().await?;
+	let block_weight = block.weight().await?;
 	let block_weight =
 		block_weight.mandatory.ref_time + block_weight.normal.ref_time + block_weight.operational.ref_time;
 	println!("4. Extrinsic Weight: {}, Block Weight: {}", extrinsic_weight.ref_time, block_weight);
+
+	let header = block.header().await?;
 	println!("5. Logs (Digest) Count: {}", header.digest.logs.len());
-	println!("Block Height: {}, Block Hash: {:?}", info.height, info.hash);
 
 	Ok(())
 }

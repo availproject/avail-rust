@@ -78,11 +78,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// ProxyAdded
 	{
-		let events = block::Events::new(client.clone(), 2279940)
-			.extrinsic(1)
-			.await
-			.unwrap()
-			.unwrap();
+		let events = block::Events::new(client.clone(), 2279940).extrinsic(1).await.unwrap();
 
 		let expected = ProxyAdded {
 			delegator: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),
@@ -96,11 +92,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// PureCreated
 	{
-		let events = block::Events::new(client.clone(), 2279951)
-			.extrinsic(1)
-			.await
-			.unwrap()
-			.unwrap();
+		let events = block::Events::new(client.clone(), 2279951).extrinsic(1).await.unwrap();
 
 		let expected = PureCreated {
 			pure: AccountId::from_str("5EYj7miFkQ8EFNbEdg7MfeG8dHKWHBoLXCrmoTXWZwMpmxAs").unwrap(),
@@ -115,11 +107,7 @@ pub async fn event_test() -> Result<(), Error> {
 	// ProxyExecuted
 	{
 		let client = Client::new(MAINNET_ENDPOINT).await?;
-		let events = block::Events::new(client.clone(), 1841067)
-			.extrinsic(1)
-			.await
-			.unwrap()
-			.unwrap();
+		let events = block::Events::new(client.clone(), 1841067).extrinsic(1).await.unwrap();
 
 		let expected = ProxyExecuted { result: Ok(()) };
 		let actual = events.first::<ProxyExecuted>().unwrap();
@@ -128,11 +116,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// ProxyExecuted Failed
 	{
-		let events = block::Events::new(client.clone(), 2279971)
-			.extrinsic(1)
-			.await
-			.unwrap()
-			.unwrap();
+		let events = block::Events::new(client.clone(), 2279971).extrinsic(1).await.unwrap();
 
 		let expected = ProxyExecuted {
 			result: Err(DispatchError::Module(ModuleError { index: 40, error: [1, 0, 0, 0] })),
@@ -143,11 +127,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Proxy Removed
 	{
-		let events = block::Events::new(client.clone(), 2279990)
-			.extrinsic(1)
-			.await
-			.unwrap()
-			.unwrap();
+		let events = block::Events::new(client.clone(), 2279990).extrinsic(1).await.unwrap();
 
 		let expected = ProxyRemoved {
 			delegator: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),
