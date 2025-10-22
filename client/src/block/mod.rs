@@ -72,18 +72,7 @@ impl Block {
 		calls::ExtrinsicCalls::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
-	/// Fetches raw extrinsic metadata for this block.
-	///
-	/// # Parameters
-	/// - `opts`: Filters and encoding settings for the RPC request.
-	///
-	/// # Returns
-	/// - `Ok(Vec<rpc::ExtrinsicInfo>)`: Raw extrinsics that matched the supplied options.
-	/// - `Err(Error)`: Identifier decoding failed or the RPC call returned an error.
-	///
-	/// # Side Effects
-	/// - Performs an RPC call which may retry according to the configured policy.
-	pub async fn raw_extrinsics(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
+	pub async fn raw_data(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
 		let chain = self.ctx.chain();
 		chain.system_fetch_extrinsics(self.ctx.block_id.clone(), opts).await
 	}

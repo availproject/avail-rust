@@ -139,6 +139,14 @@ impl TryFrom<String> for EncodedExtrinsic {
 	}
 }
 
+impl TryFrom<&String> for EncodedExtrinsic {
+	type Error = String;
+
+	fn try_from(value: &String) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_str())
+	}
+}
+
 impl TryFrom<&str> for EncodedExtrinsic {
 	type Error = String;
 
