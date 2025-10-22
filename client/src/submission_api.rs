@@ -303,7 +303,7 @@ impl TransactionReceipt {
 			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
 		};
 
-		Ok(call)
+		Ok(call.call)
 	}
 
 	/// Returns the raw extrinsic bytes or a different encoding if requested.

@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block::{Block, Events},
+	block::{Block, BlockEventsQuery},
 	error::Error,
 	prelude::*,
 };
@@ -89,7 +89,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// NewMultisig
 	{
-		let block = Events::new(client.clone(), 1861590);
+		let block = BlockEventsQuery::new(client.clone(), 1861590);
 		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = NewMultisig {
@@ -105,7 +105,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// MultisigExecuted
 	{
-		let block = Events::new(client.clone(), 1861592);
+		let block = BlockEventsQuery::new(client.clone(), 1861592);
 		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = MultisigExecuted {
@@ -123,7 +123,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// MultisigApproval
 	{
-		let block = Events::new(client.clone(), 1805938);
+		let block = BlockEventsQuery::new(client.clone(), 1805938);
 		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = MultisigApproval {
@@ -140,7 +140,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// MultisigCancelled
 	{
-		let block = Events::new(client.clone(), 1861588);
+		let block = BlockEventsQuery::new(client.clone(), 1861588);
 		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = MultisigCancelled {

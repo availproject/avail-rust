@@ -1,20 +1,21 @@
 use crate::{
 	Client, Error, UserError,
 	block::{
-		encoded::{BlockEncodedExtrinsic, ExtrinsicsOpts, Metadata},
-		events::{AllEvents, Events},
-		extrinsic::{BlockExtrinsic, BlockExtrinsics},
+		encoded::{BlockEncodedExtrinsic, Metadata},
+		events::{AllEvents, BlockEventsQuery},
+		extrinsic::{BlockExtrinsic, BlockExtrinsicsQuery},
+		extrinsic_options::Options,
 	},
 };
 use avail_rust_core::{ExtrinsicSignature, H256, HasHeader, MultiAddress, RpcError, types::HashStringNumber};
 use codec::Decode;
 
 /// View of block extrinsics restricted to signed transactions.
-pub struct BlockSignedExtrinsics {
-	xt: BlockExtrinsics,
+pub struct BlockSignedExtrinsicsQuery {
+	xt: BlockExtrinsicsQuery,
 }
 
-impl BlockSignedExtrinsics {
+impl BlockSignedExtrinsicsQuery {
 	/// Builds a signed-transaction view for the specified block.
 	///
 	/// # Parameters
@@ -24,7 +25,7 @@ impl BlockSignedExtrinsics {
 	/// # Returns
 	/// - `Self`: Helper that only surfaces signed extrinsics.
 	pub fn new(client: Client, block_id: HashStringNumber) -> Self {
-		Self { xt: BlockExtrinsics::new(client, block_id) }
+		Self { xt: BlockExtrinsicsQuery::new(client, block_id) }
 	}
 
 	/// Fetches a signed transaction by hash, index, or string identifier.
@@ -70,10 +71,7 @@ impl BlockSignedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn first<T: HasHeader + Decode>(
-		&self,
-		opts: ExtrinsicsOpts,
-	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+	pub async fn first<T: HasHeader + Decode>(&self, opts: Options) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
 		let ext = self.xt.first(opts).await?;
 		let Some(ext) = ext else {
 			return Ok(None);
@@ -101,10 +99,7 @@ impl BlockSignedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn last<T: HasHeader + Decode>(
-		&self,
-		opts: ExtrinsicsOpts,
-	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+	pub async fn last<T: HasHeader + Decode>(&self, opts: Options) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
 		let ext = self.xt.last(opts).await?;
 		let Some(ext) = ext else {
 			return Ok(None);
@@ -131,10 +126,7 @@ impl BlockSignedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn all<T: HasHeader + Decode>(
-		&self,
-		opts: ExtrinsicsOpts,
-	) -> Result<Vec<BlockSignedExtrinsic<T>>, Error> {
+	pub async fn all<T: HasHeader + Decode>(&self, opts: Options) -> Result<Vec<BlockSignedExtrinsic<T>>, Error> {
 		let all = self.xt.all::<T>(opts).await?;
 		let mut result = Vec::with_capacity(all.len());
 		for ext in all {
@@ -161,7 +153,7 @@ impl BlockSignedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn count<T: HasHeader>(&self, opts: ExtrinsicsOpts) -> Result<usize, Error> {
+	pub async fn count<T: HasHeader>(&self, opts: Options) -> Result<usize, Error> {
 		self.xt.count::<T>(opts).await
 	}
 
@@ -177,7 +169,7 @@ impl BlockSignedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn exists<T: HasHeader>(&self, opts: ExtrinsicsOpts) -> Result<bool, Error> {
+	pub async fn exists<T: HasHeader>(&self, opts: Options) -> Result<bool, Error> {
 		self.xt.exists::<T>(opts).await
 	}
 
@@ -242,7 +234,7 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 	/// # Side Effects
 	/// - Issues RPC requests for event data and may retry according to the client's configuration.
 	pub async fn events(&self, client: Client) -> Result<AllEvents, Error> {
-		let events = Events::new(client, self.metadata.block_id)
+		let events = BlockEventsQuery::new(client, self.metadata.block_id)
 			.extrinsic(self.ext_index())
 			.await?;
 		if events.is_empty() {

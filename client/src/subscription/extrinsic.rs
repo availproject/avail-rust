@@ -15,7 +15,7 @@ use std::{marker::PhantomData, time::Duration};
 #[derive(Clone)]
 pub struct SignedExtrinsicSub<T: HasHeader + Decode> {
 	sub: Sub,
-	opts: block::ExtrinsicsOpts,
+	opts: block::extrinsic_options::Options,
 	_phantom: PhantomData<T>,
 }
 
@@ -24,7 +24,7 @@ impl<T: HasHeader + Decode> SignedExtrinsicSub<T> {
 	///
 	/// The client is cloned and no network calls are performed until [`SignedExtrinsicSub::next`] is
 	/// awaited. `opts` controls which transactions are retrieved from each block.
-	pub fn new(client: Client, opts: block::ExtrinsicsOpts) -> Self {
+	pub fn new(client: Client, opts: block::extrinsic_options::Options) -> Self {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
@@ -62,7 +62,7 @@ impl<T: HasHeader + Decode> SignedExtrinsicSub<T> {
 
 	/// Replaces the transaction query options used on subsequent calls to [`SignedExtrinsicSub::next`].
 	/// The change takes effect immediately.
-	pub fn set_opts(&mut self, value: block::ExtrinsicsOpts) {
+	pub fn set_opts(&mut self, value: block::extrinsic_options::Options) {
 		self.opts = value;
 	}
 
@@ -106,7 +106,7 @@ impl<T: HasHeader + Decode> SignedExtrinsicSub<T> {
 #[derive(Clone)]
 pub struct ExtrinsicSub<T: HasHeader + Decode> {
 	sub: Sub,
-	opts: block::ExtrinsicsOpts,
+	opts: block::extrinsic_options::Options,
 	_phantom: PhantomData<T>,
 }
 
@@ -114,7 +114,7 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 	/// Creates a new [`ExtrinsicSub`] subscription.
 	///
 	/// No network calls are issued until the first [`ExtrinsicSub::next`] invocation.
-	pub fn new(client: Client, opts: block::ExtrinsicsOpts) -> Self {
+	pub fn new(client: Client, opts: block::extrinsic_options::Options) -> Self {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
@@ -182,7 +182,7 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 #[derive(Clone)]
 pub struct EncodedExtrinsicSub {
 	sub: Sub,
-	opts: block::ExtrinsicsOpts,
+	opts: block::extrinsic_options::Options,
 }
 
 impl EncodedExtrinsicSub {
@@ -190,7 +190,7 @@ impl EncodedExtrinsicSub {
 	///
 	/// The supplied options control filters and encoding preferences. No network calls are made until
 	/// [`EncodedExtrinsicSub::next`] is awaited.
-	pub fn new(client: Client, opts: block::ExtrinsicsOpts) -> Self {
+	pub fn new(client: Client, opts: block::extrinsic_options::Options) -> Self {
 		Self { sub: Sub::new(client), opts }
 	}
 
@@ -254,10 +254,7 @@ impl EncodedExtrinsicSub {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{
-		block::encoded::ExtrinsicsOpts, clients::mock_client::MockClient, error::Error, prelude::*,
-		subxt_rpcs::RpcClient,
-	};
+	use crate::{clients::mock_client::MockClient, error::Error, prelude::*, subxt_rpcs::RpcClient};
 	use avail_rust_core::{
 		avail::data_availability::tx::SubmitData, rpc::system::fetch_extrinsics::ExtrinsicInformation,
 	};
@@ -370,7 +367,7 @@ mod tests {
 		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
 
 		// Historical blocks
-		let opts = ExtrinsicsOpts::new().filter((29u8, 1u8));
+		let opts = block::extrinsic_options::Options::new().filter((29u8, 1u8));
 		let mut sub = EncodedExtrinsicSub::new(client.clone(), opts);
 
 		sub.set_block_height(2326671);

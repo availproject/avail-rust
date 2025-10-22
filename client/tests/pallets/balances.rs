@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block::{Block, events::Events},
+	block::{Block, events::BlockEventsQuery},
 	error::Error,
 	prelude::*,
 };
@@ -56,7 +56,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 pub async fn event_test() -> Result<(), Error> {
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 
-	let block = Events::new(client.clone(), 1861163);
+	let block = BlockEventsQuery::new(client.clone(), 1861163);
 	let events = block.extrinsic(1).await.unwrap();
 
 	// Withdraw
@@ -95,7 +95,7 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// Reserved
-	let block = Events::new(client.clone(), 1861590);
+	let block = BlockEventsQuery::new(client.clone(), 1861590);
 	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Reserved {
@@ -106,7 +106,7 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// Unreserved
-	let block = Events::new(client.clone(), 1861592);
+	let block = BlockEventsQuery::new(client.clone(), 1861592);
 	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Unreserved {
@@ -117,7 +117,7 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// Unlocked
-	let block = Events::new(client.clone(), 1861592);
+	let block = BlockEventsQuery::new(client.clone(), 1861592);
 	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Unlocked {
@@ -129,7 +129,7 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Locked
 	let client = Client::new(TURING_ENDPOINT).await?;
-	let block = Events::new(client.clone(), 2280015);
+	let block = BlockEventsQuery::new(client.clone(), 2280015);
 	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Locked {

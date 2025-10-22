@@ -1,82 +1,53 @@
 use crate::{
 	Client, Error, UserError,
-	block::{encoded::ExtrinsicsOpts, shared::BlockContext},
+	block::{AllEvents, BlockEventsQuery, Metadata, extrinsic_options::Options, shared::BlockContext},
 };
 use avail_rust_core::{
-	EncodeSelector, ExtrinsicDecodable, HasHeader, RpcError,
+	EncodeSelector, ExtrinsicDecodable, H256, HasHeader, RpcError,
 	rpc::{self, ExtrinsicFilter},
 	types::HashStringNumber,
 };
 use codec::Decode;
 
 /// Detached view that decodes extrinsic call payloads within a block.
-pub struct ExtrinsicCalls {
+pub struct BlockExtrinsicCallsQuery {
 	ctx: BlockContext,
 }
 
-impl ExtrinsicCalls {
-	/// Builds a helper dedicated to decoded extrinsic calls.
-	///
-	/// # Parameters
-	/// - `client`: RPC client used to query extrinsic data.
-	/// - `block_id`: Identifier convertible into `HashStringNumber`.
-	///
-	/// # Returns
-	/// - `Self`: Call-focused helper scoped to the target block.
+impl BlockExtrinsicCallsQuery {
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
 		Self { ctx: BlockContext::new(client, block_id.into()) }
 	}
 
-	/// Fetches a specific extrinsic call by hash, index, or string identifier.
-	///
-	/// # Parameters
-	/// - `extrinsic_id`: Identifier used to select the extrinsic.
-	///
-	/// # Returns
-	/// - `Ok(Some(T))`: The extrinsic matched the identifier and decoded as `T`.
-	/// - `Ok(None)`: No extrinsic satisfied the identifier.
-	/// - `Err(Error)`: Identifier decoding or the RPC request failed.
-	///
-	/// # Side Effects
-	/// - Performs an RPC call and may retry according to the retry policy.
 	pub async fn get<T: HasHeader + Decode>(
 		&self,
 		extrinsic_id: impl Into<HashStringNumber>,
-	) -> Result<Option<T>, Error> {
+	) -> Result<Option<BlockExtrinsicCall<T>>, Error> {
 		async fn inner<T: HasHeader + Decode>(
-			s: &ExtrinsicCalls,
+			s: &BlockExtrinsicCallsQuery,
 			extrinsic_id: HashStringNumber,
-		) -> Result<Option<T>, Error> {
+		) -> Result<Option<BlockExtrinsicCall<T>>, Error> {
 			let filter = match extrinsic_id {
 				HashStringNumber::Hash(x) => ExtrinsicFilter::from(x),
 				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
-			s.first::<T>(ExtrinsicsOpts::new().filter(filter)).await
+			s.first::<T>(Options::new().filter(filter)).await
 		}
 
 		inner::<T>(self, extrinsic_id.into()).await
 	}
 
-	/// Fetches the first extrinsic call that matches the supplied filters.
-	///
-	/// # Parameters
-	/// - `opts`: Filters describing which extrinsic to return.
-	///
-	/// # Returns
-	/// - `Ok(Some(T))`: First matching extrinsic decoded as `T`.
-	/// - `Ok(None)`: No extrinsic satisfied the filters.
-	/// - `Err(Error)`: The RPC request or payload decoding failed.
-	///
-	/// # Side Effects
-	/// - Performs an RPC call and may retry according to the retry policy.
-	pub async fn first<T: HasHeader + Decode>(&self, mut opts: ExtrinsicsOpts) -> Result<Option<T>, Error> {
+	pub async fn first<T: HasHeader + Decode>(
+		&self,
+		mut opts: Options,
+	) -> Result<Option<BlockExtrinsicCall<T>>, Error> {
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
 		let opts = opts.to_rpc_opts(EncodeSelector::Call);
 
-		let block_id = self.ctx.block_id.clone();
+		let block_id = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 		let mut result = chain.system_fetch_extrinsics(block_id, opts).await?;
 
@@ -84,80 +55,60 @@ impl ExtrinsicCalls {
 			return Ok(None);
 		};
 
-		let Some(data) = first.data.take() else {
+		let Some(call) = first.data.take() else {
 			return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
 		};
 
-		let data = T::from_call(data).map_err(Error::Other)?;
+		let call = T::from_call(call).map_err(Error::Other)?;
+		let metadata = Metadata::new(first.ext_hash, first.ext_index, first.pallet_id, first.variant_id, block_id);
 
-		Ok(Some(data))
+		Ok(Some(BlockExtrinsicCall::new(call, metadata)))
 	}
 
-	/// Fetches the last extrinsic call that matches the supplied filters.
-	///
-	/// # Parameters
-	/// - `opts`: Filters describing which extrinsic to return.
-	///
-	/// # Returns
-	/// - `Ok(Some(T))`: Final matching extrinsic decoded as `T`.
-	/// - `Ok(None)`: No extrinsic satisfied the filters.
-	/// - `Err(Error)`: The RPC request or payload decoding failed.
-	///
-	/// # Side Effects
-	/// - Performs an RPC call and may retry according to the retry policy.
-	pub async fn last<T: HasHeader + Decode>(&self, mut opts: ExtrinsicsOpts) -> Result<Option<T>, Error> {
+	pub async fn last<T: HasHeader + Decode>(&self, mut opts: Options) -> Result<Option<BlockExtrinsicCall<T>>, Error> {
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
 		let opts = opts.to_rpc_opts(EncodeSelector::Call);
 
-		let block_id = self.ctx.block_id.clone();
+		let block_id = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 		let mut result = chain.system_fetch_extrinsics(block_id, opts).await?;
 
-		let Some(first) = result.last_mut() else {
+		let Some(last) = result.last_mut() else {
 			return Ok(None);
 		};
 
-		let Some(data) = first.data.take() else {
+		let Some(call) = last.data.take() else {
 			return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
 		};
 
-		let data = T::from_call(data).map_err(Error::Other)?;
+		let call = T::from_call(call).map_err(Error::Other)?;
+		let metadata = Metadata::new(last.ext_hash, last.ext_index, last.pallet_id, last.variant_id, block_id);
 
-		Ok(Some(data))
+		Ok(Some(BlockExtrinsicCall::new(call, metadata)))
 	}
 
-	/// Fetches every extrinsic call that matches the supplied filters.
-	///
-	/// # Parameters
-	/// - `opts`: Filters describing which extrinsics to collect.
-	///
-	/// # Returns
-	/// - `Ok(Vec<T>)`: Zero or more decoded extrinsic calls.
-	/// - `Err(Error)`: The RPC request or payload decoding failed.
-	///
-	/// # Side Effects
-	/// - Performs an RPC call, decoding each payload, and may retry according to the retry policy.
-	pub async fn all<T: HasHeader + Decode>(&self, mut opts: ExtrinsicsOpts) -> Result<Vec<T>, Error> {
+	pub async fn all<T: HasHeader + Decode>(&self, mut opts: Options) -> Result<Vec<BlockExtrinsicCall<T>>, Error> {
 		if opts.filter.is_none() {
 			opts.filter = Some(T::HEADER_INDEX.into())
 		}
 		let opts = opts.to_rpc_opts(EncodeSelector::Call);
 
-		let block_id = self.ctx.block_id.clone();
+		let block_id = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 		let extrinsics = chain.system_fetch_extrinsics(block_id, opts).await?;
 
 		let mut result = Vec::with_capacity(extrinsics.len());
 		for ext in extrinsics {
-			let Some(data) = ext.data else {
+			let Some(call) = ext.data else {
 				return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
 			};
 
-			let data = T::from_call(data).map_err(Error::Other)?;
+			let call = T::from_call(call).map_err(Error::Other)?;
+			let metadata = Metadata::new(ext.ext_hash, ext.ext_index, ext.pallet_id, ext.variant_id, block_id);
 
-			result.push(data);
+			result.push(BlockExtrinsicCall::new(call, metadata));
 		}
 
 		Ok(result)
@@ -174,7 +125,7 @@ impl ExtrinsicCalls {
 	///
 	/// # Side Effects
 	/// - Performs an RPC call and may retry according to the retry policy.
-	pub async fn count<T: HasHeader>(&self, opts: ExtrinsicsOpts) -> Result<usize, Error> {
+	pub async fn count<T: HasHeader>(&self, opts: Options) -> Result<usize, Error> {
 		let mut opts: rpc::ExtrinsicOpts = opts.to_rpc_opts(EncodeSelector::None);
 		opts.transaction_filter = T::HEADER_INDEX.into();
 
@@ -197,7 +148,7 @@ impl ExtrinsicCalls {
 	///
 	/// # Side Effects
 	/// - Performs an RPC call via [`ExtrinsicCalls::count`] and may retry according to the retry policy.
-	pub async fn exists<T: HasHeader>(&self, opts: ExtrinsicsOpts) -> Result<bool, Error> {
+	pub async fn exists<T: HasHeader>(&self, opts: Options) -> Result<bool, Error> {
 		self.count::<T>(opts).await.map(|x| x > 0)
 	}
 
@@ -222,5 +173,63 @@ impl ExtrinsicCalls {
 	/// - `false`: Retries are disabled.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.ctx.should_retry_on_error()
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct BlockExtrinsicCall<T: HasHeader + Decode> {
+	/// Decoded runtime call payload.
+	pub call: T,
+	/// Metadata describing where the extrinsic was found.
+	pub metadata: Metadata,
+}
+
+impl<T: HasHeader + Decode> BlockExtrinsicCall<T> {
+	pub fn new(call: T, metadata: Metadata) -> Self {
+		Self { call, metadata }
+	}
+
+	/// Fetches events emitted by this transaction.
+	///
+	/// # Parameters
+	/// - `client`: RPC client used to fetch event data.
+	///
+	/// # Returns
+	/// - `Ok(AllEvents)`: Wrapper containing events for this extrinsic.
+	/// - `Err(Error)`: Extrinsic emitted no events or the RPC request failed.
+	///
+	/// # Side Effects
+	/// - Issues RPC requests for event data and may retry according to the client's configuration.
+	pub async fn events(&self, client: Client) -> Result<AllEvents, Error> {
+		let events = BlockEventsQuery::new(client, self.metadata.block_id)
+			.extrinsic(self.ext_index())
+			.await?;
+		if events.is_empty() {
+			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
+		};
+
+		Ok(events)
+	}
+
+	/// Returns the index of this transaction inside the block.
+	///
+	/// # Returns
+	/// - `u32`: Index of the extrinsic within the block.
+	///
+	/// # Side Effects
+	/// - None; reads cached metadata.
+	pub fn ext_index(&self) -> u32 {
+		self.metadata.ext_index
+	}
+
+	/// Returns the transaction hash.
+	///
+	/// # Returns
+	/// - `H256`: Hash of the extrinsic.
+	///
+	/// # Side Effects
+	/// - None; reads cached metadata.
+	pub fn ext_hash(&self) -> H256 {
+		self.metadata.ext_hash
 	}
 }

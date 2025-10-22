@@ -2,7 +2,7 @@
 
 use crate::{
 	AvailHeader, BlockInfo, Client, LegacyBlock, RpcError, Sub,
-	block::{Block, events::Events},
+	block::{Block, events::BlockEventsQuery},
 };
 use avail_rust_core::rpc::BlockPhaseEvent;
 use std::time::Duration;
@@ -182,7 +182,7 @@ impl BlockEventsSub {
 	pub async fn next(&mut self) -> Result<Vec<BlockPhaseEvent>, crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
-			let block = Events::new(self.sub.client_ref().clone(), info.hash);
+			let block = BlockEventsQuery::new(self.sub.client_ref().clone(), info.hash);
 			let events = match block.raw(self.opts.clone()).await {
 				Ok(x) => x,
 				Err(err) => {

@@ -2,14 +2,15 @@ pub mod calls;
 pub mod encoded;
 pub mod events;
 pub mod extrinsic;
+pub mod extrinsic_options;
 pub mod shared;
 pub mod signed;
 
-pub use calls::ExtrinsicCalls;
-pub use encoded::{BlockEncodedExtrinsic, BlockEncodedExtrinsics, ExtrinsicsOpts, Metadata};
-pub use events::{AllEvents, Event, Events};
-pub use extrinsic::{BlockExtrinsic, BlockExtrinsics};
-pub use signed::{BlockSignedExtrinsic, BlockSignedExtrinsics};
+pub use calls::{BlockExtrinsicCall, BlockExtrinsicCallsQuery};
+pub use encoded::{BlockEncodedExtrinsic, BlockEncodedExtrinsicsQuery, Metadata};
+pub use events::{AllEvents, BlockEventsQuery, Event};
+pub use extrinsic::{BlockExtrinsic, BlockExtrinsicsQuery};
+pub use signed::{BlockSignedExtrinsic, BlockSignedExtrinsicsQuery};
 
 use crate::{Client, Error, block::shared::BlockContext};
 use avail_rust_core::{
@@ -44,32 +45,32 @@ impl Block {
 	///
 	/// # Returns
 	/// - `SignedExtrinsics`: View that exposes signed extrinsics for this block.
-	pub fn signed(&self) -> signed::BlockSignedExtrinsics {
-		signed::BlockSignedExtrinsics::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	pub fn signed(&self) -> signed::BlockSignedExtrinsicsQuery {
+		signed::BlockSignedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	/// Returns a helper for decoding extrinsics contained in this block.
 	///
 	/// # Returns
 	/// - `Extrinsics`: View that decodes raw extrinsics into runtime calls.
-	pub fn extrinsics(&self) -> extrinsic::BlockExtrinsics {
-		extrinsic::BlockExtrinsics::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	pub fn extrinsics(&self) -> extrinsic::BlockExtrinsicsQuery {
+		extrinsic::BlockExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	/// Returns a helper for retrieving encoded extrinsic payloads in this block.
 	///
 	/// # Returns
 	/// - `EncodedExtrinsics`: View over encoded extrinsic payloads and metadata.
-	pub fn encoded(&self) -> encoded::BlockEncodedExtrinsics {
-		encoded::BlockEncodedExtrinsics::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	pub fn encoded(&self) -> encoded::BlockEncodedExtrinsicsQuery {
+		encoded::BlockEncodedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	/// Returns a helper for inspecting extrinsic call payloads.
 	///
 	/// # Returns
 	/// - `ExtrinsicCalls`: View dedicated to decoding extrinsic calls.
-	pub fn calls(&self) -> calls::ExtrinsicCalls {
-		calls::ExtrinsicCalls::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	pub fn calls(&self) -> calls::BlockExtrinsicCallsQuery {
+		calls::BlockExtrinsicCallsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	pub async fn raw_data(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
@@ -81,8 +82,8 @@ impl Block {
 	///
 	/// # Returns
 	/// - `Events`: View that fetches events emitted by the block.
-	pub fn events(&self) -> events::Events {
-		events::Events::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	pub fn events(&self) -> events::BlockEventsQuery {
+		events::BlockEventsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	/// Overrides the retry behaviour for future RPC calls made through this helper.

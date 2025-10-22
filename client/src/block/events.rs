@@ -5,11 +5,11 @@ use avail_rust_core::{
 	types::{HashStringNumber, RuntimePhase, substrate::Weight},
 };
 
-pub struct Events {
+pub struct BlockEventsQuery {
 	ctx: BlockContext,
 }
 
-impl Events {
+impl BlockEventsQuery {
 	/// Creates an event view for the given block.
 	///
 	/// # Parameters
@@ -19,7 +19,7 @@ impl Events {
 	/// # Returns
 	/// - `Self`: Helper for retrieving events scoped to the block.
 	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
-		Events { ctx: BlockContext::new(client, block_id.into()) }
+		BlockEventsQuery { ctx: BlockContext::new(client, block_id.into()) }
 	}
 
 	/// Returns events emitted by a specific extrinsic index.

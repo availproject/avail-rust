@@ -1,26 +1,27 @@
 use crate::{
 	Client, Error, UserError,
 	block::{
-		calls::ExtrinsicCalls,
-		events::{AllEvents, Events},
+		calls::BlockExtrinsicCallsQuery,
+		events::{AllEvents, BlockEventsQuery},
 		extrinsic::BlockExtrinsic,
+		extrinsic_options::Options,
 		shared::BlockContext,
 		signed::BlockSignedExtrinsic,
 	},
 };
 use avail_rust_core::{
-	EncodeSelector, H256, HasHeader, HashNumber, RpcError, avail,
-	rpc::{self, ExtrinsicFilter, SignerPayload},
+	EncodeSelector, EncodedExtrinsic, ExtrinsicSignature, H256, HasHeader, HashNumber, RpcError, avail,
+	rpc::{self, ExtrinsicFilter},
 	types::HashStringNumber,
 };
 use codec::Decode;
 
 /// View of block extrinsics as raw payloads with associated metadata.
-pub struct BlockEncodedExtrinsics {
+pub struct BlockEncodedExtrinsicsQuery {
 	ctx: BlockContext,
 }
 
-impl BlockEncodedExtrinsics {
+impl BlockEncodedExtrinsicsQuery {
 	/// Builds a raw extrinsic view for the specified block.
 	///
 	/// # Parameters
@@ -47,7 +48,7 @@ impl BlockEncodedExtrinsics {
 	/// - Performs an RPC call and may retry according to the retry policy.
 	pub async fn get(&self, extrinsic_id: impl Into<HashStringNumber>) -> Result<Option<BlockEncodedExtrinsic>, Error> {
 		async fn inner(
-			s: &BlockEncodedExtrinsics,
+			s: &BlockEncodedExtrinsicsQuery,
 			extrinsic_id: HashStringNumber,
 		) -> Result<Option<BlockEncodedExtrinsic>, Error> {
 			let filter = match extrinsic_id {
@@ -55,7 +56,7 @@ impl BlockEncodedExtrinsics {
 				HashStringNumber::String(x) => ExtrinsicFilter::try_from(x).map_err(UserError::Decoding)?,
 				HashStringNumber::Number(x) => ExtrinsicFilter::from(x),
 			};
-			let opts = ExtrinsicsOpts::new().filter(filter);
+			let opts = Options::new().filter(filter);
 
 			s.first(opts).await
 		}
@@ -75,7 +76,7 @@ impl BlockEncodedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs an RPC call and may retry according to the retry policy.
-	pub async fn first(&self, opts: ExtrinsicsOpts) -> Result<Option<BlockEncodedExtrinsic>, Error> {
+	pub async fn first(&self, opts: Options) -> Result<Option<BlockEncodedExtrinsic>, Error> {
 		let block_id = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 		let opts = opts.to_rpc_opts(EncodeSelector::Extrinsic);
@@ -89,8 +90,9 @@ impl BlockEncodedExtrinsics {
 			return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
 		};
 
+		let extrinsic = EncodedExtrinsic::try_from(data).map_err(|x| Error::Other(x))?;
 		let metadata = Metadata::new(first.ext_hash, first.ext_index, first.pallet_id, first.variant_id, block_id);
-		let ext = BlockEncodedExtrinsic::new(data, metadata, first.signer_payload.take());
+		let ext = BlockEncodedExtrinsic::new(extrinsic.signature, extrinsic.call, metadata);
 
 		Ok(Some(ext))
 	}
@@ -107,7 +109,7 @@ impl BlockEncodedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs an RPC call and may retry according to the retry policy.
-	pub async fn last(&self, opts: ExtrinsicsOpts) -> Result<Option<BlockEncodedExtrinsic>, Error> {
+	pub async fn last(&self, opts: Options) -> Result<Option<BlockEncodedExtrinsic>, Error> {
 		let block_id = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 		let opts = opts.to_rpc_opts(EncodeSelector::Extrinsic);
@@ -121,8 +123,9 @@ impl BlockEncodedExtrinsics {
 			return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
 		};
 
+		let extrinsic = EncodedExtrinsic::try_from(data).map_err(|x| Error::Other(x))?;
 		let metadata = Metadata::new(last.ext_hash, last.ext_index, last.pallet_id, last.variant_id, block_id);
-		let ext = BlockEncodedExtrinsic::new(data, metadata, last.signer_payload.take());
+		let ext = BlockEncodedExtrinsic::new(extrinsic.signature, extrinsic.call, metadata);
 
 		Ok(Some(ext))
 	}
@@ -138,7 +141,7 @@ impl BlockEncodedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs an RPC call and may retry according to the retry policy.
-	pub async fn all(&self, opts: ExtrinsicsOpts) -> Result<Vec<BlockEncodedExtrinsic>, Error> {
+	pub async fn all(&self, opts: Options) -> Result<Vec<BlockEncodedExtrinsic>, Error> {
 		let block_id = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 		let opts = opts.to_rpc_opts(EncodeSelector::Extrinsic);
@@ -146,12 +149,14 @@ impl BlockEncodedExtrinsics {
 
 		let mut result = Vec::with_capacity(extrinsics.len());
 		for ext in extrinsics {
-			let metadata = Metadata::new(ext.ext_hash, ext.ext_index, ext.pallet_id, ext.variant_id, block_id);
 			let Some(data) = ext.data else {
 				return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
 			};
 
-			let enc_ext = BlockEncodedExtrinsic::new(data, metadata, ext.signer_payload);
+			let enc_ext = EncodedExtrinsic::try_from(data).map_err(|x| Error::Other(x))?;
+			let metadata = Metadata::new(ext.ext_hash, ext.ext_index, ext.pallet_id, ext.variant_id, block_id);
+
+			let enc_ext = BlockEncodedExtrinsic::new(enc_ext.signature, enc_ext.call, metadata);
 			result.push(enc_ext);
 		}
 
@@ -169,7 +174,7 @@ impl BlockEncodedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs an RPC call and may retry according to the retry policy.
-	pub async fn count(&self, opts: ExtrinsicsOpts) -> Result<usize, Error> {
+	pub async fn count(&self, opts: Options) -> Result<usize, Error> {
 		let opts: rpc::ExtrinsicOpts = opts.to_rpc_opts(EncodeSelector::None);
 
 		let block_id = self.ctx.block_id.clone();
@@ -191,7 +196,7 @@ impl BlockEncodedExtrinsics {
 	///
 	/// # Side Effects
 	/// - Performs an RPC call via [`EncodedExtrinsics::count`] and may retry according to the retry policy.
-	pub async fn exists(&self, opts: ExtrinsicsOpts) -> Result<bool, Error> {
+	pub async fn exists(&self, opts: Options) -> Result<bool, Error> {
 		self.count(opts).await.map(|x| x > 0)
 	}
 
@@ -227,7 +232,7 @@ impl BlockEncodedExtrinsics {
 	/// # Side Effects
 	/// - Fetches extrinsic data over RPC, honouring the retry configuration.
 	pub async fn timestamp(&self) -> Result<u64, Error> {
-		let calls = ExtrinsicCalls::new(self.ctx.client.clone(), self.ctx.block_id.clone());
+		let calls = BlockExtrinsicCallsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone());
 
 		let timestamp = calls.first::<avail::timestamp::tx::Set>(Default::default()).await?;
 		let Some(timestamp) = timestamp else {
@@ -237,7 +242,7 @@ impl BlockEncodedExtrinsics {
 			))));
 		};
 
-		Ok(timestamp.now)
+		Ok(timestamp.call.now)
 	}
 
 	/// Counts extrinsics included in this block.
@@ -249,32 +254,23 @@ impl BlockEncodedExtrinsics {
 	/// # Side Effects
 	/// - Queries encoded extrinsics via RPC and may retry as configured.
 	pub async fn extrinsic_count(&self) -> Result<u32, Error> {
-		self.count(ExtrinsicsOpts::new()).await.map(|x| x as u32)
+		self.count(Options::new()).await.map(|x| x as u32)
 	}
 }
 
 #[derive(Debug, Clone)]
 pub struct BlockEncodedExtrinsic {
-	/// SCALE-encoded string representation of the extrinsic.
-	pub data: String,
-	/// Associated metadata describing the extrinsic.
+	/// Optional signature associated with the extrinsic.
+	pub signature: Option<ExtrinsicSignature>,
+	/// Encoded runtime call payload.
+	pub call: Vec<u8>,
+	/// Metadata describing where the extrinsic was found.
 	pub metadata: Metadata,
-	/// Optional signer payload supplied by the node.
-	pub signer_payload: Option<SignerPayload>,
 }
 
 impl BlockEncodedExtrinsic {
-	/// Creates a raw extrinsic wrapper.
-	///
-	/// # Parameters
-	/// - `data`: SCALE-encoded extrinsic payload as a string.
-	/// - `metadata`: Metadata describing the extrinsic.
-	/// - `signer_payload`: Optional signer metadata supplied by the node.
-	///
-	/// # Returns
-	/// - `Self`: Encoded extrinsic wrapper containing the provided data.
-	pub fn new(data: String, metadata: Metadata, signer_payload: Option<SignerPayload>) -> Self {
-		Self { data, metadata, signer_payload }
+	pub fn new(signature: Option<ExtrinsicSignature>, call: Vec<u8>, metadata: Metadata) -> Self {
+		Self { signature, call, metadata }
 	}
 
 	/// Fetches events emitted by this extrinsic.
@@ -289,7 +285,7 @@ impl BlockEncodedExtrinsic {
 	/// # Side Effects
 	/// - Issues RPC requests for event data and may retry according to the client's configuration.
 	pub async fn events(&self, client: Client) -> Result<AllEvents, Error> {
-		let events = Events::new(client, self.metadata.block_id)
+		let events = BlockEventsQuery::new(client, self.metadata.block_id)
 			.extrinsic(self.ext_index())
 			.await?;
 
@@ -322,7 +318,7 @@ impl BlockEncodedExtrinsic {
 	/// - `Some(u32)`: Application identifier from the signer payload.
 	/// - `None`: Signer payload was absent.
 	pub fn app_id(&self) -> Option<u32> {
-		Some(self.signer_payload.as_ref()?.app_id)
+		Some(self.signature.as_ref()?.tx_extra.app_id)
 	}
 
 	/// Returns the nonce if the signer payload provided it.
@@ -331,7 +327,7 @@ impl BlockEncodedExtrinsic {
 	/// - `Some(u32)`: Nonce from the signer payload.
 	/// - `None`: Signer payload was absent.
 	pub fn nonce(&self) -> Option<u32> {
-		Some(self.signer_payload.as_ref()?.nonce)
+		Some(self.signature.as_ref()?.tx_extra.nonce)
 	}
 
 	/// Returns the ss58 address if the signer payload provided it.
@@ -340,7 +336,10 @@ impl BlockEncodedExtrinsic {
 	/// - `Some(String)`: SS58 address supplied by the signer payload.
 	/// - `None`: Signer payload was absent.
 	pub fn ss58_address(&self) -> Option<String> {
-		self.signer_payload.as_ref()?.ss58_address.clone()
+		match &self.signature.as_ref()?.address {
+			avail_rust_core::MultiAddress::Id(account_id32) => Some(std::format!("{}", account_id32)),
+			_ => None,
+		}
 	}
 
 	/// Converts the encoded extrinsic into a signed variant when possible.
@@ -407,88 +406,5 @@ impl Metadata {
 	/// - `Self`: Metadata wrapper encapsulating the supplied values.
 	pub fn new(ext_hash: H256, ext_index: u32, pallet_id: u8, variant_id: u8, block_id: HashNumber) -> Self {
 		Self { ext_hash, ext_index, pallet_id, variant_id, block_id }
-	}
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct ExtrinsicsOpts {
-	pub filter: Option<ExtrinsicFilter>,
-	pub ss58_address: Option<String>,
-	pub app_id: Option<u32>,
-	pub nonce: Option<u32>,
-}
-
-impl ExtrinsicsOpts {
-	/// Creates a builder with all filters unset.
-	///
-	/// # Returns
-	/// - `Self`: Options builder with default values.
-	pub fn new() -> Self {
-		Self::default()
-	}
-
-	/// Sets the expected nonce filter.
-	///
-	/// # Parameters
-	/// - `value`: Nonce that matching extrinsics must carry.
-	///
-	/// # Returns
-	/// - `Self`: Builder with the nonce filter applied.
-	pub fn nonce(mut self, value: u32) -> Self {
-		self.nonce = Some(value);
-		self
-	}
-
-	/// Sets the application identifier filter.
-	///
-	/// # Parameters
-	/// - `value`: Application identifier required for matching extrinsics.
-	///
-	/// # Returns
-	/// - `Self`: Builder with the application filter applied.
-	pub fn app_id(mut self, value: u32) -> Self {
-		self.app_id = Some(value);
-		self
-	}
-
-	/// Sets the signer address filter.
-	///
-	/// # Parameters
-	/// - `value`: Address (SS58 format) required for matching extrinsics.
-	///
-	/// # Returns
-	/// - `Self`: Builder with the address filter applied.
-	pub fn ss58_address(mut self, value: impl Into<String>) -> Self {
-		self.ss58_address = Some(value.into());
-		self
-	}
-
-	/// Sets the primary transaction filter.
-	///
-	/// # Parameters
-	/// - `value`: Filter describing the target extrinsics (hash, index, or number).
-	///
-	/// # Returns
-	/// - `Self`: Builder with the transaction filter applied.
-	pub fn filter(mut self, value: impl Into<ExtrinsicFilter>) -> Self {
-		self.filter = Some(value.into());
-		self
-	}
-
-	/// Converts the builder into RPC options with the requested encoding.
-	///
-	/// # Parameters
-	/// - `encode_as`: Encoding preference for the RPC response.
-	///
-	/// # Returns
-	/// - `rpc::ExtrinsicOpts`: Ready-to-send RPC configuration.
-	pub fn to_rpc_opts(self, encode_as: EncodeSelector) -> rpc::ExtrinsicOpts {
-		rpc::ExtrinsicOpts {
-			transaction_filter: self.filter.unwrap_or_default(),
-			ss58_address: self.ss58_address,
-			app_id: self.app_id,
-			nonce: self.nonce,
-			encode_as,
-		}
 	}
 }
