@@ -1,4 +1,4 @@
-use avail_rust_client::{block::SignedExtrinsics, error::Error, prelude::*};
+use avail_rust_client::{block::Block, error::Error, prelude::*};
 use avail_rust_core::avail::session::tx::{PurgeKeys, SetKeys};
 use codec::Encode;
 
@@ -13,7 +13,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set keys
 	{
-		let block = SignedExtrinsics::new(client.clone(), 1811224);
+		let block = Block::new(client.clone(), 1811224).signed();
 
 		let submittable = client.tx().session().set_key(
 			"0x80c52d4cb7e3f08b72867f94dfd333a69eceeac33182592115329a295d68213c",
@@ -29,7 +29,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set keys
 	{
-		let block = SignedExtrinsics::new(client.clone(), 209615);
+		let block = Block::new(client.clone(), 209615).signed();
 
 		let submittable = client.tx().session().purge_key();
 		let expected_call = PurgeKeys::from_call(&submittable.call.encode()).unwrap();

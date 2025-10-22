@@ -2,7 +2,7 @@
 
 use crate::{
 	AvailHeader, BlockInfo, Client, LegacyBlock, RpcError, Sub,
-	block::{Block, Events},
+	block::{Block, events::Events},
 };
 use avail_rust_core::rpc::BlockPhaseEvent;
 use std::time::Duration;

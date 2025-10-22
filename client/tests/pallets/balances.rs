@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block::{Events, SignedExtrinsics},
+	block::{Block, events::Events},
 	error::Error,
 	prelude::*,
 };
@@ -20,7 +20,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Transfer All
 	{
-		let block = SignedExtrinsics::new(client.clone(), 1828050);
+		let block = Block::new(client.clone(), 1828050).signed();
 
 		let account_id = "0x28806db1fa697e9c4967d8bd8ee78a994dfea2887486c39969a7d16bfebbf36f";
 		let submittable = client.tx().balances().transfer_all(account_id, false);
@@ -31,7 +31,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// TransferAllowDeath
 	{
-		let block = SignedExtrinsics::new(client.clone(), 1828972);
+		let block = Block::new(client.clone(), 1828972).signed();
 		let account_id = "0x0d584a4cbbfd9a4878d816512894e65918e54fae13df39a6f520fc90caea2fb0";
 		let amount = 2010899374608366600109698;
 		let submittable = client.tx().balances().transfer_allow_death(account_id, amount);
@@ -42,7 +42,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// TransferKeepAlive
 	{
-		let block = SignedExtrinsics::new(client.clone(), 1828947);
+		let block = Block::new(client.clone(), 1828947).signed();
 		let account_id = "0x00d6fb2b0c83e1bbf6938265912d900f57c9bee67bd8a8cb18ec50fefbf47931";
 		let amount = 616150000000000000000;
 		let submittable = client.tx().balances().transfer_keep_alive(account_id, amount);

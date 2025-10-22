@@ -20,13 +20,14 @@ pub async fn fetch_extrinsics_v1(
 		},
 		encode_selector: Some(options.encode_as),
 	};
+
 	let params = rpc_params![block_id, options];
 	let value: Vec<ExtrinsicInformation> = client.request("system_fetchExtrinsicsV1", params).await?;
 	let value: Vec<ExtrinsicInfo> = value.into_iter().map(|x| x.into()).collect();
 	Ok(value)
 }
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Options {
 	pub transaction_filter: ExtrinsicFilter,
 	pub ss58_address: Option<String>,
@@ -249,19 +250,19 @@ impl From<&Vec<(u8, u8)>> for ExtrinsicFilter {
 	}
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 struct RpcOptions {
 	pub filter: Filter,
 	pub encode_selector: Option<EncodeSelector>,
 }
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct Filter {
 	pub transaction: Option<ExtrinsicFilter>,
 	pub signature: SignatureFilter,
 }
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct SignatureFilter {
 	pub ss58_address: Option<String>,
 	pub app_id: Option<u32>,
