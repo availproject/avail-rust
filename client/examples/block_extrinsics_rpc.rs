@@ -178,17 +178,6 @@ pub async fn main() -> Result<(), Error> {
 		String::from_utf8(extrinsic.call.data).unwrap(),
 		extrinsic.signature.tx_extra.tip
 	);
-	println!("");
-
-	// All
-	// let get = query.get(0).await?.expect("Should be there");
-	// let first = query.first(Default::default()).await?.expect("Should be there");
-	// let last = query.last(Default::default()).await?.expect("Should be there");
-	// let all = query.all(Default::default()).await?;
-
-	// First
-
-	// Last
 
 	Ok(())
 }

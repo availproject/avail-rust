@@ -266,7 +266,7 @@ impl TransactionReceipt {
 	/// # Returns
 	/// - `Ok(SignedExtrinsic<T>)` when the transaction exists and can be decoded as `T`.
 	/// - `Err(Error)` if the transaction is missing, cannot be decoded, or any RPC call fails.
-	pub async fn signed<T: HasHeader + Decode>(&self) -> Result<block::SignedExtrinsic<T>, Error> {
+	pub async fn signed<T: HasHeader + Decode>(&self) -> Result<block::BlockSignedExtrinsic<T>, Error> {
 		let block = Block::new(self.client.clone(), self.block_ref.height).signed();
 		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
@@ -281,9 +281,9 @@ impl TransactionReceipt {
 	/// # Returns
 	/// - `Ok(Extrinsic<T>)` when the extrinsic exists and decodes as `T`.
 	/// - `Err(Error)` when the extrinsic is missing, cannot be decoded as `T`, or RPC access fails.
-	pub async fn extrinsic<T: HasHeader + Decode>(&self) -> Result<block::Extrinsic<T>, Error> {
+	pub async fn extrinsic<T: HasHeader + Decode>(&self) -> Result<block::BlockExtrinsic<T>, Error> {
 		let block = Block::new(self.client.clone(), self.block_ref.height).extrinsics();
-		let ext: Option<block::Extrinsic<T>> = block.get(self.tx_ref.index).await?;
+		let ext: Option<block::BlockExtrinsic<T>> = block.get(self.tx_ref.index).await?;
 		let Some(ext) = ext else {
 			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
 		};
@@ -311,7 +311,7 @@ impl TransactionReceipt {
 	/// # Returns
 	/// - `Ok(EncodedExtrinsic)` with the requested encoding.
 	/// - `Err(Error)` when the extrinsic cannot be found or an RPC failure occurs.
-	pub async fn encoded(&self) -> Result<block::EncodedExtrinsic, Error> {
+	pub async fn encoded(&self) -> Result<block::BlockEncodedExtrinsic, Error> {
 		let block = Block::new(self.client.clone(), self.block_ref.height).encoded();
 		let ext = block.get(self.tx_ref.index).await?;
 		let Some(ext) = ext else {

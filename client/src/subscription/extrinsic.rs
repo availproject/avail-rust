@@ -37,7 +37,7 @@ impl<T: HasHeader + Decode> SignedExtrinsicSub<T> {
 	///   call can retry.
 	///
 	/// On success the subscription advances to the next block height.
-	pub async fn next(&mut self) -> Result<(Vec<block::SignedExtrinsic<T>>, BlockInfo), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<block::BlockSignedExtrinsic<T>>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
 			let mut block = Block::new(self.sub.client_ref().clone(), info.hash).signed();
@@ -125,7 +125,7 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 	///   configured options.
 	/// - `Err(crate::Error)` when the RPC query fails. The internal cursor rewinds so a retry will re-
 	///   attempt the same block.
-	pub async fn next(&mut self) -> Result<(Vec<block::Extrinsic<T>>, BlockInfo), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<block::BlockExtrinsic<T>>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
 			let mut block = Block::new(self.sub.client_ref().clone(), info.hash).extrinsics();
@@ -201,7 +201,7 @@ impl EncodedExtrinsicSub {
 	///   filter.
 	/// - `Err(crate::Error)` when fetching fails; the cursor rewinds to retry the same block on the next
 	///   call.
-	pub async fn next(&mut self) -> Result<(Vec<block::EncodedExtrinsic>, BlockInfo), crate::Error> {
+	pub async fn next(&mut self) -> Result<(Vec<block::BlockEncodedExtrinsic>, BlockInfo), crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
 			let mut block = Block::new(self.sub.client_ref().clone(), info.hash).encoded();

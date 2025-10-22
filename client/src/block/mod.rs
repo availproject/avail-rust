@@ -6,10 +6,10 @@ pub mod shared;
 pub mod signed;
 
 pub use calls::ExtrinsicCalls;
-pub use encoded::{EncodedExtrinsic, EncodedExtrinsics, ExtrinsicsOpts, Metadata};
+pub use encoded::{BlockEncodedExtrinsic, BlockEncodedExtrinsics, ExtrinsicsOpts, Metadata};
 pub use events::{AllEvents, Event, Events};
-pub use extrinsic::{Extrinsic, Extrinsics};
-pub use signed::{SignedExtrinsic, SignedExtrinsics};
+pub use extrinsic::{BlockExtrinsic, BlockExtrinsics};
+pub use signed::{BlockSignedExtrinsic, BlockSignedExtrinsics};
 
 use crate::{Client, Error, block::shared::BlockContext};
 use avail_rust_core::{
@@ -44,24 +44,24 @@ impl Block {
 	///
 	/// # Returns
 	/// - `SignedExtrinsics`: View that exposes signed extrinsics for this block.
-	pub fn signed(&self) -> signed::SignedExtrinsics {
-		signed::SignedExtrinsics::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	pub fn signed(&self) -> signed::BlockSignedExtrinsics {
+		signed::BlockSignedExtrinsics::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	/// Returns a helper for decoding extrinsics contained in this block.
 	///
 	/// # Returns
 	/// - `Extrinsics`: View that decodes raw extrinsics into runtime calls.
-	pub fn extrinsics(&self) -> extrinsic::Extrinsics {
-		extrinsic::Extrinsics::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	pub fn extrinsics(&self) -> extrinsic::BlockExtrinsics {
+		extrinsic::BlockExtrinsics::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	/// Returns a helper for retrieving encoded extrinsic payloads in this block.
 	///
 	/// # Returns
 	/// - `EncodedExtrinsics`: View over encoded extrinsic payloads and metadata.
-	pub fn encoded(&self) -> encoded::EncodedExtrinsics {
-		encoded::EncodedExtrinsics::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	pub fn encoded(&self) -> encoded::BlockEncodedExtrinsics {
+		encoded::BlockEncodedExtrinsics::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	/// Returns a helper for inspecting extrinsic call payloads.
