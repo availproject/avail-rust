@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block::{AllEvents, extrinsic_options::Options},
+	block::{BlockEvents, extrinsic_options::Options},
 	prelude::*,
 };
 use avail_rust_core::avail::data_availability::tx::SubmitData;
@@ -24,21 +24,15 @@ pub async fn main() -> Result<(), Error> {
 		.first::<SubmitData>(Default::default())
 		.await?
 		.expect("Must be there");
-	let call = block
-		.calls()
-		.first::<SubmitData>(Default::default())
-		.await?
-		.expect("Must be there");
 
 	printout_events("encoded", encoded.events(client.clone()).await?);
 	printout_events("extrinsics", extrinsics.events(client.clone()).await?);
 	printout_events("signed", signed.events(client.clone()).await?);
-	printout_events("call", call.events(client.clone()).await?);
 
 	Ok(())
 }
 
-fn printout_events(from: &str, events: AllEvents) {
+fn printout_events(from: &str, events: BlockEvents) {
 	println!("{}:", from);
 	for event in events.events {
 		println!(

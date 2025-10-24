@@ -1,8 +1,9 @@
 use crate::{
 	Client, Error, ExtrinsicDecodable, UserError,
 	block::{
-		encoded::{BlockEncodedExtrinsic, BlockEncodedExtrinsicsQuery, Metadata},
-		events::{AllEvents, BlockEventsQuery},
+		BlockExtrinsicMetadata,
+		encoded::{BlockEncodedExtrinsic, BlockEncodedExtrinsicsQuery},
+		events::{BlockEvents, BlockEventsQuery},
 		extrinsic_options::Options,
 		signed::BlockSignedExtrinsic,
 	},
@@ -210,7 +211,7 @@ pub struct BlockExtrinsic<T: HasHeader + Decode> {
 	/// Decoded runtime call payload.
 	pub call: T,
 	/// Metadata describing where the extrinsic was found.
-	pub metadata: Metadata,
+	pub metadata: BlockExtrinsicMetadata,
 }
 
 impl<T: HasHeader + Decode> BlockExtrinsic<T> {
@@ -223,7 +224,7 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 	///
 	/// # Returns
 	/// - `Self`: Decoded extrinsic wrapper containing the provided data.
-	pub fn new(signature: Option<ExtrinsicSignature>, call: T, metadata: Metadata) -> Self {
+	pub fn new(signature: Option<ExtrinsicSignature>, call: T, metadata: BlockExtrinsicMetadata) -> Self {
 		Self { signature, call, metadata }
 	}
 
@@ -238,7 +239,7 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 	///
 	/// # Side Effects
 	/// - Issues RPC requests for event data and may retry according to the client's configuration.
-	pub async fn events(&self, client: Client) -> Result<AllEvents, Error> {
+	pub async fn events(&self, client: Client) -> Result<BlockEvents, Error> {
 		let events = BlockEventsQuery::new(client, self.metadata.block_id)
 			.extrinsic(self.ext_index())
 			.await?;
@@ -272,7 +273,7 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 	/// - `Some(u32)`: Application identifier from the signature.
 	/// - `None`: Extrinsic was unsigned.
 	pub fn app_id(&self) -> Option<u32> {
-		Some(self.signature.as_ref()?.tx_extra.app_id)
+		Some(self.signature.as_ref()?.extra.app_id)
 	}
 
 	/// Returns the nonce if the extrinsic was signed.
@@ -281,7 +282,7 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 	/// - `Some(u32)`: Nonce from the signature.
 	/// - `None`: Extrinsic was unsigned.
 	pub fn nonce(&self) -> Option<u32> {
-		Some(self.signature.as_ref()?.tx_extra.nonce)
+		Some(self.signature.as_ref()?.extra.nonce)
 	}
 
 	/// Returns the tip if the extrinsic was signed.
@@ -290,7 +291,7 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 	/// - `Some(u128)`: Tip reported by the signature.
 	/// - `None`: Extrinsic was unsigned.
 	pub fn tip(&self) -> Option<u128> {
-		Some(self.signature.as_ref()?.tx_extra.tip)
+		Some(self.signature.as_ref()?.extra.tip)
 	}
 
 	/// Returns the signer as an ss58 string when available.

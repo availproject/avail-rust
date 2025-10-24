@@ -147,14 +147,14 @@ pub async fn main() -> Result<(), Error> {
 	println!(
 		"Encoded Extrinsic Timestamp::Set call length: {}, Tip: {:?}",
 		extrinsic.call.len(),
-		extrinsic.signature.map(|x| x.tx_extra.tip)
+		extrinsic.signature.map(|x| x.extra.tip)
 	);
 
 	let extrinsic = Extrinsic::<avail::timestamp::tx::Set>::try_from(&data).unwrap();
 	println!(
 		"Extrinsic Timestamp::Set now: {}, Tip: {:?}",
 		extrinsic.call.now,
-		extrinsic.signature.map(|x| x.tx_extra.tip)
+		extrinsic.signature.map(|x| x.extra.tip)
 	);
 
 	let data = infos[1].data.take().unwrap();
@@ -162,21 +162,21 @@ pub async fn main() -> Result<(), Error> {
 	println!(
 		"Encoded Extrinsic DataAvailability::SubmitData call length: {}, Tip: {:?}",
 		extrinsic.call.len(),
-		extrinsic.signature.map(|x| x.tx_extra.tip)
+		extrinsic.signature.map(|x| x.extra.tip)
 	);
 
 	let extrinsic = Extrinsic::<avail::data_availability::tx::SubmitData>::try_from(&data).unwrap();
 	println!(
 		"Extrinsic DataAvailability::SubmitData data: {}, Tip: {:?}",
 		String::from_utf8(extrinsic.call.data).unwrap(),
-		extrinsic.signature.map(|x| x.tx_extra.tip)
+		extrinsic.signature.map(|x| x.extra.tip)
 	);
 
 	let extrinsic = SignedExtrinsic::<avail::data_availability::tx::SubmitData>::try_from(&data).unwrap();
 	println!(
 		"Signed Extrinsic DataAvailability::SubmitData data: {}, Tip: {}",
 		String::from_utf8(extrinsic.call.data).unwrap(),
-		extrinsic.signature.tx_extra.tip
+		extrinsic.signature.extra.tip
 	);
 
 	Ok(())

@@ -46,21 +46,21 @@ pub struct ExtrinsicExtra {
 pub struct ExtrinsicSignature {
 	pub address: MultiAddress,
 	pub signature: MultiSignature,
-	pub tx_extra: ExtrinsicExtra,
+	pub extra: ExtrinsicExtra,
 }
 impl Encode for ExtrinsicSignature {
 	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 		self.address.encode_to(dest);
 		self.signature.encode_to(dest);
-		self.tx_extra.encode_to(dest);
+		self.extra.encode_to(dest);
 	}
 }
 impl Decode for ExtrinsicSignature {
 	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 		let address = Decode::decode(input)?;
 		let signature = Decode::decode(input)?;
-		let tx_extra = Decode::decode(input)?;
-		Ok(Self { address, signature, tx_extra })
+		let extra = Decode::decode(input)?;
+		Ok(Self { address, signature, extra })
 	}
 }
 

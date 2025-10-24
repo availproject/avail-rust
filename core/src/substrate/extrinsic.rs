@@ -176,7 +176,7 @@ impl<'a> GenericExtrinsic<'a> {
 	pub fn new(account_id: AccountId, signature: [u8; 64], payload: ExtrinsicPayload<'a>) -> Self {
 		let address = MultiAddress::Id(account_id);
 		let signature = MultiSignature::Sr25519(signature);
-		let signature = Some(ExtrinsicSignature { address, signature, tx_extra: payload.extra.clone() });
+		let signature = Some(ExtrinsicSignature { address, signature, extra: payload.extra.clone() });
 
 		Self { signature, call: payload.call }
 	}
@@ -187,7 +187,7 @@ impl<'a> GenericExtrinsic<'a> {
 			0x84u8.encode_to(&mut encoded_tx_inner);
 			signed.address.encode_to(&mut encoded_tx_inner);
 			signed.signature.encode_to(&mut encoded_tx_inner);
-			signed.tx_extra.encode_to(&mut encoded_tx_inner);
+			signed.extra.encode_to(&mut encoded_tx_inner);
 		} else {
 			0x4u8.encode_to(&mut encoded_tx_inner);
 		}

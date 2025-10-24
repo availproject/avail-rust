@@ -1,4 +1,3 @@
-pub mod calls;
 pub mod encoded;
 pub mod events;
 pub mod extrinsic;
@@ -6,15 +5,18 @@ pub mod extrinsic_options;
 pub mod shared;
 pub mod signed;
 
-pub use calls::{BlockExtrinsicCall, BlockExtrinsicCallsQuery};
-pub use encoded::{BlockEncodedExtrinsic, BlockEncodedExtrinsicsQuery, Metadata};
-pub use events::{AllEvents, BlockEventsQuery, Event};
+pub use encoded::{BlockEncodedExtrinsic, BlockEncodedExtrinsicsQuery};
+pub use events::{BlockEvent, BlockEvents, BlockEventsQuery};
 pub use extrinsic::{BlockExtrinsic, BlockExtrinsicsQuery};
+pub use shared::BlockExtrinsicMetadata;
 pub use signed::{BlockSignedExtrinsic, BlockSignedExtrinsicsQuery};
 
-use crate::{Client, Error, block::shared::BlockContext};
+use crate::{
+	Client, Error,
+	block::{extrinsic_options::Options, shared::BlockContext},
+};
 use avail_rust_core::{
-	AccountId, AvailHeader, BlockInfo, HashNumber,
+	AccountId, AvailHeader, BlockInfo, HashNumber, avail,
 	grandpa::GrandpaJustification,
 	rpc::{self},
 	types::{
@@ -63,14 +65,6 @@ impl Block {
 	/// - `EncodedExtrinsics`: View over encoded extrinsic payloads and metadata.
 	pub fn encoded(&self) -> encoded::BlockEncodedExtrinsicsQuery {
 		encoded::BlockEncodedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
-	}
-
-	/// Returns a helper for inspecting extrinsic call payloads.
-	///
-	/// # Returns
-	/// - `ExtrinsicCalls`: View dedicated to decoding extrinsic calls.
-	pub fn calls(&self) -> calls::BlockExtrinsicCallsQuery {
-		calls::BlockExtrinsicCallsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	pub async fn raw_data(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
@@ -141,7 +135,13 @@ impl Block {
 	/// # Side Effects
 	/// - Fetches extrinsic data over RPC, honouring the retry configuration.
 	pub async fn timestamp(&self) -> Result<u64, Error> {
-		self.encoded().timestamp().await
+		let query = self.extrinsics();
+		let timestamp = query.first::<avail::timestamp::tx::Set>(Default::default()).await?;
+		let Some(timestamp) = timestamp else {
+			return Err(Error::Other(std::format!("No timestamp transaction found in block: {:?}", self.ctx.block_id)));
+		};
+
+		Ok(timestamp.call.now)
 	}
 
 	/// Fetches high-level metadata (number, hash, parent) for this block.
@@ -166,7 +166,7 @@ impl Block {
 	/// # Side Effects
 	/// - Performs an RPC call and may retry according to the retry policy.
 	pub async fn header(&self) -> Result<AvailHeader, Error> {
-		shared::header(&self.ctx.client, self.ctx.block_id.clone()).await
+		self.ctx.header().await
 	}
 
 	/// Fetches the author recorded for this block.
@@ -191,7 +191,8 @@ impl Block {
 	/// # Side Effects
 	/// - Fetches extrinsic metadata over RPC, honouring the retry configuration.
 	pub async fn extrinsic_count(&self) -> Result<u32, Error> {
-		self.encoded().extrinsic_count().await
+		let encoded = self.encoded();
+		encoded.count(Options::new()).await.map(|x| x as u32)
 	}
 
 	/// Counts how many events were emitted in this block.

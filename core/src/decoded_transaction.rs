@@ -198,7 +198,7 @@ impl Encode for EncodedExtrinsic {
 			0x84u8.encode_to(&mut encoded_tx_inner);
 			signed.address.encode_to(&mut encoded_tx_inner);
 			signed.signature.encode_to(&mut encoded_tx_inner);
-			signed.tx_extra.encode_to(&mut encoded_tx_inner);
+			signed.extra.encode_to(&mut encoded_tx_inner);
 		} else {
 			0x4u8.encode_to(&mut encoded_tx_inner);
 		}

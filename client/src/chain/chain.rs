@@ -434,7 +434,7 @@ impl Chain {
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
-				tracing::info!(target: "tx", "Submitting Transaction. Address: {}, Nonce: {}, App Id: {}", account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
+				tracing::info!(target: "tx", "Submitting Transaction. Address: {}, Nonce: {}, App Id: {}", account_id, signed.extra.nonce, signed.extra.app_id);
 			}
 		}
 
@@ -445,7 +445,7 @@ impl Chain {
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
-				tracing::info!(target: "tx", "Transaction Submitted.  Address: {}, Nonce: {}, App Id: {}, Tx Hash: {:?},", account_id, signed.tx_extra.nonce, signed.tx_extra.app_id, tx_hash);
+				tracing::info!(target: "tx", "Transaction Submitted.  Address: {}, Nonce: {}, App Id: {}, Tx Hash: {:?},", account_id, signed.extra.nonce, signed.extra.app_id, tx_hash);
 			}
 		}
 
@@ -479,7 +479,7 @@ impl Chain {
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, self.retry_on_error).await?;
 
-		let tx_extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
+		let extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
 		let tx_additional = avail_rust_core::ExtrinsicAdditional {
 			spec_version: self.client.online_client().spec_version(),
 			tx_version: self.client.online_client().transaction_version(),
@@ -487,7 +487,7 @@ impl Chain {
 			fork_hash: refined_options.mortality.block_hash,
 		};
 
-		let tx_payload = avail_rust_core::ExtrinsicPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
+		let tx_payload = avail_rust_core::ExtrinsicPayload::new_borrowed(tx_call, extra, tx_additional.clone());
 		Ok(self.sign_payload(signer, tx_payload).await)
 	}
 
@@ -522,7 +522,7 @@ impl Chain {
 		let account_id = signer.public_key().to_account_id();
 		let refined_options = options.build(&self.client, &account_id, self.retry_on_error).await?;
 
-		let tx_extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
+		let extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
 		let tx_additional = avail_rust_core::ExtrinsicAdditional {
 			spec_version: self.client.online_client().spec_version(),
 			tx_version: self.client.online_client().transaction_version(),
@@ -530,7 +530,7 @@ impl Chain {
 			fork_hash: refined_options.mortality.block_hash,
 		};
 
-		let tx_payload = avail_rust_core::ExtrinsicPayload::new_borrowed(tx_call, tx_extra, tx_additional.clone());
+		let tx_payload = avail_rust_core::ExtrinsicPayload::new_borrowed(tx_call, extra, tx_additional.clone());
 		let tx_hash = self.sign_and_submit_payload(signer, tx_payload).await?;
 
 		let value = SubmittedTransaction::new(self.client.clone(), tx_hash, account_id, refined_options, tx_additional);

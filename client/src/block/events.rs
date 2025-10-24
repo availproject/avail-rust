@@ -1,7 +1,7 @@
 use crate::{Client, Error, UserError, block::shared::BlockContext};
 use avail_rust_core::{
 	HasHeader, RpcError, TransactionEventDecodable, avail,
-	rpc::{self, BlockPhaseEvent},
+	rpc::{self, BlockPhaseEvent, PhaseEvent},
 	types::{HashStringNumber, RuntimePhase, substrate::Weight},
 };
 
@@ -33,9 +33,9 @@ impl BlockEventsQuery {
 	///
 	/// # Side Effects
 	/// - Issues RPC requests for event data and may retry as configured.
-	pub async fn extrinsic(&self, tx_index: u32) -> Result<AllEvents, Error> {
+	pub async fn extrinsic(&self, tx_index: u32) -> Result<BlockEvents, Error> {
 		let events = self.all(tx_index.into()).await?;
-		Ok(AllEvents::new(events))
+		Ok(BlockEvents::new(events))
 	}
 
 	/// Returns system-level events that are not tied to extrinsics.
@@ -46,14 +46,14 @@ impl BlockEventsQuery {
 	///
 	/// # Side Effects
 	/// - Issues RPC requests for event data and may retry as configured.
-	pub async fn system(&self) -> Result<AllEvents, Error> {
+	pub async fn system(&self) -> Result<BlockEvents, Error> {
 		let events = self.all(rpc::EventFilter::OnlyNonExtrinsics).await?;
-		let events: Vec<Event> = events
+		let events: Vec<BlockEvent> = events
 			.into_iter()
 			.filter(|x| x.phase.extrinsic_index().is_none())
 			.collect();
 
-		Ok(AllEvents::new(events))
+		Ok(BlockEvents::new(events))
 	}
 
 	/// Fetches all events for the block using the given filter.
@@ -67,7 +67,7 @@ impl BlockEventsQuery {
 	///
 	/// # Side Effects
 	/// - Issues RPC requests for event data and may retry as configured.
-	pub async fn all(&self, filter: rpc::EventFilter) -> Result<Vec<Event>, Error> {
+	pub async fn all(&self, filter: rpc::EventFilter) -> Result<Vec<BlockEvent>, Error> {
 		let opts = rpc::EventOpts {
 			filter: Some(filter),
 			enable_encoding: Some(true),
@@ -78,25 +78,12 @@ impl BlockEventsQuery {
 		let chain = self.ctx.chain();
 		let block_phase_events = chain.system_fetch_events(block_id, opts).await?;
 
-		let mut result: Vec<Event> = Vec::new();
+		let mut result: Vec<BlockEvent> = Vec::new();
 		for block_phase_event in block_phase_events {
 			let phase = block_phase_event.phase;
 
-			for mut phase_event in block_phase_event.events {
-				let Some(data) = phase_event.encoded_data.take() else {
-					return Err(
-						RpcError::ExpectedData("The node did not return encoded data for this event.".into()).into()
-					);
-				};
-
-				let all_event = Event {
-					index: phase_event.index,
-					pallet_id: phase_event.pallet_id,
-					variant_id: phase_event.variant_id,
-					data,
-					phase,
-				};
-				result.push(all_event);
+			for phase_event in block_phase_event.events {
+				result.push(BlockEvent::from_phase_event(phase_event, phase)?);
 			}
 		}
 
@@ -117,9 +104,8 @@ impl BlockEventsQuery {
 	pub async fn raw(&self, opts: rpc::EventOpts) -> Result<Vec<BlockPhaseEvent>, Error> {
 		let block_id = self.ctx.block_id.clone();
 		let chain = self.ctx.chain();
-		let result = chain.system_fetch_events(block_id, opts).await?;
 
-		Ok(result)
+		chain.system_fetch_events(block_id, opts).await
 	}
 
 	/// Overrides retry behaviour for event lookups.
@@ -194,7 +180,7 @@ impl BlockEventsQuery {
 }
 
 #[derive(Debug, Clone)]
-pub struct Event {
+pub struct BlockEvent {
 	/// Phase of block execution in which the event occurred.
 	pub phase: RuntimePhase,
 	/// Sequential index of the event within the phase.
@@ -207,13 +193,31 @@ pub struct Event {
 	pub data: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct AllEvents {
-	/// Collection of decoded events preserved in original order.
-	pub events: Vec<Event>,
+impl BlockEvent {
+	pub fn from_phase_event(mut event: PhaseEvent, phase: RuntimePhase) -> Result<Self, Error> {
+		let Some(data) = event.encoded_data.take() else {
+			return Err(RpcError::ExpectedData("The node did not return encoded data for this event.".into()).into());
+		};
+
+		let e = BlockEvent {
+			index: event.index,
+			pallet_id: event.pallet_id,
+			variant_id: event.variant_id,
+			data: data.clone(),
+			phase,
+		};
+
+		Ok(e)
+	}
 }
 
-impl AllEvents {
+#[derive(Debug, Clone)]
+pub struct BlockEvents {
+	/// Collection of decoded events preserved in original order.
+	pub events: Vec<BlockEvent>,
+}
+
+impl BlockEvents {
 	/// Wraps decoded events.
 	///
 	/// # Parameters
@@ -221,7 +225,7 @@ impl AllEvents {
 	///
 	/// # Returns
 	/// - `Self`: Wrapper exposing helper methods for event queries.
-	pub fn new(events: Vec<Event>) -> Self {
+	pub fn new(events: Vec<BlockEvent>) -> Self {
 		Self { events }
 	}
 

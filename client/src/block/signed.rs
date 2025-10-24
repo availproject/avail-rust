@@ -1,8 +1,9 @@
 use crate::{
 	Client, Error, UserError,
 	block::{
-		encoded::{BlockEncodedExtrinsic, Metadata},
-		events::{AllEvents, BlockEventsQuery},
+		BlockExtrinsicMetadata,
+		encoded::BlockEncodedExtrinsic,
+		events::{BlockEvents, BlockEventsQuery},
 		extrinsic::{BlockExtrinsic, BlockExtrinsicsQuery},
 		extrinsic_options::Options,
 	},
@@ -205,7 +206,7 @@ pub struct BlockSignedExtrinsic<T: HasHeader + Decode> {
 	/// Decoded runtime call payload.
 	pub call: T,
 	/// Metadata describing where the extrinsic was found.
-	pub metadata: Metadata,
+	pub metadata: BlockExtrinsicMetadata,
 }
 
 impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
@@ -218,7 +219,7 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 	///
 	/// # Returns
 	/// - `Self`: Signed extrinsic wrapper containing the provided data.
-	pub fn new(signature: ExtrinsicSignature, call: T, metadata: Metadata) -> Self {
+	pub fn new(signature: ExtrinsicSignature, call: T, metadata: BlockExtrinsicMetadata) -> Self {
 		Self { signature, call, metadata }
 	}
 
@@ -233,7 +234,7 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 	///
 	/// # Side Effects
 	/// - Issues RPC requests for event data and may retry according to the client's configuration.
-	pub async fn events(&self, client: Client) -> Result<AllEvents, Error> {
+	pub async fn events(&self, client: Client) -> Result<BlockEvents, Error> {
 		let events = BlockEventsQuery::new(client, self.metadata.block_id)
 			.extrinsic(self.ext_index())
 			.await?;
@@ -274,7 +275,7 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 	/// # Side Effects
 	/// - None; reads cached signature information.
 	pub fn app_id(&self) -> u32 {
-		self.signature.tx_extra.app_id
+		self.signature.extra.app_id
 	}
 
 	/// Returns the signer nonce for this transaction.
@@ -285,7 +286,7 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 	/// # Side Effects
 	/// - None; reads cached signature information.
 	pub fn nonce(&self) -> u32 {
-		self.signature.tx_extra.nonce
+		self.signature.extra.nonce
 	}
 
 	/// Returns the paid tip for this transaction.
@@ -296,7 +297,7 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 	/// # Side Effects
 	/// - None; reads cached signature information.
 	pub fn tip(&self) -> u128 {
-		self.signature.tx_extra.tip
+		self.signature.extra.tip
 	}
 
 	/// Returns the signer as an ss58 string when available.

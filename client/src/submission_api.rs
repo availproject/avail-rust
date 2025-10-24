@@ -297,7 +297,7 @@ impl TransactionReceipt {
 	/// - `Ok(T)` when the extrinsic exists and its call decodes as `T`.
 	/// - `Err(Error)` otherwise (missing extrinsic, decode failure, or RPC error).
 	pub async fn call<T: HasHeader + Decode>(&self) -> Result<T, Error> {
-		let block = Block::new(self.client.clone(), self.block_ref.height).calls();
+		let block = Block::new(self.client.clone(), self.block_ref.height).extrinsics();
 		let call = block.get(self.tx_ref.index).await?;
 		let Some(call) = call else {
 			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
@@ -326,7 +326,7 @@ impl TransactionReceipt {
 	/// # Returns
 	/// - `Ok(ExtrinsicEvents)` when the extrinsic exists and events are available.
 	/// - `Err(Error)` when the events cannot be located or fetched.
-	pub async fn events(&self) -> Result<crate::block::events::AllEvents, Error> {
+	pub async fn events(&self) -> Result<crate::block::events::BlockEvents, Error> {
 		let block = Block::new(self.client.clone(), self.block_ref.hash).events();
 		let events = block.extrinsic(self.tx_ref.index).await?;
 		if events.is_empty() {
