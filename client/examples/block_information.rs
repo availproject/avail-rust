@@ -6,13 +6,11 @@ pub async fn main() -> Result<(), Error> {
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 	let block = client.block(2042867);
 
-	// Timestamp
-	// Adding two hours to match my timezone. Change this so it matches your timezone.
+	// Fetching Block Timestamp
 	let timestamp = block.timestamp().await?;
-	// Formatting
-	let date_time = chrono::DateTime::from_timestamp_millis(timestamp as i64).expect("Conversion should work");
 
-	// Adding two hours to match my timezone.
+	// Converting Block Timestamp to DateTime (Adding two hours to match my timezone)
+	let date_time = chrono::DateTime::from_timestamp_millis(timestamp as i64).expect("Conversion should work");
 	let date_time_local = date_time
 		.checked_add_signed(TimeDelta::hours(2))
 		.expect("Delta should work");

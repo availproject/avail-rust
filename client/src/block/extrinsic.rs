@@ -313,7 +313,7 @@ impl<T: HasHeader + Decode> TryFrom<BlockEncodedExtrinsic> for BlockExtrinsic<T>
 	/// - `Ok(Self)`: Decoded extrinsic with optional signature and metadata.
 	/// - `Err(String)`: Payload failed to decode as `T`.
 	fn try_from(value: BlockEncodedExtrinsic) -> Result<Self, Self::Error> {
-		let call = T::from_ext(value.call)?;
+		let call = T::from_call(value.call)?;
 		Ok(Self::new(value.signature, call, value.metadata))
 	}
 }
@@ -330,7 +330,7 @@ impl<T: HasHeader + Decode> TryFrom<&BlockEncodedExtrinsic> for BlockExtrinsic<T
 	/// - `Ok(Self)`: Decoded extrinsic with optional signature and cloned metadata.
 	/// - `Err(String)`: Payload failed to decode as `T`.
 	fn try_from(value: &BlockEncodedExtrinsic) -> Result<Self, Self::Error> {
-		let call = T::from_ext(&value.call)?;
+		let call = T::from_call(&value.call)?;
 		Ok(Self::new(value.signature.clone(), call, value.metadata.clone()))
 	}
 }

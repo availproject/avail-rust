@@ -236,73 +236,148 @@ impl Block {
 
 #[cfg(test)]
 pub mod test {
-	use crate::{Client, MAINNET_ENDPOINT};
+	use avail_rust_core::{EncodeSelector, HasHeader, avail, rpc::ExtrinsicOpts};
+
+	use crate::{Client, TURING_ENDPOINT};
 
 	#[tokio::test]
 	pub async fn block_weight_test() {
-		let client = Client::new(MAINNET_ENDPOINT).await.unwrap();
-		let block = client.block(2042867);
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
 
 		let extrinsic_weight = block.extrinsic_weight().await.unwrap();
 		let block_weight = block.weight().await.unwrap();
 
-		assert_eq!(extrinsic_weight.ref_time, 25047612000);
+		assert_eq!(extrinsic_weight.ref_time, 39142682750);
 		assert_eq!(extrinsic_weight.proof_size, 1493);
-		assert_eq!(block_weight.normal.ref_time, 0);
+		assert_eq!(block_weight.normal.ref_time, 14095070750);
 		assert_eq!(block_weight.normal.proof_size, 0);
 		assert_eq!(block_weight.operational.ref_time, 0);
 		assert_eq!(block_weight.operational.proof_size, 0);
-		assert_eq!(block_weight.mandatory.ref_time, 28104773000);
+		assert_eq!(block_weight.mandatory.ref_time, 27979773000);
 		assert_eq!(block_weight.mandatory.proof_size, 116950);
 	}
 
 	#[tokio::test]
 	pub async fn block_info_test() {
-		let client = Client::new(MAINNET_ENDPOINT).await.unwrap();
-		let block = client.block(2042867);
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
 
 		let info = block.info().await.unwrap();
 
-		assert_eq!(info.height, 2042867);
+		assert_eq!(info.height, 2042866);
 		assert_eq!(
 			std::format!("{:?}", info.hash),
-			"0x45c4fb5b83053dc5816eb0d532eba7dbd971921946dd56031937542291de5a7d"
+			"0x66f2847020781416f98137f0c9ed7416e8e9d993d22924f36c6f16e066641429"
 		);
 	}
 
 	#[tokio::test]
 	pub async fn block_event_count_test() {
-		let client = Client::new(MAINNET_ENDPOINT).await.unwrap();
-		let block = client.block(2042867);
-
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
 		let count = block.event_count().await.unwrap();
-		assert_eq!(count, 3);
+		assert_eq!(count, 10);
 	}
 
 	#[tokio::test]
 	pub async fn block_extrinsic_count_test() {
-		let client = Client::new(MAINNET_ENDPOINT).await.unwrap();
-		let block = client.block(2042867);
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
 
 		let count = block.extrinsic_count().await.unwrap();
-		assert_eq!(count, 2);
+		assert_eq!(count, 3);
 	}
 
 	#[tokio::test]
 	pub async fn block_author_test() {
-		let client = Client::new(MAINNET_ENDPOINT).await.unwrap();
-		let block = client.block(2042867);
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
 
 		let author = block.author().await.unwrap();
-		assert_eq!(author.to_string(), String::from("5HeP6FZoHcDJxGgF4TauP4yyZGfDTzZtGB28RHvxXjRSm6h6"));
+		assert_eq!(author.to_string(), String::from("5Fuedf79TqB6mMWzhu8aazzfPX1mawedb7rLuHpv6iYK2Z6c"));
 	}
 
 	#[tokio::test]
 	pub async fn block_timestamp_test() {
-		let client = Client::new(MAINNET_ENDPOINT).await.unwrap();
-		let block = client.block(2042867);
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
 
 		let timestamp = block.timestamp().await.unwrap();
-		assert_eq!(timestamp, 1760954220001);
+		assert_eq!(timestamp, 1752582560000);
+	}
+
+	#[tokio::test]
+	pub async fn block_header_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
+
+		let header = block.header().await.unwrap();
+		assert_eq!(header.number, 2042866);
+		assert_eq!(
+			std::format!("{:?}", header.hash()),
+			"0x66f2847020781416f98137f0c9ed7416e8e9d993d22924f36c6f16e066641429"
+		);
+		assert_eq!(
+			std::format!("{:?}", header.parent_hash),
+			"0xfca317c08a9b86bf8b8ae04df0bde83db31fab1b455ebd2317f7eca15e1d688e"
+		)
+	}
+
+	#[tokio::test]
+	pub async fn block_justification_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+
+		let block = client.block(1900031);
+		let just = block.justification().await.unwrap();
+		assert!(just.is_none());
+
+		let block = client.block(1900032);
+		let just = block.justification().await.unwrap();
+		assert!(just.is_some());
+	}
+
+	#[tokio::test]
+	pub async fn block_extrinsic_infos_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+
+		let block = client.block(2042863);
+
+		// All
+		let infos = block
+			.extrinsic_infos(ExtrinsicOpts::new().encode_as(EncodeSelector::None))
+			.await
+			.unwrap();
+		assert_eq!(infos.len(), 4);
+
+		// App Id
+		let infos = block
+			.extrinsic_infos(ExtrinsicOpts::new().encode_as(EncodeSelector::None).app_id(428))
+			.await
+			.unwrap();
+		assert_eq!(infos.len(), 1);
+
+		// Submit Data
+		let infos = block
+			.extrinsic_infos(
+				ExtrinsicOpts::new()
+					.encode_as(EncodeSelector::None)
+					.filter(avail::data_availability::tx::SubmitData::HEADER_INDEX),
+			)
+			.await
+			.unwrap();
+		assert_eq!(infos.len(), 1);
+
+		// SS58 address
+		// Submit Data
+		let infos = block
+			.extrinsic_infos(
+				ExtrinsicOpts::new()
+					.encode_as(EncodeSelector::None)
+					.ss58_address("5CAC4rBKRKJi83uCJzeC7PzS27sP8Esfymbeq5jFEFPieyJm"),
+			)
+			.await
+			.unwrap();
+		assert_eq!(infos.len(), 1);
 	}
 }
