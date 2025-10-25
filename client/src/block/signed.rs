@@ -1,181 +1,180 @@
 use crate::{
-	Client, Error, UserError,
+	Client, Error,
 	block::{
 		BlockExtrinsicMetadata,
 		encoded::BlockEncodedExtrinsic,
 		events::{BlockEvents, BlockEventsQuery},
-		extrinsic::{BlockExtrinsic, BlockExtrinsicsQuery},
-		extrinsic_options::Options,
+		extrinsic::BlockExtrinsic,
 	},
 };
-use avail_rust_core::{ExtrinsicSignature, H256, HasHeader, MultiAddress, RpcError, types::HashStringNumber};
+use avail_rust_core::{ExtrinsicSignature, H256, HasHeader, MultiAddress, RpcError};
 use codec::Decode;
 
-/// View of block extrinsics restricted to signed transactions.
-pub struct BlockSignedExtrinsicsQuery {
-	xt: BlockExtrinsicsQuery,
-}
+// /// View of block extrinsics restricted to signed transactions.
+// pub struct BlockSignedExtrinsicsQuery {
+// 	xt: BlockExtrinsicsQuery,
+// }
 
-impl BlockSignedExtrinsicsQuery {
-	/// Builds a signed-transaction view for the specified block.
-	///
-	/// # Parameters
-	/// - `client`: RPC client used to access extrinsic data.
-	/// - `block_id`: Identifier convertible into `HashStringNumber`.
-	///
-	/// # Returns
-	/// - `Self`: Helper that only surfaces signed extrinsics.
-	pub fn new(client: Client, block_id: HashStringNumber) -> Self {
-		Self { xt: BlockExtrinsicsQuery::new(client, block_id) }
-	}
+// impl BlockSignedExtrinsicsQuery {
+// 	/// Builds a signed-transaction view for the specified block.
+// 	///
+// 	/// # Parameters
+// 	/// - `client`: RPC client used to access extrinsic data.
+// 	/// - `block_id`: Identifier convertible into `HashStringNumber`.
+// 	///
+// 	/// # Returns
+// 	/// - `Self`: Helper that only surfaces signed extrinsics.
+// 	pub fn new(client: Client, block_id: HashStringNumber) -> Self {
+// 		Self { xt: BlockExtrinsicsQuery::new(client, block_id) }
+// 	}
 
-	/// Fetches a signed transaction by hash, index, or string identifier.
-	///
-	/// # Parameters
-	/// - `extrinsic_id`: Identifier used to select the extrinsic.
-	///
-	/// # Returns
-	/// - `Ok(Some(SignedExtrinsic<T>))`: Matching extrinsic decoded as `T` with a signature.
-	/// - `Ok(None)`: No extrinsic matched the identifier.
-	/// - `Err(Error)`: The extrinsic was unsigned, or the RPC call/decoding failed.
-	///
-	/// # Side Effects
-	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn get<T: HasHeader + Decode>(
-		&self,
-		extrinsic_id: impl Into<HashStringNumber>,
-	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
-		let ext = self.xt.get(extrinsic_id).await?;
-		let Some(ext) = ext else {
-			return Ok(None);
-		};
+// 	/// Fetches a signed transaction by hash, index, or string identifier.
+// 	///
+// 	/// # Parameters
+// 	/// - `extrinsic_id`: Identifier used to select the extrinsic.
+// 	///
+// 	/// # Returns
+// 	/// - `Ok(Some(SignedExtrinsic<T>))`: Matching extrinsic decoded as `T` with a signature.
+// 	/// - `Ok(None)`: No extrinsic matched the identifier.
+// 	/// - `Err(Error)`: The extrinsic was unsigned, or the RPC call/decoding failed.
+// 	///
+// 	/// # Side Effects
+// 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
+// 	pub async fn get<T: HasHeader + Decode>(
+// 		&self,
+// 		extrinsic_id: impl Into<HashStringNumber>,
+// 	) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+// 		let ext = self.xt.get(extrinsic_id).await?;
+// 		let Some(ext) = ext else {
+// 			return Ok(None);
+// 		};
 
-		Ok(Some(ext.as_signed()?))
-	}
+// 		Ok(Some(ext.as_signed()?))
+// 	}
 
-	/// Returns the first signed extrinsic that matches the supplied filters.
-	///
-	/// # Parameters
-	/// - `opts`: Filters describing which signed extrinsics to fetch.
-	///
-	/// # Returns
-	/// - `Ok(Some(SignedExtrinsic<T>))`: First matching signed extrinsic decoded as `T`.
-	/// - `Ok(None)`: No signed extrinsic satisfied the filters.
-	/// - `Err(Error)`: The extrinsic was unsigned, or the RPC call/decoding failed.
-	///
-	/// # Side Effects
-	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn first<T: HasHeader + Decode>(&self, opts: Options) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
-		let ext = self.xt.first(opts).await?;
-		let Some(ext) = ext else {
-			return Ok(None);
-		};
+// 	/// Returns the first signed extrinsic that matches the supplied filters.
+// 	///
+// 	/// # Parameters
+// 	/// - `opts`: Filters describing which signed extrinsics to fetch.
+// 	///
+// 	/// # Returns
+// 	/// - `Ok(Some(SignedExtrinsic<T>))`: First matching signed extrinsic decoded as `T`.
+// 	/// - `Ok(None)`: No signed extrinsic satisfied the filters.
+// 	/// - `Err(Error)`: The extrinsic was unsigned, or the RPC call/decoding failed.
+// 	///
+// 	/// # Side Effects
+// 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
+// 	pub async fn first<T: HasHeader + Decode>(&self, opts: Options) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+// 		let ext = self.xt.first(opts).await?;
+// 		let Some(ext) = ext else {
+// 			return Ok(None);
+// 		};
 
-		Ok(Some(ext.as_signed()?))
-	}
+// 		Ok(Some(ext.as_signed()?))
+// 	}
 
-	/// Returns the last signed extrinsic that matches the supplied filters.
-	///
-	/// # Parameters
-	/// - `opts`: Filters describing which signed extrinsics to fetch.
-	///
-	/// # Returns
-	/// - `Ok(Some(SignedExtrinsic<T>))`: Final matching signed extrinsic decoded as `T`.
-	/// - `Ok(None)`: No signed extrinsic satisfied the filters.
-	/// - `Err(Error)`: The extrinsic was unsigned, or the RPC call/decoding failed.
-	///
-	/// # Side Effects
-	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn last<T: HasHeader + Decode>(&self, opts: Options) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
-		let ext = self.xt.last(opts).await?;
-		let Some(ext) = ext else {
-			return Ok(None);
-		};
+// 	/// Returns the last signed extrinsic that matches the supplied filters.
+// 	///
+// 	/// # Parameters
+// 	/// - `opts`: Filters describing which signed extrinsics to fetch.
+// 	///
+// 	/// # Returns
+// 	/// - `Ok(Some(SignedExtrinsic<T>))`: Final matching signed extrinsic decoded as `T`.
+// 	/// - `Ok(None)`: No signed extrinsic satisfied the filters.
+// 	/// - `Err(Error)`: The extrinsic was unsigned, or the RPC call/decoding failed.
+// 	///
+// 	/// # Side Effects
+// 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
+// 	pub async fn last<T: HasHeader + Decode>(&self, opts: Options) -> Result<Option<BlockSignedExtrinsic<T>>, Error> {
+// 		let ext = self.xt.last(opts).await?;
+// 		let Some(ext) = ext else {
+// 			return Ok(None);
+// 		};
 
-		Ok(Some(ext.as_signed()?))
-	}
+// 		Ok(Some(ext.as_signed()?))
+// 	}
 
-	/// Collects every signed extrinsic that matches the supplied filters.
-	///
-	/// # Parameters
-	/// - `opts`: Filters describing which signed extrinsics to fetch.
-	///
-	/// # Returns
-	/// - `Ok(Vec<SignedExtrinsic<T>>)`: Zero or more signed extrinsics decoded as `T`.
-	/// - `Err(Error)`: An extrinsic lacked a signature, or the RPC call/decoding failed.
-	///
-	/// # Side Effects
-	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn all<T: HasHeader + Decode>(&self, opts: Options) -> Result<Vec<BlockSignedExtrinsic<T>>, Error> {
-		let all = self.xt.all::<T>(opts).await?;
-		let mut result = Vec::with_capacity(all.len());
-		for ext in all {
-			let Some(signature) = ext.signature else {
-				return Err(UserError::Other(
-					"Extrinsic is unsigned; cannot decode it as a signed transaction.".into(),
-				)
-				.into());
-			};
-			result.push(BlockSignedExtrinsic::new(signature, ext.call, ext.metadata));
-		}
+// 	/// Collects every signed extrinsic that matches the supplied filters.
+// 	///
+// 	/// # Parameters
+// 	/// - `opts`: Filters describing which signed extrinsics to fetch.
+// 	///
+// 	/// # Returns
+// 	/// - `Ok(Vec<SignedExtrinsic<T>>)`: Zero or more signed extrinsics decoded as `T`.
+// 	/// - `Err(Error)`: An extrinsic lacked a signature, or the RPC call/decoding failed.
+// 	///
+// 	/// # Side Effects
+// 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
+// 	pub async fn all<T: HasHeader + Decode>(&self, opts: Options) -> Result<Vec<BlockSignedExtrinsic<T>>, Error> {
+// 		let all = self.xt.all::<T>(opts).await?;
+// 		let mut result = Vec::with_capacity(all.len());
+// 		for ext in all {
+// 			let Some(signature) = ext.signature else {
+// 				return Err(UserError::Other(
+// 					"Extrinsic is unsigned; cannot decode it as a signed transaction.".into(),
+// 				)
+// 				.into());
+// 			};
+// 			result.push(BlockSignedExtrinsic::new(signature, ext.call, ext.metadata));
+// 		}
 
-		Ok(result)
-	}
+// 		Ok(result)
+// 	}
 
-	/// Counts matching signed extrinsics.
-	///
-	/// # Parameters
-	/// - `opts`: Filters describing which signed extrinsics to count.
-	///
-	/// # Returns
-	/// - `Ok(usize)`: Number of matching signed extrinsics.
-	/// - `Err(Error)`: The RPC call failed.
-	///
-	/// # Side Effects
-	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn count<T: HasHeader>(&self, opts: Options) -> Result<usize, Error> {
-		self.xt.count::<T>(opts).await
-	}
+// 	/// Counts matching signed extrinsics.
+// 	///
+// 	/// # Parameters
+// 	/// - `opts`: Filters describing which signed extrinsics to count.
+// 	///
+// 	/// # Returns
+// 	/// - `Ok(usize)`: Number of matching signed extrinsics.
+// 	/// - `Err(Error)`: The RPC call failed.
+// 	///
+// 	/// # Side Effects
+// 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
+// 	pub async fn count<T: HasHeader>(&self, opts: Options) -> Result<usize, Error> {
+// 		self.xt.count::<T>(opts).await
+// 	}
 
-	/// Reports whether any signed extrinsic matches the supplied filters.
-	///
-	/// # Parameters
-	/// - `opts`: Filters describing which signed extrinsics to test.
-	///
-	/// # Returns
-	/// - `Ok(true)`: At least one matching signed extrinsic exists.
-	/// - `Ok(false)`: No signed extrinsics matched the filters.
-	/// - `Err(Error)`: The RPC call failed.
-	///
-	/// # Side Effects
-	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
-	pub async fn exists<T: HasHeader>(&self, opts: Options) -> Result<bool, Error> {
-		self.xt.exists::<T>(opts).await
-	}
+// 	/// Reports whether any signed extrinsic matches the supplied filters.
+// 	///
+// 	/// # Parameters
+// 	/// - `opts`: Filters describing which signed extrinsics to test.
+// 	///
+// 	/// # Returns
+// 	/// - `Ok(true)`: At least one matching signed extrinsic exists.
+// 	/// - `Ok(false)`: No signed extrinsics matched the filters.
+// 	/// - `Err(Error)`: The RPC call failed.
+// 	///
+// 	/// # Side Effects
+// 	/// - Performs RPC calls via the decoded-extrinsic helper and may retry according to the retry policy.
+// 	pub async fn exists<T: HasHeader>(&self, opts: Options) -> Result<bool, Error> {
+// 		self.xt.exists::<T>(opts).await
+// 	}
 
-	/// Overrides the retry behaviour for future signed-transaction lookups.
-	///
-	/// # Parameters
-	/// - `value`: `Some(true)` to force retries, `Some(false)` to disable retries, `None` to inherit the client default.
-	///
-	/// # Returns
-	/// - `()`: The override is stored for subsequent operations.
-	///
-	/// # Side Effects
-	/// - Updates the internal retry setting used by follow-up RPC calls.
-	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
-		self.xt.set_retry_on_error(value);
-	}
+// 	/// Overrides the retry behaviour for future signed-transaction lookups.
+// 	///
+// 	/// # Parameters
+// 	/// - `value`: `Some(true)` to force retries, `Some(false)` to disable retries, `None` to inherit the client default.
+// 	///
+// 	/// # Returns
+// 	/// - `()`: The override is stored for subsequent operations.
+// 	///
+// 	/// # Side Effects
+// 	/// - Updates the internal retry setting used by follow-up RPC calls.
+// 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
+// 		self.xt.set_retry_on_error(value);
+// 	}
 
-	/// Reports whether signed-transaction lookups retry after RPC errors.
-	///
-	/// # Returns
-	/// - `true`: Retries are enabled either explicitly or via the client default.
-	/// - `false`: Retries are disabled.
-	pub fn should_retry_on_error(&self) -> bool {
-		self.xt.should_retry_on_error()
-	}
-}
+// 	/// Reports whether signed-transaction lookups retry after RPC errors.
+// 	///
+// 	/// # Returns
+// 	/// - `true`: Retries are enabled either explicitly or via the client default.
+// 	/// - `false`: Retries are disabled.
+// 	pub fn should_retry_on_error(&self) -> bool {
+// 		self.xt.should_retry_on_error()
+// 	}
+// }
 
 /// Block Transaction is the same as Block Signed Extrinsic
 #[derive(Debug, Clone)]

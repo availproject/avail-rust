@@ -8,96 +8,96 @@ use avail_rust_core::HasHeader;
 use codec::Decode;
 use std::{marker::PhantomData, time::Duration};
 
-/// Subscription that mirrors [`Sub`] but yields decoded transactions via [`SignedExtrinsics`].
-///
-/// Blocks that do not produce transactions matching the provided options are skipped automatically,
-/// ensuring callers only handle meaningful batches.
-#[derive(Clone)]
-pub struct SignedExtrinsicSub<T: HasHeader + Decode> {
-	sub: Sub,
-	opts: block::extrinsic_options::Options,
-	_phantom: PhantomData<T>,
-}
+// /// Subscription that mirrors [`Sub`] but yields decoded transactions via [`SignedExtrinsics`].
+// ///
+// /// Blocks that do not produce transactions matching the provided options are skipped automatically,
+// /// ensuring callers only handle meaningful batches.
+// #[derive(Clone)]
+// pub struct SignedExtrinsicSub<T: HasHeader + Decode> {
+// 	sub: Sub,
+// 	opts: block::extrinsic_options::Options,
+// 	_phantom: PhantomData<T>,
+// }
 
-impl<T: HasHeader + Decode> SignedExtrinsicSub<T> {
-	/// Creates a new [`SignedExtrinsicSub`] subscription.
-	///
-	/// The client is cloned and no network calls are performed until [`SignedExtrinsicSub::next`] is
-	/// awaited. `opts` controls which transactions are retrieved from each block.
-	pub fn new(client: Client, opts: block::extrinsic_options::Options) -> Self {
-		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
-	}
+// impl<T: HasHeader + Decode> SignedExtrinsicSub<T> {
+// 	/// Creates a new [`SignedExtrinsicSub`] subscription.
+// 	///
+// 	/// The client is cloned and no network calls are performed until [`SignedExtrinsicSub::next`] is
+// 	/// awaited. `opts` controls which transactions are retrieved from each block.
+// 	pub fn new(client: Client, opts: block::extrinsic_options::Options) -> Self {
+// 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
+// 	}
 
-	/// Returns the next set of block transactions and the corresponding [`BlockInfo`].
-	///
-	/// # Returns
-	/// - `Ok((Vec<SignedExtrinsic<T>>, BlockInfo))` when a block with matching transactions is found;
-	///   the vector is guaranteed to be non-empty.
-	/// - `Err(crate::Error)` when fetching fails. The cursor rewinds to the same block so a subsequent
-	///   call can retry.
-	///
-	/// On success the subscription advances to the next block height.
-	pub async fn next(&mut self) -> Result<(Vec<block::BlockSignedExtrinsic<T>>, BlockInfo), crate::Error> {
-		loop {
-			let info = self.sub.next().await?;
-			let mut block = Block::new(self.sub.client_ref().clone(), info.hash).signed();
-			block.set_retry_on_error(Some(self.sub.should_retry_on_error()));
+// 	/// Returns the next set of block transactions and the corresponding [`BlockInfo`].
+// 	///
+// 	/// # Returns
+// 	/// - `Ok((Vec<SignedExtrinsic<T>>, BlockInfo))` when a block with matching transactions is found;
+// 	///   the vector is guaranteed to be non-empty.
+// 	/// - `Err(crate::Error)` when fetching fails. The cursor rewinds to the same block so a subsequent
+// 	///   call can retry.
+// 	///
+// 	/// On success the subscription advances to the next block height.
+// 	pub async fn next(&mut self) -> Result<(Vec<block::BlockSignedExtrinsic<T>>, BlockInfo), crate::Error> {
+// 		loop {
+// 			let info = self.sub.next().await?;
+// 			let mut block = Block::new(self.sub.client_ref().clone(), info.hash).signed();
+// 			block.set_retry_on_error(Some(self.sub.should_retry_on_error()));
 
-			let txs = match block.all::<T>(self.opts.clone()).await {
-				Ok(x) => x,
-				Err(err) => {
-					// Revet block height if we fail to fetch transactions
-					self.sub.set_block_height(info.height);
-					return Err(err);
-				},
-			};
+// 			let txs = match block.all::<T>(self.opts.clone()).await {
+// 				Ok(x) => x,
+// 				Err(err) => {
+// 					// Revet block height if we fail to fetch transactions
+// 					self.sub.set_block_height(info.height);
+// 					return Err(err);
+// 				},
+// 			};
 
-			if txs.is_empty() {
-				continue;
-			}
+// 			if txs.is_empty() {
+// 				continue;
+// 			}
 
-			return Ok((txs, info));
-		}
-	}
+// 			return Ok((txs, info));
+// 		}
+// 	}
 
-	/// Replaces the transaction query options used on subsequent calls to [`SignedExtrinsicSub::next`].
-	/// The change takes effect immediately.
-	pub fn set_opts(&mut self, value: block::extrinsic_options::Options) {
-		self.opts = value;
-	}
+// 	/// Replaces the transaction query options used on subsequent calls to [`SignedExtrinsicSub::next`].
+// 	/// The change takes effect immediately.
+// 	pub fn set_opts(&mut self, value: block::extrinsic_options::Options) {
+// 		self.opts = value;
+// 	}
 
-	/// Follow best blocks instead of finalized ones for future iterations that have not yet been
-	/// executed.
-	pub fn use_best_block(&mut self, value: bool) {
-		self.sub.use_best_block(value);
-	}
+// 	/// Follow best blocks instead of finalized ones for future iterations that have not yet been
+// 	/// executed.
+// 	pub fn use_best_block(&mut self, value: bool) {
+// 		self.sub.use_best_block(value);
+// 	}
 
-	/// Jump the cursor to a specific starting height. The next call to [`SignedExtrinsicSub::next`] begins
-	/// evaluating from `value`.
-	pub fn set_block_height(&mut self, value: u32) {
-		self.sub.set_block_height(value);
-	}
+// 	/// Jump the cursor to a specific starting height. The next call to [`SignedExtrinsicSub::next`] begins
+// 	/// evaluating from `value`.
+// 	pub fn set_block_height(&mut self, value: u32) {
+// 		self.sub.set_block_height(value);
+// 	}
 
-	/// Change how often new blocks are polled when tailing the chain. Historical replays are not
-	/// affected by this interval.
-	pub fn set_pool_rate(&mut self, value: Duration) {
-		self.sub.set_pool_rate(value);
-	}
+// 	/// Change how often new blocks are polled when tailing the chain. Historical replays are not
+// 	/// affected by this interval.
+// 	pub fn set_pool_rate(&mut self, value: Duration) {
+// 		self.sub.set_pool_rate(value);
+// 	}
 
-	/// Controls retry behaviour for future RPC calls issued by the subscription.
-	///
-	/// - `Some(true)`: force retries regardless of the client's global setting.
-	/// - `Some(false)`: disable retries entirely.
-	/// - `None`: defer to the client's configuration.
-	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
-		self.sub.set_retry_on_error(value);
-	}
+// 	/// Controls retry behaviour for future RPC calls issued by the subscription.
+// 	///
+// 	/// - `Some(true)`: force retries regardless of the client's global setting.
+// 	/// - `Some(false)`: disable retries entirely.
+// 	/// - `None`: defer to the client's configuration.
+// 	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
+// 		self.sub.set_retry_on_error(value);
+// 	}
 
-	/// Returns true when this subscription will retry failed RPC calls.
-	pub fn should_retry_on_error(&self) -> bool {
-		self.sub.should_retry_on_error()
-	}
-}
+// 	/// Returns true when this subscription will retry failed RPC calls.
+// 	pub fn should_retry_on_error(&self) -> bool {
+// 		self.sub.should_retry_on_error()
+// 	}
+// }
 
 /// Subscription that mirrors [`Sub`] but yields decoded extrinsics via [`Extrinsics`].
 ///
@@ -259,56 +259,56 @@ mod tests {
 		avail::data_availability::tx::SubmitData, rpc::system::fetch_extrinsics::ExtrinsicInformation,
 	};
 
-	#[tokio::test]
-	async fn transaction_sub_test() -> Result<(), Error> {
-		let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
-		let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
+	// #[tokio::test]
+	// async fn transaction_sub_test() -> Result<(), Error> {
+	// 	let (rpc_client, mut commander) = MockClient::new(TURING_ENDPOINT);
+	// 	let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
 
-		// Historical blocks
-		let mut sub = SignedExtrinsicSub::<SubmitData>::new(client.clone(), Default::default());
+	// 	// Historical blocks
+	// 	let mut sub = SignedExtrinsicSub::<SubmitData>::new(client.clone(), Default::default());
 
-		sub.set_block_height(2326671);
-		let (list, info) = sub.next().await?;
-		assert_eq!(info.height, 2326672);
-		assert_eq!(list.len(), 1);
+	// 	sub.set_block_height(2326671);
+	// 	let (list, info) = sub.next().await?;
+	// 	assert_eq!(info.height, 2326672);
+	// 	assert_eq!(list.len(), 1);
 
-		let (list, info) = sub.next().await?;
-		assert_eq!(info.height, 2326674);
-		assert_eq!(list.len(), 1);
+	// 	let (list, info) = sub.next().await?;
+	// 	assert_eq!(info.height, 2326674);
+	// 	assert_eq!(list.len(), 1);
 
-		// Testing recovery
-		sub.set_block_height(1);
-		assert_eq!(sub.sub.as_finalized().next_block_height, 1);
+	// 	// Testing recovery
+	// 	sub.set_block_height(1);
+	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 1);
 
-		// 1 is Ok(Some)
-		// 2 is Ok(None)
-		// 3 is Ok(Some)
-		// 4 is Err
-		// 4 is Ok(Some)
-		let mut data = ExtrinsicInformation::default();
-		let tx = client.tx().data_availability().submit_data("1234");
-		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+	// 	// 1 is Ok(Some)
+	// 	// 2 is Ok(None)
+	// 	// 3 is Ok(Some)
+	// 	// 4 is Err
+	// 	// 4 is Ok(Some)
+	// 	let mut data = ExtrinsicInformation::default();
+	// 	let tx = client.tx().data_availability().submit_data("1234");
+	// 	data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
 
-		commander.extrinsics_ok(vec![data.clone()]); // 1
-		commander.extrinsics_ok(vec![]); // 2
-		commander.extrinsics_ok(vec![data.clone()]); // 3
-		commander.extrinsics_err(None); // 4
-		commander.extrinsics_ok(vec![data.clone()]); // 4
+	// 	commander.extrinsics_ok(vec![data.clone()]); // 1
+	// 	commander.extrinsics_ok(vec![]); // 2
+	// 	commander.extrinsics_ok(vec![data.clone()]); // 3
+	// 	commander.extrinsics_err(None); // 4
+	// 	commander.extrinsics_ok(vec![data.clone()]); // 4
 
-		let _ = sub.next().await?;
-		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
-		let _ = sub.next().await?;
-		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+	// 	let _ = sub.next().await?;
+	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 2);
+	// 	let _ = sub.next().await?;
+	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 4);
 
-		sub.set_retry_on_error(Some(false));
-		let _ = sub.next().await.expect_err("Expect Error");
-		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+	// 	sub.set_retry_on_error(Some(false));
+	// 	let _ = sub.next().await.expect_err("Expect Error");
+	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 4);
 
-		let _ = sub.next().await?;
-		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+	// 	let _ = sub.next().await?;
+	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 5);
 
-		Ok(())
-	}
+	// 	Ok(())
+	// }
 
 	#[tokio::test]
 	async fn extrinsic_sub_test() -> Result<(), Error> {

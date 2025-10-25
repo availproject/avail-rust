@@ -19,15 +19,9 @@ pub async fn main() -> Result<(), Error> {
 		.first::<SubmitData>(Default::default())
 		.await?
 		.expect("Must be there");
-	let signed = block
-		.signed()
-		.first::<SubmitData>(Default::default())
-		.await?
-		.expect("Must be there");
 
 	printout_events("encoded", encoded.events(client.clone()).await?);
 	printout_events("extrinsics", extrinsics.events(client.clone()).await?);
-	printout_events("signed", signed.events(client.clone()).await?);
 
 	Ok(())
 }

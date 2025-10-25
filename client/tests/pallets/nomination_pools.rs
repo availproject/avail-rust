@@ -20,7 +20,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Bond Extra
 	{
-		let block = Block::new(client.clone(), 1831776).signed();
+		let block = Block::new(client.clone(), 1831776).extrinsics();
 
 		let submittable = client.tx().nomination_pools().bond_extra(BondExtraValue::Rewards);
 		let expected_call = BondExtra::from_call(&submittable.call.encode()).unwrap();
@@ -30,7 +30,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Bond Extra #2
 	{
-		let block = Block::new(client.clone(), 1831566).signed();
+		let block = Block::new(client.clone(), 1831566).extrinsics();
 
 		let submittable = client
 			.tx()
@@ -43,7 +43,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Bond Extra Other
 	{
-		let block = Block::new(client.clone(), 202579).signed();
+		let block = Block::new(client.clone(), 202579).extrinsics();
 
 		let submittable = client.tx().nomination_pools().bond_extra_other(
 			"0xe48387e8f162d580110568e3df575054de32269822f2362702a8afb1f6914469",
@@ -56,7 +56,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Chill
 	{
-		let block = Block::new(client.clone(), 1729911).signed();
+		let block = Block::new(client.clone(), 1729911).extrinsics();
 
 		let submittable = client.tx().nomination_pools().chill(15);
 		let expected_call = Chill::from_call(&submittable.call.encode()).unwrap();
@@ -66,7 +66,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Claim Commission
 	{
-		let block = Block::new(client.clone(), 1802972).signed();
+		let block = Block::new(client.clone(), 1802972).extrinsics();
 
 		let submittable = client.tx().nomination_pools().claim_commission(78);
 		let expected_call = ClaimCommission::from_call(&submittable.call.encode()).unwrap();
@@ -76,7 +76,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Claim Payout
 	{
-		let block = Block::new(client.clone(), 1831831).signed();
+		let block = Block::new(client.clone(), 1831831).extrinsics();
 
 		let submittable = client.tx().nomination_pools().claim_payout();
 		let expected_call = ClaimPayout::from_call(&submittable.call.encode()).unwrap();
@@ -86,7 +86,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Claim Payout Other
 	{
-		let block = Block::new(client.clone(), 535568).signed();
+		let block = Block::new(client.clone(), 535568).extrinsics();
 
 		let submittable = client
 			.tx()
@@ -99,7 +99,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Create
 	{
-		let block = Block::new(client.clone(), 182681).signed();
+		let block = Block::new(client.clone(), 182681).extrinsics();
 
 		let address = "0x80acee285f2fd1b1042690b2e4447eac328fe6f70d32badd9ffbba4c872a6319";
 		let submittable = client
@@ -113,7 +113,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Create With Pool Id
 	{
-		let block = Block::new(client.clone(), 481224).signed();
+		let block = Block::new(client.clone(), 481224).extrinsics();
 
 		let address = "0xc2ff325a289cf3c42e9ab0af62f285a22e8ec6ce0498c50318b5e6d4da827653";
 		let submittable =
@@ -128,7 +128,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Join
 	{
-		let block = Block::new(client.clone(), 1822288).signed();
+		let block = Block::new(client.clone(), 1822288).extrinsics();
 
 		let submittable = client.tx().nomination_pools().join(365000000000000000000, 4);
 		let expected_call = Join::from_call(&submittable.call.encode()).unwrap();
@@ -138,7 +138,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Nominate
 	{
-		let block = Block::new(client.clone(), 1808990).signed();
+		let block = Block::new(client.clone(), 1808990).extrinsics();
 
 		let validators = vec![
 			"0xa26556769ad6581b7beb103590a5c378955244aa349bbacc2f148c51205e055a",
@@ -152,7 +152,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set Claim Permission #1
 	{
-		let block = Block::new(client.clone(), 1827335).signed();
+		let block = Block::new(client.clone(), 1827335).extrinsics();
 
 		let submittable = client
 			.tx()
@@ -165,7 +165,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set Claim Permission #2
 	{
-		let block = Block::new(client.clone(), 1827272).signed();
+		let block = Block::new(client.clone(), 1827272).extrinsics();
 
 		let submittable = client
 			.tx()
@@ -178,7 +178,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set Claim Permission #3
 	{
-		let block = Block::new(client.clone(), 1716287).signed();
+		let block = Block::new(client.clone(), 1716287).extrinsics();
 
 		let submittable = client
 			.tx()
@@ -191,7 +191,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set Commission #1
 	{
-		let block = Block::new(client.clone(), 1181206).signed();
+		let block = Block::new(client.clone(), 1181206).extrinsics();
 
 		let account_id: AccountId =
 			AccountId::from_str("0xec5c245a8405d77710d5d226e354b4236e5e5d13c61fa8ba3fa9aed204b6d6b7").unwrap();
@@ -206,7 +206,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set Commission #2
 	{
-		let block = Block::new(client.clone(), 1056874).signed();
+		let block = Block::new(client.clone(), 1056874).extrinsics();
 
 		let submittable = client.tx().nomination_pools().set_commission(76, None);
 		let expected_call = SetCommission::from_call(&submittable.call.encode()).unwrap();
@@ -216,7 +216,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set Commission Change Rate
 	{
-		let block = Block::new(client.clone(), 493706).signed();
+		let block = Block::new(client.clone(), 493706).extrinsics();
 
 		let submittable = client
 			.tx()
@@ -229,7 +229,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set Commission Max
 	{
-		let block = Block::new(client.clone(), 472501).signed();
+		let block = Block::new(client.clone(), 472501).extrinsics();
 
 		let submittable = client.tx().nomination_pools().set_commission_max(76, 100000000);
 		let expected_call = SetCommissionMax::from_call(&submittable.call.encode()).unwrap();
@@ -239,7 +239,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set Metadata
 	{
-		let block = Block::new(client.clone(), 182911).signed();
+		let block = Block::new(client.clone(), 182911).extrinsics();
 
 		let submittable = client.tx().nomination_pools().set_metadata(78, "Green");
 		let expected_call = SetMetadata::from_call(&submittable.call.encode()).unwrap();
@@ -249,7 +249,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set State #1
 	{
-		let block = Block::new(client.clone(), 86141).signed();
+		let block = Block::new(client.clone(), 86141).extrinsics();
 
 		let submittable = client.tx().nomination_pools().set_state(37, PoolState::Destroying);
 		let expected_call = SetState::from_call(&submittable.call.encode()).unwrap();
@@ -259,7 +259,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set State #2
 	{
-		let block = Block::new(client.clone(), 337747).signed();
+		let block = Block::new(client.clone(), 337747).extrinsics();
 
 		let submittable = client.tx().nomination_pools().set_state(55, PoolState::Blocked);
 		let expected_call = SetState::from_call(&submittable.call.encode()).unwrap();
@@ -269,7 +269,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Unbond
 	{
-		let block = Block::new(client.clone(), 1831014).signed();
+		let block = Block::new(client.clone(), 1831014).extrinsics();
 
 		let member_account = "0xc25a201b2443dac9697558458ccb6b120c079f70b9a72eeeea7914639197e24f";
 		let submittable = client
@@ -283,7 +283,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Update Roles #1
 	{
-		let block = Block::new(client.clone(), 694694).signed();
+		let block = Block::new(client.clone(), 694694).extrinsics();
 
 		let submittable = client.tx().nomination_pools().update_roles(
 			29,
@@ -298,7 +298,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Update Roles #2
 	{
-		let block = Block::new(client.clone(), 183031).signed();
+		let block = Block::new(client.clone(), 183031).extrinsics();
 
 		let set = ConfigOpAccount::Set(
 			AccountId::from_str("0x7b70773cac7dc43f72f79fff8718606f5d2a38077326d9bd1e5c6ac1b1d79fd9").unwrap(),
@@ -314,7 +314,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Withdraw Unbonded
 	{
-		let block = Block::new(client.clone(), 1832868).signed();
+		let block = Block::new(client.clone(), 1832868).extrinsics();
 
 		let submittable = client
 			.tx()

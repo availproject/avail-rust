@@ -20,7 +20,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Bond
 	{
-		let block = Block::new(client.clone(), 1688315).signed();
+		let block = Block::new(client.clone(), 1688315).extrinsics();
 
 		let submittable = client
 			.tx()
@@ -33,7 +33,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Bond Extra
 	{
-		let block = Block::new(client.clone(), 1828569).signed();
+		let block = Block::new(client.clone(), 1828569).extrinsics();
 
 		let submittable = client.tx().staking().bond_extra(10000000000000000000);
 		let expected_call = BondExtra::from_call(&submittable.call.encode()).unwrap();
@@ -43,7 +43,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Chill
 	{
-		let block = Block::new(client.clone(), 1811904).signed();
+		let block = Block::new(client.clone(), 1811904).extrinsics();
 
 		let submittable = client.tx().staking().chill();
 		let expected_call = Chill::from_call(&submittable.call.encode()).unwrap();
@@ -53,7 +53,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// WithdrawUnbonded
 	{
-		let block = Block::new(client.clone(), 1827511).signed();
+		let block = Block::new(client.clone(), 1827511).extrinsics();
 
 		let submittable = client.tx().staking().withdraw_unbonded(84);
 		let expected_call = WithdrawUnbonded::from_call(&submittable.call.encode()).unwrap();
@@ -63,7 +63,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Validate
 	{
-		let block = Block::new(client.clone(), 1814105).signed();
+		let block = Block::new(client.clone(), 1814105).extrinsics();
 
 		let submittable = client.tx().staking().validate(100000000, false);
 		let expected_call = Validate::from_call(&submittable.call.encode()).unwrap();
@@ -73,7 +73,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Unbond
 	{
-		let block = Block::new(client.clone(), 1827480).signed();
+		let block = Block::new(client.clone(), 1827480).extrinsics();
 
 		let submittable = client.tx().staking().unbond(49990000000000000000000);
 		let expected_call = Unbond::from_call(&submittable.call.encode()).unwrap();
@@ -83,7 +83,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// SetPayee
 	{
-		let block = Block::new(client.clone(), 1785389).signed();
+		let block = Block::new(client.clone(), 1785389).extrinsics();
 
 		let account_id =
 			AccountId::from_str("0xdc38c8b63df616b7b9662544382c240f5f1c8eb47bc510b6077bd57fba077a5d").unwrap();
@@ -95,7 +95,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Rebond
 	{
-		let block = Block::new(client.clone(), 1817341).signed();
+		let block = Block::new(client.clone(), 1817341).extrinsics();
 
 		let submittable = client.tx().staking().rebond(2134432193417643036990);
 		let expected_call = Rebond::from_call(&submittable.call.encode()).unwrap();
@@ -105,7 +105,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// PayoutStakersByPage
 	{
-		let block = Block::new(client.clone(), 1807526).signed();
+		let block = Block::new(client.clone(), 1807526).extrinsics();
 
 		let address = "0x37dfeeed435f0e9f205e1dfc55775fcd06518f63a5b1ccd53ce2d9e14ab783d3";
 		let submittable = client.tx().staking().payout_stakers_by_page(address, 417, 0);
@@ -116,7 +116,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// PayoutStakers
 	{
-		let block = Block::new(client.clone(), 1827501).signed();
+		let block = Block::new(client.clone(), 1827501).extrinsics();
 
 		let address = "0xa4605eebf32be28f4b30219a329d5f61d1b250c2780ca62f1875e84adeac8b42";
 		let submittable = client.tx().staking().payout_stakers(address, 422);
@@ -127,7 +127,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Nominate
 	{
-		let block = Block::new(client.clone(), 1811815).signed();
+		let block = Block::new(client.clone(), 1811815).extrinsics();
 
 		let targets = vec![
 			"0x946a8565423df55a0449eb3502f1fff00158aa87aad880ff4a6cab915f2c0058",
@@ -143,7 +143,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Kick
 	{
-		let block = Block::new(client.clone(), 669361).signed();
+		let block = Block::new(client.clone(), 669361).extrinsics();
 
 		let address = MultiAddress::Address32(
 			const_hex::decode("0x64c63961305e9ce5c8d9c43f0db12c141ed6ad25437ed3835c4e6ceab7307d79")
@@ -159,7 +159,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Set Controller
 	{
-		let block = Block::new(client.clone(), 470124).signed();
+		let block = Block::new(client.clone(), 470124).extrinsics();
 
 		let submittable = client.tx().staking().set_controller();
 		let expected_call = SetController::from_call(&submittable.call.encode()).unwrap();

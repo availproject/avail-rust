@@ -267,13 +267,13 @@ impl TransactionReceipt {
 	/// - `Ok(SignedExtrinsic<T>)` when the transaction exists and can be decoded as `T`.
 	/// - `Err(Error)` if the transaction is missing, cannot be decoded, or any RPC call fails.
 	pub async fn signed<T: HasHeader + Decode>(&self) -> Result<block::BlockSignedExtrinsic<T>, Error> {
-		let block = Block::new(self.client.clone(), self.block_ref.height).signed();
+		let block = Block::new(self.client.clone(), self.block_ref.height).extrinsics();
 		let tx = block.get(self.tx_ref.index).await?;
 		let Some(tx) = tx else {
 			return Err(RpcError::ExpectedData("No transaction found at the requested index.".into()).into());
 		};
 
-		Ok(tx)
+		Ok(tx.as_signed()?)
 	}
 
 	/// Fetches and decodes the extrinsic at the recorded index within the block.

@@ -20,7 +20,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Add Proxy
 	{
-		let block = block::Block::new(client.clone(), 1076139).signed();
+		let block = block::Block::new(client.clone(), 1076139).extrinsics();
 
 		let id = "0xa6668ecbef4f8b0c64e294a9addc0fb267ec02cb0e0c3f74f3a45b8f1043c774";
 		let submittable = client.tx().proxy().add_proxy(id, ProxyType::NonTransfer, 0);
@@ -31,7 +31,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Create Pure
 	{
-		let block = block::Block::new(client.clone(), 1439619).signed();
+		let block = block::Block::new(client.clone(), 1439619).extrinsics();
 
 		let submittable = client.tx().proxy().create_pure(ProxyType::Any, 0, 0);
 		let expected_call = CreatePure::from_call(&submittable.call.encode()).unwrap();
@@ -41,7 +41,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Proxy
 	{
-		let block = block::Block::new(client.clone(), 1776412).signed();
+		let block = block::Block::new(client.clone(), 1776412).extrinsics();
 
 		let targets = vec![
 			"0xc51d936c502bb72e4735619eeed59b3840cdbed6f414bb5da2b5bd977273d663",
@@ -62,7 +62,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Remove Proxy
 	{
-		let block = block::Block::new(client.clone(), 790393).signed();
+		let block = block::Block::new(client.clone(), 790393).extrinsics();
 
 		let delegate = "0x685302266408090333837daf4c1fee2b23c5a7f055b61f6e8d16ad6662b28b39";
 		let submittable = client.tx().proxy().remove_proxy(delegate, ProxyType::Staking, 0);

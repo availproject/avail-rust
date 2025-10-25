@@ -20,7 +20,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// CreateApplicationKey
 	{
-		let block = Block::new(client.clone(), 1783406).signed();
+		let block = Block::new(client.clone(), 1783406).extrinsics();
 
 		let submittable = client.tx().data_availability().create_application_key("kraken");
 		let expected_call = CreateApplicationKey::from_call(&submittable.call.encode()).unwrap();
@@ -30,7 +30,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Submit Data
 	{
-		let block = Block::new(client.clone(), 0).signed();
+		let block = Block::new(client.clone(), 0).extrinsics();
 
 		let submittable = client
 			.tx()

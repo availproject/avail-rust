@@ -13,7 +13,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Batch
 	{
-		let block = Block::new(client.clone(), 1828776).signed();
+		let block = Block::new(client.clone(), 1828776).extrinsics();
 
 		let c1 = client.tx().staking().chill();
 		let c2 = client.tx().staking().unbond(1020000000000000000000);
@@ -26,7 +26,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Batch All
 	{
-		let block = Block::new(client.clone(), 1827667).signed();
+		let block = Block::new(client.clone(), 1827667).extrinsics();
 
 		let c1 = client.tx().staking().chill();
 		let c2 = client.tx().staking().unbond(8371491570236280685776);
@@ -39,7 +39,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Force Batch
 	{
-		let block = Block::new(client.clone(), 1815311).signed();
+		let block = Block::new(client.clone(), 1815311).extrinsics();
 
 		let c1 = client
 			.tx()

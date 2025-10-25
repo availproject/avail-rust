@@ -9,7 +9,7 @@ pub use encoded::{BlockEncodedExtrinsic, BlockEncodedExtrinsicsQuery};
 pub use events::{BlockEvent, BlockEvents, BlockEventsQuery};
 pub use extrinsic::{BlockExtrinsic, BlockExtrinsicsQuery};
 pub use shared::BlockExtrinsicMetadata;
-pub use signed::{BlockSignedExtrinsic, BlockSignedExtrinsicsQuery};
+pub use signed::BlockSignedExtrinsic;
 
 use crate::{
 	Client, Error,
@@ -59,13 +59,13 @@ impl Block {
 		extrinsic::BlockExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
-	/// Returns a helper focused on signed extrinsics contained in this block.
-	///
-	/// # Returns
-	/// - `SignedExtrinsics`: View that exposes signed extrinsics for this block.
-	pub fn signed(&self) -> signed::BlockSignedExtrinsicsQuery {
-		signed::BlockSignedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
-	}
+	// /// Returns a helper focused on signed extrinsics contained in this block.
+	// ///
+	// /// # Returns
+	// /// - `SignedExtrinsics`: View that exposes signed extrinsics for this block.
+	// pub fn signed(&self) -> signed::BlockSignedExtrinsicsQuery {
+	// 	signed::BlockSignedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	// }
 
 	pub async fn extrinsic_infos(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
 		let chain = self.ctx.chain();
