@@ -42,24 +42,6 @@ impl From<BlockInfo> for H256 {
 	}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub struct TransactionRef {
-	pub hash: H256,
-	pub index: u32,
-}
-
-impl From<(H256, u32)> for TransactionRef {
-	fn from(value: (H256, u32)) -> Self {
-		Self { hash: value.0, index: value.1 }
-	}
-}
-
-impl From<TransactionRef> for H256 {
-	fn from(value: TransactionRef) -> Self {
-		value.hash
-	}
-}
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum HashNumber {
 	Hash(H256),
@@ -69,12 +51,6 @@ pub enum HashNumber {
 impl From<BlockInfo> for HashNumber {
 	fn from(value: BlockInfo) -> Self {
 		Self::Hash(value.hash)
-	}
-}
-
-impl From<TransactionRef> for HashNumber {
-	fn from(value: TransactionRef) -> Self {
-		Self::Number(value.index)
 	}
 }
 
@@ -219,12 +195,6 @@ impl From<HashNumber> for HashStringNumber {
 			HashNumber::Hash(x) => Self::Hash(x),
 			HashNumber::Number(x) => Self::Number(x),
 		}
-	}
-}
-
-impl From<TransactionRef> for HashStringNumber {
-	fn from(value: TransactionRef) -> Self {
-		Self::Number(value.index)
 	}
 }
 

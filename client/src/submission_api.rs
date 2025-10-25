@@ -3,6 +3,7 @@
 use crate::{
 	Client, Error, UserError,
 	block::{self, Block},
+	conversions,
 	subscription::Sub,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::{Options, RefinedMortality, RefinedOptions},
@@ -13,7 +14,7 @@ use avail_rust_core::{
 	rpc::ExtrinsicOpts,
 	substrate::extrinsic::{ExtrinsicAdditional, ExtrinsicCall, GenericExtrinsic},
 	types::{
-		metadata::{HashString, TransactionRef},
+		metadata::HashString,
 		substrate::{FeeDetails, RuntimeDispatchInfo},
 	},
 };
@@ -242,14 +243,16 @@ pub enum BlockState {
 #[derive(Clone)]
 pub struct TransactionReceipt {
 	client: Client,
-	pub block_ref: BlockInfo,
-	pub tx_ref: TransactionRef,
+	pub block_hash: H256,
+	pub block_height: u32,
+	pub ext_hash: H256,
+	pub ext_index: u32,
 }
 
 impl TransactionReceipt {
 	/// Wraps the provided block and transaction references without performing network IO.
-	pub fn new(client: Client, block: BlockInfo, tx: TransactionRef) -> Self {
-		Self { client, block_ref: block, tx_ref: tx }
+	pub fn new(client: Client, block_hash: H256, block_height: u32, ext_hash: H256, ext_index: u32) -> Self {
+		Self { client, block_hash, block_height, ext_hash, ext_index }
 	}
 
 	/// Returns the current lifecycle state of the containing block.
@@ -258,22 +261,7 @@ impl TransactionReceipt {
 	/// - `Ok(BlockState)` on success.
 	/// - `Err(Error)` if the RPC request fails or the node cannot provide the block state.
 	pub async fn block_state(&self) -> Result<BlockState, Error> {
-		self.client.chain().block_state(self.block_ref.hash).await
-	}
-
-	/// Fetches and decodes the transaction at the recorded index within the block.
-	///
-	/// # Returns
-	/// - `Ok(SignedExtrinsic<T>)` when the transaction exists and can be decoded as `T`.
-	/// - `Err(Error)` if the transaction is missing, cannot be decoded, or any RPC call fails.
-	pub async fn signed<T: HasHeader + Decode>(&self) -> Result<block::BlockSignedExtrinsic<T>, Error> {
-		let block = Block::new(self.client.clone(), self.block_ref.height).extrinsics();
-		let tx = block.get(self.tx_ref.index).await?;
-		let Some(tx) = tx else {
-			return Err(RpcError::ExpectedData("No transaction found at the requested index.".into()).into());
-		};
-
-		Ok(tx.as_signed()?)
+		self.client.chain().block_state(self.block_hash).await
 	}
 
 	/// Fetches and decodes the extrinsic at the recorded index within the block.
@@ -282,28 +270,13 @@ impl TransactionReceipt {
 	/// - `Ok(Extrinsic<T>)` when the extrinsic exists and decodes as `T`.
 	/// - `Err(Error)` when the extrinsic is missing, cannot be decoded as `T`, or RPC access fails.
 	pub async fn extrinsic<T: HasHeader + Decode>(&self) -> Result<block::BlockExtrinsic<T>, Error> {
-		let block = Block::new(self.client.clone(), self.block_ref.height).extrinsics();
-		let ext: Option<block::BlockExtrinsic<T>> = block.get(self.tx_ref.index).await?;
+		let block = Block::new(self.client.clone(), self.block_hash).extrinsics();
+		let ext: Option<block::BlockExtrinsic<T>> = block.get(self.ext_index).await?;
 		let Some(ext) = ext else {
 			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
 		};
 
 		Ok(ext)
-	}
-
-	/// Fetches just the call payload for the extrinsic at the recorded index.
-	///
-	/// # Returns
-	/// - `Ok(T)` when the extrinsic exists and its call decodes as `T`.
-	/// - `Err(Error)` otherwise (missing extrinsic, decode failure, or RPC error).
-	pub async fn call<T: HasHeader + Decode>(&self) -> Result<T, Error> {
-		let block = Block::new(self.client.clone(), self.block_ref.height).extrinsics();
-		let call = block.get(self.tx_ref.index).await?;
-		let Some(call) = call else {
-			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
-		};
-
-		Ok(call.call)
 	}
 
 	/// Returns the raw extrinsic bytes or a different encoding if requested.
@@ -312,8 +285,8 @@ impl TransactionReceipt {
 	/// - `Ok(EncodedExtrinsic)` with the requested encoding.
 	/// - `Err(Error)` when the extrinsic cannot be found or an RPC failure occurs.
 	pub async fn encoded(&self) -> Result<block::BlockEncodedExtrinsic, Error> {
-		let block = Block::new(self.client.clone(), self.block_ref.height).encoded();
-		let ext = block.get(self.tx_ref.index).await?;
+		let block = Block::new(self.client.clone(), self.block_hash).encoded();
+		let ext = block.get(self.ext_index).await?;
 		let Some(ext) = ext else {
 			return Err(RpcError::ExpectedData("No extrinsic found at the requested index.".into()).into());
 		};
@@ -327,8 +300,8 @@ impl TransactionReceipt {
 	/// - `Ok(ExtrinsicEvents)` when the extrinsic exists and events are available.
 	/// - `Err(Error)` when the events cannot be located or fetched.
 	pub async fn events(&self) -> Result<crate::block::events::BlockEvents, Error> {
-		let block = Block::new(self.client.clone(), self.block_ref.hash).events();
-		let events = block.extrinsic(self.tx_ref.index).await?;
+		let block = Block::new(self.client.clone(), self.block_hash).events();
+		let events = block.extrinsic(self.ext_index).await?;
 		if events.is_empty() {
 			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
 		};
@@ -356,26 +329,31 @@ impl TransactionReceipt {
 		if block_start > block_end {
 			return Err(UserError::ValidationFailed("Block Start cannot start after Block End".into()).into());
 		}
-		let tx_hash: HashString = tx_hash.into();
-		let tx_hash: H256 = tx_hash.try_into().map_err(|x| Error::User(UserError::Other(x)))?;
+
+		let tx_hash = conversions::hash_string::to_hash(tx_hash)?;
 		let mut sub = Sub::new(client.clone());
 		sub.use_best_block(use_best_block);
 		sub.set_block_height(block_start);
 
 		loop {
-			let block_ref = sub.next().await?;
+			let block_info = sub.next().await?;
 
-			let block = Block::new(client.clone(), block_ref.height);
+			let block = Block::new(client.clone(), block_info.height);
 			let opts = ExtrinsicOpts::new().filter(tx_hash).encode_as(EncodeSelector::None);
-			let ext_info = block.extrinsic_infos(opts).await?;
+			let infos = block.extrinsic_infos(opts).await?;
 
-			if let Some(ext_info) = ext_info.first() {
-				let tr =
-					TransactionReceipt::new(client.clone(), block_ref, (ext_info.ext_hash, ext_info.ext_index).into());
+			if let Some(info) = infos.first() {
+				let tr = TransactionReceipt::new(
+					client.clone(),
+					block_info.hash,
+					block_info.height,
+					info.ext_hash,
+					info.ext_index,
+				);
 				return Ok(Some(tr));
 			}
 
-			if block_ref.height >= block_end {
+			if block_info.height >= block_end {
 				return Ok(None);
 			}
 		}
@@ -399,13 +377,13 @@ impl Utils {
 		mortality: &RefinedMortality,
 		use_best_block: bool,
 	) -> Result<Option<TransactionReceipt>, Error> {
-		let Some(block_ref) =
+		let Some(block_info) =
 			Self::find_correct_block_info(&client, nonce, tx_hash, account_id, mortality, use_best_block).await?
 		else {
 			return Ok(None);
 		};
 
-		let block = Block::new(client.clone(), block_ref.hash);
+		let block = Block::new(client.clone(), block_info.hash);
 		let opts = ExtrinsicOpts::new().filter(tx_hash).encode_as(EncodeSelector::None);
 		let ext_info = block.extrinsic_infos(opts).await?;
 
@@ -413,8 +391,9 @@ impl Utils {
 			return Ok(None);
 		};
 
-		let tx_ref = TransactionRef::from((ext_info.ext_hash, ext_info.ext_index));
-		Ok(Some(TransactionReceipt::new(client, block_ref, tx_ref)))
+		Ok(Some(TransactionReceipt::new(
+			client, block_info.hash, block_info.height, ext_info.ext_hash, ext_info.ext_index,
+		)))
 	}
 
 	/// Inspects blocks following the transaction's mortality and returns the first matching inclusion.

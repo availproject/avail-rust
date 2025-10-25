@@ -170,14 +170,6 @@ impl Sub {
 	}
 
 	#[cfg(test)]
-	pub(crate) fn as_best(&self) -> &BestBlockSub {
-		if let Self::BestBlock(b) = self {
-			return b;
-		}
-		panic!("Not best Sub");
-	}
-
-	#[cfg(test)]
 	pub(crate) fn as_finalized(&self) -> &FinalizedBlockSub {
 		if let Self::FinalizedBlock(f) = self {
 			return f;
