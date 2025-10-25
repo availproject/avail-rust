@@ -275,6 +275,15 @@ impl BlockEncodedExtrinsic {
 		Some(self.signature.as_ref()?.extra.nonce)
 	}
 
+	/// Returns the tip if the extrinsic was signed.
+	///
+	/// # Returns
+	/// - `Some(u128)`: Tip reported by the signature.
+	/// - `None`: Extrinsic was unsigned.
+	pub fn tip(&self) -> Option<u128> {
+		Some(self.signature.as_ref()?.extra.tip)
+	}
+
 	/// Returns the ss58 address if the signer payload provided it.
 	///
 	/// # Returns
@@ -287,22 +296,22 @@ impl BlockEncodedExtrinsic {
 		}
 	}
 
-	/// Converts the encoded extrinsic into a signed variant when possible.
-	///
-	/// # Returns
-	/// - `Ok(SignedExtrinsic<T>)`: Signed extrinsic decoded from the encoded payload.
-	/// - `Err(String)`: The extrinsic was unsigned or failed to decode as `T`.
-	pub fn as_signed<T: HasHeader + Decode>(&self) -> Result<BlockSignedExtrinsic<T>, String> {
-		BlockSignedExtrinsic::<T>::try_from(self)
-	}
-
 	/// Converts the encoded extrinsic into a decoded extrinsic wrapper.
 	///
 	/// # Returns
 	/// - `Ok(Extrinsic<T>)`: Decoded extrinsic containing the call and metadata.
 	/// - `Err(String)`: Payload failed to decode as `T`.
-	pub fn as_extrinsic<T: HasHeader + Decode>(&self) -> Result<BlockExtrinsic<T>, String> {
-		BlockExtrinsic::<T>::try_from(self)
+	pub fn as_extrinsic<T: HasHeader + Decode>(self) -> Result<BlockExtrinsic<T>, Error> {
+		BlockExtrinsic::<T>::try_from(self).map_err(Error::Other)
+	}
+
+	/// Converts the encoded extrinsic into a signed variant when possible.
+	///
+	/// # Returns
+	/// - `Ok(SignedExtrinsic<T>)`: Signed extrinsic decoded from the encoded payload.
+	/// - `Err(String)`: The extrinsic was unsigned or failed to decode as `T`.
+	pub fn as_signed<T: HasHeader + Decode>(self) -> Result<BlockSignedExtrinsic<T>, Error> {
+		BlockSignedExtrinsic::<T>::try_from(self).map_err(Error::Other)
 	}
 
 	/// Checks whether the encoded extrinsic matches the header index for `T`.

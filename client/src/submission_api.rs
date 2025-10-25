@@ -367,7 +367,7 @@ impl TransactionReceipt {
 
 			let block = Block::new(client.clone(), block_ref.height);
 			let opts = ExtrinsicOpts::new().filter(tx_hash).encode_as(EncodeSelector::None);
-			let ext_info = block.raw_data(opts).await?;
+			let ext_info = block.extrinsic_infos(opts).await?;
 
 			if let Some(ext_info) = ext_info.first() {
 				let tr =
@@ -407,7 +407,7 @@ impl Utils {
 
 		let block = Block::new(client.clone(), block_ref.hash);
 		let opts = ExtrinsicOpts::new().filter(tx_hash).encode_as(EncodeSelector::None);
-		let ext_info = block.raw_data(opts).await?;
+		let ext_info = block.extrinsic_infos(opts).await?;
 
 		let Some(ext_info) = ext_info.first() else {
 			return Ok(None);
@@ -469,7 +469,7 @@ impl Utils {
 			if state_nonce == 0 {
 				let block = Block::new(client.clone(), info.hash);
 				let opts = ExtrinsicOpts::new().filter(tx_hash).encode_as(EncodeSelector::None);
-				let ext = block.raw_data(opts).await?;
+				let ext = block.extrinsic_infos(opts).await?;
 				if ext.first().is_some() {
 					trace_new_block(nonce, state_nonce, account_id, info, true);
 					return Ok(Some(info));

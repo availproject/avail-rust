@@ -172,10 +172,8 @@ impl BlockEventsQuery {
 	///
 	/// # Side Effects
 	/// - Issues an RPC request and may retry as configured.
-	pub async fn event_count(&self) -> Result<u32, Error> {
-		let block_id = self.ctx.block_id.clone();
-		let chain = self.ctx.chain();
-		chain.block_event_count(block_id).await
+	pub async fn event_count(&self) -> Result<usize, Error> {
+		self.ctx.event_count().await
 	}
 }
 

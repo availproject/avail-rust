@@ -50,14 +50,7 @@ impl BlockSignedExtrinsicsQuery {
 			return Ok(None);
 		};
 
-		let Some(signature) = ext.signature else {
-			return Err(
-				UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into()
-			);
-		};
-
-		let ext = BlockSignedExtrinsic::new(signature, ext.call, ext.metadata);
-		Ok(Some(ext))
+		Ok(Some(ext.as_signed()?))
 	}
 
 	/// Returns the first signed extrinsic that matches the supplied filters.
@@ -78,14 +71,7 @@ impl BlockSignedExtrinsicsQuery {
 			return Ok(None);
 		};
 
-		let Some(signature) = ext.signature else {
-			return Err(
-				UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into()
-			);
-		};
-
-		let ext = BlockSignedExtrinsic::new(signature, ext.call, ext.metadata);
-		Ok(Some(ext))
+		Ok(Some(ext.as_signed()?))
 	}
 
 	/// Returns the last signed extrinsic that matches the supplied filters.
@@ -106,14 +92,7 @@ impl BlockSignedExtrinsicsQuery {
 			return Ok(None);
 		};
 
-		let Some(signature) = ext.signature else {
-			return Err(
-				UserError::Other("Extrinsic is unsigned; cannot decode it as a signed transaction.".into()).into()
-			);
-		};
-
-		let ext = BlockSignedExtrinsic::new(signature, ext.call, ext.metadata);
-		Ok(Some(ext))
+		Ok(Some(ext.as_signed()?))
 	}
 
 	/// Collects every signed extrinsic that matches the supplied filters.
@@ -238,6 +217,7 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 		let events = BlockEventsQuery::new(client, self.metadata.block_id)
 			.extrinsic(self.ext_index())
 			.await?;
+
 		if events.is_empty() {
 			return Err(RpcError::ExpectedData("No events found for the requested extrinsic.".into()).into());
 		};

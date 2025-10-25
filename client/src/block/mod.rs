@@ -43,12 +43,12 @@ impl Block {
 		Block { ctx: BlockContext::new(client, block_id.into()) }
 	}
 
-	/// Returns a helper focused on signed extrinsics contained in this block.
+	/// Returns a helper for retrieving encoded extrinsic payloads in this block.
 	///
 	/// # Returns
-	/// - `SignedExtrinsics`: View that exposes signed extrinsics for this block.
-	pub fn signed(&self) -> signed::BlockSignedExtrinsicsQuery {
-		signed::BlockSignedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	/// - `EncodedExtrinsics`: View over encoded extrinsic payloads and metadata.
+	pub fn encoded(&self) -> encoded::BlockEncodedExtrinsicsQuery {
+		encoded::BlockEncodedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
 	/// Returns a helper for decoding extrinsics contained in this block.
@@ -59,15 +59,15 @@ impl Block {
 		extrinsic::BlockExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
-	/// Returns a helper for retrieving encoded extrinsic payloads in this block.
+	/// Returns a helper focused on signed extrinsics contained in this block.
 	///
 	/// # Returns
-	/// - `EncodedExtrinsics`: View over encoded extrinsic payloads and metadata.
-	pub fn encoded(&self) -> encoded::BlockEncodedExtrinsicsQuery {
-		encoded::BlockEncodedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	/// - `SignedExtrinsics`: View that exposes signed extrinsics for this block.
+	pub fn signed(&self) -> signed::BlockSignedExtrinsicsQuery {
+		signed::BlockSignedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	}
 
-	pub async fn raw_data(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
+	pub async fn extrinsic_infos(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
 		let chain = self.ctx.chain();
 		chain.system_fetch_extrinsics(self.ctx.block_id.clone(), opts).await
 	}
@@ -190,9 +190,10 @@ impl Block {
 	///
 	/// # Side Effects
 	/// - Fetches extrinsic metadata over RPC, honouring the retry configuration.
-	pub async fn extrinsic_count(&self) -> Result<u32, Error> {
-		let encoded = self.encoded();
-		encoded.count(Options::new()).await.map(|x| x as u32)
+	pub async fn extrinsic_count(&self) -> Result<usize, Error> {
+		let mut encoded = self.encoded();
+		encoded.set_retry_on_error(Some(self.ctx.should_retry_on_error()));
+		encoded.count(Options::new()).await
 	}
 
 	/// Counts how many events were emitted in this block.
@@ -203,9 +204,8 @@ impl Block {
 	///
 	/// # Side Effects
 	/// - Performs an RPC call and may retry according to the retry policy.
-	pub async fn event_count(&self) -> Result<u32, Error> {
-		let chain = self.ctx.chain();
-		chain.block_event_count(self.ctx.block_id.clone()).await
+	pub async fn event_count(&self) -> Result<usize, Error> {
+		self.ctx.event_count().await
 	}
 
 	/// Retrieves the dispatch-class weight totals reported for this block.

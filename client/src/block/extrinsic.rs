@@ -75,19 +75,14 @@ impl BlockExtrinsicsQuery {
 	/// # Side Effects
 	/// - Performs RPC calls via the encoded-extrinsic helper and may retry according to the retry policy.
 	pub async fn first<T: HasHeader + Decode>(&self, mut opts: Options) -> Result<Option<BlockExtrinsic<T>>, Error> {
-		if opts.filter.is_none() {
-			opts.filter = Some(T::HEADER_INDEX.into())
-		}
+		opts.filter = opts.filter.or(Some(T::HEADER_INDEX.into()));
 
-		let first = self.xt.first(opts).await?;
-		let Some(first) = first else {
+		let encoded = self.xt.first(opts).await?;
+		let Some(encoded) = encoded else {
 			return Ok(None);
 		};
 
-		let call = T::from_call(first.call).map_err(Error::Other)?;
-		let ext = BlockExtrinsic::new(first.signature, call, first.metadata);
-
-		Ok(Some(ext))
+		Ok(Some(encoded.as_extrinsic::<T>()?))
 	}
 
 	/// Returns the last extrinsic that matches the supplied filters.
@@ -103,18 +98,14 @@ impl BlockExtrinsicsQuery {
 	/// # Side Effects
 	/// - Performs RPC calls via the encoded-extrinsic helper and may retry according to the retry policy.
 	pub async fn last<T: HasHeader + Decode>(&self, mut opts: Options) -> Result<Option<BlockExtrinsic<T>>, Error> {
-		if opts.filter.is_none() {
-			opts.filter = Some(T::HEADER_INDEX.into())
-		}
+		opts.filter = opts.filter.or(Some(T::HEADER_INDEX.into()));
 
-		let last = self.xt.last(opts).await?;
-		let Some(last) = last else {
+		let encoded = self.xt.last(opts).await?;
+		let Some(encoded) = encoded else {
 			return Ok(None);
 		};
 
-		let call = T::from_call(last.call).map_err(Error::Other)?;
-		let ext = BlockExtrinsic::new(last.signature, call, last.metadata);
-		Ok(Some(ext))
+		Ok(Some(encoded.as_extrinsic::<T>()?))
 	}
 
 	/// Collects every extrinsic that matches the supplied filters.
@@ -129,16 +120,12 @@ impl BlockExtrinsicsQuery {
 	/// # Side Effects
 	/// - Performs RPC calls via the encoded-extrinsic helper and may retry according to the retry policy.
 	pub async fn all<T: HasHeader + Decode>(&self, mut opts: Options) -> Result<Vec<BlockExtrinsic<T>>, Error> {
-		if opts.filter.is_none() {
-			opts.filter = Some(T::HEADER_INDEX.into())
-		}
+		opts.filter = opts.filter.or(Some(T::HEADER_INDEX.into()));
 
 		let all = self.xt.all(opts).await?;
 		let mut result = Vec::with_capacity(all.len());
-		for ext in all {
-			let call = T::from_call(ext.call).map_err(Error::Other)?;
-			let ext = BlockExtrinsic::new(ext.signature, call, ext.metadata);
-			result.push(ext);
+		for encoded in all {
+			result.push(encoded.as_extrinsic::<T>()?);
 		}
 
 		Ok(result)
@@ -157,7 +144,6 @@ impl BlockExtrinsicsQuery {
 	/// - Performs RPC calls via the encoded-extrinsic helper and may retry according to the retry policy.
 	pub async fn count<T: HasHeader>(&self, mut opts: Options) -> Result<usize, Error> {
 		opts.filter = Some(T::HEADER_INDEX.into());
-
 		return self.xt.count(opts).await;
 	}
 
@@ -175,7 +161,6 @@ impl BlockExtrinsicsQuery {
 	/// - Performs RPC calls via the encoded-extrinsic helper and may retry according to the retry policy.
 	pub async fn exists<T: HasHeader>(&self, mut opts: Options) -> Result<bool, Error> {
 		opts.filter = Some(T::HEADER_INDEX.into());
-
 		return self.xt.exists(opts).await;
 	}
 
@@ -311,11 +296,8 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 	/// # Returns
 	/// - `Ok(SignedExtrinsic<T>)`: Signed wrapper containing the same call and metadata.
 	/// - `Err(String)`: Extrinsic was unsigned, so a signed variant cannot be produced.
-	pub fn as_signed(&self) -> Result<BlockSignedExtrinsic<T>, String>
-	where
-		T: Clone,
-	{
-		BlockSignedExtrinsic::<T>::try_from(self)
+	pub fn as_signed(self) -> Result<BlockSignedExtrinsic<T>, Error> {
+		BlockSignedExtrinsic::<T>::try_from(self).map_err(Error::Other)
 	}
 }
 

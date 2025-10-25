@@ -4,6 +4,7 @@ pub mod client;
 pub mod clients;
 pub mod config;
 pub mod constants;
+pub mod conversions;
 pub mod error;
 pub mod extensions;
 pub mod platform;

@@ -1,6 +1,6 @@
 use avail_rust_core::{AvailHeader, H256, HashNumber, rpc::ExtrinsicInfo, types::HashStringNumber};
 
-use crate::{Client, Error, UserError, chain::Chain};
+use crate::{Client, Error, UserError, chain::Chain, conversions};
 
 /// Fetches the block header for the provided identifier.
 ///
@@ -36,7 +36,7 @@ impl BlockContext {
 	}
 
 	pub fn hash_number(&self) -> Result<HashNumber, Error> {
-		Ok(self.block_id.clone().try_into().map_err(UserError::Decoding)?)
+		conversions::hash_string_number::to_hash_number(self.block_id.clone())
 	}
 
 	pub fn chain(&self) -> Chain {
@@ -53,6 +53,10 @@ impl BlockContext {
 		};
 
 		Ok(header)
+	}
+
+	pub async fn event_count(&self) -> Result<usize, Error> {
+		self.chain().block_event_count(self.block_id.clone()).await
 	}
 }
 
