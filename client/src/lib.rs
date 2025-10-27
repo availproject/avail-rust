@@ -8,7 +8,7 @@ pub mod conversions;
 pub mod error;
 pub mod extensions;
 pub mod platform;
-pub mod submission_api;
+pub mod submission;
 pub mod subscription;
 pub mod transaction_api;
 pub mod transaction_options;
@@ -20,7 +20,7 @@ pub use constants::{
 	ONE_THOUSAND_AVAIL, TEN_AVAIL, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
 pub use extensions::{AccountIdExt, H256Ext, KeypairExt, SecretUriExt};
-pub use submission_api::{BlockState, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
+pub use submission::{BlockState, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
 pub use transaction_options::{MortalityOption, Options, RefinedMortality, RefinedOptions};
 
 pub use avail_rust_core::{

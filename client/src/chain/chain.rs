@@ -1,6 +1,6 @@
 use crate::{
 	BlockState, Client, Error, UserError, avail, conversions,
-	submission_api::SubmittedTransaction,
+	submission::SubmittedTransaction,
 	subxt_signer::sr25519::Keypair,
 	transaction_options::Options,
 	utils::{with_retry_on_error, with_retry_on_error_and_none},
