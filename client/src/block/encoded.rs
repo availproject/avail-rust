@@ -341,3 +341,308 @@ impl BlockEncodedExtrinsic {
 		Ok(BlockEncodedExtrinsic::new(extrinsic.signature, extrinsic.call, metadata))
 	}
 }
+
+#[cfg(test)]
+pub mod tests {
+	use super::*;
+	use crate::TURING_ENDPOINT;
+	use avail_rust_core::{ExtrinsicDecodable, avail};
+
+	pub fn match_timestamp(ext: &BlockEncodedExtrinsic) {
+		assert_eq!(
+			std::format!("{:?}", ext.ext_hash()),
+			"0xdbfa60611f72a714100338db1c7b11c66636a76f116b214d879de069afe67a74"
+		);
+		assert_eq!(ext.ext_index(), 0);
+		assert_eq!(ext.nonce(), None);
+		assert_eq!(ext.header(), (3, 0));
+		assert!(ext.signature.is_none());
+		assert!(ext.app_id().is_none());
+		let set = avail::timestamp::tx::Set::from_call(&ext.call).unwrap();
+		assert_eq!(set.now, 1761567760000);
+	}
+
+	pub fn match_failed_send_message(ext: &BlockEncodedExtrinsic) {
+		assert_eq!(
+			std::format!("{:?}", ext.ext_hash()),
+			"0x92cdb77314063a01930b093516d19a453399710cc8ae635ff5ab6cf76b26f218"
+		);
+		assert_eq!(ext.header(), (39, 11));
+		assert_eq!(ext.ext_index(), 3);
+		assert_eq!(ext.nonce(), None);
+		assert!(ext.signature.is_none());
+		assert!(ext.app_id().is_none());
+		let f = avail::vector::tx::FailedSendMessageTxs::from_call(&ext.call).unwrap();
+		assert_eq!(f.failed_txs.len(), 0);
+	}
+
+	pub fn match_submit_data_1(ext: &BlockEncodedExtrinsic) {
+		assert_eq!(
+			std::format!("{:?}", ext.ext_hash()),
+			"0x8b84294cba5f2b88e2887ac999ebac3806af7be9cca2a521fc889421f240f3ef"
+		);
+		assert_eq!(ext.ext_index(), 1);
+		assert_eq!(ext.header(), (29, 1));
+		assert_eq!(ext.nonce(), Some(30));
+		assert!(ext.signature.is_some());
+		assert_eq!(ext.app_id(), Some(1));
+		assert_eq!(ext.ss58_address(), Some("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ".to_string()));
+		let sd = avail::data_availability::tx::SubmitData::from_call(&ext.call).unwrap();
+		assert_eq!(String::from_utf8(sd.data).unwrap(), "AABBCC");
+	}
+
+	pub fn match_submit_data_2(ext: &BlockEncodedExtrinsic) {
+		assert_eq!(
+			std::format!("{:?}", ext.ext_hash()),
+			"0x19fab0492322016c644af12f1547c587ef51edd10311db85cb3aa2680f6ae4ba"
+		);
+		assert_eq!(ext.ext_index(), 2);
+		assert_eq!(ext.header(), (29, 1));
+		assert_eq!(ext.nonce(), Some(4));
+		assert!(ext.signature.is_some());
+		assert_eq!(ext.app_id(), Some(2));
+		assert_eq!(ext.ss58_address(), Some("5DPDXCcqk1YNVZ3M9s9iwJnr9XAVfTxf8hNa4LS51fjHKAzk".to_string()));
+		let sd = avail::data_availability::tx::SubmitData::from_call(&ext.call).unwrap();
+		assert_eq!(String::from_utf8(sd.data).unwrap(), "CCBBAA");
+	}
+
+	#[tokio::test]
+	pub async fn query_get_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let query = client.block(2491314).encoded();
+
+		for i in 0..4usize {
+			let ext = query.get(i as u32).await.unwrap().unwrap();
+
+			// Content check
+			match i {
+				0 => match_timestamp(&ext),
+				1 => match_submit_data_1(&ext),
+				2 => match_submit_data_2(&ext),
+				3 => match_failed_send_message(&ext),
+				_ => panic!(),
+			};
+		}
+
+		// Non Existing
+		assert!(query.get(4).await.unwrap().is_none());
+	}
+
+	#[tokio::test]
+	pub async fn query_first_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let query = client.block(2491314).encoded();
+
+		// App Id 1
+		let opts = Options::new().app_id(1);
+		let ext = query.first(opts).await.unwrap().unwrap();
+		match_submit_data_1(&ext);
+
+		// App Id 2
+		let opts = Options::new().app_id(2);
+		let ext = query.first(opts).await.unwrap().unwrap();
+		match_submit_data_2(&ext);
+
+		// Nonce 30
+		let opts = Options::new().nonce(30);
+		let ext = query.first(opts).await.unwrap().unwrap();
+		match_submit_data_1(&ext);
+
+		// Nonce 4
+		let opts = Options::new().nonce(4);
+		let ext = query.first(opts).await.unwrap().unwrap();
+		match_submit_data_2(&ext);
+
+		// DA call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX);
+		let ext = query.first(opts).await.unwrap().unwrap();
+		match_submit_data_1(&ext);
+
+		// Pall Call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX.0);
+		let ext = query.first(opts).await.unwrap().unwrap();
+		match_submit_data_1(&ext);
+
+		// Nothing
+		let ext = query.first(Default::default()).await.unwrap().unwrap();
+		match_timestamp(&ext);
+
+		// Non Existing
+		let opts = Options::new().filter(100u32);
+		assert!(query.first(opts).await.unwrap().is_none());
+	}
+
+	#[tokio::test]
+	pub async fn query_last_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let query = client.block(2491314).encoded();
+
+		// App Id 1
+		let opts = Options::new().app_id(1);
+		let ext = query.last(opts).await.unwrap().unwrap();
+		match_submit_data_1(&ext);
+
+		// App Id 2
+		let opts = Options::new().app_id(2);
+		let ext = query.last(opts).await.unwrap().unwrap();
+		match_submit_data_2(&ext);
+
+		// Nonce 30
+		let opts = Options::new().nonce(30);
+		let ext = query.last(opts).await.unwrap().unwrap();
+		match_submit_data_1(&ext);
+
+		// Nonce 4
+		let opts = Options::new().nonce(4);
+		let ext = query.last(opts).await.unwrap().unwrap();
+		match_submit_data_2(&ext);
+
+		// DA call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX);
+		let ext = query.last(opts).await.unwrap().unwrap();
+		match_submit_data_2(&ext);
+
+		// Pall Call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX.0);
+		let ext = query.last(opts).await.unwrap().unwrap();
+		match_submit_data_2(&ext);
+
+		// Nothing
+		let ext = query.last(Default::default()).await.unwrap().unwrap();
+		match_failed_send_message(&ext);
+
+		// Non Existing
+		let opts = Options::new().filter(100u32);
+		assert!(query.last(opts).await.unwrap().is_none());
+	}
+
+	#[tokio::test]
+	pub async fn query_all_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let query = client.block(2491314).encoded();
+
+		// App Id 1
+		let opts = Options::new().app_id(1);
+		let ext = query.all(opts).await.unwrap();
+		match_submit_data_1(&ext[0]);
+
+		// App Id 2
+		let opts = Options::new().app_id(2);
+		let ext = query.all(opts).await.unwrap();
+		match_submit_data_2(&ext[0]);
+		assert_eq!(ext.len(), 1);
+
+		// Nonce 30
+		let opts = Options::new().nonce(30);
+		let ext = query.all(opts).await.unwrap();
+		match_submit_data_1(&ext[0]);
+		assert_eq!(ext.len(), 1);
+
+		// Nonce 4
+		let opts = Options::new().nonce(4);
+		let ext = query.all(opts).await.unwrap();
+		match_submit_data_2(&ext[0]);
+		assert_eq!(ext.len(), 1);
+
+		// DA call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX);
+		let ext = query.all(opts).await.unwrap();
+		match_submit_data_1(&ext[0]);
+		match_submit_data_2(&ext[1]);
+		assert_eq!(ext.len(), 2);
+
+		// Pall Call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX.0);
+		let ext = query.all(opts).await.unwrap();
+		match_submit_data_1(&ext[0]);
+		match_submit_data_2(&ext[1]);
+		assert_eq!(ext.len(), 2);
+
+		// Nothing
+		let ext = query.all(Default::default()).await.unwrap();
+		match_timestamp(&ext[0]);
+		match_submit_data_1(&ext[1]);
+		match_submit_data_2(&ext[2]);
+		match_failed_send_message(&ext[3]);
+		assert_eq!(ext.len(), 4);
+
+		// Non Existing
+		let opts = Options::new().filter(100u32);
+		let ext = query.all(opts).await.unwrap();
+		assert_eq!(ext.len(), 0)
+	}
+
+	#[tokio::test]
+	pub async fn query_count_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let query = client.block(2491314).encoded();
+
+		// App Id 1
+		let opts = Options::new().app_id(1);
+		assert_eq!(query.count(opts).await.unwrap(), 1);
+
+		// App Id 2
+		let opts = Options::new().app_id(2);
+		assert_eq!(query.count(opts).await.unwrap(), 1);
+
+		// Nonce 30
+		let opts = Options::new().nonce(30);
+		assert_eq!(query.count(opts).await.unwrap(), 1);
+
+		// Nonce 4
+		let opts = Options::new().nonce(4);
+		assert_eq!(query.count(opts).await.unwrap(), 1);
+
+		// DA call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX);
+		assert_eq!(query.count(opts).await.unwrap(), 2);
+
+		// Pall Call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX.0);
+		assert_eq!(query.count(opts).await.unwrap(), 2);
+
+		// Nothing
+		assert_eq!(query.count(Default::default()).await.unwrap(), 4);
+
+		// Non Existing
+		let opts = Options::new().filter(100u32);
+		assert_eq!(query.count(opts).await.unwrap(), 0);
+	}
+
+	#[tokio::test]
+	pub async fn query_exists_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let query = client.block(2491314).encoded();
+
+		// App Id 1
+		let opts = Options::new().app_id(1);
+		assert_eq!(query.exists(opts).await.unwrap(), true);
+
+		// App Id 2
+		let opts = Options::new().app_id(2);
+		assert_eq!(query.exists(opts).await.unwrap(), true);
+
+		// Nonce 30
+		let opts = Options::new().nonce(30);
+		assert_eq!(query.exists(opts).await.unwrap(), true);
+
+		// Nonce 4
+		let opts = Options::new().nonce(4);
+		assert_eq!(query.exists(opts).await.unwrap(), true);
+
+		// DA call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX);
+		assert_eq!(query.exists(opts).await.unwrap(), true);
+
+		// Pall Call
+		let opts = Options::new().filter(avail::data_availability::tx::SubmitData::HEADER_INDEX.0);
+		assert_eq!(query.exists(opts).await.unwrap(), true);
+
+		// Nothing
+		assert_eq!(query.exists(Default::default()).await.unwrap(), true);
+
+		// Non Existing
+		let opts = Options::new().filter(100u32);
+		assert_eq!(query.exists(opts).await.unwrap(), false);
+	}
+}

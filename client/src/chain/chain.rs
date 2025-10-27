@@ -29,7 +29,7 @@ use codec::Decode;
 
 /// Low-level RPC surface with fine-grained retry controls.
 pub struct Chain {
-	client: Client,
+	pub(crate) client: Client,
 	retry_on_error: Option<bool>,
 	retry_on_none: Option<bool>,
 }
