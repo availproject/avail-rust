@@ -20,7 +20,7 @@ use tracing::info;
 #[derive(Clone)]
 pub struct SubmittedTransaction {
 	client: Client,
-	pub tx_hash: H256,
+	pub ext_hash: H256,
 	pub account_id: AccountId,
 	pub options: RefinedOptions,
 	pub additional: ExtrinsicAdditional,
@@ -33,12 +33,12 @@ impl SubmittedTransaction {
 	/// resolve receipts or query status.
 	pub fn new(
 		client: Client,
-		tx_hash: H256,
+		ext_hash: H256,
 		account_id: AccountId,
 		options: RefinedOptions,
 		additional: ExtrinsicAdditional,
 	) -> Self {
-		Self { client, tx_hash, account_id, options, additional }
+		Self { client, ext_hash, account_id, options, additional }
 	}
 
 	/// Produces a receipt describing how the transaction landed on chain, if it did at all.
@@ -54,7 +54,7 @@ impl SubmittedTransaction {
 	pub async fn receipt(&self, use_best_block: bool) -> Result<Option<TransactionReceipt>, Error> {
 		Utils::transaction_receipt(
 			self.client.clone(),
-			self.tx_hash,
+			self.ext_hash,
 			self.options.nonce,
 			&self.account_id,
 			&self.options.mortality,
@@ -78,6 +78,17 @@ pub enum BlockState {
 	Discarded = 2,
 	/// The transaction could not be found on chain.
 	DoesNotExist = 3,
+}
+
+impl std::fmt::Display for BlockState {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			BlockState::Included => std::write!(f, "Included"),
+			BlockState::Finalized => std::write!(f, "Finalized"),
+			BlockState::Discarded => std::write!(f, "Discarded"),
+			BlockState::DoesNotExist => std::write!(f, "DoesNotExist"),
+		}
+	}
 }
 
 /// Detailed information about where a transaction was found on chain.
@@ -290,7 +301,7 @@ impl Utils {
 				let block = Block::new(client.clone(), info.hash);
 				let opts = ExtrinsicOpts::new().filter(tx_hash).encode_as(EncodeSelector::None);
 				let ext = block.extrinsic_infos(opts).await?;
-				if ext.first().is_some() {
+				if !ext.is_empty() {
 					trace_new_block(nonce, state_nonce, account_id, info, true);
 					return Ok(Some(info));
 				}

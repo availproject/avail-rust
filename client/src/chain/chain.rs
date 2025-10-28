@@ -263,7 +263,7 @@ impl Chain {
 
 		let header = self.block_header(Some(hash)).await?;
 		let Some(header) = header else {
-			return Err(Error::Other(std::format!("No block header was found")));
+			return Err(Error::Other("No block header was found".into()));
 		};
 
 		for item in &header.digest.logs {

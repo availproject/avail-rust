@@ -51,3 +51,26 @@ pub async fn main() -> Result<(), Error> {
 pub fn printout_details(bext: &BlockEncodedExtrinsic) {
 	println!("Ext Index: {}, Ext Call Len: {}, App ID: {:?}", bext.ext_index(), bext.call.len(), bext.app_id());
 }
+
+/*
+	Expected Output:
+
+	Block 2470159 has 4 extrinsics with app id 246
+	Does Block 2470159 have extrinsics with app id 100? false
+
+	Ext Index: 0, Ext Call Len: 9, App ID: None
+	Get: Timestamp::Set now: 1761144640000
+
+	Ext Index: 1, Ext Call Len: 8, App ID: Some(1)
+	First: DataAvailability::SubmitData data len: 5
+	Ext Index: 6, Ext Call Len: 1582, App ID: Some(246)
+	Last: DataAvailability::SubmitData data len: 1578
+
+	Ext Index: 1, Ext Call Len: 8, App ID: Some(1)
+	Ext Index: 2, Ext Call Len: 8, App ID: Some(2)
+	Ext Index: 3, Ext Call Len: 154, App ID: Some(246)
+	Ext Index: 4, Ext Call Len: 375, App ID: Some(246)
+	Ext Index: 5, Ext Call Len: 630, App ID: Some(246)
+	Ext Index: 6, Ext Call Len: 1582, App ID: Some(246)
+	Last from All: DataAvailability::SubmitData data len: 1578
+*/

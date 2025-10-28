@@ -86,7 +86,7 @@ impl BlockEncodedExtrinsicsQuery {
 			return Ok(None);
 		};
 
-		let ext = BlockEncodedExtrinsic::from_extrinsic_info(&info, block_id)?;
+		let ext = BlockEncodedExtrinsic::from_extrinsic_info(info, block_id)?;
 		Ok(Some(ext))
 	}
 
@@ -112,7 +112,7 @@ impl BlockEncodedExtrinsicsQuery {
 			return Ok(None);
 		};
 
-		let ext = BlockEncodedExtrinsic::from_extrinsic_info(&info, block_id)?;
+		let ext = BlockEncodedExtrinsic::from_extrinsic_info(info, block_id)?;
 		Ok(Some(ext))
 	}
 
@@ -337,7 +337,7 @@ impl BlockEncodedExtrinsic {
 			return Err(Error::RpcError(RpcError::ExpectedData("Expected data for encoded extrinsic.".into())));
 		};
 
-		let extrinsic = EncodedExtrinsic::try_from(data).map_err(|x| Error::Other(x))?;
+		let extrinsic = EncodedExtrinsic::try_from(data).map_err(Error::Other)?;
 		Ok(BlockEncodedExtrinsic::new(extrinsic.signature, extrinsic.call, metadata))
 	}
 }

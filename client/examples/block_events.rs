@@ -118,15 +118,15 @@ pub async fn main() -> Result<(), Error> {
 
 	// Block System Events
 	println!("Displaying block system event");
-	let block_events = block.events().system().await?;
-	let event = block_events
+	let system_events = block.events().system().await?;
+	let event = system_events
 		.first::<avail::treasury::events::UpdatedInactive>()
 		.expect("Should be decodable");
 	println!("5. Reactivated: {}, Deactivated: {}", event.reactivated, event.deactivated);
 	println!("");
 
 	// All Events (both Extrinsic and Block)
-	println!("Iterating over all extrinsic index 0 events.");
+	println!("Iterating over all extrinsic index 0 events");
 	let events = block.events().extrinsic(0).await?;
 	for event in events.events {
 		println!(
@@ -140,11 +140,11 @@ pub async fn main() -> Result<(), Error> {
 
 		if (event.pallet_id, event.variant_id) == avail::balances::events::Withdraw::HEADER_INDEX {
 			let withdraw = avail::balances::events::Withdraw::from_event(event.data).expect("Should be decodable");
-			println!("	6. Who: {}, amount: {}", withdraw.who, withdraw.amount);
+			println!("	    6. Who: {}, amount: {}", withdraw.who, withdraw.amount);
 		}
 	}
 
-	println!("Iterating over all block system events.");
+	println!("Iterating over all block system events");
 	let events = block.events().system().await?;
 	for event in events.events {
 		println!(
@@ -158,11 +158,11 @@ pub async fn main() -> Result<(), Error> {
 
 		if (event.pallet_id, event.variant_id) == avail::balances::events::Withdraw::HEADER_INDEX {
 			let withdraw = avail::balances::events::Withdraw::from_event(event.data).expect("Should be decodable");
-			println!("	6. Who: {}, amount: {}", withdraw.who, withdraw.amount);
+			println!("	    6. Who: {}, amount: {}", withdraw.who, withdraw.amount);
 		}
 	}
 
-	println!("Iterating over all events (both extrinsic and system events).");
+	println!("Iterating over all events (both extrinsic and system events)");
 	let events = block.events().all(EventFilter::All).await?;
 	for event in events {
 		println!(
@@ -176,9 +176,54 @@ pub async fn main() -> Result<(), Error> {
 
 		if (event.pallet_id, event.variant_id) == avail::balances::events::Withdraw::HEADER_INDEX {
 			let withdraw = avail::balances::events::Withdraw::from_event(event.data).expect("Should be decodable");
-			println!("	6. Who: {}, amount: {}", withdraw.who, withdraw.amount);
+			println!("	    6. Who: {}, amount: {}", withdraw.who, withdraw.amount);
 		}
 	}
 
 	Ok(())
 }
+
+/*
+	Expected Output:
+
+	Extrinsic 0 events:
+	Extrinsic Success present: true, Extrinsic Failed present: false, Multisig Executed present: None, Proxy Executed present: None, Balances Deposit present: false
+	Total count: 1, Success count: 1, Deposit Count: 0
+
+	Extrinsic 1 events:
+	Extrinsic Success present: true, Extrinsic Failed present: false, Multisig Executed present: None, Proxy Executed present: None, Balances Deposit present: true
+	Total count: 7, Success count: 1, Deposit Count: 3
+
+	Withdraw Amount: 124711139352751361, Extrinsic Weight: 13057471500, Deposits Count: 3
+	1. Timestamp::Set Weight: 12606212000, DataAvailability::SubmitData Weight: 13057471500
+	Displaying all Balances::Deposit events
+	2. Account ID: 5EZZm8AKzZw8ti9PSmTZdXCgNEeaE3vs5sNxqkQ6u5NhG8kT, Amount: 0
+	2. Account ID: 5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, Amount: 99768911482201088
+	2. Account ID: 5Ew2zpT4iT7fRLqD81fzq7rGViVj4MSLKMJn6tZdadbQLy8B, Amount: 24942227870550273
+
+	Displaying DataAvailability::DataSubmitted event
+	3. Who: 5EZZm8AKzZw8ti9PSmTZdXCgNEeaE3vs5sNxqkQ6u5NhG8kT, Data Hash: 0x14e3128c0c0f5840c1594420546b1dbd2ed60ac6f8f9095a06db7ad1a19032bf
+
+	Displaying TransactionPayment::TransactionFeePaid event
+	4. Who: 5EZZm8AKzZw8ti9PSmTZdXCgNEeaE3vs5sNxqkQ6u5NhG8kT, Actual Fee: 124711139352751361, Tip: 0
+
+	Displaying block system event
+	5. Reactivated: 292332715967391734000945630, Deactivated: 292332716069790243286966271
+
+	Iterating over all extrinsic index 0 events.
+		Index: 1, Pallet ID: 0, Variant ID: 0, Data Length: 30, Phase: ApplyExtrinsic(0)
+	Iterating over all block system events.
+		Index: 0, Pallet ID: 18, Variant ID: 8, Data Length: 68, Phase: Initialization
+	Iterating over all events (both extrinsic and system events).
+		Index: 0, Pallet ID: 18, Variant ID: 8, Data Length: 68, Phase: Initialization
+		Index: 1, Pallet ID: 0, Variant ID: 0, Data Length: 30, Phase: ApplyExtrinsic(0)
+		Index: 2, Pallet ID: 6, Variant ID: 8, Data Length: 100, Phase: ApplyExtrinsic(1)
+			6. Who: 5EZZm8AKzZw8ti9PSmTZdXCgNEeaE3vs5sNxqkQ6u5NhG8kT, amount: 124711139352751361
+		Index: 3, Pallet ID: 29, Variant ID: 1, Data Length: 132, Phase: ApplyExtrinsic(1)
+		Index: 4, Pallet ID: 6, Variant ID: 7, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 5, Pallet ID: 6, Variant ID: 7, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 6, Pallet ID: 6, Variant ID: 7, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 7, Pallet ID: 7, Variant ID: 0, Data Length: 132, Phase: ApplyExtrinsic(1)
+		Index: 8, Pallet ID: 0, Variant ID: 0, Data Length: 36, Phase: ApplyExtrinsic(1)
+		Index: 9, Pallet ID: 0, Variant ID: 0, Data Length: 28, Phase: ApplyExtrinsic(2)
+*/

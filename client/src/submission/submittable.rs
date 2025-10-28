@@ -146,8 +146,8 @@ impl SubmittableTransaction {
 
 	/// Hashes the call payload as it would appear in an extrinsic, returning the blake2 hash used by
 	/// the runtime for call identification.
-	pub fn call_hash(&self) -> [u8; 32] {
-		self.call.hash()
+	pub fn call_hash(&self) -> H256 {
+		H256::from(self.call.hash())
 	}
 }
 

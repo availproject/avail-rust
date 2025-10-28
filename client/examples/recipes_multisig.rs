@@ -1,4 +1,4 @@
-use avail_rust::{
+use avail_rust_client::{
 	avail::{
 		multisig::{
 			events::{MultisigApproval, MultisigExecuted, NewMultisig},
@@ -59,10 +59,7 @@ async fn main() -> Result<(), Error> {
 	let receipt = first_approval(&client, &alice, threshold, other_signatures, call_hash, call_max_weight).await?;
 
 	// Approve existing Multisig Transaction
-	let timepoint = Timepoint {
-		height: receipt.block_ref.height,
-		index: receipt.tx_ref.index,
-	};
+	let timepoint = Timepoint { height: receipt.block_height, index: receipt.ext_index };
 	let other_signatures = vec![alice.account_id(), charlie.account_id()];
 	next_approval(&client, &bob, threshold, other_signatures, timepoint, call_hash, call_max_weight).await?;
 
@@ -186,3 +183,12 @@ async fn last_approval(
 
 	Ok(())
 }
+
+/*
+	Expected Output:
+
+	Multisig address: 5EAkPWNziBqEnrw6hkjFVu6EJej7Xf9wEK4CXir6YDS4kvUL
+	Approving: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY, Call Hash: 0x543b0d9d49971c569ca8f66190f80a01442f38b18ab062a2cb18025e3f3ec332, Multisig: 5EAkPWNziBqEnrw6hkjFVu6EJej7Xf9wEK4CXir6YDS4kvUL
+	Approving: 5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty, Call Hash: 0x543b0d9d49971c569ca8f66190f80a01442f38b18ab062a2cb18025e3f3ec332, Multisig: 5EAkPWNziBqEnrw6hkjFVu6EJej7Xf9wEK4CXir6YDS4kvUL, Timepoint: Timepoint { height: 2, index: 1 }
+	Approving: 5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y, Call Hash: 0x543b0d9d49971c569ca8f66190f80a01442f38b18ab062a2cb18025e3f3ec332, Multisig: 5EAkPWNziBqEnrw6hkjFVu6EJej7Xf9wEK4CXir6YDS4kvUL, Timepoint: Timepoint { height: 2, index: 1 }, Result: Ok(())
+*/

@@ -14,7 +14,6 @@ use crate::{Client, Error, UserError, chain::Chain, conversions};
 ///
 /// # Side Effects
 /// - Performs an RPC call through the client's chain interface.
-
 pub struct BlockContext {
 	pub client: Client,
 	pub block_id: HashStringNumber,

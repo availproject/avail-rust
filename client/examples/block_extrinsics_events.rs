@@ -39,3 +39,24 @@ fn printout_events(from: &str, events: BlockEvents) {
 		);
 	}
 }
+
+/*
+	Expected Output:
+
+	encoded:
+		Index: 2, Pallet ID: 6, Variant ID: 8, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 3, Pallet ID: 29, Variant ID: 1, Data Length: 132, Phase: ApplyExtrinsic(1)
+		Index: 4, Pallet ID: 6, Variant ID: 7, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 5, Pallet ID: 6, Variant ID: 7, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 6, Pallet ID: 6, Variant ID: 7, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 7, Pallet ID: 7, Variant ID: 0, Data Length: 132, Phase: ApplyExtrinsic(1)
+		Index: 8, Pallet ID: 0, Variant ID: 0, Data Length: 36, Phase: ApplyExtrinsic(1)
+	extrinsics:
+		Index: 2, Pallet ID: 6, Variant ID: 8, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 3, Pallet ID: 29, Variant ID: 1, Data Length: 132, Phase: ApplyExtrinsic(1)
+		Index: 4, Pallet ID: 6, Variant ID: 7, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 5, Pallet ID: 6, Variant ID: 7, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 6, Pallet ID: 6, Variant ID: 7, Data Length: 100, Phase: ApplyExtrinsic(1)
+		Index: 7, Pallet ID: 7, Variant ID: 0, Data Length: 132, Phase: ApplyExtrinsic(1)
+		Index: 8, Pallet ID: 0, Variant ID: 0, Data Length: 36, Phase: ApplyExtrinsic(1)
+*/

@@ -1,7 +1,0 @@
-[package]
-name = "crates-example"
-edition = "2024"
-
-[dependencies]
-avail-rust = { package = "avail-rust-client", version = "0.4.0-rc.1", default-features = false, features = ["native", "reqwest"] }
-tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }

@@ -1,4 +1,4 @@
-use avail_rust::{
+use avail_rust_client::{
 	avail::{
 		RuntimeCall,
 		utility::{
@@ -56,7 +56,7 @@ async fn main() -> Result<(), Error> {
 	*/
 
 	// Decoding batch call
-	let tx = receipt.tx::<BatchAll>().await?;
+	let tx = receipt.extrinsic::<BatchAll>().await?;
 	let decoded_calls = tx.call.decode_calls()?;
 	for call in decoded_calls {
 		// RuntimeCall variants are the only calls that are decodable from a batch call.
@@ -81,3 +81,12 @@ async fn main() -> Result<(), Error> {
 
 	Ok(())
 }
+
+/*
+	Expected Output:
+
+	Found Utility::BatchCompleted
+	Found 2x Utility::ItemCompleted
+	Dest: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", Amount: 1000000000000000000
+	Dest: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy", Amount: 1000000000000000000
+*/
