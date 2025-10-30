@@ -2045,6 +2045,19 @@ pub mod proxy {
 				}
 			}
 		}
+
+		impl std::fmt::Display for ProxyType {
+			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+				match self {
+					ProxyType::Any => std::write!(f, "Any"),
+					ProxyType::NonTransfer => std::write!(f, "NonTransfer"),
+					ProxyType::Governance => std::write!(f, "Governance"),
+					ProxyType::Staking => std::write!(f, "Staking"),
+					ProxyType::IdentityJudgement => std::write!(f, "IdentityJudgement"),
+					ProxyType::NominationPools => std::write!(f, "NominationPools"),
+				}
+			}
+		}
 	}
 
 	pub mod events {
