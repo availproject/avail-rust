@@ -57,7 +57,7 @@ impl SubmittableTransaction {
 		self.client
 			.chain()
 			.retry_on(self.retry_on_error, None)
-			.sign_call(signer, &self.call, options)
+			.build_extrinsic_from_call(signer, &self.call, options)
 			.await
 	}
 

@@ -21,9 +21,6 @@ async fn main() -> Result<(), Error> {
 	let threshold = 3u16;
 	let multisig_account = multi_account_id(&[alice.account_id(), bob.account_id(), charlie.account_id()], threshold);
 	println!("Multisig address: {}", multisig_account);
-	/*
-		Multisig address: 5EAkPWNziBqEnrw6hkjFVu6EJej7Xf9wEK4CXir6YDS4kvUL
-	*/
 
 	// Funding multisig account
 	fund_multisig_account(&client, &alice, multisig_account).await?;
@@ -101,11 +98,6 @@ async fn first_approval(
 
 	let event = events.first::<NewMultisig>().expect("Should be there");
 	println!("Approving: {}, Call Hash: {:?}, Multisig: {}", event.approving, event.call_hash, event.multisig);
-	/*
-		Approving: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY,
-		Call Hash: 0x543b0d9d49971c569ca8f66190f80a01442f38b18ab062a2cb18025e3f3ec332,
-		Multisig: 5EAkPWNziBqEnrw6hkjFVu6EJej7Xf9wEK4CXir6YDS4kvUL
-	*/
 
 	Ok(receipt)
 }
@@ -136,12 +128,6 @@ async fn next_approval(
 		"Approving: {}, Call Hash: {:?}, Multisig: {}, Timepoint: {:?}",
 		approving, call_hash, multisig, event.timepoint
 	);
-	/*
-		Approving: 5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty,
-		Call Hash: 0x543b0d9d49971c569ca8f66190f80a01442f38b18ab062a2cb18025e3f3ec332,
-		Multisig: 5EAkPWNziBqEnrw6hkjFVu6EJej7Xf9wEK4CXir6YDS4kvUL,
-		Timepoint: Timepoint { height: 3, index: 1 }
-	*/
 
 	Ok(())
 }
@@ -174,12 +160,6 @@ async fn last_approval(
 		"Approving: {}, Call Hash: {:?}, Multisig: {}, Timepoint: {:?}, Result: {:?}",
 		approving, call_hash, multisig, event.timepoint, event.result
 	);
-	/*
-		Approving: 5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y,
-		Call Hash: 0x543b0d9d49971c569ca8f66190f80a01442f38b18ab062a2cb18025e3f3ec332,
-		Multisig: 5EAkPWNziBqEnrw6hkjFVu6EJej7Xf9wEK4CXir6YDS4kvUL,
-		Timepoint: Timepoint { height: 3, index: 1 }, Result: Ok(())
-	*/
 
 	Ok(())
 }

@@ -4,9 +4,8 @@ use avail_rust_client::prelude::*;
 pub async fn main() -> Result<(), Error> {
 	let client = Client::new(TURING_ENDPOINT).await?;
 
+	// 1 Submittable
 	let submittable = client.tx().data_availability().submit_data("My data");
-
-	// 1
 	let call_hash = submittable.call_hash();
 	let estimated_fee = submittable.estimate_call_fees(None).await?;
 	let weight = submittable.call_info(None).await?.weight;
@@ -17,8 +16,7 @@ pub async fn main() -> Result<(), Error> {
 		weight.ref_time
 	);
 
-	// 2
-	// Submitting
+	// 2 Submitting
 	let signer = Keypair::from_str("//Bob")?;
 	let submitted = submittable.sign_and_submit(&signer, Options::new(2)).await?;
 	println!(
@@ -26,8 +24,7 @@ pub async fn main() -> Result<(), Error> {
 		submitted.ext_hash, submitted.account_id, submitted.options.nonce, submitted.options.app_id
 	);
 
-	// 3
-	// Getting Extrinsic Receipt
+	// 3 Getting Extrinsic Receipt
 	let receipt = submitted.receipt(false).await?.expect("Should be included");
 	println!("Block State: {}", receipt.block_state().await?);
 	println!(
@@ -35,7 +32,7 @@ pub async fn main() -> Result<(), Error> {
 		receipt.block_height, receipt.block_hash, receipt.ext_hash, receipt.ext_index
 	);
 
-	// Fetching Extrinsic Events
+	// 4 Fetching Extrinsic Events
 	let events = receipt.events().await?;
 	let event = events
 		.first::<avail::data_availability::events::DataSubmitted>()
@@ -47,7 +44,7 @@ pub async fn main() -> Result<(), Error> {
 		event.data_hash
 	);
 
-	// Fetching Extrinsic itself
+	// 5 Fetching Extrinsic itself
 	let ext = receipt.extrinsic::<avail::data_availability::tx::SubmitData>().await?;
 	println!("Data: {:?}", String::from_utf8(ext.call.data).unwrap());
 

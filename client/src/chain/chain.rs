@@ -329,16 +329,53 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
+	pub async fn build_payload<'a>(
+		&self,
+		account_id: &AccountId,
+		call: &'a avail_rust_core::ExtrinsicCall,
+		options: Options,
+	) -> Result<avail_rust_core::ExtrinsicPayload<'a>, Error> {
+		let refined_options = options.build(&self.client, account_id, self.retry_on_error).await?;
+
+		let extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
+		let additional = avail_rust_core::ExtrinsicAdditional {
+			spec_version: self.client.online_client().spec_version(),
+			tx_version: self.client.online_client().transaction_version(),
+			genesis_hash: self.client.online_client().genesis_hash(),
+			fork_hash: refined_options.mortality.block_hash,
+		};
+
+		Ok(avail_rust_core::ExtrinsicPayload::new_borrowed(call, extra, additional))
+	}
+
+	/// Builds a payload from a call and signs it with sensible defaults.
+	///
+	/// # Errors
+	/// Returns `Err(Error)` when option refinement fails (e.g., fetching account info) or signing fails.
+	pub async fn build_extrinsic_from_call<'a>(
+		&self,
+		signer: &Keypair,
+		call: &'a avail_rust_core::ExtrinsicCall,
+		options: Options,
+	) -> Result<avail_rust_core::GenericExtrinsic<'a>, Error> {
+		let account_id = signer.public_key().to_account_id();
+
+		let payload = self.build_payload(&account_id, call, options).await?;
+		let signature = payload.sign(signer);
+
+		Ok(avail_rust_core::GenericExtrinsic::new(account_id, signature, payload))
+	}
+
 	/// Submits a signed extrinsic and gives you the transaction hash.
 	///
 	/// # Errors
 	/// Returns `Err(RpcError)` when the node rejects the extrinsic or the RPC transport fails.
-	pub async fn submit(&self, tx: &avail_rust_core::GenericExtrinsic<'_>) -> Result<H256, RpcError> {
+	pub async fn submit(&self, ext: &avail_rust_core::GenericExtrinsic<'_>) -> Result<H256, RpcError> {
 		let retry = self.should_retry_on_error();
-		let encoded = tx.encode();
+		let encoded = ext.encode();
 
 		#[cfg(feature = "tracing")]
-		if let Some(signed) = &tx.signature {
+		if let Some(signed) = &ext.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
 				tracing::info!(target: "tx", "Submitting Transaction. Address: {}, Nonce: {}, App Id: {}", account_id, signed.extra.nonce, signed.extra.app_id);
 			}
@@ -349,7 +386,7 @@ impl Chain {
 		let tx_hash = with_retry_on_error(f, retry).await?;
 
 		#[cfg(feature = "tracing")]
-		if let Some(signed) = &tx.signature {
+		if let Some(signed) = &ext.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
 				tracing::info!(target: "tx", "Transaction Submitted.  Address: {}, Nonce: {}, App Id: {}, Tx Hash: {:?},", account_id, signed.extra.nonce, signed.extra.app_id, tx_hash);
 			}
@@ -358,43 +395,16 @@ impl Chain {
 		Ok(tx_hash)
 	}
 
-	/// Signs an already prepared payload with the provided keypair.
-	pub async fn sign_payload<'a>(
-		&self,
-		signer: &Keypair,
-		tx_payload: avail_rust_core::ExtrinsicPayload<'a>,
-	) -> avail_rust_core::GenericExtrinsic<'a> {
-		use avail_rust_core::GenericExtrinsic;
-
-		let account_id = signer.public_key().to_account_id();
-		let signature = tx_payload.sign(signer);
-
-		GenericExtrinsic::new(account_id, signature, tx_payload)
-	}
-
-	/// Builds a payload from a call and signs it with sensible defaults.
+	/// Submits a signed extrinsic and gives you the transaction hash.
 	///
 	/// # Errors
-	/// Returns `Err(Error)` when option refinement fails (e.g., fetching account info) or signing fails.
-	pub async fn sign_call<'a>(
-		&self,
-		signer: &Keypair,
-		tx_call: &'a avail_rust_core::ExtrinsicCall,
-		options: Options,
-	) -> Result<avail_rust_core::GenericExtrinsic<'a>, Error> {
-		let account_id = signer.public_key().to_account_id();
-		let refined_options = options.build(&self.client, &account_id, self.retry_on_error).await?;
+	/// Returns `Err(RpcError)` when the node rejects the extrinsic or the RPC transport fails.
+	pub async fn submit_raw(&self, ext: &[u8]) -> Result<H256, RpcError> {
+		let retry = self.should_retry_on_error();
 
-		let extra = avail_rust_core::ExtrinsicExtra::from(&refined_options);
-		let tx_additional = avail_rust_core::ExtrinsicAdditional {
-			spec_version: self.client.online_client().spec_version(),
-			tx_version: self.client.online_client().transaction_version(),
-			genesis_hash: self.client.online_client().genesis_hash(),
-			fork_hash: refined_options.mortality.block_hash,
-		};
-
-		let tx_payload = avail_rust_core::ExtrinsicPayload::new_borrowed(tx_call, extra, tx_additional.clone());
-		Ok(self.sign_payload(signer, tx_payload).await)
+		let f = || async move { rpc::author::submit_extrinsic(&self.client.rpc_client, ext).await };
+		let tx_hash = with_retry_on_error(f, retry).await?;
+		Ok(tx_hash)
 	}
 
 	/// Signs the payload and submits it in one step.

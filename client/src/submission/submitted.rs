@@ -173,7 +173,7 @@ impl TransactionReceipt {
 	/// finalized blocks only.
 	pub async fn from_range(
 		client: Client,
-		tx_hash: impl Into<HashString>,
+		ext_hash: impl Into<HashString>,
 		block_start: u32,
 		block_end: u32,
 		use_best_block: bool,
@@ -182,7 +182,7 @@ impl TransactionReceipt {
 			return Err(UserError::ValidationFailed("Block Start cannot start after Block End".into()).into());
 		}
 
-		let tx_hash = conversions::hash_string::to_hash(tx_hash)?;
+		let tx_hash = conversions::hash_string::to_hash(ext_hash)?;
 		let mut sub = Sub::new(client.clone());
 		sub.use_best_block(use_best_block);
 		sub.set_block_height(block_start);

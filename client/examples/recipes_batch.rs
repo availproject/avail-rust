@@ -21,9 +21,9 @@ async fn main() -> Result<(), Error> {
 
 	// There are three batch calls:
 	// 1. Batch, 2. Batch All and 3. Force Batch
-	let tx = client.tx().utility().batch_all(vec![c1, c2]);
-	let st = tx.sign_and_submit(&alice(), Options::default()).await?;
-	let Some(receipt) = st.receipt(false).await? else {
+	let submittable = client.tx().utility().batch_all(vec![c1, c2]);
+	let submitted = submittable.sign_and_submit(&alice(), Options::default()).await?;
+	let Some(receipt) = submitted.receipt(true).await? else {
 		return Err("Transaction got dropped. This should never happen in a local network.".into());
 	};
 
@@ -56,28 +56,25 @@ async fn main() -> Result<(), Error> {
 	*/
 
 	// Decoding batch call
-	let tx = receipt.extrinsic::<BatchAll>().await?;
-	let decoded_calls = tx.call.decode_calls()?;
-	for call in decoded_calls {
-		// RuntimeCall variants are the only calls that are decodable from a batch call.
-		// If the call is not a RuntimeCall variant then it won't be decodable by the
-		// Batch call
-		let RuntimeCall::BalancesTransferKeepAlive(tx) = call else {
+	let ext = receipt.extrinsic::<BatchAll>().await?;
+
+	// RuntimeCall variants are the only calls that are decodable from a batch call.
+	// If the call is not a RuntimeCall variant then it won't be decodable by the
+	// Batch call
+	let runtime_calls = ext.call.decode_calls()?;
+	for runtime_call in runtime_calls {
+		let RuntimeCall::BalancesTransferKeepAlive(balance_call) = runtime_call else {
 			return Err("Expected Balance Transfer Keep Alive".into());
 		};
 
 		// If MultiAddress is of variant ID then map it to ss58 address otherwise
 		// display the debug information
-		let dest = AccountId::try_from(&tx.dest)
+		let dest = AccountId::try_from(&balance_call.dest)
 			.map(|x| x.to_string())
-			.unwrap_or_else(|_| std::format!("{:?}", tx.dest));
+			.unwrap_or_else(|_| std::format!("{:?}", balance_call.dest));
 
-		println!("Dest: {:?}, Amount: {}", dest, tx.value);
+		println!("Dest: {:?}, Amount: {}", dest, balance_call.value);
 	}
-	/*
-		Dest: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", Amount: 1000000000000000000
-		Dest: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy", Amount: 1000000000000000000
-	*/
 
 	Ok(())
 }
