@@ -200,6 +200,10 @@ impl BlockEventsSub {
 		}
 	}
 
+	pub fn set_options(&mut self, value: avail_rust_core::rpc::EventOpts) {
+		self.opts = value;
+	}
+
 	/// Reports whether failed RPC calls will be retried.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.sub.should_retry_on_error()

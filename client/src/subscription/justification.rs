@@ -1,9 +1,14 @@
 //! Subscriptions that stream GRANDPA justifications in both binary and JSON-encoded forms.
 
+use avail_rust_core::BlockInfo;
+
 use crate::{Client, GrandpaJustification, RpcError, Sub};
 use std::time::Duration;
 
 /// Streams decoded GRANDPA justifications while handling retries and cursor management.
+///
+/// Internally this wrapper keeps track of the next block height to inspect and mirrors the retry
+/// settings of the underlying [`Client`], making it suitable for long-lived background tasks.
 #[derive(Clone)]
 pub struct GrandpaJustificationSub {
 	sub: Sub,
@@ -18,13 +23,15 @@ impl GrandpaJustificationSub {
 		Self { sub: Sub::new(client) }
 	}
 
-	/// Fetches the next available justification; rewinds on RPC failure and skips blanks.
+	/// Advances to the next block and returns its justification (if present) alongside metadata.
 	///
-	/// # Returns
-	/// - `Ok(GrandpaJustification)` when a justification is retrieved for the current cursor.
-	/// - `Err(RpcError)` when the RPC request fails. The internal block height rewinds so the same
-	///   block is retried on the next call.
-	pub async fn next(&mut self) -> Result<GrandpaJustification, RpcError> {
+	/// The returned tuple contains an optional [`GrandpaJustification`] for the finalized block plus
+	/// the [`BlockInfo`] describing that block. When `None` is returned it means the block finalized
+	/// without an available justification, which is expected for some historical heights. Errors
+	/// propagate from the underlying RPC, respecting the retry policy set via
+	/// [`GrandpaJustificationSub::set_retry_on_error`]. On failure, the internal cursor is rewound so
+	/// the same height is retried on the next call.
+	pub async fn next(&mut self) -> Result<(Option<GrandpaJustification>, BlockInfo), RpcError> {
 		loop {
 			let info = self.sub.next().await?;
 			let just = match self.fetch_justification(info.height).await {
@@ -36,11 +43,7 @@ impl GrandpaJustificationSub {
 				},
 			};
 
-			let Some(just) = just else {
-				continue;
-			};
-
-			return Ok(just);
+			return Ok((just, info));
 		}
 	}
 
@@ -67,12 +70,9 @@ impl GrandpaJustificationSub {
 	}
 
 	async fn fetch_justification(&self, height: u32) -> Result<Option<GrandpaJustification>, RpcError> {
-		self.sub
-			.client_ref()
-			.chain()
-			.retry_on(Some(self.should_retry_on_error()), None)
-			.grandpa_block_justification(height)
-			.await
+		let retry = Some(self.should_retry_on_error());
+		let chain = self.sub.client_ref().chain().retry_on(retry, None);
+		chain.grandpa_block_justification(height).await
 	}
 }
 
@@ -93,11 +93,13 @@ mod tests {
 
 		sub.set_block_height(1900031);
 		let n = sub.next().await?;
-		assert_eq!(n.commit.target_number, 1900032);
+		assert_eq!(n.1.height, 1900031);
+		assert!(n.0.is_none());
 
 		sub.set_block_height(1900122);
 		let n = sub.next().await?;
-		assert_eq!(n.commit.target_number, 1900122);
+		assert_eq!(n.1.height, 1900122);
+		assert_eq!(n.0.unwrap().commit.target_number, 1900122);
 
 		// Testing recovery
 		sub.set_block_height(1);
@@ -114,64 +116,26 @@ mod tests {
 		commander.justification_err(None); // 4
 		commander.justification_ok(Some(GrandpaJustification::default())); // 4
 
-		let _ = sub.next().await?;
-		assert_eq!(sub.sub.as_finalized().next_block_height, 2);
-		let _ = sub.next().await?;
-		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
+		let v = sub.next().await?;
+		assert!(v.0.is_some());
+		assert_eq!(v.1.height, 1);
+
+		let v = sub.next().await?;
+		assert!(v.0.is_none());
+		assert_eq!(v.1.height, 2);
+
+		let v = sub.next().await?;
+		assert!(v.0.is_some());
+		assert_eq!(v.1.height, 3);
 
 		sub.set_retry_on_error(Some(false));
 		let _ = sub.next().await.expect_err("Expect Error");
 		assert_eq!(sub.sub.as_finalized().next_block_height, 4);
 
-		let _ = sub.next().await?;
-		assert_eq!(sub.sub.as_finalized().next_block_height, 5);
+		let v = sub.next().await?;
+		assert!(v.0.is_some());
+		assert_eq!(v.1.height, 4);
 
 		Ok(())
 	}
-
-	// #[tokio::test]
-	// async fn grandpa_justification_json_sub_test() -> Result<(), Error> {
-	// 	let (rpc_client, mut commander) = MockClient::new(MAINNET_ENDPOINT);
-	// 	let client = Client::from_rpc_client(RpcClient::new(rpc_client)).await?;
-
-	// 	// Historical block
-	// 	let mut sub = GrandpaJustificationJsonSub::new(client.clone());
-
-	// 	sub.set_block_height(1900031);
-	// 	let n = sub.next().await?;
-	// 	assert_eq!(n.commit.target_number, 1900032);
-
-	// 	sub.set_block_height(1900122);
-	// 	let n = sub.next().await?;
-	// 	assert_eq!(n.commit.target_number, 1900122);
-
-	// 	// Testing recovery
-	// 	sub.set_block_height(1);
-	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 1);
-
-	// 	// 1 is Ok(Some)
-	// 	// 2 is Ok(None)
-	// 	// 3 is Ok(Some)
-	// 	// 4 is Err
-	// 	// 4 is Ok(Some)
-	// 	commander.justification_json_ok(Some(GrandpaJustification::default())); // 1
-	// 	commander.justification_json_ok(None); // 2
-	// 	commander.justification_json_ok(Some(GrandpaJustification::default())); // 3
-	// 	commander.justification_json_err(None); // 4
-	// 	commander.justification_json_ok(Some(GrandpaJustification::default())); // 4
-
-	// 	let _ = sub.next().await?;
-	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 2);
-	// 	let _ = sub.next().await?;
-	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 4);
-
-	// 	sub.set_retry_on_error(Some(false));
-	// 	let _ = sub.next().await.expect_err("Expect Error");
-	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 4);
-
-	// 	let _ = sub.next().await?;
-	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 5);
-
-	// 	Ok(())
-	// }
 }

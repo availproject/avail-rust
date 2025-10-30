@@ -17,8 +17,23 @@ pub struct Options {
 }
 
 impl Options {
-	pub fn new(filter: Option<Filter>, enable_encoding: Option<bool>, enable_decoding: Option<bool>) -> Self {
-		Self { filter, enable_encoding, enable_decoding }
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub fn filter(mut self, value: impl Into<Filter>) -> Self {
+		self.filter = Some(value.into());
+		self
+	}
+
+	pub fn enable_encoding(mut self) -> Self {
+		self.enable_encoding = Some(true);
+		self
+	}
+
+	pub fn enable_decoding(mut self) -> Self {
+		self.enable_decoding = Some(true);
+		self
 	}
 }
 

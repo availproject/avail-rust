@@ -514,7 +514,7 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 		Ok(Some((key1, key2, storage_value)))
 	}
 
-	pub async fn next(&mut self) -> Result<Option<T::VALUE>, Error> {
+	pub async fn next(&mut self) -> Result<Option<(T::KEY2, T::VALUE)>, Error> {
 		if self.is_done {
 			return Ok(None);
 		}
@@ -532,10 +532,15 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 			return Ok(None);
 		};
 
+		let key = const_hex::decode(storage_key.trim_start_matches("0x"))
+			.map_err(|x| x.to_string())
+			.map_err(|x| Error::DecodingFailed(x.to_string()))?;
+		let (_, key2) = T::decode_storage_key(&mut key.as_slice()).map_err(|x| Error::DecodingFailed(x.to_string()))?;
+
 		self.last_key = Some(storage_key.clone());
 		self.fetched_keys.pop();
 
-		Ok(Some(storage_value))
+		Ok(Some((key2, storage_value)))
 	}
 
 	async fn fetch_new_keys(&mut self) -> Result<(), Error> {
