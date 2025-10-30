@@ -51,13 +51,8 @@ impl<T: HasHeader + Decode> ExtrinsicDecodable for T {
 
 			check_header(call, T::HEADER_INDEX)?;
 
-			if call.len() <= 2 {
-				let mut data: &[u8] = &[];
-				Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
-			} else {
-				let mut data = &call[2..];
-				Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
-			}
+			let mut data = if call.len() <= 2 { &[] } else { &call[2..] };
+			Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
 		}
 
 		inner(call.into())

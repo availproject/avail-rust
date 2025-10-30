@@ -43,13 +43,8 @@ impl<T: HasHeader + Decode> TransactionEventDecodable for T {
 			// This was moved out in order to decrease compilation times
 			check_header(event, T::HEADER_INDEX)?;
 
-			if event.len() <= 2 {
-				let mut data: &[u8] = &[];
-				Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
-			} else {
-				let mut data = &event[2..];
-				Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
-			}
+			let mut data = if event.len() <= 2 { &[] } else { &event[2..] };
+			Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
 		}
 
 		inner(event.into())

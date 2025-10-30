@@ -44,7 +44,7 @@ impl TryFrom<Vec<u8>> for GProof {
 
 	fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
 		if data.len() != 48 {
-			return Err(data.len() as u32);
+			return Err(u32::try_from(data.len()).unwrap_or(u32::MAX));
 		};
 
 		let mut proof = [0u8; 48];

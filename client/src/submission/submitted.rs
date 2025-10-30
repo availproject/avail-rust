@@ -266,7 +266,7 @@ impl Utils {
 		mortality: &RefinedMortality,
 		use_best_block: bool,
 	) -> Result<Option<BlockInfo>, Error> {
-		let mortality_ends_height = mortality.block_height + mortality.period as u32;
+		let mortality_ends_height = mortality.block_height.saturating_add(mortality.period as u32);
 
 		let mut sub = Sub::new(client.clone());
 		sub.set_block_height(mortality.block_height);

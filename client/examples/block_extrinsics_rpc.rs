@@ -1,6 +1,6 @@
 use avail_rust_client::prelude::*;
 use avail_rust_core::{
-	decoded_transaction::SignedExtrinsic,
+	decoded_extrinsics::SignedExtrinsic,
 	rpc::{ExtrinsicInfo, system::fetch_extrinsics::Options},
 };
 
