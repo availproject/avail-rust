@@ -6,8 +6,10 @@ pub async fn main() -> Result<(), Error> {
 
 	// By default it subscribes to finalized block
 	let mut sub = GrandpaJustificationSub::new(client.clone());
-	let just = sub.next().await?;
-	println!("Block {} has grandpa justifications: {}", just.block_height, just.value.is_some());
+	let next_just = sub.next().await?;
+	let prev_just = sub.prev().await?;
+	println!("Block {} has grandpa justifications: {}", next_just.block_height, next_just.value.is_some());
+	println!("Block {} has grandpa justifications: {}", prev_just.block_height, prev_just.value.is_some());
 
 	// Historical Blocks
 	let mut sub = GrandpaJustificationSub::new(client.clone());
@@ -21,6 +23,7 @@ pub async fn main() -> Result<(), Error> {
 /*
 	Expected Output:
 
-	Block 2504246 has grandpa justifications: false
+	Block 2507990 has grandpa justifications: false
+	Block 2507989 has grandpa justifications: false
 	Block 2000384 has grandpa justifications: true
 */

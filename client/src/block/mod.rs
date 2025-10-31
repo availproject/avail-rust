@@ -26,6 +26,7 @@ use avail_rust_core::{
 };
 
 /// High-level handle bound to a specific block id (height or hash).
+#[derive(Clone)]
 pub struct Block {
 	ctx: BlockContext,
 }

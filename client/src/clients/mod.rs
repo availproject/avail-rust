@@ -1,5 +1,3 @@
-
-
 //! RPC client implementations for different transport layers and testing scenarios.
 
 pub mod online_client;

@@ -39,23 +39,39 @@ impl GrandpaJustificationSub {
 	/// [`GrandpaJustificationSub::set_retry_on_error`]. On failure, the internal cursor is rewound so
 	/// the same height is retried on the next call.
 	pub async fn next(&mut self) -> Result<GrandpaJustificationSubValue, RpcError> {
-		loop {
-			let info = self.sub.next().await?;
-			let justification = match self.fetch_justification(info.height).await {
-				Ok(x) => x,
-				Err(err) => {
-					// Revet block height if we fail to fetch transactions
-					self.sub.set_block_height(info.height);
-					return Err(err);
-				},
-			};
+		let info = self.sub.next().await?;
+		let justification = match self.fetch_justification(info.height).await {
+			Ok(x) => x,
+			Err(err) => {
+				// Revet block height if we fail to fetch transactions
+				self.sub.set_block_height(info.height);
+				return Err(err);
+			},
+		};
 
-			return Ok(GrandpaJustificationSubValue {
-				value: justification,
-				block_hash: info.hash,
-				block_height: info.height,
-			});
-		}
+		return Ok(GrandpaJustificationSubValue {
+			value: justification,
+			block_hash: info.hash,
+			block_height: info.height,
+		});
+	}
+
+	pub async fn prev(&mut self) -> Result<GrandpaJustificationSubValue, RpcError> {
+		let info = self.sub.prev().await?;
+		let justification = match self.fetch_justification(info.height).await {
+			Ok(x) => x,
+			Err(err) => {
+				// Revet block height if we fail to fetch transactions
+				self.sub.set_block_height(info.height);
+				return Err(err);
+			},
+		};
+
+		return Ok(GrandpaJustificationSubValue {
+			value: justification,
+			block_hash: info.hash,
+			block_height: info.height,
+		});
 	}
 
 	/// Jump the cursor to a specific starting height. The next call to [`GrandpaJustificationSub::next`]

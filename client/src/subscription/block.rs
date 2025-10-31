@@ -1,7 +1,7 @@
 //! Subscription adapters focused on block headers, bodies, and emitted events.
 
 use crate::{
-	AvailHeader, BlockInfo, Client, LegacyBlock, RpcError, Sub,
+	AvailHeader, Client, LegacyBlock, RpcError, Sub,
 	block::{Block, events::BlockEventsQuery},
 };
 use avail_rust_core::{H256, rpc::BlockPhaseEvent};
@@ -131,6 +131,13 @@ impl LegacyBlockSub {
 	}
 }
 
+#[derive(Clone)]
+pub struct BlockSubValue {
+	pub value: Block,
+	pub block_height: u32,
+	pub block_hash: H256,
+}
+
 /// Subscription wrapper that streams block handles (`Block`).
 #[derive(Clone)]
 pub struct BlockSub {
@@ -153,14 +160,15 @@ impl BlockSub {
 	/// Fetches the next block handle along with its `BlockInfo`.
 	///
 	/// # Returns
-	/// - `Ok((Block, BlockInfo))` when a block is available at the current cursor.
+	/// - `Ok(BlockSubValue)` when a block is available at the current cursor.
 	/// - `Err(RpcError)` when the underlying subscription fails to advance.
 	///
 	/// # Errors
 	/// Returns `Err(RpcError)` when fetching the next block fails.
-	pub async fn next(&mut self) -> Result<(Block, BlockInfo), RpcError> {
+	pub async fn next(&mut self) -> Result<BlockSubValue, RpcError> {
 		let info = self.sub.next().await?;
-		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
+		let value = Block::new(self.sub.client_ref().clone(), info.hash);
+		Ok(BlockSubValue { value, block_hash: info.hash, block_height: info.height })
 	}
 
 	/// Fetches the previous block handle along with its `BlockInfo`.
@@ -172,9 +180,10 @@ impl BlockSub {
 	///
 	/// # Errors
 	/// Returns `Err(RpcError)` when fetching the previous block fails.
-	pub async fn prev(&mut self) -> Result<(Block, BlockInfo), RpcError> {
+	pub async fn prev(&mut self) -> Result<BlockSubValue, RpcError> {
 		let info = self.sub.prev().await?;
-		Ok((Block::new(self.sub.client_ref().clone(), info.hash), info))
+		let value = Block::new(self.sub.client_ref().clone(), info.hash);
+		Ok(BlockSubValue { value, block_hash: info.hash, block_height: info.height })
 	}
 
 	/// Reports whether failed RPC calls will be retried.
@@ -417,7 +426,7 @@ mod tests {
 
 		let block_height = client.finalized().block_height().await?;
 		let value = sub.next().await?;
-		assert_eq!(value.1.height, block_height);
+		assert_eq!(value.block_height, block_height);
 
 		//
 		// Test Case 2: Latest Block Height + Prev
@@ -426,7 +435,7 @@ mod tests {
 
 		let block_height = client.finalized().block_height().await?;
 		let value = sub.prev().await?;
-		assert_eq!(value.1.height, block_height - 1);
+		assert_eq!(value.block_height, block_height - 1);
 
 		//
 		// Test Case 3: Set Block Height + Next + Next + Next
@@ -436,7 +445,7 @@ mod tests {
 		sub.set_block_height(block_height);
 		for i in 0..3 {
 			let value = sub.next().await?;
-			assert_eq!(value.1.height, block_height + i);
+			assert_eq!(value.block_height, block_height + i);
 		}
 
 		//
@@ -447,7 +456,7 @@ mod tests {
 		sub.set_block_height(block_height);
 		for i in 0..3 {
 			let value = sub.prev().await?;
-			assert_eq!(value.1.height, block_height - i - 1);
+			assert_eq!(value.block_height, block_height - i - 1);
 		}
 
 		//
@@ -458,10 +467,10 @@ mod tests {
 		sub.set_block_height(block_height);
 
 		let value = sub.next().await?;
-		assert_eq!(value.1.height, block_height);
+		assert_eq!(value.block_height, block_height);
 
 		let value = sub.prev().await?;
-		assert_eq!(value.1.height, block_height - 1);
+		assert_eq!(value.block_height, block_height - 1);
 
 		//
 		// Test Case 6: Set Block Height + Prev + Next
@@ -471,10 +480,10 @@ mod tests {
 		sub.set_block_height(block_height);
 
 		let value = sub.prev().await?;
-		assert_eq!(value.1.height, block_height - 1);
+		assert_eq!(value.block_height, block_height - 1);
 
 		let value = sub.next().await?;
-		assert_eq!(value.1.height, block_height);
+		assert_eq!(value.block_height, block_height);
 
 		Ok(())
 	}

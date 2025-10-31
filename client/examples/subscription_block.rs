@@ -6,49 +6,49 @@ pub async fn main() -> Result<(), Error> {
 
 	// By default it subscribes to finalized block
 	let mut sub = BlockSub::new(client.clone());
-	let (next_block, next_info) = sub.next().await?;
-	let (prev_block, prev_info) = sub.prev().await?;
+	let next_block = sub.next().await?;
+	let prev_block = sub.prev().await?;
 	println!(
 		"Finalized Next:      Block Height: {}, Block Author: {}",
-		next_info.height,
-		next_block.author().await?
+		next_block.block_height,
+		next_block.value.author().await?
 	);
 	println!(
 		"Finalized Previous:  Block Height: {}, Block Author: {}",
-		prev_info.height,
-		prev_block.author().await?
+		prev_block.block_height,
+		prev_block.value.author().await?
 	);
 
 	// Best Blocks
 	let mut sub = BlockSub::new(client.clone());
 	sub.use_best_block(true);
-	let (next_block, next_info) = sub.next().await?;
-	let (prev_block, prev_info) = sub.prev().await?;
+	let next_block = sub.next().await?;
+	let prev_block = sub.prev().await?;
 	println!(
 		"Best Next:           Block Height: {}, Block Author: {}",
-		next_info.height,
-		next_block.author().await?
+		next_block.block_height,
+		next_block.value.author().await?
 	);
 	println!(
 		"Best Previous:       Block Height: {}, Block Author: {}",
-		prev_info.height,
-		prev_block.author().await?
+		prev_block.block_height,
+		prev_block.value.author().await?
 	);
 
 	// Historical Blocks
 	let mut sub = BlockSub::new(client.clone());
 	sub.set_block_height(2000000);
-	let (next_block, next_info) = sub.next().await?;
-	let (prev_block, prev_info) = sub.prev().await?;
+	let next_block = sub.next().await?;
+	let prev_block = sub.prev().await?;
 	println!(
 		"Historical Next:     Block Height: {}, Block Author: {}",
-		next_info.height,
-		next_block.author().await?
+		next_block.block_height,
+		next_block.value.author().await?
 	);
 	println!(
 		"Historical Previous: Block Height: {}, Block Author: {}",
-		prev_info.height,
-		prev_block.author().await?
+		prev_block.block_height,
+		prev_block.value.author().await?
 	);
 
 	Ok(())
