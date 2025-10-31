@@ -159,6 +159,10 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		}
 	}
 
+	pub fn set_opts(&mut self, value: block::extrinsic_options::Options) {
+		self.opts = value;
+	}
+
 	/// Follow best blocks instead of finalized ones for future iterations.
 	pub fn use_best_block(&mut self, value: bool) {
 		self.sub.use_best_block(value);
@@ -244,6 +248,10 @@ impl EncodedExtrinsicSub {
 				block_height: info.height,
 			});
 		}
+	}
+
+	pub fn set_opts(&mut self, value: block::extrinsic_options::Options) {
+		self.opts = value;
 	}
 
 	/// Follow best blocks instead of finalized ones when scanning forward.

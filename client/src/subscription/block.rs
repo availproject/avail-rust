@@ -226,7 +226,7 @@ impl BlockSub {
 }
 
 #[derive(Debug, Clone)]
-pub struct BlockEventsSubResult {
+pub struct BlockEventsSubValue {
 	pub list: Vec<BlockPhaseEvent>,
 	pub block_height: u32,
 	pub block_hash: H256,
@@ -254,7 +254,7 @@ impl BlockEventsSub {
 	///   retried.
 	///
 	/// Empty event lists are skipped automatically.
-	pub async fn next(&mut self) -> Result<BlockEventsSubResult, crate::Error> {
+	pub async fn next(&mut self) -> Result<BlockEventsSubValue, crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
 			let block = BlockEventsQuery::new(self.sub.client_ref().clone(), info.hash);
@@ -271,7 +271,7 @@ impl BlockEventsSub {
 				continue;
 			}
 
-			return Ok(BlockEventsSubResult {
+			return Ok(BlockEventsSubValue {
 				list: events,
 				block_height: info.height,
 				block_hash: info.hash,
