@@ -27,6 +27,14 @@ pub struct RequestSer<'a> {
 
 impl RequestSer<'_> {
 	/// Create a owned serializable JSON-RPC method call.
+	///
+	/// # Arguments
+	/// * `id` - Request identifier encoded in the payload.
+	/// * `method` - JSON-RPC method name.
+	/// * `params` - Optional JSON parameters for the call.
+	///
+	/// # Returns
+	/// Returns a [`RequestSer`] capturing the supplied JSON-RPC fields.
 	pub fn owned(id: u64, method: impl Into<String>, params: Option<Box<RawValue>>) -> Self {
 		Self {
 			jsonrpc: "2.0".into(),
@@ -37,6 +45,7 @@ impl RequestSer<'_> {
 	}
 }
 
+/// Error wrapper used when JSON-RPC responses fail validation.
 #[derive(Debug, Clone)]
 pub struct ResponseError(pub String);
 
@@ -51,6 +60,7 @@ impl std::error::Error for ResponseError {}
 type ResponseMessage = Result<Box<serde_json::Value>, reqwest::Error>;
 type ChannelMessage = (Vec<u8>, Sender<ResponseMessage>);
 
+/// Asynchronous JSON-RPC client backed by `reqwest` and Tokio channels.
 #[derive(Clone)]
 pub struct ReqwestClient {
 	tx: Sender<ChannelMessage>,
@@ -58,6 +68,20 @@ pub struct ReqwestClient {
 }
 
 impl ReqwestClient {
+	/// Creates a new JSON-RPC client targeting the provided endpoint.
+	///
+	/// # Arguments
+	/// * `endpoint` - HTTP URL of the JSON-RPC server.
+	///
+	/// # Returns
+	/// Returns a client that spawns an internal worker for request execution.
+	///
+	/// # Examples
+	/// ```no_run
+	/// use avail_rust_client::clients::ReqwestClient;
+	///
+	/// let client = ReqwestClient::new("http://127.0.0.1:9944");
+	/// ```
 	pub fn new(endpoint: &str) -> Self {
 		let client = Arc::new(reqwest::Client::new());
 		let (tx, rx) = tokio::sync::mpsc::channel(1024);

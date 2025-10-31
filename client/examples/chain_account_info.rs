@@ -10,14 +10,14 @@ pub async fn main() -> Result<(), Error> {
 	let finalized_account_info = client.finalized().account_info(charlie).await?;
 	let account_info = client.chain().account_info(charlie, 2000000).await?;
 	println!(
-		"Best Block Charlie Nonce: {}, Free Balance: {}",
+		"Best Block Charlie      Nonce: {}, Free Balance: {}",
 		best_account_info.nonce, best_account_info.data.free
 	);
 	println!(
 		"Finalized Block Charlie Nonce: {}, Free Balance: {}",
 		finalized_account_info.nonce, finalized_account_info.data.free
 	);
-	println!("Block 2000000 Charlie Nonce: {}, Free Balance: {}", account_info.nonce, account_info.data.free);
+	println!("Block 2000000 Charlie   Nonce: {}, Free Balance: {}", account_info.nonce, account_info.data.free);
 
 	Ok(())
 }
@@ -25,7 +25,7 @@ pub async fn main() -> Result<(), Error> {
 /*
 	Expected Output:
 
-	Best Block Charlie Nonce: 299, Free Balance: 91772963578991329207
+	Best Block Charlie      Nonce: 299, Free Balance: 91772963578991329207
 	Finalized Block Charlie Nonce: 299, Free Balance: 91772963578991329207
-	Block 2000000 Charlie Nonce: 294, Free Balance: 92395139049599405067
+	Block 2000000 Charlie   Nonce: 294, Free Balance: 92395139049599405067
 */

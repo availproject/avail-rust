@@ -6,14 +6,14 @@ pub async fn main() -> Result<(), Error> {
 
 	// By default it subscribes to finalized block
 	let mut sub = GrandpaJustificationSub::new(client.clone());
-	let (justification, block_info) = sub.next().await?;
-	println!("Block {} has grandpa justifications: {}", block_info.height, justification.is_some());
+	let just = sub.next().await?;
+	println!("Block {} has grandpa justifications: {}", just.block_height, just.value.is_some());
 
 	// Historical Blocks
 	let mut sub = GrandpaJustificationSub::new(client.clone());
 	sub.set_block_height(2000384);
-	let (justification, block_info) = sub.next().await?;
-	println!("Block {} has grandpa justifications: {}", block_info.height, justification.is_some());
+	let just = sub.next().await?;
+	println!("Block {} has grandpa justifications: {}", just.block_height, just.value.is_some());
 
 	Ok(())
 }

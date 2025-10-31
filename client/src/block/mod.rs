@@ -67,6 +67,13 @@ impl Block {
 	// 	signed::BlockSignedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
 	// }
 
+	/// Fetches raw extrinsic metadata using the supplied filters.
+	///
+	/// # Arguments
+	/// * `opts` - Filters controlling which extrinsics are returned and how they are encoded.
+	///
+	/// # Returns
+	/// Returns the list of matching extrinsic metadata entries.
 	pub async fn extrinsic_infos(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
 		let chain = self.ctx.chain();
 		chain.system_fetch_extrinsics(self.ctx.block_id.clone(), opts).await
@@ -241,7 +248,7 @@ pub mod test {
 	use crate::{Client, TURING_ENDPOINT};
 
 	#[tokio::test]
-	pub async fn block_weight_test() {
+	async fn block_weight_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let block = client.block(2042866);
 
@@ -259,7 +266,7 @@ pub mod test {
 	}
 
 	#[tokio::test]
-	pub async fn block_info_test() {
+	async fn block_info_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let block = client.block(2042866);
 
@@ -273,7 +280,7 @@ pub mod test {
 	}
 
 	#[tokio::test]
-	pub async fn block_event_count_test() {
+	async fn block_event_count_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let block = client.block(2042866);
 		let count = block.event_count().await.unwrap();
@@ -281,7 +288,7 @@ pub mod test {
 	}
 
 	#[tokio::test]
-	pub async fn block_extrinsic_count_test() {
+	async fn block_extrinsic_count_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let block = client.block(2042866);
 
@@ -290,7 +297,7 @@ pub mod test {
 	}
 
 	#[tokio::test]
-	pub async fn block_author_test() {
+	async fn block_author_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let block = client.block(2042866);
 
@@ -299,7 +306,7 @@ pub mod test {
 	}
 
 	#[tokio::test]
-	pub async fn block_timestamp_test() {
+	async fn block_timestamp_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let block = client.block(2042866);
 
@@ -308,7 +315,7 @@ pub mod test {
 	}
 
 	#[tokio::test]
-	pub async fn block_header_test() {
+	async fn block_header_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let block = client.block(2042866);
 
@@ -325,7 +332,7 @@ pub mod test {
 	}
 
 	#[tokio::test]
-	pub async fn block_justification_test() {
+	async fn block_justification_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 
 		let block = client.block(1900031);
@@ -338,7 +345,7 @@ pub mod test {
 	}
 
 	#[tokio::test]
-	pub async fn block_extrinsic_infos_test() {
+	async fn block_extrinsic_infos_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 
 		let block = client.block(2042863);

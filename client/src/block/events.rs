@@ -5,6 +5,7 @@ use avail_rust_core::{
 	types::{HashStringNumber, RuntimePhase, substrate::Weight},
 };
 
+/// Helper for retrieving events scoped to a specific block.
 pub struct BlockEventsQuery {
 	ctx: BlockContext,
 }
@@ -177,6 +178,7 @@ impl BlockEventsQuery {
 	}
 }
 
+/// Event emitted during block execution with contextual metadata.
 #[derive(Debug, Clone)]
 pub struct BlockEvent {
 	/// Phase of block execution in which the event occurred.
@@ -192,6 +194,14 @@ pub struct BlockEvent {
 }
 
 impl BlockEvent {
+	/// Converts a raw phase event into a typed [`BlockEvent`].
+	///
+	/// # Arguments
+	/// * `event` - Raw event fetched from the node.
+	/// * `phase` - Runtime phase during which the event occurred.
+	///
+	/// # Returns
+	/// Returns the converted event or an error when encoded data is missing.
 	pub fn from_phase_event(mut event: PhaseEvent, phase: RuntimePhase) -> Result<Self, Error> {
 		let Some(data) = event.encoded_data.take() else {
 			return Err(RpcError::ExpectedData("The node did not return encoded data for this event.".into()).into());
@@ -209,6 +219,7 @@ impl BlockEvent {
 	}
 }
 
+/// Collection of block events with helpers for querying by header.
 #[derive(Debug, Clone)]
 pub struct BlockEvents {
 	/// Collection of decoded events preserved in original order.

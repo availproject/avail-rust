@@ -34,14 +34,22 @@ pub struct Chain {
 	retry_on_none: Option<bool>,
 }
 impl Chain {
+	/// Creates a chain helper bound to the given client.
+	///
+	/// # Arguments
+	/// * `client` - Client used for all subsequent RPC calls.
 	pub fn new(client: Client) -> Self {
 		Self { client, retry_on_error: None, retry_on_none: None }
 	}
 
 	/// Lets you decide if upcoming calls retry on errors or missing data.
 	///
-	/// - `error`: overrides whether transport errors are retried (defaults to the client's global flag).
-	/// - `none`: when `Some(true)`, RPCs returning `None` (e.g., missing storage) will also be retried.
+	/// # Arguments
+	/// * `error` - Overrides whether transport errors are retried (defaults to the client's global flag).
+	/// * `none` - When `Some(true)`, RPCs returning `None` (for example, missing storage) will also be retried.
+	///
+	/// # Returns
+	/// Returns the helper with updated retry configuration.
 	pub fn retry_on(mut self, error: Option<bool>, none: Option<bool>) -> Self {
 		self.retry_on_error = error;
 		self.retry_on_none = none;
@@ -49,6 +57,9 @@ impl Chain {
 	}
 
 	/// Fetches a block hash for the given height when available.
+	///
+	/// # Arguments
+	/// * `block_height` - Optional block number to resolve; `None` queries the best block.
 	///
 	/// # Returns
 	/// - `Ok(Some(H256))` when the chain knows about the requested height.
@@ -63,6 +74,9 @@ impl Chain {
 	}
 
 	/// Grabs a block header by hash or height.
+	///
+	/// # Arguments
+	/// * `at` - Optional hash or height identifying the target block; `None` queries the best block.
 	///
 	/// # Returns
 	/// - `Ok(Some(AvailHeader))` when the header exists.
@@ -84,6 +98,9 @@ impl Chain {
 
 	/// Retrieves the full legacy block
 	///
+	/// # Arguments
+	/// * `at` - Optional block hash; `None` queries the best block.
+	///
 	/// # Returns
 	/// - `Ok(Some(LegacyBlock))` when the block exists.
 	/// - `Ok(None)` when the block is missing
@@ -98,6 +115,13 @@ impl Chain {
 
 	/// Looks up an account nonce at a particular block.
 	///
+	/// # Arguments
+	/// * `account_id` - Account identifier convertible into [`AccountIdLike`].
+	/// * `at` - Block reference (hash, height, or string) describing where to query the nonce.
+	///
+	/// # Returns
+	/// Returns the account nonce observed at the specified block.
+	///
 	/// # Errors
 	/// Returns `Err(Error)` when the account id cannot be parsed or the RPC call fails.
 	pub async fn block_nonce(
@@ -109,6 +133,12 @@ impl Chain {
 	}
 
 	/// Returns the latest account nonce as seen by the node.
+	///
+	/// # Arguments
+	/// * `account_id` - Account identifier convertible into [`AccountIdLike`].
+	///
+	/// # Returns
+	/// Returns the latest account nonce reported by the node.
 	///
 	/// # Errors
 	/// Returns `Err(Error)` when the account id cannot be parsed or the RPC call fails.
@@ -125,6 +155,13 @@ impl Chain {
 
 	/// Reports the free balance for an account at a specific block.
 	///
+	/// # Arguments
+	/// * `account_id` - Account identifier convertible into [`AccountIdLike`].
+	/// * `at` - Block reference describing where to query balances.
+	///
+	/// # Returns
+	/// Returns [`AccountData`] for the requested account at the chosen block.
+	///
 	/// Errors mirror [`Chain::account_info`].
 	pub async fn account_balance(
 		&self,
@@ -135,6 +172,13 @@ impl Chain {
 	}
 
 	/// Fetches the full account record (nonce, balances, …) at a given block.
+	///
+	/// # Arguments
+	/// * `account_id` - Account identifier convertible into [`AccountIdLike`].
+	/// * `at` - Block reference describing where to query the account.
+	///
+	/// # Returns
+	/// Returns [`AccountInfo`] containing balances, consumers, and nonce data.
 	///
 	/// # Errors
 	/// Returns `Err(Error)` when the account identifier or block id cannot be converted, the block is
@@ -230,6 +274,13 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Fetches block metadata for the provided block identifier.
+	///
+	/// # Arguments
+	/// * `block_id` - Hash, height, or string representation of the target block.
+	///
+	/// # Returns
+	/// Returns `BlockInfo` describing the block, or an error if the lookup fails.
 	pub async fn block_info_from(&self, block_id: impl Into<HashStringNumber>) -> Result<BlockInfo, Error> {
 		let block_id = conversions::hash_string_number::to_hash_number(block_id)?;
 		let (height, hash) = match block_id {
@@ -258,6 +309,13 @@ impl Chain {
 		Ok(BlockInfo::from((hash, height)))
 	}
 
+	/// Determines the author of the specified block.
+	///
+	/// # Arguments
+	/// * `block_id` - Hash, height, or string representation of the target block.
+	///
+	/// # Returns
+	/// Returns the account id of the block author or an error if it cannot be determined.
 	pub async fn block_author(&self, block_id: impl Into<HashStringNumber>) -> Result<AccountId, Error> {
 		let hash = conversions::hash_string_number::to_hash(self, block_id).await?;
 
@@ -295,6 +353,13 @@ impl Chain {
 		Err(Error::Other(std::format!("Failed to find block author for block hash: {}", hash)))
 	}
 
+	/// Counts the events emitted by the specified block.
+	///
+	/// # Arguments
+	/// * `block_id` - Identifier describing which block to inspect.
+	///
+	/// # Returns
+	/// Returns the number of events as `usize`, or an error if the count cannot be fetched.
 	pub async fn block_event_count(&self, block_id: impl Into<HashStringNumber>) -> Result<usize, Error> {
 		let hash = conversions::hash_string_number::to_hash(self, block_id).await?;
 		let retry_on_error = self.should_retry_on_error();
@@ -308,6 +373,13 @@ impl Chain {
 		Ok(count as usize)
 	}
 
+	/// Retrieves the dispatch-class weight totals for the specified block.
+	///
+	/// # Arguments
+	/// * `block_id` - Identifier describing which block to inspect.
+	///
+	/// # Returns
+	/// Returns the per-dispatch-class weight totals or an error if unavailable.
 	pub async fn block_weight(&self, block_id: impl Into<HashStringNumber>) -> Result<PerDispatchClassWeight, Error> {
 		let hash = conversions::hash_string_number::to_hash(self, block_id).await?;
 		let retry_on_error = self.should_retry_on_error();
@@ -329,6 +401,15 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Builds an unsigned extrinsic payload for the provided account and call.
+	///
+	/// # Arguments
+	/// * `account_id` - Account that will sign the payload.
+	/// * `call` - Runtime call to encode inside the payload.
+	/// * `options` - Transaction options used to refine mortality, nonce, and fees.
+	///
+	/// # Returns
+	/// Returns the constructed payload or an error if option refinement fails.
 	pub async fn build_payload<'a>(
 		&self,
 		account_id: &AccountId,
@@ -543,6 +624,14 @@ impl Chain {
 		Ok(Some(justification))
 	}
 
+	/// Queries the runtime for fee information about an encoded extrinsic.
+	///
+	/// # Arguments
+	/// * `extrinsic` - SCALE-encoded extrinsic bytes.
+	/// * `at` - Optional block hash to query against.
+	///
+	/// # Returns
+	/// Returns dispatch info describing the estimated fee and weight.
 	pub async fn transaction_payment_query_info(
 		&self,
 		extrinsic: Vec<u8>,
@@ -557,6 +646,14 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Retrieves detailed fee breakdown for an encoded extrinsic.
+	///
+	/// # Arguments
+	/// * `extrinsic` - SCALE-encoded extrinsic bytes.
+	/// * `at` - Optional block hash to query against.
+	///
+	/// # Returns
+	/// Returns fee components such as inclusion and tip fees.
 	pub async fn transaction_payment_query_fee_details(
 		&self,
 		extrinsic: Vec<u8>,
@@ -571,6 +668,14 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Queries the runtime for fee information about an encoded call.
+	///
+	/// # Arguments
+	/// * `call` - SCALE-encoded call bytes.
+	/// * `at` - Optional block hash to query against.
+	///
+	/// # Returns
+	/// Returns dispatch info describing the estimated fee and weight.
 	pub async fn transaction_payment_query_call_info(
 		&self,
 		call: Vec<u8>,
@@ -585,6 +690,14 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
+	/// Retrieves detailed fee components for an encoded call.
+	///
+	/// # Arguments
+	/// * `call` - SCALE-encoded call bytes.
+	/// * `at` - Optional block hash to query against.
+	///
+	/// # Returns
+	/// Returns the fee breakdown for executing the call.
 	pub async fn transaction_payment_query_call_fee_details(
 		&self,
 		call: Vec<u8>,
@@ -666,6 +779,14 @@ impl Chain {
 	}
 
 	#[cfg(feature = "next")]
+	/// Submits a blob alongside its signed metadata transaction.
+	///
+	/// # Arguments
+	/// * `metadata_signed_transaction` - Signed extrinsic containing blob metadata.
+	/// * `blob` - Raw blob data to upload.
+	///
+	/// # Returns
+	/// Returns `Ok(())` on success or an error if the submission fails.
 	pub async fn blob_submit_blob(&self, metadata_signed_transaction: &[u8], blob: &[u8]) -> Result<(), Error> {
 		let retry_on_error = self
 			.retry_on_error
@@ -711,6 +832,7 @@ impl Chain {
 		with_retry_on_error(f, retry).await.map_err(|e| e.into())
 	}
 
+	/// Reports whether RPC helpers should retry after encountering errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled())

@@ -1,10 +1,10 @@
 //! Subscription adapters that surface extrinsics and transactions in decoded or raw form.
 
 use crate::{
-	BlockInfo, Client, Sub,
+	Client, Sub,
 	block::{self, Block},
 };
-use avail_rust_core::HasHeader;
+use avail_rust_core::{H256, HasHeader};
 use codec::Decode;
 use std::{marker::PhantomData, time::Duration};
 
@@ -99,7 +99,14 @@ use std::{marker::PhantomData, time::Duration};
 // 	}
 // }
 
-/// Subscription that mirrors [`Sub`] but yields decoded extrinsics via [`Extrinsics`].
+#[derive(Debug, Clone)]
+pub struct ExtrinsicSubValue<T: HasHeader + Decode> {
+	pub list: Vec<block::BlockExtrinsic<T>>,
+	pub block_height: u32,
+	pub block_hash: H256,
+}
+
+/// Subscription that mirrors [`Sub`] but yields decoded extrinsics using [`crate::block::BlockExtrinsicsQuery`].
 ///
 /// Blocks without matching extrinsics are skipped so every returned item contains data along with
 /// its [`BlockInfo`].
@@ -121,17 +128,17 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 	/// Returns the next collection of extrinsics and its [`BlockInfo`].
 	///
 	/// # Returns
-	/// - `Ok((Vec<Extrinsic<T>>, BlockInfo))` when a block contains extrinsics matching the
+	/// - `Ok(ExtrinsicSubValue)` when a block contains extrinsics matching the
 	///   configured options.
 	/// - `Err(crate::Error)` when the RPC query fails. The internal cursor rewinds so a retry will re-
 	///   attempt the same block.
-	pub async fn next(&mut self) -> Result<(Vec<block::BlockExtrinsic<T>>, BlockInfo), crate::Error> {
+	pub async fn next(&mut self) -> Result<ExtrinsicSubValue<T>, crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
 			let mut block = Block::new(self.sub.client_ref().clone(), info.hash).extrinsics();
 			block.set_retry_on_error(Some(self.sub.should_retry_on_error()));
 
-			let txs = match block.all::<T>(self.opts.clone()).await {
+			let extrinsics = match block.all::<T>(self.opts.clone()).await {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
@@ -140,11 +147,15 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 				},
 			};
 
-			if txs.is_empty() {
+			if extrinsics.is_empty() {
 				continue;
 			}
 
-			return Ok((txs, info));
+			return Ok(ExtrinsicSubValue {
+				list: extrinsics,
+				block_hash: info.hash,
+				block_height: info.height,
+			});
 		}
 	}
 
@@ -174,7 +185,14 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 	}
 }
 
-/// Subscription that mirrors [`Sub`] but provides raw extrinsic payloads via [`EncodedExtrinsics`].
+#[derive(Debug, Clone)]
+pub struct EncodedExtrinsicSubValue {
+	pub list: Vec<block::BlockEncodedExtrinsic>,
+	pub block_height: u32,
+	pub block_hash: H256,
+}
+
+/// Subscription that mirrors [`Sub`] but provides raw extrinsic payloads using [`crate::block::BlockEncodedExtrinsicsQuery`].
 ///
 /// Useful when you want the raw data from the extrinsic rpc.
 /// Blocks without matching extrinsics are skipped so every returned item contains data along with
@@ -197,17 +215,17 @@ impl EncodedExtrinsicSub {
 	/// Returns the next batch of raw extrinsics and its [`BlockInfo`].
 	///
 	/// # Returns
-	/// - `Ok((Vec<EncodedExtrinsic>, BlockInfo))` with at least one element when a block matches the
+	/// - `Ok(EncodedExtrinsicSubValue)` with at least one element when a block matches the
 	///   filter.
 	/// - `Err(crate::Error)` when fetching fails; the cursor rewinds to retry the same block on the next
 	///   call.
-	pub async fn next(&mut self) -> Result<(Vec<block::BlockEncodedExtrinsic>, BlockInfo), crate::Error> {
+	pub async fn next(&mut self) -> Result<EncodedExtrinsicSubValue, crate::Error> {
 		loop {
 			let info = self.sub.next().await?;
 			let mut block = Block::new(self.sub.client_ref().clone(), info.hash).encoded();
 			block.set_retry_on_error(Some(self.sub.should_retry_on_error()));
 
-			let txs = match block.all(self.opts.clone()).await {
+			let extrinsics = match block.all(self.opts.clone()).await {
 				Ok(x) => x,
 				Err(err) => {
 					// Revet block height if we fail to fetch transactions
@@ -216,11 +234,15 @@ impl EncodedExtrinsicSub {
 				},
 			};
 
-			if txs.is_empty() {
+			if extrinsics.is_empty() {
 				continue;
 			}
 
-			return Ok((txs, info));
+			return Ok(EncodedExtrinsicSubValue {
+				list: extrinsics,
+				block_hash: info.hash,
+				block_height: info.height,
+			});
 		}
 	}
 
@@ -319,13 +341,13 @@ mod tests {
 		let mut sub = ExtrinsicSub::<SubmitData>::new(client.clone(), Default::default());
 
 		sub.set_block_height(2326671);
-		let (list, info) = sub.next().await?;
-		assert_eq!(info.height, 2326672);
-		assert_eq!(list.len(), 1);
+		let result = sub.next().await?;
+		assert_eq!(result.block_height, 2326672);
+		assert_eq!(result.list.len(), 1);
 
-		let (list, info) = sub.next().await?;
-		assert_eq!(info.height, 2326674);
-		assert_eq!(list.len(), 1);
+		let result = sub.next().await?;
+		assert_eq!(result.block_height, 2326674);
+		assert_eq!(result.list.len(), 1);
 
 		// Testing recovery
 		sub.set_block_height(1);
@@ -371,13 +393,13 @@ mod tests {
 		let mut sub = EncodedExtrinsicSub::new(client.clone(), opts);
 
 		sub.set_block_height(2326671);
-		let (list, info) = sub.next().await?;
-		assert_eq!(info.height, 2326672);
-		assert_eq!(list.len(), 1);
+		let result = sub.next().await?;
+		assert_eq!(result.block_height, 2326672);
+		assert_eq!(result.list.len(), 1);
 
-		let (list, info) = sub.next().await?;
-		assert_eq!(info.height, 2326674);
-		assert_eq!(list.len(), 1);
+		let result = sub.next().await?;
+		assert_eq!(result.block_height, 2326674);
+		assert_eq!(result.list.len(), 1);
 
 		// Testing recovery
 		sub.set_block_height(1);

@@ -12,9 +12,11 @@ pub async fn main() -> Result<(), Error> {
 		.block_height("0x6831d536cc3d6408a41a1e50d66f4f48c9c2ed5ffc7cfa7505a5f0251365428f")
 		.await?
 		.expect("Should be there");
+	println!("Best Block Height:      {}", best_block_height);
+	println!("Finalized Block Height: {}", finalized_block_height);
 	println!(
-		"Best Block Height: {}, Finalized Block Height: {:?}, Block Height for block 0x6831d536cc3d6408a41a1e50d66f4f48c9c2ed5ffc7cfa7505a5f0251365428f: {:?}",
-		best_block_height, finalized_block_height, block_height
+		"Block Height for block 0x6831d536cc3d6408a41a1e50d66f4f48c9c2ed5ffc7cfa7505a5f0251365428f: {:?}",
+		block_height
 	);
 
 	Ok(())
@@ -23,5 +25,7 @@ pub async fn main() -> Result<(), Error> {
 /*
 	Expected Output:
 
-	Best Block Height: 2503770, Finalized Block Height: 2503769, Block Height for block 0x6831d536cc3d6408a41a1e50d66f4f48c9c2ed5ffc7cfa7505a5f0251365428f: 2000000
+	Best Block Height:      2503770
+	Finalized Block Height: 2503769
+	Block Height for block 0x6831d536cc3d6408a41a1e50d66f4f48c9c2ed5ffc7cfa7505a5f0251365428f: 2000000
 */

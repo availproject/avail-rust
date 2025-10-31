@@ -174,7 +174,7 @@ impl BlockEncodedExtrinsicsQuery {
 	/// - `Err(Error)`: The RPC request failed.
 	///
 	/// # Side Effects
-	/// - Performs an RPC call via [`EncodedExtrinsics::count`] and may retry according to the retry policy.
+	/// - Performs an RPC call via [`Self::count`] and may retry according to the retry policy.
 	pub async fn exists(&self, opts: Options) -> Result<bool, Error> {
 		self.count(opts).await.map(|x| x > 0)
 	}
@@ -203,6 +203,7 @@ impl BlockEncodedExtrinsicsQuery {
 	}
 }
 
+/// Encoded extrinsic payload paired with signature and metadata helpers.
 #[derive(Debug, Clone)]
 pub struct BlockEncodedExtrinsic {
 	/// Optional signature associated with the extrinsic.
@@ -214,6 +215,15 @@ pub struct BlockEncodedExtrinsic {
 }
 
 impl BlockEncodedExtrinsic {
+	/// Creates an encoded extrinsic wrapper.
+	///
+	/// # Arguments
+	/// * `signature` - Optional signature shipped alongside the payload.
+	/// * `call` - SCALE-encoded call bytes.
+	/// * `metadata` - Metadata identifying where the extrinsic resides.
+	///
+	/// # Returns
+	/// Returns a wrapper that exposes convenience accessors.
 	pub fn new(signature: Option<ExtrinsicSignature>, call: Vec<u8>, metadata: BlockExtrinsicMetadata) -> Self {
 		Self { signature, call, metadata }
 	}
@@ -331,6 +341,14 @@ impl BlockEncodedExtrinsic {
 		(self.metadata.pallet_id, self.metadata.variant_id)
 	}
 
+	/// Constructs an encoded extrinsic wrapper from RPC metadata.
+	///
+	/// # Arguments
+	/// * `info` - RPC response describing the extrinsic.
+	/// * `block_id` - Block identifier in which the extrinsic resides.
+	///
+	/// # Returns
+	/// Returns the encoded extrinsic wrapper or an error if payload data was missing or invalid.
 	pub fn from_extrinsic_info(info: &ExtrinsicInfo, block_id: HashNumber) -> Result<Self, Error> {
 		let metadata = BlockExtrinsicMetadata::from_extrinsic_info(info, block_id);
 		let Some(data) = info.data.as_ref() else {
@@ -348,7 +366,7 @@ pub mod tests {
 	use crate::TURING_ENDPOINT;
 	use avail_rust_core::{ExtrinsicDecodable, avail};
 
-	pub fn match_timestamp(ext: &BlockEncodedExtrinsic) {
+	fn match_timestamp(ext: &BlockEncodedExtrinsic) {
 		assert_eq!(
 			std::format!("{:?}", ext.ext_hash()),
 			"0xdbfa60611f72a714100338db1c7b11c66636a76f116b214d879de069afe67a74"
@@ -362,7 +380,7 @@ pub mod tests {
 		assert_eq!(set.now, 1761567760000);
 	}
 
-	pub fn match_failed_send_message(ext: &BlockEncodedExtrinsic) {
+	fn match_failed_send_message(ext: &BlockEncodedExtrinsic) {
 		assert_eq!(
 			std::format!("{:?}", ext.ext_hash()),
 			"0x92cdb77314063a01930b093516d19a453399710cc8ae635ff5ab6cf76b26f218"
@@ -376,7 +394,7 @@ pub mod tests {
 		assert_eq!(f.failed_txs.len(), 0);
 	}
 
-	pub fn match_submit_data_1(ext: &BlockEncodedExtrinsic) {
+	fn match_submit_data_1(ext: &BlockEncodedExtrinsic) {
 		assert_eq!(
 			std::format!("{:?}", ext.ext_hash()),
 			"0x8b84294cba5f2b88e2887ac999ebac3806af7be9cca2a521fc889421f240f3ef"
@@ -391,7 +409,7 @@ pub mod tests {
 		assert_eq!(String::from_utf8(sd.data).unwrap(), "AABBCC");
 	}
 
-	pub fn match_submit_data_2(ext: &BlockEncodedExtrinsic) {
+	fn match_submit_data_2(ext: &BlockEncodedExtrinsic) {
 		assert_eq!(
 			std::format!("{:?}", ext.ext_hash()),
 			"0x19fab0492322016c644af12f1547c587ef51edd10311db85cb3aa2680f6ae4ba"
@@ -407,7 +425,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_get_test() {
+	async fn query_get_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).encoded();
 
@@ -429,7 +447,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_first_test() {
+	async fn query_first_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).encoded();
 
@@ -473,7 +491,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_last_test() {
+	async fn query_last_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).encoded();
 
@@ -517,7 +535,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_all_test() {
+	async fn query_all_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).encoded();
 
@@ -573,7 +591,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_count_test() {
+	async fn query_count_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).encoded();
 
@@ -610,7 +628,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_exists_test() {
+	async fn query_exists_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).encoded();
 

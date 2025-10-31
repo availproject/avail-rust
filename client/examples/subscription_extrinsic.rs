@@ -7,22 +7,34 @@ pub async fn main() -> Result<(), Error> {
 	// By default it subscribes to finalized block
 	// It will return the first block that has at least one extrinsic that we want
 	let mut sub = ExtrinsicSub::<avail::data_availability::tx::SubmitData>::new(client.clone(), Default::default());
-	let (extrinsics, block_info) = sub.next().await?;
-	println!("Finalized:  Block Height: {}, DA Extrinsics Count: {}", block_info.height, extrinsics.len());
+	let extrinsics = sub.next().await?;
+	println!(
+		"Finalized:  Block Height: {}, DA Extrinsics Count: {}",
+		extrinsics.block_height,
+		extrinsics.list.len()
+	);
 
 	// Best Blocks
 	// It will return the first block that has at least one extrinsic that we want
 	let mut sub = ExtrinsicSub::<avail::data_availability::tx::SubmitData>::new(client.clone(), Default::default());
 	sub.use_best_block(true);
-	let (extrinsics, block_info) = sub.next().await?;
-	println!("Best:       Block Height: {}, DA Extrinsics Count: {}", block_info.height, extrinsics.len());
+	let extrinsics = sub.next().await?;
+	println!(
+		"Best:       Block Height: {}, DA Extrinsics Count: {}",
+		extrinsics.block_height,
+		extrinsics.list.len()
+	);
 
 	// Historical Blocks
 	// It will return the first block that has at least one extrinsic that we want
 	let mut sub = ExtrinsicSub::<avail::data_availability::tx::SubmitData>::new(client.clone(), Default::default());
 	sub.set_block_height(2000000);
-	let (extrinsics, block_info) = sub.next().await?;
-	println!("Historical: Block Height: {}, DA Extrinsics Count: {}", block_info.height, extrinsics.len());
+	let extrinsics = sub.next().await?;
+	println!(
+		"Historical: Block Height: {}, DA Extrinsics Count: {}",
+		extrinsics.block_height,
+		extrinsics.list.len()
+	);
 
 	Ok(())
 }

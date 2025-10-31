@@ -5,6 +5,7 @@ use crate::subxt_rpcs::RpcConfig;
 pub type AvailExtrinsicParams<T> = avail_rust_core::DefaultExtrinsicParams<T>;
 
 #[derive(Clone, Debug, Default)]
+/// Runtime configuration mapping Avail primitives into Subxt expectations.
 pub struct AvailConfig;
 
 impl crate::subxt_core::Config for AvailConfig {

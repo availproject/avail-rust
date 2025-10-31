@@ -20,21 +20,51 @@ pub struct Client {
 
 impl Client {
 	#[cfg(feature = "reqwest")]
-	/// Connects to an endpoint and returns a ready-to-use client.
+	/// Connects to an HTTP endpoint and returns a ready-to-use client.
 	///
-	/// Retries automatically if the `reqwest` feature is enabled and `retry` defaults to `true`.
+	/// # Arguments
+	/// * `endpoint` - RPC URL (HTTP/S) exposed by an Avail node.
+	///
+	/// # Returns
+	/// Returns a [`Client`] that clones its transports internally.
 	///
 	/// # Errors
-	/// Returns `Err(Error)` if the transport cannot be initialized or the handshake fails.
+	/// Returns `Err(Error)` if the HTTP transport cannot be initialized or the handshake fails.
+	///
+	/// # Examples
+	/// ```no_run
+	/// # use avail_rust_client::Client;
+	/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+	/// let client = Client::new("https://turing-rpc.avail.so/rpc").await?;
+	/// let best = client.best().block_header().await?;
+	/// println!("Best block: {:?}", best.hash());
+	/// # Ok(()) }
+	/// ```
 	pub async fn new(endpoint: &str) -> Result<Client, crate::Error> {
 		Self::new_ext(endpoint, true).await
 	}
 
 	#[cfg(feature = "reqwest")]
-	/// Connects to an endpoint; set `retry` to `false` if you prefer failing fast during startup.
+	/// Connects to an endpoint with optional retry behaviour during startup.
 	///
-	/// Internally wraps [`with_retry_on_error`] so transient errors (network hiccups, etc.) are retried
-	/// when `retry` is `true`.
+	/// # Arguments
+	/// * `endpoint` - RPC URL (HTTP/S) exposed by an Avail node.
+	/// * `retry` - When `true`, transient connection failures are retried before giving up.
+	///
+	/// # Returns
+	/// Returns a fully initialised [`Client`].
+	///
+	/// # Errors
+	/// Returns `Err(Error)` if the HTTP transport cannot be initialised or metadata bootstrap fails.
+	///
+	/// # Examples
+	/// ```no_run
+	/// # use avail_rust_client::Client;
+	/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+	/// let client = Client::new_ext("http://127.0.0.1:9944", false).await?;
+	/// println!("Retries enabled? {}", client.is_global_retries_enabled());
+	/// # Ok(()) }
+	/// ```
 	pub async fn new_ext(endpoint: &str, retry: bool) -> Result<Client, crate::Error> {
 		use super::clients::ReqwestClient;
 
@@ -50,6 +80,12 @@ impl Client {
 
 	/// Builds a client from an existing RPC transport.
 	///
+	/// # Arguments
+	/// * `rpc_client` - Transport implementing the JSON-RPC client trait.
+	///
+	/// # Returns
+	/// Returns a [`Client`] sharing the provided transport.
+	///
 	/// # Errors
 	/// Propagates any failure returned by [`OnlineClient::new`].
 	pub async fn from_rpc_client(rpc_client: RpcClient) -> Result<Client, RpcError> {
@@ -59,15 +95,33 @@ impl Client {
 
 	/// Wraps pre-built components into a handy client handle.
 	///
-	/// Useful when creating mock transports for testing.
+	/// # Arguments
+	/// * `rpc_client` - Transport used for RPC calls.
+	/// * `online_client` - Metadata cache and retry configuration.
+	///
+	/// # Returns
+	/// Returns a [`Client`] that reuses the provided components.
 	pub async fn from_components(rpc_client: RpcClient, online_client: OnlineClient) -> Result<Client, RpcError> {
 		Ok(Self { online_client, rpc_client })
 	}
 
 	#[cfg(feature = "tracing")]
-	/// Initializes tracing in plain text or JSON format.
+	/// Initialises tracing in plain text or JSON format.
 	///
-	/// Calling this more than once will return an error from `tracing_subscriber`.
+	/// # Arguments
+	/// * `json_format` - When `true`, installs a JSON formatter; otherwise plain text.
+	///
+	/// # Returns
+	/// Returns `Ok(())` once the global subscriber is installed.
+	///
+	/// # Errors
+	/// Returns `Err(TryInitError)` when tracing was already initialised elsewhere.
+	///
+	/// # Examples
+	/// ```no_run
+	/// # use avail_rust_client::Client;
+	/// Client::init_tracing(false).expect("tracing already initialised");
+	/// ```
 	pub fn init_tracing(json_format: bool) -> Result<(), TryInitError> {
 		use tracing_subscriber::util::SubscriberInitExt;
 
@@ -80,52 +134,68 @@ impl Client {
 		}
 	}
 
-	/// Hands back the underlying `OnlineClient` for advanced uses.
+	/// Hands back the underlying [`OnlineClient`] for advanced uses.
+	/// # Returns
+	/// Returns a clone of the cached online client state.
 	pub fn online_client(&self) -> OnlineClient {
 		self.online_client.clone()
 	}
 
-	/// Gives you a helper for crafting and sending transactions.
+	/// Returns a transaction helper for crafting and submitting extrinsics.
 	///
-	/// The returned [`TransactionApi`] clones this client and issues RPCs lazily.
+	/// # Returns
+	/// Returns a [`TransactionApi`] that clones this client and issues RPCs lazily.
 	pub fn tx(&self) -> TransactionApi {
 		TransactionApi(self.clone())
 	}
 
-	/// Builds a block helper rooted at the height or hash you pass in.
+	/// Builds a block helper rooted at the supplied height or hash.
 	///
-	/// See [`Block`] for available views (transactions, events, raw extrinsics).
+	/// # Arguments
+	/// * `block_id` - Hash, height, or string convertible into a [`HashStringNumber`].
+	///
+	/// # Returns
+	/// Returns a [`Block`] helper exposing extrinsic, event, and metadata views.
 	pub fn block(&self, block_id: impl Into<HashStringNumber>) -> Block {
 		Block::new(self.clone(), block_id)
 	}
 
 	/// Provides low-level RPC helpers when you need finer control.
 	///
-	/// The returned [`Chain`] exposes retry toggles and raw RPC wrappers.
+	/// # Returns
+	/// Returns a [`Chain`] handle exposing retry controls and raw RPC wrappers.
 	pub fn chain(&self) -> Chain {
 		Chain::new(self.clone())
 	}
 
 	/// Provides quick access to the best (head) block view.
 	///
-	/// Use the returned [`Best`] helper to fetch head metadata or block info repeatedly.
+	/// # Returns
+	/// Returns a [`Best`] helper optimised for repeated head queries.
 	pub fn best(&self) -> Best {
 		Best::new(self.clone())
 	}
 
-	/// Provides quick access to finalized block information.
+	/// Provides quick access to finalised block information.
 	///
-	/// The returned [`Finalized`] helper exposes convenience methods similar to [`Best`].
+	/// # Returns
+	/// Returns a [`Finalized`] helper mirroring [`Best`] convenience methods.
 	pub fn finalized(&self) -> Finalized {
 		Finalized::new(self.clone())
 	}
 
 	/// Reports whether automatic retries are currently enabled.
+	///
+	/// # Returns
+	/// Returns `true` when global retries are on, otherwise `false`.
 	pub fn is_global_retries_enabled(&self) -> bool {
 		self.online_client.is_global_retries_enabled()
 	}
 
 	/// Turns automatic retries on or off for new requests.
+	///
+	/// # Arguments
+	/// * `value` - `true` to enable retries for new helpers, `false` to disable.
 	pub fn set_global_retries_enabled(&self, value: bool) {
 		self.online_client.set_global_retries_enabled(value);
 	}

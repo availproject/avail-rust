@@ -3,11 +3,16 @@ use avail_rust_core::{
 	rpc::{self, ExtrinsicFilter},
 };
 
+/// Builder for RPC extrinsic filters used by block queries.
 #[derive(Debug, Default, Clone)]
 pub struct Options {
+	/// Primary filter describing which extrinsics to match.
 	pub filter: Option<ExtrinsicFilter>,
+	/// Optional SS58 signer address filter.
 	pub ss58_address: Option<String>,
+	/// Optional application identifier filter.
 	pub app_id: Option<u32>,
+	/// Optional nonce filter.
 	pub nonce: Option<u32>,
 }
 

@@ -4,7 +4,7 @@ use avail_rust_client::{prelude::*, subxt_rpcs::client::RpcParams};
 pub async fn main() -> Result<(), Error> {
 	let client = Client::new(TURING_ENDPOINT).await?;
 
-	// RPC Raw call
+	// RPC Raw Call
 	let mut params = RpcParams::new();
 	params.push(2000000u32).expect("Should work");
 

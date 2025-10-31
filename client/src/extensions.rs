@@ -8,7 +8,9 @@ use avail_rust_core::{
 	utils::{account_id_from_slice, account_id_from_str},
 };
 
+/// Extension helpers for working with `H256` values.
 pub trait H256Ext {
+	/// Parses a string (with or without `0x`) into an `H256`.
 	fn from_str(s: &str) -> Result<H256, String>;
 }
 
@@ -40,9 +42,13 @@ impl H256Ext for H256 {
 	}
 }
 
+/// Extension helpers for constructing `AccountId` values.
 pub trait AccountIdExt {
+	/// Parses an address string into an `AccountId`.
 	fn from_str(value: &str) -> Result<AccountId, String>;
+	/// Decodes an `AccountId` from raw bytes.
 	fn from_slice(value: &[u8]) -> Result<AccountId, String>;
+	/// Returns the zero `AccountId`.
 	fn default() -> AccountId;
 }
 
@@ -60,7 +66,9 @@ impl AccountIdExt for AccountId {
 	}
 }
 
+/// Extension helpers for parsing signer URIs.
 pub trait SecretUriExt {
+	/// Parses a secret URI string into a signer `SecretUri`.
 	fn from_str(value: &str) -> Result<SecretUri, UserError>;
 }
 
@@ -70,8 +78,11 @@ impl SecretUriExt for SecretUri {
 	}
 }
 
+/// Extension helpers for building and inspecting sr25519 keypairs.
 pub trait KeypairExt {
+	/// Parses a secret URI string into a sr25519 keypair.
 	fn from_str(value: &str) -> Result<Keypair, UserError>;
+	/// Derives the associated `AccountId` from the public key.
 	fn account_id(&self) -> AccountId;
 }
 

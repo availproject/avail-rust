@@ -6,10 +6,9 @@ pub async fn main() -> Result<(), Error> {
 
 	// Block Weight
 	let block_weight = client.chain().block_weight(2000000).await?;
-	println!(
-		"Block Mandatory Weight: {}, Block Normal Weight: {}, Block Operational Weight: {}",
-		block_weight.mandatory.ref_time, block_weight.normal.ref_time, block_weight.operational.ref_time
-	);
+	println!("Block Mandatory Weight:   {}", block_weight.mandatory.ref_time);
+	println!("Block Normal Weight:      {}", block_weight.normal.ref_time);
+	println!("Block Operational Weight: {}", block_weight.operational.ref_time);
 
 	Ok(())
 }
@@ -17,5 +16,7 @@ pub async fn main() -> Result<(), Error> {
 /*
 	Expected Output:
 
-	Block Mandatory Weight: 27854773000, Block Normal Weight: 360671400000, Block Operational Weight: 0
+	Block Mandatory Weight:   27854773000
+	Block Normal Weight:      360671400000
+	Block Operational Weight: 0
 */

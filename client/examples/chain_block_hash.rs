@@ -12,10 +12,9 @@ pub async fn main() -> Result<(), Error> {
 		.block_hash(Some(2000000))
 		.await?
 		.expect("Should be there");
-	println!(
-		"Best Block Hash: {:?}, Finalized Block Hash: {:?}, Block Hash for block 2000000: {:?}",
-		best_block_hash, finalized_block_hash, block_hash
-	);
+	println!("Best Block Hash:              {:?}", best_block_hash);
+	println!("Finalized Block Hash:         {:?}", finalized_block_hash);
+	println!("Block Hash for block 2000000: {:?}", block_hash);
 
 	Ok(())
 }
@@ -23,5 +22,7 @@ pub async fn main() -> Result<(), Error> {
 /*
 	Expected Output:
 
-	Best Block Hash: 0x28e446be3885c6666ec9ca6531844870e51facc8aff5ed6e9337a10bff4110aa, Finalized Block Hash: 0xac52286fd7f0f308e58c16746f6076f8602a44cda9d6b9f54378bb9109818465, Block Hash for block 2000000: 0x6831d536cc3d6408a41a1e50d66f4f48c9c2ed5ffc7cfa7505a5f0251365428f
+	Best Block Hash:              0x28e446be3885c6666ec9ca6531844870e51facc8aff5ed6e9337a10bff4110aa
+	Finalized Block Hash:         0xac52286fd7f0f308e58c16746f6076f8602a44cda9d6b9f54378bb9109818465
+	Block Hash for block 2000000: 0x6831d536cc3d6408a41a1e50d66f4f48c9c2ed5ffc7cfa7505a5f0251365428f
 */

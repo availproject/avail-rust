@@ -344,7 +344,7 @@ pub mod tests {
 		vector::tx::FailedSendMessageTxs,
 	};
 
-	pub fn match_timestamp(ext: &BlockExtrinsic<Set>) {
+	fn match_timestamp(ext: &BlockExtrinsic<Set>) {
 		assert_eq!(
 			std::format!("{:?}", ext.ext_hash()),
 			"0xdbfa60611f72a714100338db1c7b11c66636a76f116b214d879de069afe67a74"
@@ -356,7 +356,7 @@ pub mod tests {
 		assert_eq!(ext.call.now, 1761567760000);
 	}
 
-	pub fn match_failed_send_message(ext: &BlockExtrinsic<FailedSendMessageTxs>) {
+	fn match_failed_send_message(ext: &BlockExtrinsic<FailedSendMessageTxs>) {
 		assert_eq!(
 			std::format!("{:?}", ext.ext_hash()),
 			"0x92cdb77314063a01930b093516d19a453399710cc8ae635ff5ab6cf76b26f218"
@@ -368,7 +368,7 @@ pub mod tests {
 		assert_eq!(ext.call.failed_txs.len(), 0);
 	}
 
-	pub fn match_submit_data_1(ext: &BlockExtrinsic<SubmitData>) {
+	fn match_submit_data_1(ext: &BlockExtrinsic<SubmitData>) {
 		assert_eq!(
 			std::format!("{:?}", ext.ext_hash()),
 			"0x8b84294cba5f2b88e2887ac999ebac3806af7be9cca2a521fc889421f240f3ef"
@@ -381,7 +381,7 @@ pub mod tests {
 		assert_eq!(String::from_utf8(ext.call.data.clone()).unwrap(), "AABBCC");
 	}
 
-	pub fn match_submit_data_2(ext: &BlockExtrinsic<SubmitData>) {
+	fn match_submit_data_2(ext: &BlockExtrinsic<SubmitData>) {
 		assert_eq!(
 			std::format!("{:?}", ext.ext_hash()),
 			"0x19fab0492322016c644af12f1547c587ef51edd10311db85cb3aa2680f6ae4ba"
@@ -395,7 +395,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_get_test() {
+	async fn query_get_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).extrinsics();
 
@@ -419,7 +419,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_first_test() {
+	async fn query_first_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).extrinsics();
 
@@ -467,7 +467,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_last_test() {
+	async fn query_last_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).extrinsics();
 
@@ -515,7 +515,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_all_test() {
+	async fn query_all_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).extrinsics();
 
@@ -581,7 +581,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_count_test() {
+	async fn query_count_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).extrinsics();
 
@@ -612,7 +612,7 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	pub async fn query_exists_test() {
+	async fn query_exists_test() {
 		let client = Client::new(TURING_ENDPOINT).await.unwrap();
 		let query = client.block(2491314).extrinsics();
 
