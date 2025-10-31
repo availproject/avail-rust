@@ -1,3 +1,22 @@
+//! High-level Rust SDK for interacting with the Avail blockchain.
+//!
+//! This crate provides ergonomic helpers for connecting to Avail nodes, submitting transactions,
+//! querying blocks and events, and subscribing to chain updates.
+//!
+//! # Quick Start
+//!
+//! ```no_run
+//! use avail_rust_client::{Client, TURING_ENDPOINT};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     let client = Client::new(TURING_ENDPOINT).await?;
+//!     let best = client.best().block_header().await?;
+//!     println!("Best block: {:?}", best.hash());
+//!     Ok(())
+//! }
+//! ```
+
 pub mod block;
 pub mod chain;
 pub mod client;

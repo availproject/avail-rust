@@ -109,7 +109,7 @@ pub struct ExtrinsicSubValue<T: HasHeader + Decode> {
 /// Subscription that mirrors [`Sub`] but yields decoded extrinsics using [`crate::block::BlockExtrinsicsQuery`].
 ///
 /// Blocks without matching extrinsics are skipped so every returned item contains data along with
-/// its [`BlockInfo`].
+/// its block metadata.
 #[derive(Clone)]
 pub struct ExtrinsicSub<T: HasHeader + Decode> {
 	sub: Sub,
@@ -125,7 +125,7 @@ impl<T: HasHeader + Decode> ExtrinsicSub<T> {
 		Self { sub: Sub::new(client), opts, _phantom: Default::default() }
 	}
 
-	/// Returns the next collection of extrinsics and its [`BlockInfo`].
+	/// Returns the next collection of extrinsics and its block metadata.
 	///
 	/// # Returns
 	/// - `Ok(ExtrinsicSubValue)` when a block contains extrinsics matching the
@@ -196,7 +196,7 @@ pub struct EncodedExtrinsicSubValue {
 ///
 /// Useful when you want the raw data from the extrinsic rpc.
 /// Blocks without matching extrinsics are skipped so every returned item contains data along with
-/// its [`BlockInfo`].
+/// its block metadata.
 #[derive(Clone)]
 pub struct EncodedExtrinsicSub {
 	sub: Sub,
@@ -212,7 +212,7 @@ impl EncodedExtrinsicSub {
 		Self { sub: Sub::new(client), opts }
 	}
 
-	/// Returns the next batch of raw extrinsics and its [`BlockInfo`].
+	/// Returns the next batch of raw extrinsics and its block metadata.
 	///
 	/// # Returns
 	/// - `Ok(EncodedExtrinsicSubValue)` with at least one element when a block matches the

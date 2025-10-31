@@ -1,3 +1,7 @@
+
+
+//! RPC client implementations for different transport layers and testing scenarios.
+
 pub mod online_client;
 
 #[cfg(all(feature = "reqwest", any(test, feature = "mocks")))]

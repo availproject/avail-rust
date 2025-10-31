@@ -17,7 +17,6 @@ pub mod hash_string_number {
 	///
 	/// # Errors
 	/// Propagates RPC errors returned by [`Chain::block_hash`], or decoding errors when parsing strings.
-	/// ```
 	pub async fn to_hash(c: &Chain, value: impl Into<HashStringNumber>) -> Result<H256, Error> {
 		async fn inner(c: &Chain, value: HashStringNumber) -> Result<H256, Error> {
 			let hash = match value {

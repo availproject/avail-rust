@@ -11,6 +11,15 @@ use avail_rust_core::{
 /// Extension helpers for working with `H256` values.
 pub trait H256Ext {
 	/// Parses a string (with or without `0x`) into an `H256`.
+	///
+	/// # Arguments
+	/// * `s` - Hexadecimal string representation of the hash, optionally prefixed with `0x`.
+	///
+	/// # Returns
+	/// Returns the decoded `H256` value.
+	///
+	/// # Errors
+	/// Returns an error if the string is not 64 characters (after removing prefix) or contains invalid hex.
 	fn from_str(s: &str) -> Result<H256, String>;
 }
 
@@ -45,10 +54,33 @@ impl H256Ext for H256 {
 /// Extension helpers for constructing `AccountId` values.
 pub trait AccountIdExt {
 	/// Parses an address string into an `AccountId`.
+	///
+	/// # Arguments
+	/// * `value` - SS58-encoded address string.
+	///
+	/// # Returns
+	/// Returns the decoded `AccountId`.
+	///
+	/// # Errors
+	/// Returns an error if the address string is malformed or uses an invalid SS58 format.
 	fn from_str(value: &str) -> Result<AccountId, String>;
+
 	/// Decodes an `AccountId` from raw bytes.
+	///
+	/// # Arguments
+	/// * `value` - Raw 32-byte account identifier.
+	///
+	/// # Returns
+	/// Returns the decoded `AccountId`.
+	///
+	/// # Errors
+	/// Returns an error if the byte slice is not exactly 32 bytes.
 	fn from_slice(value: &[u8]) -> Result<AccountId, String>;
+
 	/// Returns the zero `AccountId`.
+	///
+	/// # Returns
+	/// Returns an `AccountId` with all bytes set to zero.
 	fn default() -> AccountId;
 }
 
@@ -69,6 +101,15 @@ impl AccountIdExt for AccountId {
 /// Extension helpers for parsing signer URIs.
 pub trait SecretUriExt {
 	/// Parses a secret URI string into a signer `SecretUri`.
+	///
+	/// # Arguments
+	/// * `value` - Secret URI string (e.g., seed phrase, mnemonic, or raw secret).
+	///
+	/// # Returns
+	/// Returns the parsed `SecretUri`.
+	///
+	/// # Errors
+	/// Returns a `UserError` if the URI format is invalid or cannot be parsed.
 	fn from_str(value: &str) -> Result<SecretUri, UserError>;
 }
 
@@ -81,8 +122,21 @@ impl SecretUriExt for SecretUri {
 /// Extension helpers for building and inspecting sr25519 keypairs.
 pub trait KeypairExt {
 	/// Parses a secret URI string into a sr25519 keypair.
+	///
+	/// # Arguments
+	/// * `value` - Secret URI string (e.g., seed phrase or mnemonic).
+	///
+	/// # Returns
+	/// Returns the derived sr25519 keypair.
+	///
+	/// # Errors
+	/// Returns a `UserError` if the URI cannot be parsed or keypair derivation fails.
 	fn from_str(value: &str) -> Result<Keypair, UserError>;
+
 	/// Derives the associated `AccountId` from the public key.
+	///
+	/// # Returns
+	/// Returns the `AccountId` corresponding to this keypair's public key.
 	fn account_id(&self) -> AccountId;
 }
 
