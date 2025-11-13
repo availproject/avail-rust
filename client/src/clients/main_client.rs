@@ -15,6 +15,8 @@ use avail::{
 	balances::types::AccountData,
 	system::{storage as SystemStorage, types::AccountInfo},
 };
+#[cfg(feature = "next")]
+use avail_rust_core::rpc::{blob::{Blob, BlobInfo}, kate::DataProof};
 use avail_rust_core::{
 	AccountId, AccountIdLike, AvailHeader, BlockInfo, H256, HashNumber, StorageMap,
 	grandpa::GrandpaJustification,
@@ -801,6 +803,42 @@ impl ChainApi {
 
 		let f =
 			|| async move { rpc::blob::submit_blob(&self.client.rpc_client, metadata_signed_transaction, blob).await };
+
+		Ok(with_retry_on_error(f, retry_on_error).await?)
+	}
+
+	#[cfg(feature = "next")]
+	pub async fn blob_get_blob(&self, blob_hash: H256, block_hash: Option<H256>) -> Result<Blob, Error> {
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let f = || async move { rpc::blob::get_blob_v2(&self.client.rpc_client, blob_hash, block_hash).await };
+
+		Ok(with_retry_on_error(f, retry_on_error).await?)
+	}
+
+	/// Retrieve indexed blob info
+	#[cfg(feature = "next")]
+	pub async fn blob_get_blob_info(&self, blob_hash: H256) -> Result<BlobInfo, Error> {
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let f = || async move { rpc::blob::get_blob_info(&self.client.rpc_client, blob_hash).await };
+
+		Ok(with_retry_on_error(f, retry_on_error).await?)
+	}
+
+	/// Return inclusion proof for a blob. If `at` is `Some(hash)` the proof is computed for that block,
+	/// otherwise the node will try to use its indexed finalized block for the blob.
+	#[cfg(feature = "next")]
+	pub async fn blob_inclusion_proof(&self, blob_hash: H256, at: Option<H256>) -> Result<DataProof, Error> {
+		let retry_on_error = self
+			.retry_on_error
+			.unwrap_or_else(|| self.client.is_global_retries_enabled());
+
+		let f = || async move { rpc::blob::inclusion_proof(&self.client.rpc_client, blob_hash, at).await };
 
 		Ok(with_retry_on_error(f, retry_on_error).await?)
 	}
