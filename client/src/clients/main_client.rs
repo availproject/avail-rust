@@ -816,7 +816,7 @@ impl ChainApi {
 			.retry_on_error
 			.unwrap_or_else(|| self.client.is_global_retries_enabled());
 
-		let f = || async move { rpc::blob::get_blob_v2(&self.client.rpc_client, blob_hash, block_hash).await };
+		let f = || async move { rpc::blob::get_blob(&self.client.rpc_client, blob_hash, block_hash).await };
 
 		Ok(with_retry_on_error(f, retry_on_error).await?)
 	}
