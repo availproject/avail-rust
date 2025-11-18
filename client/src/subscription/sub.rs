@@ -170,14 +170,6 @@ impl Sub {
 	}
 
 	#[cfg(test)]
-	pub(crate) fn as_best(&self) -> &BestBlockSub {
-		if let Self::BestBlock(b) = self {
-			return b;
-		}
-		panic!("Not best Sub");
-	}
-
-	#[cfg(test)]
 	pub(crate) fn as_finalized(&self) -> &FinalizedBlockSub {
 		if let Self::FinalizedBlock(f) = self {
 			return f;
@@ -488,7 +480,7 @@ mod tests {
 	use crate::{error::Error, prelude::*};
 
 	#[tokio::test]
-	pub async fn sub_test() -> Result<(), Error> {
+	async fn sub_test() -> Result<(), Error> {
 		let client = Client::new(TURING_ENDPOINT).await?;
 		let mut sub = Sub::new(client.clone());
 
@@ -528,7 +520,7 @@ mod tests {
 
 	// This test will be by flaky and that is OK.
 	#[tokio::test]
-	pub async fn best_sub_test() -> Result<(), Error> {
+	async fn best_sub_test() -> Result<(), Error> {
 		let client = Client::new(TURING_ENDPOINT).await?;
 
 		//
@@ -608,7 +600,7 @@ mod tests {
 
 	// This test will be by flaky and that is OK.
 	#[tokio::test]
-	pub async fn finalized_sub_test() -> Result<(), Error> {
+	async fn finalized_sub_test() -> Result<(), Error> {
 		let client = Client::new(TURING_ENDPOINT).await?;
 
 		//

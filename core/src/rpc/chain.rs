@@ -1,8 +1,7 @@
 use super::{AvailHeader, Error};
-use crate::types::metadata::TransactionRef;
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer};
-use subxt_core::config::{Hasher, substrate::BlakeTwo256};
+use subxt_core::config::substrate::ConsensusEngineId;
 use subxt_rpcs::{RpcClient, rpc_params};
 
 /// The response from `chain_getBlock`
@@ -22,18 +21,6 @@ pub struct Block {
 	pub extrinsics: Vec<Vec<u8>>,
 }
 
-impl Block {
-	pub fn has_transaction(&self, tx_hash: H256) -> Option<TransactionRef> {
-		for (i, tx) in self.extrinsics.iter().enumerate() {
-			if BlakeTwo256::hash(tx) == tx_hash {
-				return Some(TransactionRef::from((tx_hash, i as u32)));
-			}
-		}
-
-		None
-	}
-}
-
 fn from_string_to_vec<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
 where
 	D: Deserializer<'de>,
@@ -51,8 +38,6 @@ where
 
 /// An abstraction over justification for a block's validity under a consensus algorithm.
 pub type BlockJustification = (ConsensusEngineId, EncodedJustification);
-/// Consensus engine unique ID.
-pub type ConsensusEngineId = [u8; 4];
 /// The encoded justification specific to a consensus engine.
 pub type EncodedJustification = Vec<u8>;
 

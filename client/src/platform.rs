@@ -1,3 +1,7 @@
+//! Platform-specific async runtime primitives for native and WASM targets.
+//!
+//! Provides unified interfaces for `sleep` and `spawn` operations across different runtime environments.
+
 #[cfg(feature = "native")]
 pub use tokio::time::sleep;
 

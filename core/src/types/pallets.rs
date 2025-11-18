@@ -1,7 +1,7 @@
 use super::{AccountId, MultiAddress};
 use crate::{
 	H256, HasHeader, StorageHasher, StorageMap, StorageValue, substrate::extrinsic::ExtrinsicCall,
-	utils::decode_already_decoded,
+	types::substrate::PerDispatchClassWeight, utils::decode_already_decoded,
 };
 use codec::{Compact, Decode, Encode};
 use scale_decode::DecodeAsType;
@@ -1112,6 +1112,18 @@ pub mod session {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 	}
+
+	pub mod storage {
+		use super::*;
+
+		pub struct Validators;
+		impl StorageValue for Validators {
+			type VALUE = Vec<AccountId>;
+
+			const PALLET_NAME: &str = "Session";
+			const STORAGE_NAME: &str = "Validators";
+		}
+	}
 }
 
 pub mod utility {
@@ -2030,6 +2042,19 @@ pub mod proxy {
 					4 => Ok(Self::IdentityJudgement),
 					5 => Ok(Self::NominationPools),
 					_ => Err("Failed to decode ProxyType. Unknown variant".into()),
+				}
+			}
+		}
+
+		impl std::fmt::Display for ProxyType {
+			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+				match self {
+					ProxyType::Any => std::write!(f, "Any"),
+					ProxyType::NonTransfer => std::write!(f, "NonTransfer"),
+					ProxyType::Governance => std::write!(f, "Governance"),
+					ProxyType::Staking => std::write!(f, "Staking"),
+					ProxyType::IdentityJudgement => std::write!(f, "IdentityJudgement"),
+					ProxyType::NominationPools => std::write!(f, "NominationPools"),
 				}
 			}
 		}
@@ -3413,6 +3438,22 @@ pub mod system {
 			const PALLET_NAME: &str = "System";
 			const STORAGE_NAME: &str = "Account";
 		}
+
+		pub struct EventCount;
+		impl StorageValue for EventCount {
+			type VALUE = u32;
+
+			const PALLET_NAME: &str = "System";
+			const STORAGE_NAME: &str = "EventCount";
+		}
+
+		pub struct BlockWeight;
+		impl StorageValue for BlockWeight {
+			type VALUE = PerDispatchClassWeight;
+
+			const PALLET_NAME: &str = "System";
+			const STORAGE_NAME: &str = "BlockWeight";
+		}
 	}
 
 	pub mod events {
@@ -4316,6 +4357,71 @@ pub mod grandpa {
 
 			const PALLET_NAME: &str = "Grandpa";
 			const STORAGE_NAME: &str = "Stalled";
+		}
+	}
+}
+
+pub mod transaction_payment {
+	use super::*;
+	pub const PALLET_ID: u8 = 7;
+
+	pub mod events {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		pub struct TransactionFeePaid {
+			pub who: AccountId,
+			pub actual_fee: u128,
+			pub tip: u128,
+		}
+		impl HasHeader for TransactionFeePaid {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 0);
+		}
+		impl Encode for TransactionFeePaid {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.who.encode_to(dest);
+				self.actual_fee.encode_to(dest);
+				self.tip.encode_to(dest);
+			}
+		}
+		impl Decode for TransactionFeePaid {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let who = Decode::decode(input)?;
+				let actual_fee = Decode::decode(input)?;
+				let tip = Decode::decode(input)?;
+				Ok(Self { who, actual_fee, tip })
+			}
+		}
+	}
+}
+
+pub mod treasury {
+	use super::*;
+	pub const PALLET_ID: u8 = 18;
+
+	pub mod events {
+		use super::*;
+
+		#[derive(Debug, Clone)]
+		pub struct UpdatedInactive {
+			pub reactivated: u128,
+			pub deactivated: u128,
+		}
+		impl HasHeader for UpdatedInactive {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 8);
+		}
+		impl Encode for UpdatedInactive {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.reactivated.encode_to(dest);
+				self.deactivated.encode_to(dest);
+			}
+		}
+		impl Decode for UpdatedInactive {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let reactivated = Decode::decode(input)?;
+				let deactivated = Decode::decode(input)?;
+				Ok(Self { reactivated, deactivated })
+			}
 		}
 	}
 }

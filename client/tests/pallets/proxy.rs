@@ -1,4 +1,4 @@
-use avail_rust_client::{block_api::BlockWithTx, error::Error, prelude::*};
+use avail_rust_client::{block, error::Error, prelude::*};
 use avail_rust_core::avail::{
 	proxy::{
 		events::{ProxyAdded, ProxyExecuted, ProxyRemoved, PureCreated},
@@ -20,28 +20,28 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Add Proxy
 	{
-		let block = BlockWithTx::new(client.clone(), 1076139);
+		let block = block::Block::new(client.clone(), 1076139).extrinsics();
 
 		let id = "0xa6668ecbef4f8b0c64e294a9addc0fb267ec02cb0e0c3f74f3a45b8f1043c774";
 		let submittable = client.tx().proxy().add_proxy(id, ProxyType::NonTransfer, 0);
 		let expected_call = AddProxy::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<AddProxy>(1).await?.unwrap();
+		let actual_ext = block.get::<AddProxy>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// Create Pure
 	{
-		let block = BlockWithTx::new(client.clone(), 1439619);
+		let block = block::Block::new(client.clone(), 1439619).extrinsics();
 
 		let submittable = client.tx().proxy().create_pure(ProxyType::Any, 0, 0);
 		let expected_call = CreatePure::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<CreatePure>(1).await?.unwrap();
+		let actual_ext = block.get::<CreatePure>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// Proxy
 	{
-		let block = BlockWithTx::new(client.clone(), 1776412);
+		let block = block::Block::new(client.clone(), 1776412).extrinsics();
 
 		let targets = vec![
 			"0xc51d936c502bb72e4735619eeed59b3840cdbed6f414bb5da2b5bd977273d663",
@@ -56,18 +56,18 @@ pub async fn tx_tests() -> Result<(), Error> {
 		let id = "0xaabd39bb20728ec512a104178c2244703ae900eb3368ddcd3f8dbf6ed6151696";
 		let submittable = client.tx().proxy().proxy(id, None, c);
 		let expected_call = Proxy::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Proxy>(1).await?.unwrap();
+		let actual_ext = block.get::<Proxy>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// Remove Proxy
 	{
-		let block = BlockWithTx::new(client.clone(), 790393);
+		let block = block::Block::new(client.clone(), 790393).extrinsics();
 
 		let delegate = "0x685302266408090333837daf4c1fee2b23c5a7f055b61f6e8d16ad6662b28b39";
 		let submittable = client.tx().proxy().remove_proxy(delegate, ProxyType::Staking, 0);
 		let expected_call = RemoveProxy::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<RemoveProxy>(1).await?.unwrap();
+		let actual_ext = block.get::<RemoveProxy>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -78,7 +78,10 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// ProxyAdded
 	{
-		let events = BlockEvents::new(client.clone(), 2279940).ext(1).await?.unwrap();
+		let events = block::BlockEventsQuery::new(client.clone(), 2279940)
+			.extrinsic(1)
+			.await
+			.unwrap();
 
 		let expected = ProxyAdded {
 			delegator: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),
@@ -92,7 +95,10 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// PureCreated
 	{
-		let events = BlockEvents::new(client.clone(), 2279951).ext(1).await?.unwrap();
+		let events = block::BlockEventsQuery::new(client.clone(), 2279951)
+			.extrinsic(1)
+			.await
+			.unwrap();
 
 		let expected = PureCreated {
 			pure: AccountId::from_str("5EYj7miFkQ8EFNbEdg7MfeG8dHKWHBoLXCrmoTXWZwMpmxAs").unwrap(),
@@ -107,7 +113,10 @@ pub async fn event_test() -> Result<(), Error> {
 	// ProxyExecuted
 	{
 		let client = Client::new(MAINNET_ENDPOINT).await?;
-		let events = BlockEvents::new(client.clone(), 1841067).ext(1).await?.unwrap();
+		let events = block::BlockEventsQuery::new(client.clone(), 1841067)
+			.extrinsic(1)
+			.await
+			.unwrap();
 
 		let expected = ProxyExecuted { result: Ok(()) };
 		let actual = events.first::<ProxyExecuted>().unwrap();
@@ -116,7 +125,10 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// ProxyExecuted Failed
 	{
-		let events = BlockEvents::new(client.clone(), 2279971).ext(1).await?.unwrap();
+		let events = block::BlockEventsQuery::new(client.clone(), 2279971)
+			.extrinsic(1)
+			.await
+			.unwrap();
 
 		let expected = ProxyExecuted {
 			result: Err(DispatchError::Module(ModuleError { index: 40, error: [1, 0, 0, 0] })),
@@ -127,7 +139,10 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Proxy Removed
 	{
-		let events = BlockEvents::new(client.clone(), 2279990).ext(1).await?.unwrap();
+		let events = block::BlockEventsQuery::new(client.clone(), 2279990)
+			.extrinsic(1)
+			.await
+			.unwrap();
 
 		let expected = ProxyRemoved {
 			delegator: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),

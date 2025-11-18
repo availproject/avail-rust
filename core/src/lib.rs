@@ -1,5 +1,6 @@
+pub mod consensus;
 pub mod decoded_events;
-pub mod decoded_transaction;
+pub mod decoded_extrinsics;
 pub mod extrinsics_params;
 pub mod grandpa;
 pub mod rpc;
@@ -21,7 +22,7 @@ pub use substrate::{
 	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
 };
 
-pub use decoded_transaction::{Extrinsic, HasHeader, RawExtrinsic, TransactionDecodable};
+pub use decoded_extrinsics::{EncodedExtrinsic, Extrinsic, ExtrinsicDecodable, HasHeader};
 pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
 pub use rpc::{EncodeSelector, Error as RpcError};

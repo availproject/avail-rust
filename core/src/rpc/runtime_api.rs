@@ -3,7 +3,7 @@ use crate::types::substrate::{FeeDetails, RuntimeDispatchInfo};
 use primitive_types::H256;
 use subxt_rpcs::RpcClient;
 
-pub async fn call_raw<T: codec::Decode>(
+pub async fn raw_call<T: codec::Decode>(
 	client: &RpcClient,
 	method: &str,
 	data: &[u8],
@@ -25,7 +25,7 @@ pub async fn api_transaction_payment_query_info(
 	let bytes = len.to_ne_bytes();
 	extrinsic.extend_from_slice(&bytes);
 
-	call_raw(client, "TransactionPaymentApi_query_info", &extrinsic, at).await
+	raw_call(client, "TransactionPaymentApi_query_info", &extrinsic, at).await
 }
 
 pub async fn api_transaction_payment_query_fee_details(
@@ -37,7 +37,7 @@ pub async fn api_transaction_payment_query_fee_details(
 	let bytes = len.to_ne_bytes();
 	extrinsic.extend_from_slice(&bytes);
 
-	call_raw(client, "TransactionPaymentApi_query_fee_details", &extrinsic, at).await
+	raw_call(client, "TransactionPaymentApi_query_fee_details", &extrinsic, at).await
 }
 
 pub async fn api_transaction_payment_query_call_info(
@@ -49,7 +49,7 @@ pub async fn api_transaction_payment_query_call_info(
 	let bytes = len.to_ne_bytes();
 	call.extend_from_slice(&bytes);
 
-	call_raw(client, "TransactionPaymentCallApi_query_call_info", &call, at).await
+	raw_call(client, "TransactionPaymentCallApi_query_call_info", &call, at).await
 }
 
 pub async fn api_transaction_payment_query_call_fee_details(
@@ -61,5 +61,5 @@ pub async fn api_transaction_payment_query_call_fee_details(
 	let bytes = len.to_ne_bytes();
 	call.extend_from_slice(&bytes);
 
-	call_raw(client, "TransactionPaymentCallApi_query_call_fee_details", &call, at).await
+	raw_call(client, "TransactionPaymentCallApi_query_call_fee_details", &call, at).await
 }

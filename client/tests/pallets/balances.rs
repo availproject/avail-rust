@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block_api::{BlockEvents, BlockWithTx},
+	block::{Block, events::BlockEventsQuery},
 	error::Error,
 	prelude::*,
 };
@@ -20,34 +20,34 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// Transfer All
 	{
-		let block = BlockWithTx::new(client.clone(), 1828050);
+		let block = Block::new(client.clone(), 1828050).extrinsics();
 
 		let account_id = "0x28806db1fa697e9c4967d8bd8ee78a994dfea2887486c39969a7d16bfebbf36f";
 		let submittable = client.tx().balances().transfer_all(account_id, false);
 		let expected_call = TransferAll::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<TransferAll>(1).await?.unwrap();
+		let actual_ext = block.get::<TransferAll>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// TransferAllowDeath
 	{
-		let block = BlockWithTx::new(client.clone(), 1828972);
+		let block = Block::new(client.clone(), 1828972).extrinsics();
 		let account_id = "0x0d584a4cbbfd9a4878d816512894e65918e54fae13df39a6f520fc90caea2fb0";
 		let amount = 2010899374608366600109698;
 		let submittable = client.tx().balances().transfer_allow_death(account_id, amount);
 		let expected_call = TransferAllowDeath::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<TransferAllowDeath>(1).await?.unwrap();
+		let actual_ext = block.get::<TransferAllowDeath>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// TransferKeepAlive
 	{
-		let block = BlockWithTx::new(client.clone(), 1828947);
+		let block = Block::new(client.clone(), 1828947).extrinsics();
 		let account_id = "0x00d6fb2b0c83e1bbf6938265912d900f57c9bee67bd8a8cb18ec50fefbf47931";
 		let amount = 616150000000000000000;
 		let submittable = client.tx().balances().transfer_keep_alive(account_id, amount);
 		let expected_call = TransferKeepAlive::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<TransferKeepAlive>(1).await?.unwrap();
+		let actual_ext = block.get::<TransferKeepAlive>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -56,8 +56,8 @@ pub async fn tx_tests() -> Result<(), Error> {
 pub async fn event_test() -> Result<(), Error> {
 	let client = Client::new(MAINNET_ENDPOINT).await?;
 
-	let block = BlockEvents::new(client.clone(), 1861163);
-	let events = block.ext(1).await?.unwrap();
+	let block = BlockEventsQuery::new(client.clone(), 1861163);
+	let events = block.extrinsic(1).await.unwrap();
 
 	// Withdraw
 	let expected = Withdraw {
@@ -95,8 +95,8 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// Reserved
-	let block = BlockEvents::new(client.clone(), 1861590);
-	let events = block.ext(1).await?.unwrap();
+	let block = BlockEventsQuery::new(client.clone(), 1861590);
+	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Reserved {
 		who: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a").unwrap(),
@@ -106,8 +106,8 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// Unreserved
-	let block = BlockEvents::new(client.clone(), 1861592);
-	let events = block.ext(1).await?.unwrap();
+	let block = BlockEventsQuery::new(client.clone(), 1861592);
+	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Unreserved {
 		who: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a").unwrap(),
@@ -117,8 +117,8 @@ pub async fn event_test() -> Result<(), Error> {
 	assert_eq!(actual.to_event(), expected.to_event());
 
 	// Unlocked
-	let block = BlockEvents::new(client.clone(), 1861592);
-	let events = block.ext(1).await?.unwrap();
+	let block = BlockEventsQuery::new(client.clone(), 1861592);
+	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Unlocked {
 		who: AccountId::from_str("0x248fa9bcba295608e1a3d36455a536ac4e4011e8366d8f56effb732b30dc372b").unwrap(),
@@ -129,8 +129,8 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// Locked
 	let client = Client::new(TURING_ENDPOINT).await?;
-	let block = BlockEvents::new(client.clone(), 2280015);
-	let events = block.ext(1).await?.unwrap();
+	let block = BlockEventsQuery::new(client.clone(), 2280015);
+	let events = block.extrinsic(1).await.unwrap();
 
 	let expected = Locked {
 		who: AccountId::from_str("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ").unwrap(),

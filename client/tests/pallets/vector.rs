@@ -1,4 +1,4 @@
-use avail_rust_client::{block_api::BlockWithTx, error::Error, prelude::*};
+use avail_rust_client::{block::Block, error::Error, prelude::*};
 use avail_rust_core::avail::vector::{
 	tx::{Execute, FailedSendMessageTxs, SendMessage},
 	types::{AddressedMessage, Message},
@@ -11,11 +11,11 @@ pub async fn run_tests() -> Result<(), Error> {
 	Ok(())
 }
 pub async fn tx_tests() -> Result<(), Error> {
-	let client = Client::new(MAINNET_ENDPOINT).await?;
+	let client = Client::new(MAINNET_ENDPOINT).await.unwrap();
 
 	// SendMessage
 	{
-		let block = BlockWithTx::new(client.clone(), 1903463);
+		let block = Block::new(client.clone(), 1903463).extrinsics();
 
 		let asset_id = H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap();
 		let message = Message::FungibleToken { asset_id, amount: 25800000000000000000000 };
@@ -25,13 +25,13 @@ pub async fn tx_tests() -> Result<(), Error> {
 			2,
 		);
 		let expected_call = SendMessage::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<SendMessage>(1).await?.unwrap();
+		let actual_ext = block.get::<SendMessage>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// Execute
 	{
-		let block = BlockWithTx::new(client.clone(), 1903968);
+		let block = Block::new(client.clone(), 1903968).extrinsics();
 
 		let asset_id = H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap();
 		let message = Message::FungibleToken { asset_id, amount: 2936130000000000000000 };
@@ -77,17 +77,17 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.vector()
 			.execute(12612416, addressed_message, account_proof, storage_proof);
 		let expected_call = Execute::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<Execute>(1).await?.unwrap();
+		let actual_ext = block.get::<Execute>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// SendMessage
 	{
-		let block = BlockWithExt::new(client.clone(), 1381297);
+		let block = Block::new(client.clone(), 1381297).extrinsics();
 
 		let submittable = client.tx().vector().failed_send_message_txs(vec![]);
 		let expected_call = FailedSendMessageTxs::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<FailedSendMessageTxs>(1).await?.unwrap();
+		let actual_ext = block.get::<FailedSendMessageTxs>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 

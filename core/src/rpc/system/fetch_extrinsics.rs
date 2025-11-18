@@ -20,19 +20,51 @@ pub async fn fetch_extrinsics_v1(
 		},
 		encode_selector: Some(options.encode_as),
 	};
+
 	let params = rpc_params![block_id, options];
 	let value: Vec<ExtrinsicInformation> = client.request("system_fetchExtrinsicsV1", params).await?;
 	let value: Vec<ExtrinsicInfo> = value.into_iter().map(|x| x.into()).collect();
 	Ok(value)
 }
 
-#[derive(Clone, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Options {
 	pub transaction_filter: ExtrinsicFilter,
 	pub ss58_address: Option<String>,
 	pub app_id: Option<u32>,
 	pub nonce: Option<u32>,
 	pub encode_as: EncodeSelector,
+}
+
+impl Options {
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub fn nonce(mut self, value: u32) -> Self {
+		self.nonce = Some(value);
+		self
+	}
+
+	pub fn app_id(mut self, value: u32) -> Self {
+		self.app_id = Some(value);
+		self
+	}
+
+	pub fn ss58_address(mut self, value: impl Into<String>) -> Self {
+		self.ss58_address = Some(value.into());
+		self
+	}
+
+	pub fn filter(mut self, value: impl Into<ExtrinsicFilter>) -> Self {
+		self.transaction_filter = value.into();
+		self
+	}
+
+	pub fn encode_as(mut self, value: EncodeSelector) -> Self {
+		self.encode_as = value;
+		self
+	}
 }
 
 #[derive(Debug, Clone, Default, Copy, Serialize, Deserialize)]
@@ -70,9 +102,9 @@ impl From<ExtrinsicInformation> for ExtrinsicInfo {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct SignerPayload {
-	pub ss58_address: Option<String>,
-	pub nonce: u32,
 	pub app_id: u32,
+	pub nonce: u32,
+	pub ss58_address: Option<String>,
 	pub mortality: Option<(u64, u64)>,
 }
 
@@ -128,9 +160,45 @@ impl From<H256> for ExtrinsicFilter {
 	}
 }
 
+impl From<Vec<H256>> for ExtrinsicFilter {
+	fn from(value: Vec<H256>) -> Self {
+		Self::TxHash(value)
+	}
+}
+
+impl From<&Vec<H256>> for ExtrinsicFilter {
+	fn from(value: &Vec<H256>) -> Self {
+		Self::TxHash(value.clone())
+	}
+}
+
+impl From<&[H256]> for ExtrinsicFilter {
+	fn from(value: &[H256]) -> Self {
+		Self::TxHash(value.to_vec())
+	}
+}
+
 impl From<u32> for ExtrinsicFilter {
 	fn from(value: u32) -> Self {
 		Self::TxIndex(vec![value])
+	}
+}
+
+impl From<Vec<u32>> for ExtrinsicFilter {
+	fn from(value: Vec<u32>) -> Self {
+		Self::TxIndex(value)
+	}
+}
+
+impl From<&Vec<u32>> for ExtrinsicFilter {
+	fn from(value: &Vec<u32>) -> Self {
+		Self::TxIndex(value.clone())
+	}
+}
+
+impl From<&[u32]> for ExtrinsicFilter {
+	fn from(value: &[u32]) -> Self {
+		Self::TxIndex(value.to_vec())
 	}
 }
 
@@ -143,6 +211,18 @@ impl From<u8> for ExtrinsicFilter {
 impl From<&[u8]> for ExtrinsicFilter {
 	fn from(value: &[u8]) -> Self {
 		Self::Pallet(value.to_vec())
+	}
+}
+
+impl From<Vec<u8>> for ExtrinsicFilter {
+	fn from(value: Vec<u8>) -> Self {
+		Self::Pallet(value)
+	}
+}
+
+impl From<&Vec<u8>> for ExtrinsicFilter {
+	fn from(value: &Vec<u8>) -> Self {
+		Self::Pallet(value.clone())
 	}
 }
 
@@ -164,19 +244,25 @@ impl From<Vec<(u8, u8)>> for ExtrinsicFilter {
 	}
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+impl From<&Vec<(u8, u8)>> for ExtrinsicFilter {
+	fn from(value: &Vec<(u8, u8)>) -> Self {
+		Self::PalletCall(value.clone())
+	}
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 struct RpcOptions {
 	pub filter: Filter,
 	pub encode_selector: Option<EncodeSelector>,
 }
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct Filter {
 	pub transaction: Option<ExtrinsicFilter>,
 	pub signature: SignatureFilter,
 }
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct SignatureFilter {
 	pub ss58_address: Option<String>,
 	pub app_id: Option<u32>,

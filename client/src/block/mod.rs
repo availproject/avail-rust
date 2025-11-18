@@ -1,0 +1,391 @@
+pub mod encoded;
+pub mod events;
+pub mod extrinsic;
+pub mod extrinsic_options;
+pub mod shared;
+pub mod signed;
+
+pub use encoded::{BlockEncodedExtrinsic, BlockEncodedExtrinsicsQuery};
+pub use events::{BlockEvent, BlockEvents, BlockEventsQuery};
+pub use extrinsic::{BlockExtrinsic, BlockExtrinsicsQuery};
+pub use shared::BlockExtrinsicMetadata;
+pub use signed::BlockSignedExtrinsic;
+
+use crate::{
+	Client, Error,
+	block::{extrinsic_options::Options, shared::BlockContext},
+};
+use avail_rust_core::{
+	AccountId, AvailHeader, BlockInfo, HashNumber, avail,
+	grandpa::GrandpaJustification,
+	rpc::{self},
+	types::{
+		HashStringNumber,
+		substrate::{PerDispatchClassWeight, Weight},
+	},
+};
+
+/// High-level handle bound to a specific block id (height or hash).
+#[derive(Clone)]
+pub struct Block {
+	ctx: BlockContext,
+}
+
+impl Block {
+	/// Constructs a view over the block identified by `block_id`.
+	///
+	/// # Parameters
+	/// - `client`: RPC client used for follow-up queries.
+	/// - `block_id`: Block number, hash, or string convertible into `HashStringNumber`.
+	///
+	/// # Returns
+	/// - `Self`: Block helper bound to the supplied identifier.
+	pub fn new(client: Client, block_id: impl Into<HashStringNumber>) -> Self {
+		Block { ctx: BlockContext::new(client, block_id.into()) }
+	}
+
+	/// Returns a helper for retrieving encoded extrinsic payloads in this block.
+	///
+	/// # Returns
+	/// - `EncodedExtrinsics`: View over encoded extrinsic payloads and metadata.
+	pub fn encoded(&self) -> encoded::BlockEncodedExtrinsicsQuery {
+		encoded::BlockEncodedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	}
+
+	/// Returns a helper for decoding extrinsics contained in this block.
+	///
+	/// # Returns
+	/// - `Extrinsics`: View that decodes raw extrinsics into runtime calls.
+	pub fn extrinsics(&self) -> extrinsic::BlockExtrinsicsQuery {
+		extrinsic::BlockExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	}
+
+	// /// Returns a helper focused on signed extrinsics contained in this block.
+	// ///
+	// /// # Returns
+	// /// - `SignedExtrinsics`: View that exposes signed extrinsics for this block.
+	// pub fn signed(&self) -> signed::BlockSignedExtrinsicsQuery {
+	// 	signed::BlockSignedExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	// }
+
+	/// Fetches raw extrinsic metadata using the supplied filters.
+	///
+	/// # Arguments
+	/// * `opts` - Filters controlling which extrinsics are returned and how they are encoded.
+	///
+	/// # Returns
+	/// Returns the list of matching extrinsic metadata entries.
+	pub async fn extrinsic_infos(&self, opts: rpc::ExtrinsicOpts) -> Result<Vec<rpc::ExtrinsicInfo>, Error> {
+		let chain = self.ctx.chain();
+		chain.system_fetch_extrinsics(self.ctx.block_id.clone(), opts).await
+	}
+
+	/// Returns an event helper scoped to this block.
+	///
+	/// # Returns
+	/// - `Events`: View that fetches events emitted by the block.
+	pub fn events(&self) -> events::BlockEventsQuery {
+		events::BlockEventsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+	}
+
+	/// Overrides the retry behaviour for future RPC calls made through this helper.
+	///
+	/// # Parameters
+	/// - `value`: `Some(true)` to force retries, `Some(false)` to disable retries, `None` to inherit the client default.
+	///
+	/// # Returns
+	/// - `()`: The override is stored for subsequent operations.
+	///
+	/// # Side Effects
+	/// - Updates the internal retry setting used by follow-up RPC calls.
+	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
+		self.ctx.set_retry_on_error(value);
+	}
+
+	/// Fetches the GRANDPA justification associated with this block, if any.
+	///
+	/// # Returns
+	/// - `Ok(Some(GrandpaJustification))`: The runtime provided a justification.
+	/// - `Ok(None)`: No justification exists for the requested block.
+	/// - `Err(Error)`: Resolving the block identifier or performing the RPC call failed.
+	///
+	/// # Side Effects
+	/// - Performs RPC calls to resolve the block and download the justification.
+	pub async fn justification(&self) -> Result<Option<GrandpaJustification>, Error> {
+		let block_id: HashNumber = self.ctx.hash_number()?;
+		let chain = self.ctx.chain();
+		let at = match block_id {
+			HashNumber::Hash(h) => chain
+				.block_height(h)
+				.await?
+				.ok_or(Error::Other("Failed to find block from the provided hash".into()))?,
+			HashNumber::Number(n) => n,
+		};
+
+		chain.grandpa_block_justification(at).await.map_err(|e| e.into())
+	}
+
+	/// Reports whether this helper retries RPC failures.
+	///
+	/// # Returns
+	/// - `true`: Retries are enabled either explicitly or via the client default.
+	/// - `false`: Retries are disabled.
+	pub fn should_retry_on_error(&self) -> bool {
+		self.ctx.should_retry_on_error()
+	}
+
+	/// Retrieves the UNIX timestamp stored in this block's runtime `timestamp.set` extrinsic.
+	///
+	/// # Returns
+	/// - `Ok(u64)`: Timestamp provided by the block's timestamp extrinsic.
+	/// - `Err(Error)`: The timestamp extrinsic was missing or the RPC lookup failed.
+	///
+	/// # Side Effects
+	/// - Fetches extrinsic data over RPC, honouring the retry configuration.
+	pub async fn timestamp(&self) -> Result<u64, Error> {
+		let query = self.extrinsics();
+		let timestamp = query.first::<avail::timestamp::tx::Set>(Default::default()).await?;
+		let Some(timestamp) = timestamp else {
+			return Err(Error::Other(std::format!("No timestamp transaction found in block: {:?}", self.ctx.block_id)));
+		};
+
+		Ok(timestamp.call.now)
+	}
+
+	/// Fetches high-level metadata (number, hash, parent) for this block.
+	///
+	/// # Returns
+	/// - `Ok(BlockInfo)`: Metadata describing the block.
+	/// - `Err(Error)`: Resolving the block identifier or making the RPC call failed.
+	///
+	/// # Side Effects
+	/// - Performs an RPC call and may retry according to the retry policy.
+	pub async fn info(&self) -> Result<BlockInfo, Error> {
+		let chain = self.ctx.chain();
+		chain.block_info_from(self.ctx.block_id.clone()).await
+	}
+
+	/// Fetches the header associated with this block.
+	///
+	/// # Returns
+	/// - `Ok(AvailHeader)`: Header returned by the node.
+	/// - `Err(Error)`: Resolving the block identifier or performing the RPC call failed.
+	///
+	/// # Side Effects
+	/// - Performs an RPC call and may retry according to the retry policy.
+	pub async fn header(&self) -> Result<AvailHeader, Error> {
+		self.ctx.header().await
+	}
+
+	/// Fetches the author recorded for this block.
+	///
+	/// # Returns
+	/// - `Ok(AccountId)`: Account identifier attributed as the block author.
+	/// - `Err(Error)`: Resolving the block identifier or performing the RPC call failed.
+	///
+	/// # Side Effects
+	/// - Performs an RPC call and may retry according to the retry policy.
+	pub async fn author(&self) -> Result<AccountId, Error> {
+		let chain = self.ctx.chain();
+		chain.block_author(self.ctx.block_id.clone()).await
+	}
+
+	/// Counts how many extrinsics the block contains.
+	///
+	/// # Returns
+	/// - `Ok(u32)`: Number of extrinsics recorded in the block.
+	/// - `Err(Error)`: Enumerating the extrinsics failed.
+	///
+	/// # Side Effects
+	/// - Fetches extrinsic metadata over RPC, honouring the retry configuration.
+	pub async fn extrinsic_count(&self) -> Result<usize, Error> {
+		let mut encoded = self.encoded();
+		encoded.set_retry_on_error(Some(self.ctx.should_retry_on_error()));
+		encoded.count(Options::new()).await
+	}
+
+	/// Counts how many events were emitted in this block.
+	///
+	/// # Returns
+	/// - `Ok(u32)`: Number of events exposed by the node.
+	/// - `Err(Error)`: The RPC request failed.
+	///
+	/// # Side Effects
+	/// - Performs an RPC call and may retry according to the retry policy.
+	pub async fn event_count(&self) -> Result<usize, Error> {
+		self.ctx.event_count().await
+	}
+
+	/// Retrieves the dispatch-class weight totals reported for this block.
+	///
+	/// # Returns
+	/// - `Ok(PerDispatchClassWeight)`: Weight data grouped by dispatch class.
+	/// - `Err(Error)`: Fetching the weight via RPC failed.
+	///
+	/// # Side Effects
+	/// - Performs an RPC call and may retry according to the retry policy.
+	pub async fn weight(&self) -> Result<PerDispatchClassWeight, Error> {
+		let chain = self.ctx.chain();
+		chain.block_weight(self.ctx.block_id.clone()).await
+	}
+
+	/// Aggregates the weight consumed by extrinsics, based on success and failure events.
+	///
+	/// # Returns
+	/// - `Ok(Weight)`: Sum of weights observed in extrinsic success or failure events.
+	/// - `Err(Error)`: Fetching or decoding the event data failed.
+	///
+	/// # Side Effects
+	/// - Fetches block events over RPC, honouring the retry configuration.
+	pub async fn extrinsic_weight(&self) -> Result<Weight, Error> {
+		self.events().extrinsic_weight().await
+	}
+}
+
+#[cfg(test)]
+pub mod test {
+	use avail_rust_core::{EncodeSelector, HasHeader, avail, rpc::ExtrinsicOpts};
+
+	use crate::{Client, TURING_ENDPOINT};
+
+	#[tokio::test]
+	async fn block_weight_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
+
+		let extrinsic_weight = block.extrinsic_weight().await.unwrap();
+		let block_weight = block.weight().await.unwrap();
+
+		assert_eq!(extrinsic_weight.ref_time, 39142682750);
+		assert_eq!(extrinsic_weight.proof_size, 1493);
+		assert_eq!(block_weight.normal.ref_time, 14095070750);
+		assert_eq!(block_weight.normal.proof_size, 0);
+		assert_eq!(block_weight.operational.ref_time, 0);
+		assert_eq!(block_weight.operational.proof_size, 0);
+		assert_eq!(block_weight.mandatory.ref_time, 27979773000);
+		assert_eq!(block_weight.mandatory.proof_size, 116950);
+	}
+
+	#[tokio::test]
+	async fn block_info_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
+
+		let info = block.info().await.unwrap();
+
+		assert_eq!(info.height, 2042866);
+		assert_eq!(
+			std::format!("{:?}", info.hash),
+			"0x66f2847020781416f98137f0c9ed7416e8e9d993d22924f36c6f16e066641429"
+		);
+	}
+
+	#[tokio::test]
+	async fn block_event_count_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
+		let count = block.event_count().await.unwrap();
+		assert_eq!(count, 10);
+	}
+
+	#[tokio::test]
+	async fn block_extrinsic_count_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
+
+		let count = block.extrinsic_count().await.unwrap();
+		assert_eq!(count, 3);
+	}
+
+	#[tokio::test]
+	async fn block_author_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
+
+		let author = block.author().await.unwrap();
+		assert_eq!(author.to_string(), String::from("5Fuedf79TqB6mMWzhu8aazzfPX1mawedb7rLuHpv6iYK2Z6c"));
+	}
+
+	#[tokio::test]
+	async fn block_timestamp_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
+
+		let timestamp = block.timestamp().await.unwrap();
+		assert_eq!(timestamp, 1752582560000);
+	}
+
+	#[tokio::test]
+	async fn block_header_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+		let block = client.block(2042866);
+
+		let header = block.header().await.unwrap();
+		assert_eq!(header.number, 2042866);
+		assert_eq!(
+			std::format!("{:?}", header.hash()),
+			"0x66f2847020781416f98137f0c9ed7416e8e9d993d22924f36c6f16e066641429"
+		);
+		assert_eq!(
+			std::format!("{:?}", header.parent_hash),
+			"0xfca317c08a9b86bf8b8ae04df0bde83db31fab1b455ebd2317f7eca15e1d688e"
+		)
+	}
+
+	#[tokio::test]
+	async fn block_justification_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+
+		let block = client.block(1900031);
+		let just = block.justification().await.unwrap();
+		assert!(just.is_none());
+
+		let block = client.block(1900032);
+		let just = block.justification().await.unwrap();
+		assert!(just.is_some());
+	}
+
+	#[tokio::test]
+	async fn block_extrinsic_infos_test() {
+		let client = Client::new(TURING_ENDPOINT).await.unwrap();
+
+		let block = client.block(2042863);
+
+		// All
+		let infos = block
+			.extrinsic_infos(ExtrinsicOpts::new().encode_as(EncodeSelector::None))
+			.await
+			.unwrap();
+		assert_eq!(infos.len(), 4);
+
+		// App Id
+		let infos = block
+			.extrinsic_infos(ExtrinsicOpts::new().encode_as(EncodeSelector::None).app_id(428))
+			.await
+			.unwrap();
+		assert_eq!(infos.len(), 1);
+
+		// Submit Data
+		let infos = block
+			.extrinsic_infos(
+				ExtrinsicOpts::new()
+					.encode_as(EncodeSelector::None)
+					.filter(avail::data_availability::tx::SubmitData::HEADER_INDEX),
+			)
+			.await
+			.unwrap();
+		assert_eq!(infos.len(), 1);
+
+		// SS58 address
+		// Submit Data
+		let infos = block
+			.extrinsic_infos(
+				ExtrinsicOpts::new()
+					.encode_as(EncodeSelector::None)
+					.ss58_address("5CAC4rBKRKJi83uCJzeC7PzS27sP8Esfymbeq5jFEFPieyJm"),
+			)
+			.await
+			.unwrap();
+		assert_eq!(infos.len(), 1);
+	}
+}

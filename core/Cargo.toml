@@ -18,6 +18,7 @@ const-hex = { workspace = true, default-features = false }
 primitive-types = { workspace = true }
 thiserror = { workspace = true }
 sp-crypto-hashing = { workspace = true }
+schnorrkel = { workspace = true }
 
 # Scale
 scale-info = { workspace = true }

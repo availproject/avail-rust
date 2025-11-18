@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block_api::{BlockEvents, BlockWithTx},
+	block::{Block, BlockEventsQuery},
 	error::Error,
 	prelude::*,
 };
@@ -24,7 +24,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 
 	// ApproveAsMulti
 	{
-		let block = BlockWithTx::new(client.clone(), 1824125);
+		let block = Block::new(client.clone(), 1824125).extrinsics();
 
 		let signatures = vec![
 			"0xa26556769ad6581b7beb103590a5c378955244aa349bbacc2f148c51205e055a",
@@ -37,13 +37,13 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.multisig()
 			.approve_as_multi(2, signatures, None, call_hash, weight);
 		let expected_call = ApproveAsMulti::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<ApproveAsMulti>(5).await?.unwrap();
+		let actual_ext = block.get::<ApproveAsMulti>(5).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// AsMulti
 	{
-		let block = BlockWithTx::new(client.clone(), 1814842);
+		let block = Block::new(client.clone(), 1814842).extrinsics();
 
 		let signatures = vec![
 			"0x2a960c22ebf8069f53172a91f5754c184e89c87e8435976415ab8c9dd4f0b61c",
@@ -59,13 +59,13 @@ pub async fn tx_tests() -> Result<(), Error> {
 		let weight = Weight { proof_size: 3593, ref_time: 196085000 };
 		let submittable = client.tx().multisig().as_multi(3, signatures, timepoint, call, weight);
 		let expected_call = AsMulti::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<AsMulti>(1).await?.unwrap();
+		let actual_ext = block.get::<AsMulti>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
 	// CancelAsMulti
 	{
-		let block = BlockWithTx::new(client.clone(), 1824115);
+		let block = Block::new(client.clone(), 1824115).extrinsics();
 
 		let signatures = vec![
 			"0xa26556769ad6581b7beb103590a5c378955244aa349bbacc2f148c51205e055a",
@@ -78,7 +78,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 			.multisig()
 			.cancel_as_multi(2, signatures, timepoint, call_hash);
 		let expected_call = CancelAsMulti::from_call(&submittable.call.encode()).unwrap();
-		let actual_ext = block.get::<CancelAsMulti>(1).await?.unwrap();
+		let actual_ext = block.get::<CancelAsMulti>(1).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
 	}
 
@@ -89,8 +89,8 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// NewMultisig
 	{
-		let block = BlockEvents::new(client.clone(), 1861590);
-		let events = block.ext(1).await?.unwrap();
+		let block = BlockEventsQuery::new(client.clone(), 1861590);
+		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = NewMultisig {
 			approving: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a")
@@ -105,8 +105,8 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// MultisigExecuted
 	{
-		let block = BlockEvents::new(client.clone(), 1861592);
-		let events = block.ext(1).await?.unwrap();
+		let block = BlockEventsQuery::new(client.clone(), 1861592);
+		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = MultisigExecuted {
 			approving: AccountId::from_str("0xcf3cb26493846a0a5b758174dbc4dc3f42bf883bc50c8d5f4b4a4d1264dd908e")
@@ -123,8 +123,8 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// MultisigApproval
 	{
-		let block = BlockEvents::new(client.clone(), 1805938);
-		let events = block.ext(1).await?.unwrap();
+		let block = BlockEventsQuery::new(client.clone(), 1805938);
+		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = MultisigApproval {
 			approving: AccountId::from_str("0xde54c7f5dbab3620e3093ee263983c0d77bc73e0a5a38391b778c99d2f23d60b")
@@ -140,8 +140,8 @@ pub async fn event_test() -> Result<(), Error> {
 
 	// MultisigCancelled
 	{
-		let block = BlockEvents::new(client.clone(), 1861588);
-		let events = block.ext(1).await?.unwrap();
+		let block = BlockEventsQuery::new(client.clone(), 1861588);
+		let events = block.extrinsic(1).await.unwrap();
 
 		let expected = MultisigCancelled {
 			cancelling: AccountId::from_str("0x4c4062701850428210b0bb341c92891c2cd8f67c5e66326991f8ee335de2394a")

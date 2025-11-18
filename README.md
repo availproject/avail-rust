@@ -54,6 +54,9 @@ your idea in the
 [discussions](https://github.com/availproject/avail-rust/discussions) or
 [issues](https://github.com/availproject/avail-rust/issues).
 
+# In-code Documentation 
+See [agents.md](./agents.md) for in-code documentation standards.
+
 # License
 This project is primarily distributed under the terms of MIT license.
 See [LICENSE](https://github.com/availproject/avail-rust/blob/main/LICENSE) 

@@ -24,6 +24,12 @@ pub struct BlockInfo {
 	pub height: u32,
 }
 
+impl std::fmt::Display for BlockInfo {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "Height: {}, Hash: {:?}", self.height, self.hash)
+	}
+}
+
 impl From<(H256, u32)> for BlockInfo {
 	fn from(value: (H256, u32)) -> Self {
 		Self { hash: value.0, height: value.1 }
@@ -32,24 +38,6 @@ impl From<(H256, u32)> for BlockInfo {
 
 impl From<BlockInfo> for H256 {
 	fn from(value: BlockInfo) -> Self {
-		value.hash
-	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub struct TransactionRef {
-	pub hash: H256,
-	pub index: u32,
-}
-
-impl From<(H256, u32)> for TransactionRef {
-	fn from(value: (H256, u32)) -> Self {
-		Self { hash: value.0, index: value.1 }
-	}
-}
-
-impl From<TransactionRef> for H256 {
-	fn from(value: TransactionRef) -> Self {
 		value.hash
 	}
 }
@@ -63,12 +51,6 @@ pub enum HashNumber {
 impl From<BlockInfo> for HashNumber {
 	fn from(value: BlockInfo) -> Self {
 		Self::Hash(value.hash)
-	}
-}
-
-impl From<TransactionRef> for HashNumber {
-	fn from(value: TransactionRef) -> Self {
-		Self::Number(value.index)
 	}
 }
 
@@ -182,6 +164,16 @@ pub enum HashStringNumber {
 	Number(u32),
 }
 
+impl std::fmt::Display for HashStringNumber {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			HashStringNumber::Hash(h) => write!(f, "Hash: {}", h),
+			HashStringNumber::String(h) => write!(f, "String Hash: {}", h),
+			HashStringNumber::Number(n) => write!(f, "Number: {}", n),
+		}
+	}
+}
+
 impl From<BlockInfo> for HashStringNumber {
 	fn from(value: BlockInfo) -> Self {
 		Self::Hash(value.hash)
@@ -203,12 +195,6 @@ impl From<HashNumber> for HashStringNumber {
 			HashNumber::Hash(x) => Self::Hash(x),
 			HashNumber::Number(x) => Self::Number(x),
 		}
-	}
-}
-
-impl From<TransactionRef> for HashStringNumber {
-	fn from(value: TransactionRef) -> Self {
-		Self::Number(value.index)
 	}
 }
 
