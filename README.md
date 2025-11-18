@@ -1,3 +1,8 @@
+# !Important!
+Branch `main` is used for current and future changes that might not be compatible with existing networks.
+
+Branch `old-main` MUST and SHOULD be always compatible with existing networks.
+
 # For Library Users
 
 **[Your documentation is in another castle.](https://github.com/availproject/avail-rust/blob/main/client/README.md).**
