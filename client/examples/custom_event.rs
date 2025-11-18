@@ -1,5 +1,4 @@
-use avail::staking::types::ValidatorPrefs;
-use avail_rust::prelude::*;
+use avail_rust_client::prelude::*;
 
 // Custom Event
 // Implementing HasHeader, codec::Decode and coded::Encode is
@@ -17,12 +16,12 @@ impl HasHeader for CustomEvent {
 async fn main() -> Result<(), Error> {
 	let client = Client::new(TURING_ENDPOINT).await?;
 
-	// Custom Event
-	let tx_events = block_tx.events(client.clone()).await?;
-	let event = tx_events.first::<CustomEvent>().expect("Should be there");
+	let block = client.block(2042845);
+	let extrinsic_events = block.events().extrinsic(1).await?;
+	let event = extrinsic_events.first::<CustomEvent>().expect("Should be there");
 	println!("Who: {}, Data Hash: {:?}", event.who, event.data_hash);
 	/*
-		Who: 5EZZm8AKzZw8ti9PSmTZdXCgNEeaE3vs5sNxqkQ6u5NhG8kT, Data Hash: 0x94504118a0ce3537d082e821413a172d745b3059dd9c385eceef64933e81aa72
+		Who: 5CFyESc2tw4WX4uZFhACrZTg8JP1NRdQGaQVUaWjjdLJy1dq, Data Hash: 0x69c2ae9d6d95c7b52588b189a1395bd63f30cb2144d590db8fcd42ccf03c8744
 	*/
 
 	Ok(())
