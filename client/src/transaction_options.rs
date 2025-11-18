@@ -60,7 +60,6 @@ impl Options {
 		account_id: &AccountId,
 		retry_on_error: Option<bool>,
 	) -> Result<RefinedOptions, crate::Error> {
-		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {
 			Some(x) => x,
@@ -78,14 +77,13 @@ impl Options {
 			MortalityOption::Full(mortality) => mortality,
 		};
 
-		Ok(RefinedOptions { app_id, mortality, nonce, tip })
+		Ok(RefinedOptions { mortality, nonce, tip })
 	}
 }
 
 /// Fully resolved transaction options used during signing.
 #[derive(Debug, Clone)]
 pub struct RefinedOptions {
-	pub app_id: u32,
 	pub mortality: RefinedMortality,
 	pub nonce: u32,
 	pub tip: u128,
@@ -98,7 +96,6 @@ impl From<&RefinedOptions> for ExtrinsicExtra {
 			era,
 			nonce: value.nonce,
 			tip: value.tip,
-			app_id: value.app_id,
 		}
 	}
 }

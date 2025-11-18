@@ -29,8 +29,6 @@ pub struct ExtrinsicExtra {
 	pub nonce: u32,
 	#[codec(compact)]
 	pub tip: u128,
-	#[codec(compact)]
-	pub app_id: u32,
 }
 
 #[derive(Debug, Clone)]

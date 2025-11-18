@@ -644,7 +644,6 @@ impl From<BlockEventsOptions> for rpc::EventOpts {
 pub struct BlockExtOptionsSimple {
 	pub filter: Option<ExtrinsicFilter>,
 	pub ss58_address: Option<String>,
-	pub app_id: Option<u32>,
 	pub nonce: Option<u32>,
 }
 
@@ -652,7 +651,6 @@ pub struct BlockExtOptionsSimple {
 pub struct BlockExtOptionsExpanded {
 	pub filter: Option<ExtrinsicFilter>,
 	pub ss58_address: Option<String>,
-	pub app_id: Option<u32>,
 	pub nonce: Option<u32>,
 	pub encode_as: Option<EncodeSelector>,
 }
@@ -662,7 +660,6 @@ impl From<BlockExtOptionsExpanded> for rpc::ExtrinsicOpts {
 		rpc::ExtrinsicOpts {
 			transaction_filter: value.filter.unwrap_or_default(),
 			ss58_address: value.ss58_address,
-			app_id: value.app_id,
 			nonce: value.nonce,
 			encode_as: value.encode_as.unwrap_or_default(),
 		}
@@ -674,7 +671,6 @@ impl From<BlockExtOptionsSimple> for BlockExtOptionsExpanded {
 		Self {
 			filter: value.filter,
 			ss58_address: value.ss58_address,
-			app_id: value.app_id,
 			nonce: value.nonce,
 			encode_as: Some(EncodeSelector::Extrinsic),
 		}
@@ -736,11 +732,6 @@ impl BlockRawExtrinsic {
 		self.metadata.ext_hash
 	}
 
-	/// Returns the application id if the signer payload provided it.
-	pub fn app_id(&self) -> Option<u32> {
-		Some(self.signer_payload.as_ref()?.app_id)
-	}
-
 	/// Returns the nonce if the signer payload provided it.
 	pub fn nonce(&self) -> Option<u32> {
 		Some(self.signer_payload.as_ref()?.nonce)
@@ -786,11 +777,6 @@ impl<T: HasHeader + Decode> BlockExtrinsic<T> {
 	/// Returns the extrinsic hash.
 	pub fn ext_hash(&self) -> H256 {
 		self.metadata.ext_hash
-	}
-
-	/// Returns the application id if the extrinsic was signed.
-	pub fn app_id(&self) -> Option<u32> {
-		Some(self.signature.as_ref()?.tx_extra.app_id)
 	}
 
 	/// Returns the nonce if the extrinsic was signed.
@@ -859,11 +845,6 @@ impl<T: HasHeader + Decode> BlockTransaction<T> {
 	/// Returns the transaction hash.
 	pub fn ext_hash(&self) -> H256 {
 		self.metadata.ext_hash
-	}
-
-	/// Returns the application id for this transaction.
-	pub fn app_id(&self) -> u32 {
-		self.signature.tx_extra.app_id
 	}
 
 	/// Returns the signer nonce for this transaction.

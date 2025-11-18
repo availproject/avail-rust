@@ -14,7 +14,6 @@ pub async fn fetch_extrinsics_v1(
 			transaction: Some(options.transaction_filter.clone()),
 			signature: SignatureFilter {
 				ss58_address: options.ss58_address.clone(),
-				app_id: options.app_id,
 				nonce: options.nonce,
 			},
 		},
@@ -30,7 +29,6 @@ pub async fn fetch_extrinsics_v1(
 pub struct Options {
 	pub transaction_filter: ExtrinsicFilter,
 	pub ss58_address: Option<String>,
-	pub app_id: Option<u32>,
 	pub nonce: Option<u32>,
 	pub encode_as: EncodeSelector,
 }
@@ -72,7 +70,6 @@ impl From<ExtrinsicInformation> for ExtrinsicInfo {
 pub struct SignerPayload {
 	pub ss58_address: Option<String>,
 	pub nonce: u32,
-	pub app_id: u32,
 	pub mortality: Option<(u64, u64)>,
 }
 
@@ -179,7 +176,6 @@ struct Filter {
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct SignatureFilter {
 	pub ss58_address: Option<String>,
-	pub app_id: Option<u32>,
 	pub nonce: Option<u32>,
 }
 
