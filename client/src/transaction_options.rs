@@ -92,11 +92,7 @@ pub struct RefinedOptions {
 impl From<&RefinedOptions> for ExtrinsicExtra {
 	fn from(value: &RefinedOptions) -> Self {
 		let era = Era::mortal(value.mortality.period, value.mortality.block_height as u64);
-		ExtrinsicExtra {
-			era,
-			nonce: value.nonce,
-			tip: value.tip,
-		}
+		ExtrinsicExtra { era, nonce: value.nonce, tip: value.tip }
 	}
 }
 

@@ -1,4 +1,4 @@
-use avail_rust::{avail_rust_core::{rpc::blob::submit_blob, types::metadata::AppId}, prelude::*};
+use avail_rust::{avail_rust_core::rpc::blob::submit_blob, prelude::*};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -11,7 +11,7 @@ async fn main() -> Result<(), Error> {
 
     let signer = alice();
 	let unsigned_tx = client.tx().data_availability().submit_blob_metadata(
-            AppId(2),
+            2,
 			blob_hash,
 			blob.len() as u64,
 			commitments,

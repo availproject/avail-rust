@@ -1,5 +1,4 @@
 use avail_rust::prelude::*;
-use crate::avail_rust_core::types::metadata::AppId;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -12,7 +11,7 @@ async fn main() -> Result<(), Error> {
 	// Or use one of dev accounts -> let signer = alice();
 
 	// Transaction Creation
-	let submittable_tx = client.tx().data_availability().submit_data(AppId(2), "My First Data Submission");
+	let submittable_tx = client.tx().data_availability().submit_data(2, "My First Data Submission");
 
 	// Transaction Submission
 	let submitted_tx = submittable_tx.sign_and_submit(&signer, Options::default()).await?;
