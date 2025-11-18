@@ -1,5 +1,4 @@
-use crate::RpcError;
-use crate::rpc::kate::DataProof;
+use crate::{RpcError, rpc::kate::DataProof};
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
@@ -19,14 +18,14 @@ pub struct Blob {
 /// Ownership entry as returned by the node indexer / runtime summary.
 #[derive(Clone, Debug, Encode, Decode, Serialize, Deserialize)]
 pub struct OwnershipEntry {
-    /// The address that owns the blob
-    pub address: String,
-    /// The babe key of the validator
-    pub babe_key: String,
-    /// The corresponding peer id
-    pub encoded_peer_id: String,
-    /// The signature of the holder
-    pub signature: Vec<u8>,
+	/// The address that owns the blob
+	pub address: String,
+	/// The babe key of the validator
+	pub babe_key: String,
+	/// The corresponding peer id
+	pub encoded_peer_id: String,
+	/// The signature of the holder
+	pub signature: Vec<u8>,
 }
 
 /// BlobInfo returned by `blob_getBlobInfo`

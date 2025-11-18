@@ -16,7 +16,10 @@ use avail::{
 	system::{storage as SystemStorage, types::AccountInfo},
 };
 #[cfg(feature = "next")]
-use avail_rust_core::rpc::{blob::{Blob, BlobInfo}, kate::DataProof};
+use avail_rust_core::rpc::{
+	blob::{Blob, BlobInfo},
+	kate::DataProof,
+};
 use avail_rust_core::{
 	AccountId, AccountIdLike, AvailHeader, BlockInfo, H256, HashNumber, StorageMap,
 	grandpa::GrandpaJustification,
@@ -411,7 +414,7 @@ impl ChainApi {
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
-				tracing::info!(target: "tx", "Submitting Transaction. Address: {}, Nonce: {}, App Id: {}", account_id, signed.tx_extra.nonce, signed.tx_extra.app_id);
+				tracing::info!(target: "tx", "Submitting Transaction. Address: {}, Nonce: {}", account_id, signed.tx_extra.nonce);
 			}
 		}
 
@@ -422,7 +425,7 @@ impl ChainApi {
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &tx.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
-				tracing::info!(target: "tx", "Transaction Submitted.  Address: {}, Nonce: {}, App Id: {}, Tx Hash: {:?},", account_id, signed.tx_extra.nonce, signed.tx_extra.app_id, tx_hash);
+				tracing::info!(target: "tx", "Transaction Submitted.  Address: {}, Nonce: {}, Tx Hash: {:?},", account_id, signed.tx_extra.nonce, tx_hash);
 			}
 		}
 
