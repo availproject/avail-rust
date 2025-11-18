@@ -44,10 +44,10 @@ async fn main() -> Result<(), Error> {
 	// Or use one of dev accounts -> let signer = alice();
 
 	// Transaction Creation
-	let submittable_tx = client.tx().data_availability().submit_data("My First Data Submission");
+	let submittable_tx = client.tx().data_availability().submit_data(AppId(2), "My First Data Submission");
 
 	// Transaction Submission
-	let submitted_tx = submittable_tx.sign_and_submit(&signer, Options::new(2)).await?;
+	let submitted_tx = submittable_tx.sign_and_submit(&signer, Options::default()).await?;
 	println!("Tx Hash: {:?}", submitted_tx.tx_hash);
 
 	// Transaction Receipt
