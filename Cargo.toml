@@ -4,18 +4,8 @@ members = [
 	"client",
 ]
 exclude = [
-	"examples/crates",
-	"examples/github",
-	"examples/submission_api",
-	"examples/block_api",
-	"examples/storage_api",
-	"examples/chain_api",
-	"examples/parallel_submission",
-	"examples/multisig",
-	"examples/batch",
-	"examples/estimating_fees",
+	"examples/blob_api",
 	"examples/custom_ext_event_storage",
-	"examples/subscriptions",
 	"ffi",
 	"examples/client_readme"
 ]
