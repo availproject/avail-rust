@@ -35,7 +35,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 		let submittable = client
 			.tx()
 			.data_availability()
-			.submit_data("The future is available for all, one block at a time.");
+			.submit_data(2, "The future is available for all, one block at a time.");
 		let expected_call = SubmitData::from_call(&submittable.call.encode()).unwrap();
 		let actual_ext = block.get::<SubmitData>(0).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());

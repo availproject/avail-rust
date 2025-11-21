@@ -10,8 +10,8 @@ pub async fn main() -> Result<(), Error> {
 	let block = client.block(2470159);
 	let query = block.encoded();
 
-	let count = query.count(Options::new().app_id(246)).await?;
-	let exists = query.exists(Options::new().app_id(100)).await?;
+	let count = query.count(Options::new()).await?;
+	let exists = query.exists(Options::new()).await?;
 
 	println!("Block 2470159 has {} extrinsics with app id 246", count);
 	println!("Does Block 2470159 have extrinsics with app id 100? {}", exists);
@@ -49,7 +49,7 @@ pub async fn main() -> Result<(), Error> {
 }
 
 pub fn printout_details(bext: &BlockEncodedExtrinsic) {
-	println!("Ext Index: {}, Ext Call Len: {}, App ID: {:?}", bext.ext_index(), bext.call.len(), bext.app_id());
+	println!("Ext Index: {}, Ext Call Len: {}", bext.ext_index(), bext.call.len());
 }
 
 /*

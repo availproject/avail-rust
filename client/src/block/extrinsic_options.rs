@@ -10,8 +10,6 @@ pub struct Options {
 	pub filter: Option<ExtrinsicFilter>,
 	/// Optional SS58 signer address filter.
 	pub ss58_address: Option<String>,
-	/// Optional application identifier filter.
-	pub app_id: Option<u32>,
 	/// Optional nonce filter.
 	pub nonce: Option<u32>,
 }
@@ -34,18 +32,6 @@ impl Options {
 	/// - `Self`: Builder with the nonce filter applied.
 	pub fn nonce(mut self, value: u32) -> Self {
 		self.nonce = Some(value);
-		self
-	}
-
-	/// Sets the application identifier filter.
-	///
-	/// # Parameters
-	/// - `value`: Application identifier required for matching extrinsics.
-	///
-	/// # Returns
-	/// - `Self`: Builder with the application filter applied.
-	pub fn app_id(mut self, value: u32) -> Self {
-		self.app_id = Some(value);
 		self
 	}
 
@@ -84,7 +70,6 @@ impl Options {
 		rpc::ExtrinsicOpts {
 			transaction_filter: self.filter.unwrap_or_default(),
 			ss58_address: self.ss58_address,
-			app_id: self.app_id,
 			nonce: self.nonce,
 			encode_as,
 		}

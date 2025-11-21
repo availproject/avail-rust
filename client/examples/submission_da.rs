@@ -4,9 +4,9 @@ use avail_rust_client::prelude::*;
 pub async fn main() -> Result<(), Error> {
 	let client = Client::new(TURING_ENDPOINT).await?;
 
-	let submittable = client.tx().data_availability().submit_data("My data");
+	let submittable = client.tx().data_availability().submit_data(2, "My data");
 	let signer = Keypair::from_str("//Bob")?;
-	let submitted = submittable.sign_and_submit(&signer, Options::new(2)).await?;
+	let submitted = submittable.sign_and_submit(&signer, Options::new()).await?;
 	println!("Ext Hash: {:?}", submitted.ext_hash,);
 
 	// Getting Extrinsic Receipt

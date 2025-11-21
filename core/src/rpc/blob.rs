@@ -51,20 +51,9 @@ pub async fn submit_blob(client: &RpcClient, metadata_signed_transaction: &[u8],
 	Ok(())
 }
 
-pub async fn get_blob(
-	client: &RpcClient,
-	block_hash: H256,
-	blob_index: u32,
-	blob_hash: H256,
-) -> Result<Blob, RpcError> {
-	let params = rpc_params![block_hash, blob_index, blob_hash];
-	let value: Blob = client.request("blob_getBlob", params).await?;
-	Ok(value)
-}
-
-pub async fn get_blob_v2(client: &RpcClient, blob_hash: H256, block_hash: Option<H256>) -> Result<Blob, RpcError> {
+pub async fn get_blob(client: &RpcClient, blob_hash: H256, block_hash: Option<H256>) -> Result<Blob, RpcError> {
 	let params = rpc_params![blob_hash, block_hash];
-	let value: Blob = client.request("blob_getBlobV2", params).await?;
+	let value: Blob = client.request("blob_getBlob", params).await?;
 	Ok(value)
 }
 

@@ -26,8 +26,8 @@ impl Options {
 	///
 	/// # Returns
 	/// Returns an [`Options`] builder seeded with the supplied application id.
-	pub fn new(app_id: u32) -> Self {
-		Self { app_id: Some(app_id), ..Default::default() }
+	pub fn new() -> Self {
+		Self::default()
 	}
 
 	/// Sets the application id recorded in the extrinsic.
@@ -102,7 +102,6 @@ impl Options {
 		account_id: &AccountId,
 		retry_on_error: Option<bool>,
 	) -> Result<RefinedOptions, crate::Error> {
-		let app_id = self.app_id.unwrap_or_default();
 		let tip = self.tip.unwrap_or_default();
 		let nonce = match self.nonce {
 			Some(x) => x,
@@ -120,16 +119,13 @@ impl Options {
 			MortalityOption::Full(mortality) => mortality,
 		};
 
-		Ok(RefinedOptions { app_id, mortality, nonce, tip })
+		Ok(RefinedOptions { mortality, nonce, tip })
 	}
 }
 
 /// Fully resolved transaction options used during signing.
 #[derive(Debug, Clone)]
 pub struct RefinedOptions {
-	/// Application identifier recorded in the extrinsic.
-	pub app_id: u32,
-	/// Fully resolved mortality parameters.
 	pub mortality: RefinedMortality,
 	/// Nonce applied to the extrinsic.
 	pub nonce: u32,
@@ -140,12 +136,7 @@ pub struct RefinedOptions {
 impl From<&RefinedOptions> for ExtrinsicExtra {
 	fn from(value: &RefinedOptions) -> Self {
 		let era = Era::mortal(value.mortality.period, value.mortality.block_height as u64);
-		ExtrinsicExtra {
-			era,
-			nonce: value.nonce,
-			tip: value.tip,
-			app_id: value.app_id,
-		}
+		ExtrinsicExtra { era, nonce: value.nonce, tip: value.tip }
 	}
 }
 

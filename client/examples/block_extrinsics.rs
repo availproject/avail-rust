@@ -55,11 +55,10 @@ pub async fn main() -> Result<(), Error> {
 
 pub fn printout_details<T: HasHeader + Decode>(bext: &BlockExtrinsic<T>) {
 	println!(
-		"Ext Index: {}, Ext Call Pallet ID: {}, Ext Call Variant ID: {}, App ID: {:?}",
+		"Ext Index: {}, Ext Call Pallet ID: {}, Ext Call Variant ID: {}",
 		bext.ext_index(),
 		T::HEADER_INDEX.0,
 		T::HEADER_INDEX.1,
-		bext.app_id()
 	);
 }
 

@@ -598,17 +598,20 @@ pub mod data_availability {
 
 		#[derive(Debug, Clone)]
 		pub struct SubmitData {
+			pub app_id: u32,
 			pub data: Vec<u8>,
 		}
 		impl Encode for SubmitData {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.app_id).encode_to(dest);
 				self.data.encode_to(dest);
 			}
 		}
 		impl Decode for SubmitData {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let app_id = Compact::<u32>::decode(input)?.0;
 				let data = Decode::decode(input)?;
-				Ok(Self { data })
+				Ok(Self { app_id, data })
 			}
 		}
 		impl HasHeader for SubmitData {
@@ -617,12 +620,14 @@ pub mod data_availability {
 
 		#[derive(Clone)]
 		pub struct SubmitBlobMetadata {
+			pub app_id: u32,
 			pub blob_hash: H256,
 			pub size: u64,
 			pub commitments: Vec<u8>,
 		}
 		impl Encode for SubmitBlobMetadata {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				Compact(self.app_id).encode_to(dest);
 				dest.write(&self.blob_hash.encode());
 				dest.write(&self.size.encode());
 				dest.write(&self.commitments.encode());
@@ -630,10 +635,11 @@ pub mod data_availability {
 		}
 		impl Decode for SubmitBlobMetadata {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let app_id = Compact::<u32>::decode(input)?.0;
 				let blob_hash = Decode::decode(input)?;
 				let size = Decode::decode(input)?;
 				let commitments = Decode::decode(input)?;
-				Ok(Self { blob_hash, size, commitments })
+				Ok(Self { app_id, blob_hash, size, commitments })
 			}
 		}
 		impl HasHeader for SubmitBlobMetadata {

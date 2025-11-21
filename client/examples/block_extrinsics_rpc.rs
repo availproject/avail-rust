@@ -76,7 +76,7 @@ pub async fn main() -> Result<(), Error> {
 	println!("");
 
 	// 5
-	let opts = Options::new().encode_as(EncodeSelector::None).app_id(246);
+	let opts = Options::new().encode_as(EncodeSelector::None);
 	let infos = block.extrinsic_infos(opts).await?;
 	println!("Number of extrinsics in block 2470159 with app id 246: {}", infos.len());
 	printout_details(infos);
@@ -97,10 +97,7 @@ pub async fn main() -> Result<(), Error> {
 
 	// 6
 	let address = "5E9MGdHYokTQzhhfPhfFXfvyMVVnmjdYLy6DcG78srBnYZLA";
-	let opts = Options::new()
-		.encode_as(EncodeSelector::None)
-		.app_id(246)
-		.ss58_address(address);
+	let opts = Options::new().encode_as(EncodeSelector::None).ss58_address(address);
 	let infos = block.extrinsic_infos(opts).await?;
 	println!("Number of extrinsics in block 2470159 with app id 246 and address {}: {}", address, infos.len());
 	printout_details(infos);
@@ -111,7 +108,6 @@ pub async fn main() -> Result<(), Error> {
 	let opts = Options::new()
 		.encode_as(EncodeSelector::None)
 		.filter((29, 1))
-		.app_id(246)
 		.ss58_address(address);
 	let infos = block.extrinsic_infos(opts).await?;
 	println!(
@@ -186,12 +182,11 @@ pub async fn main() -> Result<(), Error> {
 pub fn printout_details(infos: Vec<ExtrinsicInfo>) {
 	for info in infos {
 		println!(
-			"Index: {}, Hash: {:?}, Pallet ID: {}, Variant ID: {}, App ID: {:?}, SS58 Address: {:?}, Data: {:?}",
+			"Index: {}, Hash: {:?}, Pallet ID: {}, Variant ID: {}, SS58 Address: {:?}, Data: {:?}",
 			info.ext_index,
 			info.ext_hash,
 			info.pallet_id,
 			info.variant_id,
-			info.signer_payload.as_ref().map(|x| x.app_id),
 			info.signer_payload.as_ref().map(|x| x.ss58_address.clone()).flatten(),
 			info.data,
 		);

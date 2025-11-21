@@ -246,17 +246,6 @@ impl<T: HasHeader + Decode> BlockSignedExtrinsic<T> {
 		self.metadata.ext_hash
 	}
 
-	/// Returns the application id for this transaction.
-	///
-	/// # Returns
-	/// - `u32`: Application identifier recorded in the signature.
-	///
-	/// # Side Effects
-	/// - None; reads cached signature information.
-	pub fn app_id(&self) -> u32 {
-		self.signature.extra.app_id
-	}
-
 	/// Returns the signer nonce for this transaction.
 	///
 	/// # Returns

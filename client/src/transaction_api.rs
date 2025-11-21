@@ -1168,9 +1168,9 @@ impl DataAvailability {
 	///
 	/// # Errors
 	/// Does not perform network calls; transaction construction never fails.
-	pub fn submit_data<'a>(&self, data: impl Into<StringOrBytes<'a>>) -> SubmittableTransaction {
+	pub fn submit_data<'a>(&self, app_id: u32, data: impl Into<StringOrBytes<'a>>) -> SubmittableTransaction {
 		let data: Vec<u8> = Into::<StringOrBytes>::into(data).into();
-		let value = avail::data_availability::tx::SubmitData { data };
+		let value = avail::data_availability::tx::SubmitData { app_id, data };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
@@ -1186,8 +1186,14 @@ impl DataAvailability {
 	///
 	/// # Errors
 	/// Does not perform network calls; transaction construction never fails.
-	pub fn submit_blob_metadata(&self, blob_hash: H256, size: u64, commitments: Vec<u8>) -> SubmittableTransaction {
-		let value = avail::data_availability::tx::SubmitBlobMetadata { blob_hash, size, commitments };
+	pub fn submit_blob_metadata(
+		&self,
+		app_id: u32,
+		blob_hash: H256,
+		size: u64,
+		commitments: Vec<u8>,
+	) -> SubmittableTransaction {
+		let value = avail::data_availability::tx::SubmitBlobMetadata { app_id, blob_hash, size, commitments };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 }
