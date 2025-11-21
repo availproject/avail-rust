@@ -360,7 +360,7 @@ pub mod test {
 
 		// App Id
 		let infos = block
-			.extrinsic_infos(ExtrinsicOpts::new().encode_as(EncodeSelector::None).app_id(428))
+			.extrinsic_infos(ExtrinsicOpts::new().encode_as(EncodeSelector::None))
 			.await
 			.unwrap();
 		assert_eq!(infos.len(), 1);

@@ -310,14 +310,14 @@ mod tests {
 	// 	sub.set_block_height(1);
 	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 1);
 
-		// 1 is Ok(Some)
-		// 2 is Ok(None)
-		// 3 is Ok(Some)
-		// 4 is Err
-		// 4 is Ok(Some)
-		let mut data = ExtrinsicInformation::default();
-		let tx = client.tx().data_availability().submit_data(2, "1234");
-		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::default()).await?.encode()));
+	// 1 is Ok(Some)
+	// 2 is Ok(None)
+	// 3 is Ok(Some)
+	// 4 is Err
+	// 4 is Ok(Some)
+	//let mut data = ExtrinsicInformation::default();
+	//let tx = client.tx().data_availability().submit_data(2, "1234");
+	//data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::default()).await?.encode()));
 
 	// 	commander.extrinsics_ok(vec![data.clone()]); // 1
 	// 	commander.extrinsics_ok(vec![]); // 2

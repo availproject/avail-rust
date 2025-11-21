@@ -17,10 +17,7 @@ pub async fn main() -> Result<(), Error> {
 
 	// We use the client to build the payload. We could do it manually but this is easier.
 	let account_id = my_signer.account_id();
-	let payload = client
-		.chain()
-		.build_payload(&account_id, &call, Options::new(2))
-		.await?;
+	let payload = client.chain().build_payload(&account_id, &call, Options::new()).await?;
 	let signature = sign(&my_signer, &payload);
 
 	let address = MultiAddress::Id(account_id);

@@ -23,7 +23,7 @@ async fn task(account: Keypair) -> Result<(), Error> {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
 	// Transaction Submission
-	let tx = client.tx().data_availability().submit_data("It works");
+	let tx = client.tx().data_availability().submit_data(2, "It works");
 	let st = tx.sign_and_submit(&account, Options::default()).await?;
 
 	// Fetching Transaction Receipt

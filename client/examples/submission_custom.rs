@@ -18,7 +18,7 @@ pub async fn main() -> Result<(), Error> {
 	let custom = CustomExtrinsic { data: vec![66, 66, 77, 77] };
 	let submittable = SubmittableTransaction::from_encodable(client.clone(), custom);
 	let signer = Keypair::from_str("//Bob")?;
-	let submitted = submittable.sign_and_submit(&signer, Options::new(2)).await?;
+	let submitted = submittable.sign_and_submit(&signer, Options::new()).await?;
 	println!("Ext Hash: {:?}", submitted.ext_hash,);
 
 	// Getting Extrinsic Receipt

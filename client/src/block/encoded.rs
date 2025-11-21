@@ -267,15 +267,6 @@ impl BlockEncodedExtrinsic {
 		self.metadata.ext_hash
 	}
 
-	/// Returns the application id if the signer payload provided it.
-	///
-	/// # Returns
-	/// - `Some(u32)`: Application identifier from the signer payload.
-	/// - `None`: Signer payload was absent.
-	pub fn app_id(&self) -> Option<u32> {
-		Some(self.signature.as_ref()?.extra.app_id)
-	}
-
 	/// Returns the nonce if the signer payload provided it.
 	///
 	/// # Returns
@@ -375,7 +366,6 @@ pub mod tests {
 		assert_eq!(ext.nonce(), None);
 		assert_eq!(ext.header(), (3, 0));
 		assert!(ext.signature.is_none());
-		assert!(ext.app_id().is_none());
 		let set = avail::timestamp::tx::Set::from_call(&ext.call).unwrap();
 		assert_eq!(set.now, 1761567760000);
 	}
@@ -389,7 +379,6 @@ pub mod tests {
 		assert_eq!(ext.ext_index(), 3);
 		assert_eq!(ext.nonce(), None);
 		assert!(ext.signature.is_none());
-		assert!(ext.app_id().is_none());
 		let f = avail::vector::tx::FailedSendMessageTxs::from_call(&ext.call).unwrap();
 		assert_eq!(f.failed_txs.len(), 0);
 	}
@@ -403,7 +392,6 @@ pub mod tests {
 		assert_eq!(ext.header(), (29, 1));
 		assert_eq!(ext.nonce(), Some(30));
 		assert!(ext.signature.is_some());
-		assert_eq!(ext.app_id(), Some(1));
 		assert_eq!(ext.ss58_address(), Some("5Ev2jfLbYH6ENZ8ThTmqBX58zoinvHyqvRMvtoiUnLLcv1NJ".to_string()));
 		let sd = avail::data_availability::tx::SubmitData::from_call(&ext.call).unwrap();
 		assert_eq!(String::from_utf8(sd.data).unwrap(), "AABBCC");
@@ -418,7 +406,6 @@ pub mod tests {
 		assert_eq!(ext.header(), (29, 1));
 		assert_eq!(ext.nonce(), Some(4));
 		assert!(ext.signature.is_some());
-		assert_eq!(ext.app_id(), Some(2));
 		assert_eq!(ext.ss58_address(), Some("5DPDXCcqk1YNVZ3M9s9iwJnr9XAVfTxf8hNa4LS51fjHKAzk".to_string()));
 		let sd = avail::data_availability::tx::SubmitData::from_call(&ext.call).unwrap();
 		assert_eq!(String::from_utf8(sd.data).unwrap(), "CCBBAA");
@@ -452,12 +439,12 @@ pub mod tests {
 		let query = client.block(2491314).encoded();
 
 		// App Id 1
-		let opts = Options::new().app_id(1);
+		let opts = Options::new();
 		let ext = query.first(opts).await.unwrap().unwrap();
 		match_submit_data_1(&ext);
 
 		// App Id 2
-		let opts = Options::new().app_id(2);
+		let opts = Options::new();
 		let ext = query.first(opts).await.unwrap().unwrap();
 		match_submit_data_2(&ext);
 
@@ -496,12 +483,12 @@ pub mod tests {
 		let query = client.block(2491314).encoded();
 
 		// App Id 1
-		let opts = Options::new().app_id(1);
+		let opts = Options::new();
 		let ext = query.last(opts).await.unwrap().unwrap();
 		match_submit_data_1(&ext);
 
 		// App Id 2
-		let opts = Options::new().app_id(2);
+		let opts = Options::new();
 		let ext = query.last(opts).await.unwrap().unwrap();
 		match_submit_data_2(&ext);
 
@@ -540,12 +527,12 @@ pub mod tests {
 		let query = client.block(2491314).encoded();
 
 		// App Id 1
-		let opts = Options::new().app_id(1);
+		let opts = Options::new();
 		let ext = query.all(opts).await.unwrap();
 		match_submit_data_1(&ext[0]);
 
 		// App Id 2
-		let opts = Options::new().app_id(2);
+		let opts = Options::new();
 		let ext = query.all(opts).await.unwrap();
 		match_submit_data_2(&ext[0]);
 		assert_eq!(ext.len(), 1);
@@ -596,11 +583,11 @@ pub mod tests {
 		let query = client.block(2491314).encoded();
 
 		// App Id 1
-		let opts = Options::new().app_id(1);
+		let opts = Options::new();
 		assert_eq!(query.count(opts).await.unwrap(), 1);
 
 		// App Id 2
-		let opts = Options::new().app_id(2);
+		let opts = Options::new();
 		assert_eq!(query.count(opts).await.unwrap(), 1);
 
 		// Nonce 30
@@ -633,11 +620,11 @@ pub mod tests {
 		let query = client.block(2491314).encoded();
 
 		// App Id 1
-		let opts = Options::new().app_id(1);
+		let opts = Options::new();
 		assert_eq!(query.exists(opts).await.unwrap(), true);
 
 		// App Id 2
-		let opts = Options::new().app_id(2);
+		let opts = Options::new();
 		assert_eq!(query.exists(opts).await.unwrap(), true);
 
 		// Nonce 30

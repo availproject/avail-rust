@@ -5,7 +5,7 @@ pub async fn main() -> Result<(), Error> {
 	let client = Client::new(TURING_ENDPOINT).await?;
 
 	// 1 Submittable
-	let submittable = client.tx().data_availability().submit_data("My data");
+	let submittable = client.tx().data_availability().submit_data(2, "My data");
 	let call_hash = submittable.call_hash();
 	let estimated_fee = submittable.estimate_call_fees(None).await?;
 	let weight = submittable.call_info(None).await?.weight;
@@ -18,10 +18,10 @@ pub async fn main() -> Result<(), Error> {
 
 	// 2 Submitting
 	let signer = Keypair::from_str("//Bob")?;
-	let submitted = submittable.sign_and_submit(&signer, Options::new(2)).await?;
+	let submitted = submittable.sign_and_submit(&signer, Options::new()).await?;
 	println!(
-		"Ext Hash: {:?}, Account Id: {}, Nonce: {}, App Id: {}",
-		submitted.ext_hash, submitted.account_id, submitted.options.nonce, submitted.options.app_id
+		"Ext Hash: {:?}, Account Id: {}, Nonce: {}",
+		submitted.ext_hash, submitted.account_id, submitted.options.nonce
 	);
 
 	// 3 Getting Extrinsic Receipt

@@ -44,11 +44,6 @@ impl Options {
 		self
 	}
 
-	pub fn app_id(mut self, value: u32) -> Self {
-		self.app_id = Some(value);
-		self
-	}
-
 	pub fn ss58_address(mut self, value: impl Into<String>) -> Self {
 		self.ss58_address = Some(value.into());
 		self

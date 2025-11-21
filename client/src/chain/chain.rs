@@ -459,7 +459,7 @@ impl Chain {
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &ext.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
-				tracing::info!(target: "tx", "Submitting Transaction. Address: {}, Nonce: {}, App Id: {}", account_id, signed.extra.nonce, signed.extra.app_id);
+				tracing::info!(target: "tx", "Submitting Transaction. Address: {}, Nonce: {}", account_id, signed.extra.nonce);
 			}
 		}
 
@@ -470,7 +470,7 @@ impl Chain {
 		#[cfg(feature = "tracing")]
 		if let Some(signed) = &ext.signature {
 			if let avail_rust_core::MultiAddress::Id(account_id) = &signed.address {
-				tracing::info!(target: "tx", "Transaction Submitted.  Address: {}, Nonce: {}, App Id: {}, Tx Hash: {:?},", account_id, signed.extra.nonce, signed.extra.app_id, tx_hash);
+				tracing::info!(target: "tx", "Transaction Submitted.  Address: {}, Nonce: {}, Tx Hash: {:?},", account_id, signed.extra.nonce, tx_hash);
 			}
 		}
 
@@ -799,7 +799,7 @@ impl Chain {
 	pub async fn blob_get_blob(&self, blob_hash: H256, block_hash: Option<H256>) -> Result<Blob, Error> {
 		let retry = self.should_retry_on_error();
 
-		let f = || async move { rpc::blob::get_blob_v2(&self.client.rpc_client, blob_hash, block_hash).await };
+		let f = || async move { rpc::blob::get_blob(&self.client.rpc_client, blob_hash, block_hash).await };
 
 		Ok(with_retry_on_error(f, retry).await?)
 	}

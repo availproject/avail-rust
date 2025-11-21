@@ -26,8 +26,8 @@ impl Options {
 	///
 	/// # Returns
 	/// Returns an [`Options`] builder seeded with the supplied application id.
-	pub fn new(app_id: u32) -> Self {
-		Self { app_id: Some(app_id), ..Default::default() }
+	pub fn new() -> Self {
+		Self::default()
 	}
 
 	/// Sets the application id recorded in the extrinsic.
