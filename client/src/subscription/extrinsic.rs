@@ -287,6 +287,7 @@ mod tests {
 	use crate::{clients::mock_client::MockClient, error::Error, prelude::*, subxt_rpcs::RpcClient};
 	use avail_rust_core::{
 		avail::data_availability::tx::SubmitData, rpc::system::fetch_extrinsics::ExtrinsicInformation,
+		types::metadata::AppId,
 	};
 
 	// #[tokio::test]
@@ -310,14 +311,14 @@ mod tests {
 	// 	sub.set_block_height(1);
 	// 	assert_eq!(sub.sub.as_finalized().next_block_height, 1);
 
-	// 	// 1 is Ok(Some)
-	// 	// 2 is Ok(None)
-	// 	// 3 is Ok(Some)
-	// 	// 4 is Err
-	// 	// 4 is Ok(Some)
-	// 	let mut data = ExtrinsicInformation::default();
-	// 	let tx = client.tx().data_availability().submit_data("1234");
-	// 	data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+		// 1 is Ok(Some)
+		// 2 is Ok(None)
+		// 3 is Ok(Some)
+		// 4 is Err
+		// 4 is Ok(Some)
+		let mut data = ExtrinsicInformation::default();
+		let tx = client.tx().data_availability().submit_data(AppId(2), "1234");
+		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::default()).await?.encode()));
 
 	// 	commander.extrinsics_ok(vec![data.clone()]); // 1
 	// 	commander.extrinsics_ok(vec![]); // 2
@@ -367,8 +368,8 @@ mod tests {
 		// 4 is Err
 		// 4 is Ok(Some)
 		let mut data = ExtrinsicInformation::default();
-		let tx = client.tx().data_availability().submit_data("1234");
-		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+		let tx = client.tx().data_availability().submit_data(AppId(2), "1234");
+		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::default()).await?.encode()));
 
 		commander.extrinsics_ok(vec![data.clone()]); // 1
 		commander.extrinsics_ok(vec![]); // 2
@@ -419,8 +420,8 @@ mod tests {
 		// 4 is Err
 		// 4 is Ok(Some)
 		let mut data = ExtrinsicInformation::default();
-		let tx = client.tx().data_availability().submit_data("1234");
-		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::new(2)).await?.encode()));
+		let tx = client.tx().data_availability().submit_data(AppId(2), "1234");
+		data.encoded = Some(const_hex::encode(tx.sign(&alice(), Options::default()).await?.encode()));
 
 		commander.extrinsics_ok(vec![data.clone()]); // 1
 		commander.extrinsics_ok(vec![]); // 2

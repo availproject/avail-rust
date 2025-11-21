@@ -1,5 +1,4 @@
-use crate::RpcError;
-use crate::rpc::kate::DataProof;
+use crate::{RpcError, rpc::kate::DataProof};
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};

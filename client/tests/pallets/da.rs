@@ -3,9 +3,12 @@ use avail_rust_client::{
 	error::Error,
 	prelude::*,
 };
-use avail_rust_core::avail::data_availability::{
-	events::{ApplicationKeyCreated, DataSubmitted},
-	tx::{CreateApplicationKey, SubmitData},
+use avail_rust_core::{
+	avail::data_availability::{
+		events::{ApplicationKeyCreated, DataSubmitted},
+		tx::{CreateApplicationKey, SubmitData},
+	},
+	types::metadata::AppId,
 };
 use codec::Encode;
 
@@ -35,7 +38,7 @@ pub async fn tx_tests() -> Result<(), Error> {
 		let submittable = client
 			.tx()
 			.data_availability()
-			.submit_data("The future is available for all, one block at a time.");
+			.submit_data(AppId(2), "The future is available for all, one block at a time.");
 		let expected_call = SubmitData::from_call(&submittable.call.encode()).unwrap();
 		let actual_ext = block.get::<SubmitData>(0).await.unwrap().unwrap();
 		assert_eq!(actual_ext.call.encode(), expected_call.encode());
