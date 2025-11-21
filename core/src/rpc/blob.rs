@@ -1,4 +1,5 @@
-use crate::{RpcError, rpc::kate::DataProof};
+use crate::RpcError;
+use crate::rpc::kate::DataProof;
 use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
@@ -49,6 +50,38 @@ pub async fn submit_blob(client: &RpcClient, metadata_signed_transaction: &[u8],
 	let params = rpc_params![encoded_metadata, encoded_blob];
 	let _value: () = client.request("blob_submitBlob", params).await?;
 	Ok(())
+}
+
+pub async fn get_blob(
+	client: &RpcClient,
+	block_hash: H256,
+	blob_index: u32,
+	blob_hash: H256,
+) -> Result<Blob, RpcError> {
+	let params = rpc_params![block_hash, blob_index, blob_hash];
+	let value: Blob = client.request("blob_getBlob", params).await?;
+	Ok(value)
+}
+
+pub async fn get_blob_v2(client: &RpcClient, blob_hash: H256, block_hash: Option<H256>) -> Result<Blob, RpcError> {
+	let params = rpc_params![blob_hash, block_hash];
+	let value: Blob = client.request("blob_getBlobV2", params).await?;
+	Ok(value)
+}
+
+/// Get canonical blob indexing info (if any) for a given blob_hash.
+pub async fn get_blob_info(client: &RpcClient, blob_hash: H256) -> Result<BlobInfo, RpcError> {
+	let params = rpc_params![blob_hash];
+	let value: BlobInfo = client.request("blob_getBlobInfo", params).await?;
+	Ok(value)
+}
+
+/// Get inclusion proof for a blob. If `at` is `Some(block_hash)` the proof
+/// is generated for that block; if `None` the node will use its indexed finalised block.
+pub async fn inclusion_proof(client: &RpcClient, blob_hash: H256, at: Option<H256>) -> Result<DataProof, RpcError> {
+	let params = rpc_params![blob_hash, at];
+	let value: DataProof = client.request("blob_inclusionProof", params).await?;
+	Ok(value)
 }
 
 pub async fn get_blob(
