@@ -4,10 +4,8 @@ members = [
 	"client",
 ]
 exclude = [
-	"examples/blob_api",
-	"examples/custom_ext_event_storage",
 	"ffi",
-	"examples/client_readme"
+	"scripts",
 ]
 resolver = "2"
 
@@ -27,6 +25,7 @@ const-hex = { version = "1.16", default-features = false, features = ["alloc"] }
 primitive-types = { version = "0.13", default-features = false }
 futures = { version = "0.3", default-features = false }
 schnorrkel = { version = "0.11.5", default-features = false }
+base64 = { version = "0.22.1" }
 
 # Logs
 tracing = { version = "0.1", default-features = false }
@@ -53,5 +52,3 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "def
 wasm-bindgen-futures = { version =  "0.4" }
 wasmtimer = { version = "0.4" }
 
-# Enabled with next
-base64 = { version = "0.22.1" }

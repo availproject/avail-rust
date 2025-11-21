@@ -615,14 +615,12 @@ pub mod data_availability {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 1);
 		}
 
-		#[cfg(feature = "next")]
 		#[derive(Clone)]
 		pub struct SubmitBlobMetadata {
 			pub blob_hash: H256,
 			pub size: u64,
 			pub commitments: Vec<u8>,
 		}
-		#[cfg(feature = "next")]
 		impl Encode for SubmitBlobMetadata {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				dest.write(&self.blob_hash.encode());
@@ -630,7 +628,6 @@ pub mod data_availability {
 				dest.write(&self.commitments.encode());
 			}
 		}
-		#[cfg(feature = "next")]
 		impl Decode for SubmitBlobMetadata {
 			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
 				let blob_hash = Decode::decode(input)?;
@@ -639,7 +636,6 @@ pub mod data_availability {
 				Ok(Self { blob_hash, size, commitments })
 			}
 		}
-		#[cfg(feature = "next")]
 		impl HasHeader for SubmitBlobMetadata {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 5);
 		}

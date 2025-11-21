@@ -1,5 +1,4 @@
 pub mod author;
-#[cfg(feature = "next")]
 pub mod blob;
 pub mod chain;
 pub mod chainspec;

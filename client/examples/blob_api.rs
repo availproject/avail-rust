@@ -1,13 +1,11 @@
-use avail_rust::prelude::*;
+use avail_rust_client::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
 	let client = Client::new(LOCAL_ENDPOINT).await?;
 
-	let blob_hash =
-		H256::from_slice(&hex::decode("66fae1a211a6179044a9f85c2c16cbf747cdd2c19143880c690de4006768efb7").unwrap());
-	let block_hash =
-		H256::from_slice(&hex::decode("9139401fe68807814ea852d97e646a022ad07885b03a3a99ecfbb99735435824").unwrap());
+	let blob_hash = H256::from_str("0x66fae1a211a6179044a9f85c2c16cbf747cdd2c19143880c690de4006768efb7").unwrap();
+	let block_hash = H256::from_str("0x9139401fe68807814ea852d97e646a022ad07885b03a3a99ecfbb99735435824").unwrap();
 
 	//
 	// getBlob

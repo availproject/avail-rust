@@ -9,11 +9,6 @@ use avail::{
 	balances::types::AccountData,
 	system::{storage as SystemStorage, types::AccountInfo},
 };
-#[cfg(feature = "next")]
-use avail_rust_core::rpc::{
-	blob::{Blob, BlobInfo},
-	kate::DataProof,
-};
 use avail_rust_core::{
 	AccountId, AccountIdLike, AvailHeader, BlockInfo, H256, HashNumber, StorageMap, StorageValue, consensus,
 	ext::subxt_rpcs::client::RpcParams,
@@ -21,7 +16,8 @@ use avail_rust_core::{
 	header::DigestItem,
 	rpc::{
 		self, BlockPhaseEvent, Error as RpcError, ExtrinsicInfo, LegacyBlock,
-		kate::{BlockLength, Cell, GCellBlock, GDataProof, GMultiProof, GRow, ProofResponse},
+		blob::{Blob, BlobInfo},
+		kate::{BlockLength, Cell, DataProof, GCellBlock, GDataProof, GMultiProof, GRow, ProofResponse},
 		runtime_api,
 	},
 	types::{
@@ -783,7 +779,6 @@ impl Chain {
 		with_retry_on_error(f, retry).await
 	}
 
-	#[cfg(feature = "next")]
 	/// Submits a blob alongside its signed metadata transaction.
 	///
 	/// # Arguments
@@ -801,7 +796,6 @@ impl Chain {
 		Ok(with_retry_on_error(f, retry).await?)
 	}
 
-	#[cfg(feature = "next")]
 	pub async fn blob_get_blob(&self, blob_hash: H256, block_hash: Option<H256>) -> Result<Blob, Error> {
 		let retry = self.should_retry_on_error();
 
@@ -811,7 +805,6 @@ impl Chain {
 	}
 
 	/// Retrieve indexed blob info
-	#[cfg(feature = "next")]
 	pub async fn blob_get_blob_info(&self, blob_hash: H256) -> Result<BlobInfo, Error> {
 		let retry = self.should_retry_on_error();
 
@@ -822,7 +815,6 @@ impl Chain {
 
 	/// Return inclusion proof for a blob. If `at` is `Some(hash)` the proof is computed for that block,
 	/// otherwise the node will try to use its indexed finalized block for the blob.
-	#[cfg(feature = "next")]
 	pub async fn blob_inclusion_proof(&self, blob_hash: H256, at: Option<H256>) -> Result<DataProof, Error> {
 		let retry = self.should_retry_on_error();
 
