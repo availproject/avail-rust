@@ -55,7 +55,4 @@ wasm = [
 	"wasmtimer",
 	"wasm-bindgen-futures",
 ]
-next = [
-	"avail-rust-core/next",
-]
 mocks = []

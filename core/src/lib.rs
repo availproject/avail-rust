@@ -3,18 +3,11 @@ pub mod decoded_events;
 pub mod decoded_extrinsics;
 pub mod extrinsics_params;
 pub mod grandpa;
+pub mod header;
 pub mod rpc;
 pub mod substrate;
 pub mod types;
 pub mod utils;
-
-#[cfg(not(feature = "next"))]
-pub mod header;
-
-#[cfg(feature = "next")]
-pub mod header_next;
-#[cfg(feature = "next")]
-pub use header_next as header;
 
 pub use decoded_events::{TransactionEventDecodable, TransactionEventEncodable};
 pub use substrate::{

@@ -1174,7 +1174,6 @@ impl DataAvailability {
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 
-	#[cfg(feature = "next")]
 	/// Submits metadata describing an out-of-band blob.
 	///
 	/// # Arguments
