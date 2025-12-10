@@ -2,9 +2,6 @@
 
 **Avail Rust is a Rust library for communicating with Avail networks.**
 
-Additional workflow-specific guides (submission flow, retries, failure modes,
-etc.) are available in [`docs/`](../docs/README.md).
-
 ## In Action
 
 This example uses the [Tokio](https://crates.io/crates/tokio) runtime, but you
