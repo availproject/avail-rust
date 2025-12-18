@@ -624,6 +624,8 @@ pub mod data_availability {
 			pub blob_hash: H256,
 			pub size: u64,
 			pub commitments: Vec<u8>,
+			pub eval_point_seed: Option<[u8; 32]>,
+			pub eval_claim: Option<[u8; 16]>,
 		}
 		impl Encode for SubmitBlobMetadata {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -631,6 +633,8 @@ pub mod data_availability {
 				dest.write(&self.blob_hash.encode());
 				dest.write(&self.size.encode());
 				dest.write(&self.commitments.encode());
+				dest.write(&self.eval_point_seed.encode());
+				dest.write(&self.eval_claim.encode());
 			}
 		}
 		impl Decode for SubmitBlobMetadata {
@@ -639,7 +643,9 @@ pub mod data_availability {
 				let blob_hash = Decode::decode(input)?;
 				let size = Decode::decode(input)?;
 				let commitments = Decode::decode(input)?;
-				Ok(Self { app_id, blob_hash, size, commitments })
+				let eval_point_seed = Decode::decode(input)?;
+				let eval_claim = Decode::decode(input)?;
+				Ok(Self { app_id, blob_hash, size, commitments, eval_point_seed, eval_claim })
 			}
 		}
 		impl HasHeader for SubmitBlobMetadata {

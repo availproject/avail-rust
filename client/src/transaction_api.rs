@@ -1192,8 +1192,10 @@ impl DataAvailability {
 		blob_hash: H256,
 		size: u64,
 		commitments: Vec<u8>,
+		eval_point_seed: Option<[u8; 32]>,
+		eval_claim: Option<[u8; 16]>,
 	) -> SubmittableTransaction {
-		let value = avail::data_availability::tx::SubmitBlobMetadata { app_id, blob_hash, size, commitments };
+		let value = avail::data_availability::tx::SubmitBlobMetadata { app_id, blob_hash, size, commitments, eval_point_seed, eval_claim };
 		SubmittableTransaction::from_encodable(self.0.clone(), value)
 	}
 }
