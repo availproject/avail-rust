@@ -36,8 +36,8 @@ async fn main() -> Result<(), Error> {
 	// Transaction Submission
 	let submitted = submittable.sign_and_submit(&signer, Options::new(2)).await?;
 	println!(
-		"Ext Hash: {:?}, Account Id: {}, Nonce: {}, App Id: {}",
-		submitted.ext_hash, submitted.account_id, submitted.options.nonce, submitted.options.app_id
+		"Tx Hash: {:?}, Account Id: {}, Nonce: {}, App Id: {}",
+		submitted.tx_hash, submitted.account_id, submitted.options.nonce, submitted.options.app_id
 	);
 
 	// Transaction Receipt
@@ -46,8 +46,8 @@ async fn main() -> Result<(), Error> {
 		panic!("Oops, looks like our transaction was dropped")
 	};
 	println!(
-		"Block Height: {}, Block Hash: {:?}, Ext Hash: {:?}, Ext Index: {}",
-		receipt.block_height, receipt.block_hash, receipt.ext_hash, receipt.ext_index
+		"Block Height: {}, Block Hash: {:?}, Tx Hash: {:?}, Tx Index: {}",
+		receipt.block_ref.height, receipt.block_ref.hash, receipt.tx_ref.hash, receipt.tx_ref.index
 	);
 
 	let block_state = receipt.block_state().await?;
@@ -137,5 +137,6 @@ your idea in the
 [issues](https://github.com/availproject/avail-rust/issues).
 
 # License
+
 This project is primarily distributed under the terms of MIT license.
-See [LICENSE](https://github.com/availproject/avail-rust/blob/main/LICENSE) 
+See [LICENSE](https://github.com/availproject/avail-rust/blob/main/LICENSE)
