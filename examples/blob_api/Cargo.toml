@@ -1,0 +1,8 @@
+[package]
+name = "blob-api-example"
+edition = "2024"
+
+[dependencies]
+avail-rust = { package = "avail-rust-client", path = "./../../client", default-features = false, features = ["native", "reqwest"] }
+hex = "0.4.3"
+tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
