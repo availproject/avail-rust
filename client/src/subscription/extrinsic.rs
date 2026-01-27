@@ -216,38 +216,68 @@ impl EncodedExtrinsicSub {
 		Self { sub: Sub::new(client), opts }
 	}
 
-	/// Returns the next batch of raw extrinsics and its block metadata.
+	/// Returns the next batch of raw extrinsics matching the configured filters.
+	///
+	/// This function automatically skips blocks with empty extrinsic lists and continues searching
+	/// until a block with extrinsics is found. For direct access to all blocks (including those with empty extrinsics),
+	/// use [`EncodedExtrinsicSub::next_step`].
 	///
 	/// # Returns
 	/// - `Ok(EncodedExtrinsicSubValue)` with at least one element when a block matches the
-	///   filter.
+	///   configured filters.
 	/// - `Err(crate::Error)` when fetching fails; the cursor rewinds to retry the same block on the next
 	///   call.
+	///
+	/// # Behavior
+	/// - Blocks with empty extrinsic lists are automatically skipped
+	/// - The function will continue to the next block until extrinsics are found
+	/// - On RPC failure, the cursor is rewound to allow retrying the same block
+	///
+	/// # Errors
+	/// Returns `Err(crate::Error)` when the underlying RPC request fails.
 	pub async fn next(&mut self) -> Result<EncodedExtrinsicSubValue, crate::Error> {
 		loop {
-			let info = self.sub.next().await?;
-			let mut block = Block::new(self.sub.client_ref().clone(), info.hash).encoded();
-			block.set_retry_on_error(Some(self.sub.should_retry_on_error()));
-
-			let extrinsics = match block.all(self.opts.clone()).await {
-				Ok(x) => x,
-				Err(err) => {
-					// Revet block height if we fail to fetch transactions
-					self.sub.set_block_height(info.height);
-					return Err(err);
-				},
-			};
-
-			if extrinsics.is_empty() {
+			let extrinsics = self.next_step().await?;
+			if extrinsics.list.is_empty() {
 				continue;
 			}
 
-			return Ok(EncodedExtrinsicSubValue {
-				list: extrinsics,
-				block_hash: info.hash,
-				block_height: info.height,
-			});
+			return Ok(extrinsics);
 		}
+	}
+
+	/// Fetches the next block's raw extrinsics without filtering empty results.
+	///
+	/// This is a lower-level function that returns raw extrinsic payloads for the next block
+	/// regardless of whether the extrinsic list is empty. Use [`EncodedExtrinsicSub::next`] for
+	/// automatic filtering of empty extrinsic lists.
+	///
+	/// # Returns
+	/// - `Ok(EncodedExtrinsicSubValue)` containing the block's raw extrinsics, height, and hash.
+	/// - `Err(crate::Error)` when the RPC request fails; the internal cursor rewinds so the block can be
+	///   retried.
+	///
+	/// # Errors
+	/// Returns `Err(crate::Error)` when the underlying RPC request to fetch raw extrinsics fails.
+	pub async fn next_step(&mut self) -> Result<EncodedExtrinsicSubValue, crate::Error> {
+		let info = self.sub.next().await?;
+		let mut block = Block::new(self.sub.client_ref().clone(), info.hash).encoded();
+		block.set_retry_on_error(Some(self.sub.should_retry_on_error()));
+
+		let extrinsics = match block.all(self.opts.clone()).await {
+			Ok(x) => x,
+			Err(err) => {
+				// Revet block height if we fail to fetch transactions
+				self.sub.set_block_height(info.height);
+				return Err(err);
+			},
+		};
+
+		return Ok(EncodedExtrinsicSubValue {
+			list: extrinsics,
+			block_hash: info.hash,
+			block_height: info.height,
+		});
 	}
 
 	pub fn set_opts(&mut self, value: block::extrinsic_options::Options) {
