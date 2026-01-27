@@ -246,37 +246,63 @@ impl BlockEventsSub {
 		Self { sub: Sub::new(client), opts }
 	}
 
-	/// Fetches the next block with matching events; rewinds on RPC failure.
+	/// Fetches the next block with events matching the configured filters.
+	///
+	/// This function automatically skips blocks with empty event lists and continues searching
+	/// until a block with events is found. For direct access to all blocks (including those with empty events),
+	/// use [`BlockEventsSub::next_step`].
 	///
 	/// # Returns
-	/// - `Ok(BlockEventsSubResult)` when events matching the configured filters are found.
+	/// - `Ok(BlockEventsSubValue)` when a block with events matching the configured filters is found.
 	/// - `Err(crate::Error)` when the RPC request fails; the internal cursor rewinds so the block can be
 	///   retried.
 	///
-	/// Empty event lists are skipped automatically.
+	/// # Behavior
+	/// - Blocks with empty event lists are automatically skipped
+	/// - The function will continue to the next block until events are found
+	/// - On RPC failure, the cursor is rewound to allow retrying the same block
+	///
+	/// # Errors
+	/// Returns `Err(crate::Error)` when the underlying RPC request fails.
 	pub async fn next(&mut self) -> Result<BlockEventsSubValue, crate::Error> {
 		loop {
-			let info = self.sub.next().await?;
-			let block = BlockEventsQuery::new(self.sub.client_ref().clone(), info.hash);
-			let events = match block.raw(self.opts.clone()).await {
-				Ok(x) => x,
-				Err(err) => {
-					// Revet block height if we fail to fetch events
-					self.sub.set_block_height(info.height);
-					return Err(err);
-				},
-			};
-
-			if events.is_empty() {
+			let events = self.next_step().await?;
+			if events.list.is_empty() {
 				continue;
 			}
-
-			return Ok(BlockEventsSubValue {
-				list: events,
-				block_height: info.height,
-				block_hash: info.hash,
-			});
+			return Ok(events);
 		}
+	}
+
+	/// Fetches the next block's events without filtering empty results.
+	///
+	/// This is a lower-level function that returns events for the next block regardless of whether
+	/// the event list is empty. Use [`BlockEventsSub::next`] for automatic filtering of empty event lists.
+	///
+	/// # Returns
+	/// - `Ok(BlockEventsSubValue)` containing the block's events, height, and hash.
+	/// - `Err(crate::Error)` when the RPC request fails; the internal cursor rewinds so the block can be
+	///   retried.
+	///
+	/// # Errors
+	/// Returns `Err(crate::Error)` when the underlying RPC request to fetch block events fails.
+	pub async fn next_step(&mut self) -> Result<BlockEventsSubValue, crate::Error> {
+		let info = self.sub.next().await?;
+		let block = BlockEventsQuery::new(self.sub.client_ref().clone(), info.hash);
+		let events = match block.raw(self.opts.clone()).await {
+			Ok(x) => x,
+			Err(err) => {
+				// Revet block height if we fail to fetch events
+				self.sub.set_block_height(info.height);
+				return Err(err);
+			},
+		};
+
+		return Ok(BlockEventsSubValue {
+			list: events,
+			block_height: info.height,
+			block_hash: info.hash,
+		});
 	}
 
 	/// Replaces the filter options applied to subsequent `next` calls.
