@@ -47,7 +47,7 @@ pub use avail_rust_core::{
 	ExtrinsicCall, ExtrinsicDecodable, ExtrinsicExtra, ExtrinsicSignature, HasHeader, HashNumber, HeaderExtension,
 	KateCommitment, MultiAddress, RpcError, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap,
 	StorageMapIterator, StorageValue, TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
-	ext::{codec, primitive_types, scale_info, subxt_core, subxt_rpcs, subxt_signer},
+	ext::{codec, primitive_types, scale_info, scale_value, subxt_core, subxt_metadata, subxt_rpcs, subxt_signer},
 	grandpa::GrandpaJustification,
 	multi_account_id,
 	rpc::LegacyBlock,

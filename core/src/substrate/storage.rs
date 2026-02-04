@@ -572,3 +572,17 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 		Ok(Some(storage_value))
 	}
 }
+
+#[derive(Debug, Clone)]
+pub struct EncodedData(pub Vec<u8>);
+impl Decode for EncodedData {
+	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let mut buf = Vec::new();
+
+		while let Ok(byte) = input.read_byte() {
+			buf.push(byte);
+		}
+
+		Ok(EncodedData(buf))
+	}
+}

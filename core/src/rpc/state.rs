@@ -1,5 +1,7 @@
 use super::Error;
+use codec::Decode;
 use primitive_types::H256;
+use subxt_metadata::Metadata;
 use subxt_rpcs::{RpcClient, methods::legacy::RuntimeVersion, rpc_params};
 
 pub async fn call(client: &RpcClient, method: &str, data: &[u8], at: Option<H256>) -> Result<String, Error> {
@@ -7,6 +9,13 @@ pub async fn call(client: &RpcClient, method: &str, data: &[u8], at: Option<H256
 	let params = rpc_params![method, data, at];
 	let value = client.request("state_call", params).await?;
 	Ok(value)
+}
+
+pub async fn get_metadata(client: &RpcClient, at: Option<H256>) -> Result<Metadata, Error> {
+	let res: Vec<u8> = get_metadata_bytes(client, at).await?;
+	let mut slice = res.as_slice();
+	let metadata = Metadata::decode(&mut slice);
+	metadata.map_err(|e| Error::DecodingFailed(e.to_string()))
 }
 
 pub async fn get_storage(client: &RpcClient, key: &str, at: Option<H256>) -> Result<Option<Vec<u8>>, Error> {
@@ -32,7 +41,7 @@ pub async fn get_keys_paged(
 	Ok(value)
 }
 
-pub async fn get_metadata(client: &RpcClient, at: Option<H256>) -> Result<Vec<u8>, Error> {
+pub async fn get_metadata_bytes(client: &RpcClient, at: Option<H256>) -> Result<Vec<u8>, Error> {
 	let value: String = client.request("state_getMetadata", rpc_params![at]).await?;
 	let value = const_hex::decode(value.trim_start_matches("0x"));
 	let value = value.map_err(Error::from)?;
