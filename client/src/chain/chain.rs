@@ -16,6 +16,7 @@ use avail_rust_core::rpc::{
 };
 use avail_rust_core::{
 	AccountId, AccountIdLike, AvailHeader, BlockInfo, H256, HashNumber, StorageMap, StorageValue, consensus,
+	decoded_events::{EncodedEvent, parse_encoded_events},
 	ext::subxt_rpcs::client::RpcParams,
 	grandpa::GrandpaJustification,
 	header::DigestItem,
@@ -116,6 +117,30 @@ impl Chain {
 
 		let f = || async move { rpc::chain::get_block(&self.client.rpc_client, at).await };
 		with_retry_on_error_and_none(f, retry, retry_on_none).await
+	}
+
+	/// Fetches events from storage and then it tries to parse them
+	pub async fn legacy_block_events(&self, at: H256) -> Result<Vec<EncodedEvent>, Error> {
+		let retry = self.should_retry_on_error();
+
+		let metadata = self.block_metadata(Some(at)).await?;
+		let f = || async move { avail::system::storage::Events::fetch(&self.client.rpc_client, Some(at)).await };
+		let bytes = with_retry_on_error(f, retry)
+			.await?
+			.ok_or(Error::Other(String::from("Failed to fetch events")))?;
+
+		parse_encoded_events(&metadata, &bytes.0).ok_or(Error::Other(String::from("Failed to parse encoded events")))
+	}
+
+	/// Fetches block metadata
+	pub async fn block_metadata(
+		&self,
+		at: Option<H256>,
+	) -> Result<avail_rust_core::ext::subxt_metadata::Metadata, RpcError> {
+		let retry = self.should_retry_on_error();
+
+		let f = || async move { rpc::state::get_metadata(&self.client.rpc_client, at).await };
+		with_retry_on_error(f, retry).await
 	}
 
 	/// Looks up an account nonce at a particular block.
@@ -551,7 +576,7 @@ impl Chain {
 	pub async fn state_get_metadata(&self, at: Option<H256>) -> Result<Vec<u8>, RpcError> {
 		let retry = self.should_retry_on_error();
 
-		let f = || async move { rpc::state::get_metadata(&self.client.rpc_client, at).await };
+		let f = || async move { rpc::state::get_metadata_bytes(&self.client.rpc_client, at).await };
 		with_retry_on_error(f, retry).await
 	}
 
