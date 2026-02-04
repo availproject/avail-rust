@@ -48,6 +48,7 @@ tracing-subscriber = { version = "0.3", default-features = false }
 scale-info = { version = "2.11", default-features = false, features = ["bit-vec"] }
 scale-decode = { version = "0.16", default-features = false }
 scale-encode = { version = "0.10", default-features = false }
+scale-value = { version = "0.18", default-features = false }
 
 frame-metadata = {  version = "20.0", default-features = false }
 sp-crypto-hashing = { version = "0.1", default-features = false }
@@ -56,6 +57,7 @@ sp-crypto-hashing = { version = "0.1", default-features = false }
 subxt-core = { version = "0.41", default-features = false }
 subxt-signer = { version = "0.41", default-features = false, features = ["sr25519", "subxt"] }
 subxt-rpcs = { version = "0.41", default-features = false }
+subxt-metadata = { version = "0.41", default-features = false }
 thiserror = { version = "2.0", default-features = false }
 
 # Enabled with reqwest

@@ -1,5 +1,8 @@
 use crate::{HasHeader, types::metadata::StringOrBytes};
 use codec::{Decode, Encode};
+use scale_value::{Composite, Value, ValueDef, scale::decode_as_type};
+use subxt_core::events::Phase;
+use subxt_metadata::{Metadata, StorageEntryType};
 
 pub trait TransactionEventEncodable {
 	/// SCALE encodes the event
@@ -72,74 +75,127 @@ pub(crate) fn check_header(data: &[u8], header_index: (u8, u8)) -> Result<(), St
 	Ok(())
 }
 
-/* /// Contains only the event body. Phase and topics are not included here.
-#[derive(Debug, Clone)]
-pub struct RawEvent(pub Vec<u8>);
+pub fn parse_encoded_events(metadata: &Metadata, mut raw_bytes: &[u8]) -> Option<Vec<EncodedEvent>> {
+	let system = metadata.pallet_by_name("System").unwrap();
+	let events = system.storage().unwrap().entry_by_name("Events").unwrap();
 
-impl RawEvent {
-	pub fn pallet_index(&self) -> u8 {
-		self.0[0]
-	}
+	let type_id = match events.entry_type() {
+		StorageEntryType::Plain(ty) => *ty,
+		_ => return None,
+	};
 
-	pub fn variant_index(&self) -> u8 {
-		self.0[1]
-	}
+	let registry = metadata.types();
+	let value = decode_as_type(&mut raw_bytes, type_id, registry).unwrap();
 
-	pub fn event_data(&self) -> &[u8] {
-		if self.0.len() <= 2 { &[] } else { &self.0[2..] }
-	}
-}
+	let ValueDef::Composite(x) = &value.value else {
+		return None;
+	};
 
-impl TryFrom<String> for RawEvent {
-	type Error = String;
+	let mut encoded_events = Vec::new();
+	let values = x.values();
+	for val in values {
+		let ValueDef::Composite(x) = &val.value else {
+			return None;
+		};
 
-	fn try_from(value: String) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_str())
-	}
-}
+		if let Composite::Named(x) = x {
+			let mut event = EncodedEvent::default();
+			for som in x {
+				if som.0 == "phase" {
+					event.encoded_phase = Some(som.1.clone());
+				}
 
-impl TryFrom<&String> for RawEvent {
-	type Error = String;
+				if som.0 == "event" {
+					event.encoded_event = Some(som.1.clone());
+				}
 
-	fn try_from(value: &String) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_str())
-	}
-}
-
-impl TryFrom<&str> for RawEvent {
-	type Error = String;
-
-	fn try_from(value: &str) -> Result<Self, Self::Error> {
-		let value = const_hex::decode(value).map_err(|x| x.to_string())?;
-		Self::try_from(value)
-	}
-}
-
-impl TryFrom<Vec<u8>> for RawEvent {
-	type Error = String;
-
-	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
-
-impl TryFrom<&Vec<u8>> for RawEvent {
-	type Error = String;
-
-	fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_slice())
-	}
-}
-
-impl TryFrom<&[u8]> for RawEvent {
-	type Error = String;
-
-	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		if value.len() < 2 {
-			return Err("Event must have more than one byte".into());
+				if som.0 == "topics" {
+					event.encoded_topics = Some(som.1.clone());
+				}
+			}
+			encoded_events.push(event);
 		}
+	}
 
-		Ok(RawEvent(value.to_owned()))
+	Some(encoded_events)
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct EncodedEvent {
+	pub encoded_phase: Option<Value<u32>>,
+	pub encoded_event: Option<Value<u32>>,
+	pub encoded_topics: Option<Value<u32>>,
+}
+
+impl EncodedEvent {
+	pub fn decode_phase(&self) -> Option<Phase> {
+		let Some(value) = self.encoded_phase.as_ref() else {
+			return None;
+		};
+
+		decode_phase(value)
+	}
+
+	pub fn decode_pallet_variant_name(&self) -> Option<(String, String)> {
+		let Some(value) = self.encoded_event.as_ref() else {
+			return None;
+		};
+
+		decode_pallet_variant_name(value)
 	}
 }
- */
+
+pub fn decode_phase(value: &Value<u32>) -> Option<Phase> {
+	let ValueDef::Variant(value) = &value.value else {
+		return None;
+	};
+
+	if value.name == "Initialization" {
+		return Some(Phase::Initialization);
+	}
+	if value.name == "Finalization" {
+		return Some(Phase::Finalization);
+	}
+	if !(value.name == "ApplyExtrinsic") {
+		return None;
+	}
+
+	let values = match &value.values {
+		Composite::Named(_) => return None,
+		Composite::Unnamed(values) => values,
+	};
+	let Some(value) = values.get(0) else {
+		return None;
+	};
+
+	let Some(ext_index) = value.as_u128() else {
+		return None;
+	};
+
+	Some(Phase::ApplyExtrinsic(ext_index as u32))
+}
+
+/// Return pallet and variant name
+pub fn decode_pallet_variant_name(value: &Value<u32>) -> Option<(String, String)> {
+	let ValueDef::Variant(value) = &value.value else {
+		return None;
+	};
+
+	let pallet_name = value.name.clone();
+
+	let Composite::Unnamed(values) = &value.values else {
+		return None;
+	};
+
+	let Some(value) = values.get(0) else {
+		return None;
+	};
+
+	let ValueDef::Variant(value) = &value.value else {
+		return None;
+	};
+
+	let variant_name = value.name.clone();
+
+	Some((pallet_name, variant_name))
+}

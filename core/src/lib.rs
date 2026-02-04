@@ -25,13 +25,22 @@ pub use types::{
 };
 pub use utils::multi_account_id;
 
+pub use scale_info;
+pub use scale_value;
+pub use subxt_core;
+pub use subxt_metadata;
+pub use subxt_rpcs;
+pub use subxt_signer;
+
 pub mod ext {
 	pub use codec;
 	pub use const_hex;
 	pub use primitive_types;
 	pub use scale_info;
+	pub use scale_value;
 	pub use sp_crypto_hashing;
 	pub use subxt_core;
+	pub use subxt_metadata;
 	pub use subxt_rpcs;
 	pub use subxt_signer;
 }

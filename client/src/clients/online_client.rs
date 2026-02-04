@@ -31,7 +31,7 @@ impl OnlineClient {
 	/// Propagates any underlying [`RpcError`] raised while querying the node or decoding metadata.
 	pub async fn new(rpc_client: &RpcClient) -> Result<Self, RpcError> {
 		let finalized_hash = rpc::chain::get_finalized_head(rpc_client).await?;
-		let rpc_metadata = rpc::state::get_metadata(rpc_client, Some(finalized_hash)).await?;
+		let rpc_metadata = rpc::state::get_metadata_bytes(rpc_client, Some(finalized_hash)).await?;
 		let genesis_hash = rpc::chainspec::v1_genesishash(rpc_client).await?;
 		let runtime_version = rpc::state::get_runtime_version(rpc_client, Some(finalized_hash)).await?;
 

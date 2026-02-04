@@ -3436,6 +3436,7 @@ pub mod system {
 
 	pub mod storage {
 		use super::{system::types::AccountInfo, *};
+		use crate::substrate::storage::EncodedData;
 
 		pub struct Account;
 		impl StorageMap for Account {
@@ -3461,6 +3462,14 @@ pub mod system {
 
 			const PALLET_NAME: &str = "System";
 			const STORAGE_NAME: &str = "BlockWeight";
+		}
+
+		pub struct Events;
+		impl StorageValue for Events {
+			type VALUE = EncodedData;
+
+			const PALLET_NAME: &str = "System";
+			const STORAGE_NAME: &str = "Events";
 		}
 	}
 
