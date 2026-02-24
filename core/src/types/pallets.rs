@@ -645,7 +645,14 @@ pub mod data_availability {
 				let commitments = Decode::decode(input)?;
 				let eval_point_seed = Decode::decode(input)?;
 				let eval_claim = Decode::decode(input)?;
-				Ok(Self { app_id, blob_hash, size, commitments, eval_point_seed, eval_claim })
+				Ok(Self {
+					app_id,
+					blob_hash,
+					size,
+					commitments,
+					eval_point_seed,
+					eval_claim,
+				})
 			}
 		}
 		impl HasHeader for SubmitBlobMetadata {
