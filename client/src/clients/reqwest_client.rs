@@ -28,12 +28,6 @@ pub struct RequestSer<'a> {
 impl RequestSer<'_> {
 	/// Create a owned serializable JSON-RPC method call.
 	///
-	/// # Arguments
-	/// * `id` - Request identifier encoded in the payload.
-	/// * `method` - JSON-RPC method name.
-	/// * `params` - Optional JSON parameters for the call.
-	///
-	/// # Returns
 	/// Returns a [`RequestSer`] capturing the supplied JSON-RPC fields.
 	pub fn owned(id: u64, method: impl Into<String>, params: Option<Box<RawValue>>) -> Self {
 		Self {
@@ -70,10 +64,6 @@ pub struct ReqwestClient {
 impl ReqwestClient {
 	/// Creates a new JSON-RPC client targeting the provided endpoint.
 	///
-	/// # Arguments
-	/// * `endpoint` - HTTP URL of the JSON-RPC server.
-	///
-	/// # Returns
 	/// Returns a client that spawns an internal worker for request execution.
 	///
 	/// # Examples
@@ -172,11 +162,11 @@ impl RpcClientT for ReqwestClient {
 				Err(err) => return Err(subxt_rpcs::Error::Client(Box::new(err))),
 			};
 
-			if let Some(Some(response_id)) = response.get("id").map(|x| x.as_u64()) {
-				if request_id != response_id {
-					let err = ResponseError("Not Pending Request".into());
-					return Err(subxt_rpcs::Error::Client(Box::new(err)));
-				}
+			if let Some(Some(response_id)) = response.get("id").map(|x| x.as_u64())
+				&& request_id != response_id
+			{
+				let err = ResponseError("Not Pending Request".into());
+				return Err(subxt_rpcs::Error::Client(Box::new(err)));
 			}
 			if let Some(err) = response.get("error") {
 				// TODO error message looks like this  "{\"code\":-32601,\"message\":\"Method not found\"}"

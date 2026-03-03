@@ -10,18 +10,17 @@ pub mod types;
 pub mod utils;
 
 pub use decoded_events::{TransactionEventDecodable, TransactionEventEncodable};
-pub use substrate::{
-	EXTRINSIC_FORMAT_VERSION, ExtrinsicAdditional, ExtrinsicCall, ExtrinsicPayload, GenericExtrinsic, StorageDoubleMap,
-	StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
-};
 
-pub use decoded_extrinsics::{EncodedExtrinsic, Extrinsic, ExtrinsicDecodable, HasHeader};
+pub use decoded_extrinsics::{ExtrinsicDecodable, HasHeader};
 pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
-pub use rpc::{EncodeSelector, Error as RpcError};
+pub use rpc::{DataFormat, Error as RpcError};
+pub use substrate::{
+	Extension, ExtensionImplicit, Extrinsic, ExtrinsicBorrowed, ExtrinsicCall, ExtrinsicCallBorrowed, SignedPayload,
+};
 pub use types::{
-	AccountId, AccountIdLike, BlakeTwo256, BlockHash, BlockInfo, Era, ExtrinsicExtra, ExtrinsicSignature, H256,
-	HashNumber, MultiAddress, MultiSignature, U256, pallets as avail,
+	AccountId, AccountIdLike, BlakeTwo256, BlockHash, BlockInfo, Era, H256, HashNumber, MultiAddress, MultiSignature,
+	U256, pallets as avail,
 };
 pub use utils::multi_account_id;
 

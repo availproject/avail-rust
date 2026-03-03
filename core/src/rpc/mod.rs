@@ -2,6 +2,7 @@ pub mod author;
 pub mod blob;
 pub mod chain;
 pub mod chainspec;
+pub mod custom;
 pub mod error;
 pub mod grandpa;
 pub mod kate;
@@ -14,11 +15,8 @@ pub use error::Error;
 
 pub use super::AvailHeader;
 pub use chain::{Block, BlockJustification, LegacyBlock};
+pub use custom::{AllowedEvents, AllowedExtrinsic, DataFormat, Extrinsic, PhaseEvents, RuntimeEvent, SignatureFilter};
 use subxt_rpcs::{RpcClient, client::RpcParams};
-pub use system::{
-	fetch_events::{BlockPhaseEvent, Filter as EventFilter, Options as EventOpts, PhaseEvent},
-	fetch_extrinsics::{EncodeSelector, ExtrinsicFilter, ExtrinsicInfo, Options as ExtrinsicOpts, SignerPayload},
-};
 
 pub async fn raw_call<T: serde::de::DeserializeOwned>(
 	client: &RpcClient,

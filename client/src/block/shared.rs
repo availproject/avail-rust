@@ -1,79 +1,68 @@
-use avail_rust_core::{AvailHeader, H256, HashNumber, rpc::ExtrinsicInfo, types::HashStringNumber};
+use avail_rust_core::{
+	AvailHeader, H256, HashNumber,
+	rpc::{self},
+	types::HashStringNumber,
+};
 
-use crate::{Client, Error, UserError, chain::Chain, conversions};
+use crate::{Client, Error, RetryPolicy, chain::Chain, error_ops};
 
-/// Fetches the block header for the provided identifier.
-///
-/// # Parameters
-/// - `client`: RPC client used to perform the header query.
-/// - `block_id`: Hash or number identifying the target block.
-///
-/// # Returns
-/// - `Ok(AvailHeader)`: Header returned by the node.
-/// - `Err(Error)`: The RPC call failed or the block could not be resolved.
-///
-/// # Side Effects
-/// - Performs an RPC call through the client's chain interface.
+/// Shared block query context used by block helpers.
 #[derive(Clone)]
 pub struct BlockContext {
 	/// Client handle used for follow-up RPC calls.
 	pub client: Client,
 	/// Hash or number identifying the target block.
 	pub block_id: HashStringNumber,
-	retry_on_error: Option<bool>,
+	retry_on_error: RetryPolicy,
 }
 
 impl BlockContext {
-	/// Creates a new block context for the provided identifier.
-	///
-	/// # Arguments
-	/// * `client` - Client used to perform subsequent RPC calls.
-	/// * `block_id` - Hash or number identifying the target block.
+	/// Creates a new block context for a hash/height identifier.
 	pub fn new(client: Client, block_id: HashStringNumber) -> Self {
-		Self { client, block_id, retry_on_error: None }
+		Self { client, block_id, retry_on_error: RetryPolicy::Inherit }
 	}
 
-	/// Overrides the retry policy for follow-up RPC calls.
-	///
-	/// # Arguments
-	/// * `value` - `Some(true)` to force retries, `Some(false)` to disable retries, `None` to inherit defaults.
-	pub fn set_retry_on_error(&mut self, value: Option<bool>) {
+	/// Sets retry behavior for follow-up RPC calls.
+	pub fn set_retry_policy(&mut self, value: RetryPolicy) {
 		self.retry_on_error = value;
 	}
 
-	/// Reports whether RPC calls should retry after errors.
-	///
-	/// # Returns
-	/// Returns `true` when retries are enabled, otherwise `false`.
+	/// Returns whether RPC calls retry after errors.
 	pub fn should_retry_on_error(&self) -> bool {
 		self.retry_on_error
-			.unwrap_or_else(|| self.client.is_global_retries_enabled())
+			.resolve(self.client.retry_policy() != RetryPolicy::Disabled)
+	}
+
+	/// Returns effective retry policy (`Enabled` or `Disabled`).
+	pub fn retry_policy(&self) -> RetryPolicy {
+		if self.should_retry_on_error() {
+			RetryPolicy::Enabled
+		} else {
+			RetryPolicy::Disabled
+		}
 	}
 
 	/// Resolves the stored identifier into a [`HashNumber`].
-	///
-	/// # Returns
-	/// Returns the resolved `HashNumber` or an error if conversion fails.
 	pub fn hash_number(&self) -> Result<HashNumber, Error> {
-		conversions::hash_string_number::to_hash_number(self.block_id.clone())
+		HashNumber::from_impl(self.block_id.clone())
+			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::BlockSharedHashNumber, e))
 	}
 
 	/// Returns a chain helper configured with the current retry policy.
 	pub fn chain(&self) -> Chain {
-		self.client.chain().retry_on(self.retry_on_error, None)
+		self.client
+			.chain()
+			.retry_policy(self.retry_on_error, RetryPolicy::Inherit)
 	}
 
 	/// Fetches the block header associated with this context.
-	///
-	/// # Returns
-	/// Returns the header or an error when the block cannot be resolved.
 	pub async fn header(&self) -> Result<AvailHeader, Error> {
 		let header = self.chain().block_header(Some(self.block_id.clone())).await?;
 		let Some(header) = header else {
-			return Err(Error::User(UserError::Other(std::format!(
-				"No block header found for block id: {}",
-				self.block_id
-			))));
+			return Err(Error::not_found_with_op(
+				error_ops::ErrorOperation::BlockSharedHeader,
+				std::format!("No block header found for block id: {}", self.block_id),
+			));
 		};
 
 		Ok(header)
@@ -81,7 +70,6 @@ impl BlockContext {
 
 	/// Counts the events emitted by the block referenced by this context.
 	///
-	/// # Returns
 	/// Returns the number of events or an error when the RPC call fails.
 	pub async fn event_count(&self) -> Result<usize, Error> {
 		self.chain().block_event_count(self.block_id.clone()).await
@@ -106,28 +94,14 @@ pub struct BlockExtrinsicMetadata {
 impl BlockExtrinsicMetadata {
 	/// Wraps metadata about an extrinsic inside a block.
 	///
-	/// # Parameters
-	/// - `ext_hash`: Hash of the extrinsic.
-	/// - `ext_index`: Index of the extrinsic within the block.
-	/// - `pallet_id`: Pallet identifier associated with the call.
-	/// - `variant_id`: Variant identifier within the pallet.
-	/// - `block_id`: Hash or number of the block containing the extrinsic.
-	///
-	/// # Returns
-	/// - `Self`: Metadata wrapper encapsulating the supplied values.
 	pub fn new(ext_hash: H256, ext_index: u32, pallet_id: u8, variant_id: u8, block_id: HashNumber) -> Self {
 		Self { ext_hash, ext_index, pallet_id, variant_id, block_id }
 	}
 
 	/// Builds metadata from RPC extrinsic information.
 	///
-	/// # Arguments
-	/// * `info` - RPC result describing an extrinsic.
-	/// * `block_id` - Hash or number identifying the block containing the extrinsic.
-	///
-	/// # Returns
 	/// Returns a metadata wrapper encapsulating the provided information.
-	pub fn from_extrinsic_info(info: &ExtrinsicInfo, block_id: HashNumber) -> Self {
-		Self::new(info.ext_hash, info.ext_index, info.pallet_id, info.variant_id, block_id)
+	pub fn from_rpc_extrinsic(ext: &rpc::Extrinsic, block_id: HashNumber) -> Self {
+		Self::new(ext.ext_hash, ext.ext_index, ext.pallet_id, ext.variant_id, block_id)
 	}
 }

@@ -47,7 +47,7 @@ impl<T: HasHeader + Decode> TransactionEventDecodable for T {
 			check_header(event, T::HEADER_INDEX)?;
 
 			let mut data = if event.len() <= 2 { &[] } else { &event[2..] };
-			Ok(T::decode(&mut data).map_err(|x| x.to_string())?)
+			T::decode(&mut data).map_err(|x| x.to_string())
 		}
 
 		inner(event.into())
@@ -129,17 +129,13 @@ pub struct EncodedEvent {
 
 impl EncodedEvent {
 	pub fn decode_phase(&self) -> Option<Phase> {
-		let Some(value) = self.encoded_phase.as_ref() else {
-			return None;
-		};
+		let value = self.encoded_phase.as_ref()?;
 
 		decode_phase(value)
 	}
 
 	pub fn decode_pallet_variant_name(&self) -> Option<(String, String)> {
-		let Some(value) = self.encoded_event.as_ref() else {
-			return None;
-		};
+		let value = self.encoded_event.as_ref()?;
 
 		decode_pallet_variant_name(value)
 	}
@@ -156,7 +152,7 @@ pub fn decode_phase(value: &Value<u32>) -> Option<Phase> {
 	if value.name == "Finalization" {
 		return Some(Phase::Finalization);
 	}
-	if !(value.name == "ApplyExtrinsic") {
+	if value.name != "ApplyExtrinsic" {
 		return None;
 	}
 
@@ -164,13 +160,9 @@ pub fn decode_phase(value: &Value<u32>) -> Option<Phase> {
 		Composite::Named(_) => return None,
 		Composite::Unnamed(values) => values,
 	};
-	let Some(value) = values.get(0) else {
-		return None;
-	};
 
-	let Some(ext_index) = value.as_u128() else {
-		return None;
-	};
+	let value = values.first()?;
+	let ext_index = value.as_u128()?;
 
 	Some(Phase::ApplyExtrinsic(ext_index as u32))
 }
@@ -187,9 +179,7 @@ pub fn decode_pallet_variant_name(value: &Value<u32>) -> Option<(String, String)
 		return None;
 	};
 
-	let Some(value) = values.get(0) else {
-		return None;
-	};
+	let value = values.first()?;
 
 	let ValueDef::Variant(value) = &value.value else {
 		return None;

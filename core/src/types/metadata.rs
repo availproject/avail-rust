@@ -48,6 +48,12 @@ pub enum HashNumber {
 	Number(u32),
 }
 
+impl HashNumber {
+	pub fn from_impl(value: impl Into<HashStringNumber>) -> Result<Self, String> {
+		Self::try_from(value.into())
+	}
+}
+
 impl From<BlockInfo> for HashNumber {
 	fn from(value: BlockInfo) -> Self {
 		Self::Hash(value.hash)

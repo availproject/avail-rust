@@ -10,13 +10,17 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let client = Client::new(TURING_ENDPOINT).await?;
+//!     let client = Client::connect(TURING_ENDPOINT).await?;
 //!     let best = client.best().block_header().await?;
 //!     println!("Best block: {:?}", best.hash());
 //!     Ok(())
 //! }
 //! ```
 
+#[macro_use]
+mod macros;
+
+pub mod account;
 pub mod block;
 pub mod chain;
 pub mod client;
@@ -25,41 +29,58 @@ pub mod config;
 pub mod constants;
 pub mod conversions;
 pub mod error;
+pub mod error_ops;
 pub mod extensions;
 pub mod platform;
+pub mod retry_policy;
 pub mod submission;
 pub mod subscription;
 pub mod transaction_api;
 pub mod transaction_options;
 pub mod utils;
 
+pub use chain::{Head, HeadKind};
 pub use client::Client;
+#[cfg(feature = "reqwest")]
+pub use client::ConnectionOptions;
+#[cfg(feature = "tracing")]
+pub use client::TracingFormat;
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, ONE_AVAIL, ONE_HUNDRED_AVAIL,
-	ONE_THOUSAND_AVAIL, TEN_AVAIL, TURING_ENDPOINT, TURING_WS_ENDPOINT,
+	ONE_THOUSAND_AVAIL, TEN_AVAIL, THOUSAND_AVAIL, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
-pub use extensions::{AccountIdExt, H256Ext, KeypairExt, SecretUriExt};
-pub use submission::{BlockState, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
-pub use transaction_options::{MortalityOption, Options, RefinedMortality, RefinedOptions};
+pub use extensions::{AccountIdExt, H256Ext};
+pub use retry_policy::RetryPolicy;
+pub use submission::{BlockState, SubmissionOutcome, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
+pub use subscription::{BlockQueryMode, Fetcher, SubscribeApi, Subscription, SubscriptionBuilder, SubscriptionItem};
+pub use transaction_options::{Mortality, MortalityOption, Options};
 
+pub use account::Account;
 pub use avail_rust_core::{
-	self, AccountId, AvailHeader, BlockInfo, CompactDataLookup, EncodeSelector, EncodedExtrinsic, Extrinsic,
-	ExtrinsicCall, ExtrinsicDecodable, ExtrinsicExtra, ExtrinsicSignature, HasHeader, HashNumber, HeaderExtension,
-	KateCommitment, MultiAddress, RpcError, StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap,
-	StorageMapIterator, StorageValue, TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
+	self, AccountId, AvailHeader, BlockInfo, CompactDataLookup, DataFormat, Extension, ExtensionImplicit, Extrinsic,
+	ExtrinsicCall, ExtrinsicDecodable, HasHeader, HashNumber, HeaderExtension, KateCommitment, MultiAddress, RpcError,
+	TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
 	ext::{codec, primitive_types, scale_info, scale_value, subxt_core, subxt_metadata, subxt_rpcs, subxt_signer},
 	grandpa::GrandpaJustification,
 	multi_account_id,
 	rpc::LegacyBlock,
+	substrate::{
+		StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
+	},
 };
 pub use constants::dev_accounts;
-pub use error::{Error, UserError};
+pub use error::{Error, ErrorCode, UserError};
+pub use error_ops::*;
 pub use primitive_types::{H256, U256};
-pub use subscription::Sub;
+pub use subscription::fetcher::{
+	BlockEventsFetcher, BlockFetcher, BlockHeaderFetcher, BlockInfoFetcher, ExtrinsicFetcher,
+	GrandpaJustificationFetcher, LegacyBlockFetcher, UntypedExtrinsicFetcher,
+};
 pub use subxt_signer::{SecretUri, sr25519::Keypair};
 
 // External
 pub mod ext {
+	pub use async_trait::async_trait;
 	pub use avail_rust_core::{self, ext::*};
 
 	#[cfg(feature = "reqwest")]

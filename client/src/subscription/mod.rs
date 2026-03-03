@@ -1,21 +1,63 @@
-//! Helpers for building block, extrinsic, and justification streaming subscriptions.
+pub mod builder;
+pub mod fetcher;
+pub(crate) mod sub;
+pub mod subscription;
 
-pub mod block;
-pub mod extrinsic;
-pub mod justification;
-pub mod sub;
-
-pub use block::{BlockEventsSub, BlockHeaderSub, BlockSub, LegacyBlockSub};
-pub use extrinsic::{EncodedExtrinsicSub, ExtrinsicSub};
-pub use justification::GrandpaJustificationSub;
-pub use sub::Sub;
+pub use builder::SubscriptionBuilder;
+pub use fetcher::{
+	BlockEventsFetcher, BlockFetcher, BlockHeaderFetcher, BlockInfoFetcher, ExtrinsicFetcher, Fetcher,
+	GrandpaJustificationFetcher, LegacyBlockFetcher, UntypedExtrinsicFetcher,
+};
+pub use sub::BlockQueryMode;
+pub use subscription::{Subscription, SubscriptionItem};
 
 use crate::Client;
+use avail_rust_core::{
+	HasHeader,
+	rpc::{AllowedEvents, AllowedExtrinsic, SignatureFilter},
+};
+use codec::Decode;
+use std::marker::PhantomData;
 
-/// Applies either the explicit override provided to a subscription or the client's global retry
-/// configuration.
-///
-/// Returns `true` when RPC calls should be retried, `false` otherwise.
-fn should_retry(client: &Client, value: Option<bool>) -> bool {
-	value.unwrap_or(client.is_global_retries_enabled())
+pub struct SubscribeApi(pub(crate) Client);
+
+impl SubscribeApi {
+	pub fn raw(&self) -> SubscriptionBuilder<BlockInfoFetcher> {
+		SubscriptionBuilder::new(self.0.clone(), BlockInfoFetcher)
+	}
+
+	pub fn blocks(&self) -> SubscriptionBuilder<BlockFetcher> {
+		SubscriptionBuilder::new(self.0.clone(), BlockFetcher)
+	}
+
+	pub fn block_headers(&self) -> SubscriptionBuilder<BlockHeaderFetcher> {
+		SubscriptionBuilder::new(self.0.clone(), BlockHeaderFetcher)
+	}
+
+	pub fn block_events(&self, allow_list: AllowedEvents) -> SubscriptionBuilder<BlockEventsFetcher> {
+		SubscriptionBuilder::new(self.0.clone(), BlockEventsFetcher { allow_list })
+	}
+
+	pub fn legacy_blocks(&self) -> SubscriptionBuilder<LegacyBlockFetcher> {
+		SubscriptionBuilder::new(self.0.clone(), LegacyBlockFetcher)
+	}
+
+	pub fn extrinsics<T: HasHeader + Decode + Clone + Sync>(
+		&self,
+		sig_filter: SignatureFilter,
+	) -> SubscriptionBuilder<ExtrinsicFetcher<T>> {
+		SubscriptionBuilder::new(self.0.clone(), ExtrinsicFetcher { sig_filter, _phantom: PhantomData })
+	}
+
+	pub fn untyped_extrinsics(
+		&self,
+		allow_list: Option<Vec<AllowedExtrinsic>>,
+		sig_filter: SignatureFilter,
+	) -> SubscriptionBuilder<UntypedExtrinsicFetcher> {
+		SubscriptionBuilder::new(self.0.clone(), UntypedExtrinsicFetcher { allow_list, sig_filter })
+	}
+
+	pub fn justification(&self) -> SubscriptionBuilder<GrandpaJustificationFetcher> {
+		SubscriptionBuilder::new(self.0.clone(), GrandpaJustificationFetcher)
+	}
 }
