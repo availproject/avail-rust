@@ -212,10 +212,11 @@ pub struct FriBlobCommitment {
 }
 
 /// Version tag for Fri parameters.
-/// This mirrors `FriParamsVersion(pub u8)` on-chain.
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct FriParamsVersion(pub u8);
+pub enum FriParamsVersion {
+	#[default]
+	V0,
+}
 
 /// Fri v1 header extension: aggregate of all blob commitments for the block.
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode, Default)]
