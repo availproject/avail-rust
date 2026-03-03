@@ -1,6 +1,6 @@
 use crate::{HashNumber, rpc::Error};
 use primitive_types::H256;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 use subxt_rpcs::{RpcClient, rpc_params};
 
@@ -268,9 +268,33 @@ struct SignatureFilter {
 pub struct ExtrinsicInformation {
 	// Hex string encoded
 	pub encoded: Option<String>,
+	#[serde(deserialize_with = "deserialize_h256_compat")]
 	pub tx_hash: H256,
 	pub tx_index: u32,
 	pub pallet_id: u8,
 	pub call_id: u8,
 	pub signature: Option<SignerPayload>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum H256Compat {
+	Hex(String),
+	Bytes(Vec<u8>),
+}
+
+fn deserialize_h256_compat<'de, D>(deserializer: D) -> Result<H256, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let value = H256Compat::deserialize(deserializer)?;
+	match value {
+		H256Compat::Hex(value) => H256::from_str(value.as_str()).map_err(serde::de::Error::custom),
+		H256Compat::Bytes(value) => {
+			if value.len() != 32 {
+				return Err(serde::de::Error::custom("expected exactly 32 bytes for H256"));
+			}
+			Ok(H256::from_slice(value.as_slice()))
+		},
+	}
 }

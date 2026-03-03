@@ -1,6 +1,8 @@
 use super::Error;
 use primitive_types::H256;
+use serde::Deserialize;
 use std::array::TryFromSliceError;
+use std::str::FromStr;
 use subxt_rpcs::{RpcClient, rpc_params};
 
 #[derive(Debug, Clone)]
@@ -39,6 +41,27 @@ pub async fn rotate_keys(client: &RpcClient) -> Result<SessionKeys, Error> {
 pub async fn submit_extrinsic(client: &RpcClient, extrinsic: &[u8]) -> Result<H256, Error> {
 	let ext = std::format!("0x{}", const_hex::encode(extrinsic));
 	let params = rpc_params![ext];
-	let value: H256 = client.request("author_submitExtrinsic", params).await?;
-	Ok(value)
+	let value: H256Compat = client.request("author_submitExtrinsic", params).await?;
+	value.into_h256()
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+enum H256Compat {
+	Hex(String),
+	Bytes(Vec<u8>),
+}
+
+impl H256Compat {
+	fn into_h256(self) -> Result<H256, Error> {
+		match self {
+			H256Compat::Hex(value) => H256::from_str(value.as_str()).map_err(|e| Error::MalformedResponse(e.to_string())),
+			H256Compat::Bytes(value) => {
+				if value.len() != 32 {
+					return Err(Error::MalformedResponse("Expected exactly 32 bytes for H256".into()));
+				}
+				Ok(H256::from_slice(value.as_slice()))
+			},
+		}
+	}
 }
