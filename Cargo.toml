@@ -24,7 +24,7 @@ resolver = "2"
 
 [workspace.package]
 edition = "2024"
-version = "0.5.1"
+version = "0.6.0"
 license = "MIT"
 repository = "https://github.com/availproject/avail-rust"
 
@@ -52,6 +52,7 @@ scale-value = { version = "0.18", default-features = false }
 
 frame-metadata = {  version = "20.0", default-features = false }
 sp-crypto-hashing = { version = "0.1", default-features = false }
+async-trait = { version = "0.1" }
 
 # Subxt
 subxt-core = { version = "0.41", default-features = false }

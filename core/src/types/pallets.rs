@@ -1,7 +1,9 @@
 use super::{AccountId, MultiAddress};
 use crate::{
-	H256, HasHeader, StorageHasher, StorageMap, StorageValue, substrate::extrinsic::ExtrinsicCall,
-	types::substrate::PerDispatchClassWeight, utils::decode_already_decoded,
+	H256, HasHeader,
+	substrate::{StorageHasher, StorageMap, StorageValue, extrinsic::ExtrinsicCall},
+	types::substrate::PerDispatchClassWeight,
+	utils::decode_already_decoded,
 };
 use codec::{Compact, Decode, Encode};
 use scale_decode::DecodeAsType;
@@ -142,11 +144,9 @@ impl Decode for RuntimeCall {
 		let pallet_id = input.read_byte()?;
 		let variant_id = input.read_byte()?;
 
-		if pallet_id == timestamp::PALLET_ID {
-			if variant_id == timestamp::tx::Set::HEADER_INDEX.1 {
-				let call = timestamp::tx::Set::decode(input)?;
-				return Ok(RuntimeCall::TimestampSet(call));
-			}
+		if pallet_id == timestamp::PALLET_ID && variant_id == timestamp::tx::Set::HEADER_INDEX.1 {
+			let call = timestamp::tx::Set::decode(input)?;
+			return Ok(RuntimeCall::TimestampSet(call));
 		}
 
 		if pallet_id == session::PALLET_ID {
@@ -3179,15 +3179,12 @@ pub mod system {
 			pub class: DispatchClass,
 			/// Does this transaction pay fees.
 			pub pays_fee: Pays,
-			/// Does this transaction have custom fees.
-			pub fee_modifier: DispatchFeeModifier,
 		}
 		impl Encode for DispatchInfo {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				self.weight.encode_to(dest);
 				self.class.encode_to(dest);
 				self.pays_fee.encode_to(dest);
-				self.fee_modifier.encode_to(dest);
 			}
 		}
 		impl Decode for DispatchInfo {
@@ -3195,8 +3192,7 @@ pub mod system {
 				let weight = Decode::decode(input)?;
 				let class = Decode::decode(input)?;
 				let pays_fee = Decode::decode(input)?;
-				let fee_modifier = Decode::decode(input)?;
-				Ok(Self { weight, class, pays_fee, fee_modifier })
+				Ok(Self { weight, class, pays_fee })
 			}
 		}
 

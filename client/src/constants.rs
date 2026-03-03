@@ -6,6 +6,7 @@ pub const TEN_AVAIL: u128 = 10_000_000_000_000_000_000u128;
 pub const ONE_HUNDRED_AVAIL: u128 = 100_000_000_000_000_000_000u128;
 /// One thousand AVAIL in base units.
 pub const ONE_THOUSAND_AVAIL: u128 = 1_000_000_000_000_000_000_000u128;
+pub const THOUSAND_AVAIL: u128 = ONE_THOUSAND_AVAIL;
 /// Default HTTP endpoint for a locally running Avail node.
 pub const LOCAL_ENDPOINT: &str = "http://127.0.0.1:9944";
 /// Default WebSocket endpoint for a locally running Avail node.

@@ -433,7 +433,7 @@ impl<T: StorageMap> StorageMapIterator<T> {
 			&self.client,
 			Some(&self.prefix),
 			100,
-			self.last_key.as_ref().map(|x| x.as_str()),
+			self.last_key.as_deref(),
 			Some(self.block_hash),
 		)
 		.await?;
@@ -548,7 +548,7 @@ impl<T: StorageDoubleMap> StorageDoubleMapIterator<T> {
 			&self.client,
 			Some(&self.prefix),
 			100,
-			self.last_key.as_ref().map(|x| x.as_str()),
+			self.last_key.as_deref(),
 			Some(self.block_hash),
 		)
 		.await?;

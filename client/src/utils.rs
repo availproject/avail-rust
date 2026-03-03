@@ -8,16 +8,7 @@ pub(crate) fn trace_warn(message: &str) {
 
 /// Repeatedly executes an asynchronous operation until it succeeds or retries are exhausted.
 ///
-/// # Arguments
-///
-/// * `f` - Factory producing a future that performs the operation.
-/// * `retry_on_error` - When `true`, the function sleeps and retries on failure.
-///
-/// # Returns
-///
 /// Returns the successful output of `f` or propagates the last encountered error.
-///
-/// # Errors
 ///
 /// Returns the final error emitted by `f` once no retries remain.
 ///
@@ -63,17 +54,7 @@ where
 
 /// Executes an asynchronous operation, retrying on errors and optionally on `None` results.
 ///
-/// # Arguments
-///
-/// * `f` - Factory producing a future that returns `Option<O>`.
-/// * `retry_on_error` - Controls whether errors trigger retries.
-/// * `retry_on_none` - When `true`, `None` results trigger retries until exhausted.
-///
-/// # Returns
-///
 /// Returns `Ok(Some(O))` on success, `Ok(None)` if no value was produced, or the last error emitted.
-///
-/// # Errors
 ///
 /// Propagates the final error returned by `f` after exhausting retries.
 ///

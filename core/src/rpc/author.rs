@@ -37,7 +37,7 @@ pub async fn rotate_keys(client: &RpcClient) -> Result<SessionKeys, Error> {
 }
 
 pub async fn submit_extrinsic(client: &RpcClient, extrinsic: &[u8]) -> Result<H256, Error> {
-	let ext = std::format!("0x{}", const_hex::encode(extrinsic));
+	let ext = const_hex::encode_prefixed(extrinsic).to_string();
 	let params = rpc_params![ext];
 	let value: H256 = client.request("author_submitExtrinsic", params).await?;
 	Ok(value)

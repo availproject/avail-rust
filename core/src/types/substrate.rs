@@ -31,37 +31,6 @@ impl RuntimePhase {
 	}
 }
 
-#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq)]
-pub struct ExtrinsicExtra {
-	pub era: Era,
-	#[codec(compact)]
-	pub nonce: u32,
-	#[codec(compact)]
-	pub tip: u128,
-}
-
-#[derive(Debug, Clone)]
-pub struct ExtrinsicSignature {
-	pub address: MultiAddress,
-	pub signature: MultiSignature,
-	pub extra: ExtrinsicExtra,
-}
-impl Encode for ExtrinsicSignature {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		self.address.encode_to(dest);
-		self.signature.encode_to(dest);
-		self.extra.encode_to(dest);
-	}
-}
-impl Decode for ExtrinsicSignature {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let address = Decode::decode(input)?;
-		let signature = Decode::decode(input)?;
-		let extra = Decode::decode(input)?;
-		Ok(Self { address, signature, extra })
-	}
-}
-
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, scale_info::TypeInfo)]
 #[repr(u8)]
 pub enum MultiSignature {
@@ -243,4 +212,13 @@ pub struct PerDispatchClassWeight {
 	pub normal: Weight,
 	pub operational: Weight,
 	pub mandatory: Weight,
+}
+
+impl PerDispatchClassWeight {
+	pub fn total_weight(&self) -> u64 {
+		self.normal
+			.ref_time
+			.saturating_add(self.operational.ref_time)
+			.saturating_add(self.mandatory.ref_time)
+	}
 }

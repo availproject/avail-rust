@@ -8,6 +8,8 @@ pub enum Error {
 	DecodingFailed(String),
 	#[error("RPC error: expected to receive data but not data was received: {0}")]
 	ExpectedData(String),
+	#[error("RPC error: expected input")]
+	UnexpectedInput(String),
 }
 
 impl From<subxt_rpcs::Error> for Error {
