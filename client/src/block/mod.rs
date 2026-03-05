@@ -30,12 +30,12 @@ impl Block {
 	}
 
 	pub fn extrinsics(&self) -> extrinsic::BlockExtrinsicsQuery {
-		extrinsic::BlockExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+		extrinsic::BlockExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.at.clone())
 	}
 
 	/// Returns an event helper scoped to this block.
 	pub fn events(&self) -> events::BlockEventsQuery {
-		events::BlockEventsQuery::new(self.ctx.client.clone(), self.ctx.block_id.clone())
+		events::BlockEventsQuery::new(self.ctx.client.clone(), self.ctx.at.clone())
 	}
 
 	/// Sets retry behavior for subsequent block RPC calls.
@@ -45,9 +45,9 @@ impl Block {
 
 	/// Returns the GRANDPA justification for this block, if available.
 	pub async fn justification(&self) -> Result<Option<GrandpaJustification>, Error> {
-		let block_id: HashNumber = self.ctx.hash_number()?;
+		let at: HashNumber = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
-		let at = match block_id {
+		let at = match at {
 			HashNumber::Hash(h) => chain.block_height(h).await?.ok_or_else(|| {
 				Error::not_found_with_op(
 					crate::error_ops::ErrorOperation::BlockJustification,
@@ -67,12 +67,12 @@ impl Block {
 
 	/// Returns this block's UNIX timestamp.
 	pub async fn timestamp(&self) -> Result<u64, Error> {
-		self.ctx.chain().block_timestamp(self.ctx.block_id.clone()).await
+		self.ctx.chain().block_timestamp(self.ctx.at.clone()).await
 	}
 
 	/// Returns block metadata (hash/height/parent data).
 	pub async fn info(&self) -> Result<BlockInfo, Error> {
-		self.ctx.chain().block_info_from(self.ctx.block_id.clone()).await
+		self.ctx.chain().block_info_from(self.ctx.at.clone()).await
 	}
 
 	/// Returns this block header.
@@ -82,15 +82,12 @@ impl Block {
 
 	/// Returns this block author.
 	pub async fn author(&self) -> Result<AccountId, Error> {
-		self.ctx.chain().block_author(self.ctx.block_id.clone()).await
+		self.ctx.chain().block_author(self.ctx.at.clone()).await
 	}
 
 	/// Returns account nonce at this block.
 	pub async fn nonce(&self, account_id: impl Into<AccountIdLike>) -> Result<u32, Error> {
-		self.ctx
-			.chain()
-			.block_nonce(account_id, self.ctx.block_id.clone())
-			.await
+		self.ctx.chain().block_nonce(account_id, self.ctx.at.clone()).await
 	}
 
 	/// Returns the number of extrinsics in this block.
@@ -107,7 +104,7 @@ impl Block {
 
 	/// Returns dispatch-class weight totals for this block.
 	pub async fn weight(&self) -> Result<PerDispatchClassWeight, Error> {
-		self.ctx.chain().block_weight(self.ctx.block_id.clone()).await
+		self.ctx.chain().block_weight(self.ctx.at.clone()).await
 	}
 
 	/// Returns total extrinsic weight inferred from block events.
@@ -117,6 +114,6 @@ impl Block {
 
 	/// TODO
 	pub async fn metadata(&self) -> Result<subxt_metadata::Metadata, Error> {
-		self.ctx.chain().block_metadata(Some(self.ctx.block_id.clone())).await
+		self.ctx.chain().block_metadata(Some(self.ctx.at.clone())).await
 	}
 }

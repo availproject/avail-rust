@@ -1,5 +1,5 @@
 use crate::{
-	BlockState, Client, Error, RetryPolicy, avail, conversions, error_ops, submission::SubmittedTransaction,
+	Client, Error, RetryPolicy, avail, conversions, error_ops, submission::SubmittedTransaction,
 	subxt_signer::sr25519::Keypair, transaction_options::Options,
 };
 use avail::{
@@ -60,11 +60,6 @@ impl Chain {
 		})
 	}
 
-	/// Convenience wrapper for [`Chain::block_hash`] with an explicit height.
-	pub async fn block_hash_by_height(&self, block_height: u32) -> Result<Option<H256>, RpcError> {
-		self.block_hash(Some(block_height)).await
-	}
-
 	/// Returns a block header by hash/height, or best header when `None`.
 	pub async fn block_header(&self, at: Option<impl Into<HashStringNumber>>) -> Result<Option<AvailHeader>, Error> {
 		let retry_on_error = self.should_retry_on_error();
@@ -79,16 +74,6 @@ impl Chain {
 		Ok(retry_or_none!(retry_on_error, retry_on_none, {
 			rpc::chain::get_header(&self.client.rpc_client, at).await
 		})?)
-	}
-
-	/// Convenience wrapper for [`Chain::block_header`] by hash.
-	pub async fn block_header_by_hash(&self, hash: H256) -> Result<Option<AvailHeader>, Error> {
-		self.block_header(Some(hash)).await
-	}
-
-	/// Convenience wrapper for [`Chain::block_header`] by height.
-	pub async fn block_header_by_height(&self, height: u32) -> Result<Option<AvailHeader>, Error> {
-		self.block_header(Some(height)).await
 	}
 
 	/// Returns a legacy block by hash, or best block when `None`.
@@ -189,53 +174,6 @@ impl Chain {
 				.await
 				.map(|x| x.unwrap_or_default())
 		})?)
-	}
-
-	/// Tells you if a block is pending, finalized, or missing.
-	///
-	/// Distinguishes between [`BlockState::Included`], [`BlockState::Finalized`], [`BlockState::Discarded`],
-	/// and [`BlockState::DoesNotExist`], depending on chain state.
-	///
-	pub async fn block_state(&self, at: impl Into<HashStringNumber>) -> Result<BlockState, Error> {
-		let block_id = HashNumber::from_impl(at)
-			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainBlockState, e))?;
-		let chain_info = self.info().await?;
-		let n = match block_id {
-			HashNumber::Hash(h) => {
-				if h == chain_info.finalized_hash {
-					return Ok(BlockState::Finalized);
-				}
-
-				if h == chain_info.best_hash {
-					return Ok(BlockState::Included);
-				}
-
-				let Some(n) = self.block_height(h).await? else {
-					return Ok(BlockState::DoesNotExist);
-				};
-
-				let Some(block_hash) = self.block_hash(Some(n)).await? else {
-					return Ok(BlockState::DoesNotExist);
-				};
-
-				if block_hash != h {
-					return Ok(BlockState::Discarded);
-				}
-
-				n
-			},
-			HashNumber::Number(n) => n,
-		};
-
-		if n > chain_info.best_height {
-			return Ok(BlockState::DoesNotExist);
-		}
-
-		if n > chain_info.finalized_height {
-			return Ok(BlockState::Included);
-		}
-
-		Ok(BlockState::Finalized)
 	}
 
 	/// Converts a block hash into its block height when possible.
@@ -678,20 +616,20 @@ impl Chain {
 
 	/// Fetches extrinsics from a block using the provided filters.
 	///
-	pub async fn fetch_extrinsics(
+	pub async fn extrinsics(
 		&self,
 		at: impl Into<HashStringNumber>,
 		allow_list: Option<Vec<rpc::AllowedExtrinsic>>,
 		sig_filter: rpc::SignatureFilter,
 		data_format: rpc::DataFormat,
 	) -> Result<Vec<rpc::Extrinsic>, Error> {
-		let block_id = HashNumber::from_impl(at)
+		let at = HashNumber::from_impl(at)
 			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainFetchExtrinsics, e))?;
 
 		retry!(self.should_retry_on_error(), {
 			rpc::custom::fetch_extrinsics(
 				&self.client.rpc_client,
-				block_id,
+				at,
 				allow_list.clone(),
 				sig_filter.clone(),
 				data_format,
@@ -703,7 +641,7 @@ impl Chain {
 
 	/// Pulls events for a block with optional filtering.
 	///
-	pub async fn fetch_events(
+	pub async fn events(
 		&self,
 		at: HashNumber,
 		allow_list: rpc::AllowedEvents,

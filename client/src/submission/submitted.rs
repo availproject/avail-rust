@@ -126,7 +126,7 @@ async fn find_receipt_inner(
 
 		let exts = client
 			.chain()
-			.fetch_extrinsics(block_info.block_hash, allow_list.clone(), Default::default(), DataFormat::None)
+			.extrinsics(block_info.block_hash, allow_list.clone(), Default::default(), DataFormat::None)
 			.await?;
 
 		if let Some(ext) = exts.first() {
@@ -149,31 +149,6 @@ async fn find_receipt_inner(
 	}
 }
 
-/// Transaction lifecycle state on chain.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub enum BlockState {
-	/// The transaction was included in a block but the block may still be re-orged out.
-	Included = 0,
-	/// The block containing the transaction is finalized and immutable under normal circumstances.
-	Finalized = 1,
-	/// The transaction was seen but ended up discarded (e.g. due to invalidation).
-	Discarded = 2,
-	/// The transaction could not be found on chain.
-	DoesNotExist = 3,
-}
-
-impl std::fmt::Display for BlockState {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			BlockState::Included => std::write!(f, "Included"),
-			BlockState::Finalized => std::write!(f, "Finalized"),
-			BlockState::Discarded => std::write!(f, "Discarded"),
-			BlockState::DoesNotExist => std::write!(f, "DoesNotExist"),
-		}
-	}
-}
-
 /// Location details for a transaction inclusion.
 #[derive(Debug, Clone)]
 pub struct TransactionReceipt {
@@ -188,11 +163,6 @@ impl TransactionReceipt {
 	/// Creates a receipt from known block/extrinsic coordinates.
 	pub fn new(client: Client, block_hash: H256, block_height: u32, ext_hash: H256, ext_index: u32) -> Self {
 		Self { client, block_hash, block_height, ext_hash, ext_index }
-	}
-
-	/// Returns the lifecycle state of the containing block.
-	pub async fn block_state(&self) -> Result<BlockState, Error> {
-		self.client.chain().block_state(self.block_hash).await
 	}
 
 	/// Fetches and decodes the recorded extrinsic as `T`.
