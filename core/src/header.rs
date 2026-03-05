@@ -94,47 +94,6 @@ pub enum FriHeader {
 	V1(FriV1HeaderExtension),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct V3HeaderExtension {
-	pub app_lookup: CompactDataLookup,
-	pub commitment: KateCommitment,
-}
-impl Encode for V3HeaderExtension {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		self.app_lookup.encode_to(dest);
-		self.commitment.encode_to(dest);
-	}
-}
-impl Decode for V3HeaderExtension {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let app_lookup = Decode::decode(input)?;
-		let commitment = Decode::decode(input)?;
-		Ok(Self { app_lookup, commitment })
-	}
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct CompactDataLookup {
-	// Compact
-	pub size: u32,
-	pub index: Vec<DataLookupItem>,
-}
-impl Encode for CompactDataLookup {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		Compact(self.size).encode_to(dest);
-		self.index.encode_to(dest);
-	}
-}
-impl Decode for CompactDataLookup {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let size = Compact::<u32>::decode(input)?.0;
-		let index = Decode::decode(input)?;
-		Ok(Self { size, index })
-	}
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DataLookupItem {

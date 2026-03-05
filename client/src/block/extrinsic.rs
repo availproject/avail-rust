@@ -26,8 +26,8 @@ pub struct BlockExtrinsicsQuery {
 }
 
 impl BlockExtrinsicsQuery {
-	pub fn new(client: Client, block_id: HashStringNumber) -> Self {
-		Self { ctx: BlockContext::new(client, block_id) }
+	pub fn new(client: Client, at: HashStringNumber) -> Self {
+		Self { ctx: BlockContext::new(client, at) }
 	}
 
 	// ── Untyped (encoded) methods ───────────────────────────────────────
@@ -54,18 +54,18 @@ impl BlockExtrinsicsQuery {
 		allow_list: Option<Vec<AllowedExtrinsic>>,
 		sig_filter: rpc::SignatureFilter,
 	) -> Result<Option<UntypedExtrinsic>, Error> {
-		let block_id = self.ctx.hash_number()?;
+		let at = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 
 		let mut result = chain
-			.fetch_extrinsics(block_id, allow_list, sig_filter, DataFormat::Extrinsic)
+			.extrinsics(at, allow_list, sig_filter, DataFormat::Extrinsic)
 			.await?;
 
 		let Some(info) = result.first_mut() else {
 			return Ok(None);
 		};
 
-		let ext = UntypedExtrinsic::from_rpc_extrinsic(info, block_id)?;
+		let ext = UntypedExtrinsic::from_rpc_extrinsic(info, at)?;
 		Ok(Some(ext))
 	}
 
@@ -74,17 +74,17 @@ impl BlockExtrinsicsQuery {
 		allow_list: Option<Vec<AllowedExtrinsic>>,
 		sig_filter: rpc::SignatureFilter,
 	) -> Result<Option<UntypedExtrinsic>, Error> {
-		let block_id = self.ctx.hash_number()?;
+		let at = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 
 		let mut result = chain
-			.fetch_extrinsics(block_id, allow_list, sig_filter, DataFormat::Extrinsic)
+			.extrinsics(at, allow_list, sig_filter, DataFormat::Extrinsic)
 			.await?;
 		let Some(info) = result.last_mut() else {
 			return Ok(None);
 		};
 
-		let ext = UntypedExtrinsic::from_rpc_extrinsic(info, block_id)?;
+		let ext = UntypedExtrinsic::from_rpc_extrinsic(info, at)?;
 		Ok(Some(ext))
 	}
 
@@ -93,16 +93,16 @@ impl BlockExtrinsicsQuery {
 		allow_list: Option<Vec<AllowedExtrinsic>>,
 		sig_filter: rpc::SignatureFilter,
 	) -> Result<Vec<UntypedExtrinsic>, Error> {
-		let block_id = self.ctx.hash_number()?;
+		let at = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 
 		let extrinsics = chain
-			.fetch_extrinsics(block_id, allow_list, sig_filter, DataFormat::Extrinsic)
+			.extrinsics(at, allow_list, sig_filter, DataFormat::Extrinsic)
 			.await?;
 
 		let mut result = Vec::with_capacity(extrinsics.len());
 		for info in extrinsics {
-			let ext = UntypedExtrinsic::from_rpc_extrinsic(&info, block_id)?;
+			let ext = UntypedExtrinsic::from_rpc_extrinsic(&info, at)?;
 			result.push(ext);
 		}
 
@@ -114,11 +114,9 @@ impl BlockExtrinsicsQuery {
 		allow_list: Option<Vec<AllowedExtrinsic>>,
 		sig_filter: rpc::SignatureFilter,
 	) -> Result<usize, Error> {
-		let block_id = self.ctx.block_id.clone();
+		let at = self.ctx.at.clone();
 		let chain = self.ctx.chain();
-		let result = chain
-			.fetch_extrinsics(block_id, allow_list, sig_filter, DataFormat::None)
-			.await?;
+		let result = chain.extrinsics(at, allow_list, sig_filter, DataFormat::None).await?;
 
 		Ok(result.len())
 	}
@@ -211,7 +209,7 @@ impl BlockExtrinsicsQuery {
 	) -> Result<Vec<rpc::Extrinsic>, Error> {
 		self.ctx
 			.chain()
-			.fetch_extrinsics(self.ctx.block_id.clone(), allow_list, sig_filter, data_format)
+			.extrinsics(self.ctx.at.clone(), allow_list, sig_filter, data_format)
 			.await
 	}
 
@@ -241,7 +239,7 @@ impl UntypedExtrinsic {
 	}
 
 	pub async fn events(&self, client: Client) -> Result<BlockEvents, Error> {
-		let events = BlockEventsQuery::new(client, self.metadata.block_id)
+		let events = BlockEventsQuery::new(client, self.metadata.at)
 			.extrinsic(self.ext_index())
 			.await?;
 
@@ -300,8 +298,8 @@ impl UntypedExtrinsic {
 		(self.metadata.pallet_id, self.metadata.variant_id)
 	}
 
-	pub fn from_rpc_extrinsic(ext: &rpc::Extrinsic, block_id: HashNumber) -> Result<Self, Error> {
-		let metadata = BlockExtrinsicMetadata::from_rpc_extrinsic(ext, block_id);
+	pub fn from_rpc_extrinsic(ext: &rpc::Extrinsic, at: HashNumber) -> Result<Self, Error> {
+		let metadata = BlockExtrinsicMetadata::from_rpc_extrinsic(ext, at);
 		let extrinsic = Extrinsic::try_from(ext.data.as_str())
 			.map_err(|e| Error::decode_with_op(error_ops::ErrorOperation::BlockExtrinsicFromRpc, e))?;
 		Ok(UntypedExtrinsic::new(extrinsic.preamble, extrinsic.call.0, metadata))
@@ -323,7 +321,7 @@ impl<T: HasHeader + Decode> TypedExtrinsic<T> {
 	}
 
 	pub async fn events(&self, client: Client) -> Result<BlockEvents, Error> {
-		let events = BlockEventsQuery::new(client, self.metadata.block_id)
+		let events = BlockEventsQuery::new(client, self.metadata.at)
 			.extrinsic(self.ext_index())
 			.await?;
 

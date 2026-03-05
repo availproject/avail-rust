@@ -13,7 +13,7 @@ pub use decoded_events::{TransactionEventDecodable, TransactionEventEncodable};
 
 pub use decoded_extrinsics::{ExtrinsicDecodable, HasHeader};
 pub use extrinsics_params::DefaultExtrinsicParams;
-pub use header::{AvailHeader, CompactDataLookup, HeaderExtension, KateCommitment, V3HeaderExtension};
+pub use header::{AvailHeader, HeaderExtension, KateCommitment};
 pub use rpc::{DataFormat, Error as RpcError};
 pub use substrate::{
 	Extension, ExtensionImplicit, Extrinsic, ExtrinsicBorrowed, ExtrinsicCall, ExtrinsicCallBorrowed, SignedPayload,

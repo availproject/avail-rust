@@ -19,13 +19,14 @@ impl BlockEventsQuery {
 	/// Returns events emitted by a specific extrinsic index.
 	pub async fn extrinsic(&self, tx_index: u32) -> Result<BlockEvents, Error> {
 		let events = self.all(tx_index.into()).await?;
-		Ok(BlockEvents::new(events))
+		Ok(events)
 	}
 
 	/// Returns system-level events that are not tied to extrinsics.
 	pub async fn system(&self) -> Result<BlockEvents, Error> {
 		let events = self.all(AllowedEvents::OnlyNonExtrinsics).await?;
 		let events: Vec<BlockEvent> = events
+			.0
 			.into_iter()
 			.filter(|x| x.phase.extrinsic_index().is_none())
 			.collect();
@@ -34,7 +35,7 @@ impl BlockEventsQuery {
 	}
 
 	/// Returns all events for this block using the provided filter.
-	pub async fn all(&self, allow_list: AllowedEvents) -> Result<Vec<BlockEvent>, Error> {
+	pub async fn all(&self, allow_list: AllowedEvents) -> Result<BlockEvents, Error> {
 		let phase_events = self.rpc(allow_list, true).await?;
 
 		let mut result: Vec<BlockEvent> = Vec::new();
@@ -46,13 +47,13 @@ impl BlockEventsQuery {
 			}
 		}
 
-		Ok(result)
+		Ok(BlockEvents::new(result))
 	}
 
 	/// Returns raw phase-grouped event data for this block.
 	pub async fn rpc(&self, allow_list: AllowedEvents, fetch_data: bool) -> Result<Vec<rpc::PhaseEvents>, Error> {
-		let block_id = self.ctx.hash_number()?;
-		self.ctx.chain().fetch_events(block_id, allow_list, fetch_data).await
+		let at = self.ctx.hash_number()?;
+		self.ctx.chain().events(at, allow_list, fetch_data).await
 	}
 
 	/// Sets retry behavior for event lookups.
@@ -71,7 +72,7 @@ impl BlockEventsQuery {
 
 		let mut weight = Weight::default();
 		let events = self.all(AllowedEvents::OnlyExtrinsics).await?;
-		for event in events {
+		for event in events.0 {
 			if event.phase.extrinsic_index().is_none() {
 				continue;
 			}
@@ -141,23 +142,20 @@ impl BlockEvent {
 
 /// Collection of block events with helpers for querying by header.
 #[derive(Debug, Clone)]
-pub struct BlockEvents {
-	/// Collection of decoded events preserved in original order.
-	pub events: Vec<BlockEvent>,
-}
+pub struct BlockEvents(pub Vec<BlockEvent>);
 
 impl BlockEvents {
 	/// Wraps decoded events.
 	///
 	pub fn new(events: Vec<BlockEvent>) -> Self {
-		Self { events }
+		Self(events)
 	}
 
 	/// Returns the first event matching the requested type.
 	///
 	pub fn first<T: HasHeader + codec::Decode>(&self) -> Option<T> {
 		let event = self
-			.events
+			.0
 			.iter()
 			.find(|x| x.pallet_id == T::HEADER_INDEX.0 && x.variant_id == T::HEADER_INDEX.1);
 		let event = event?;
@@ -169,7 +167,7 @@ impl BlockEvents {
 	///
 	pub fn last<T: HasHeader + codec::Decode>(&self) -> Option<T> {
 		let event = self
-			.events
+			.0
 			.iter()
 			.rev()
 			.find(|x| x.pallet_id == T::HEADER_INDEX.0 && x.variant_id == T::HEADER_INDEX.1);
@@ -182,7 +180,7 @@ impl BlockEvents {
 	///
 	pub fn all<T: HasHeader + codec::Decode>(&self) -> Result<Vec<T>, Error> {
 		let mut result = Vec::new();
-		for event in &self.events {
+		for event in &self.0 {
 			if event.pallet_id != T::HEADER_INDEX.0 || event.variant_id != T::HEADER_INDEX.1 {
 				continue;
 			}
@@ -242,7 +240,7 @@ impl BlockEvents {
 	///
 	pub fn count_parts(&self, pallet_id: u8, variant_id: u8) -> u32 {
 		let mut count = 0;
-		self.events.iter().for_each(|x| {
+		self.0.iter().for_each(|x| {
 			if x.pallet_id == pallet_id && x.variant_id == variant_id {
 				count += 1
 			}
@@ -254,12 +252,12 @@ impl BlockEvents {
 	/// Returns the number of cached events.
 	///
 	pub fn len(&self) -> usize {
-		self.events.len()
+		self.0.len()
 	}
 
 	/// Reports whether any events are cached.
 	///
 	pub fn is_empty(&self) -> bool {
-		self.events.is_empty()
+		self.0.is_empty()
 	}
 }

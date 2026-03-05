@@ -51,15 +51,15 @@ pub use constants::{
 };
 pub use extensions::{AccountIdExt, H256Ext};
 pub use retry_policy::RetryPolicy;
-pub use submission::{BlockState, SubmissionOutcome, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
+pub use submission::{SubmissionOutcome, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
 pub use subscription::{BlockQueryMode, Fetcher, SubscribeApi, Subscription, SubscriptionBuilder, SubscriptionItem};
 pub use transaction_options::{Mortality, MortalityOption, Options};
 
 pub use account::Account;
 pub use avail_rust_core::{
-	self, AccountId, AvailHeader, BlockInfo, CompactDataLookup, DataFormat, Extension, ExtensionImplicit, Extrinsic,
-	ExtrinsicCall, ExtrinsicDecodable, HasHeader, HashNumber, HeaderExtension, KateCommitment, MultiAddress, RpcError,
-	TransactionEventDecodable, TransactionEventEncodable, V3HeaderExtension, avail,
+	self, AccountId, AvailHeader, BlockInfo, DataFormat, Extension, ExtensionImplicit, Extrinsic, ExtrinsicCall,
+	ExtrinsicDecodable, HasHeader, HashNumber, HeaderExtension, KateCommitment, MultiAddress, RpcError,
+	TransactionEventDecodable, TransactionEventEncodable, avail,
 	ext::{codec, primitive_types, scale_info, scale_value, subxt_core, subxt_metadata, subxt_rpcs, subxt_signer},
 	grandpa::GrandpaJustification,
 	multi_account_id,

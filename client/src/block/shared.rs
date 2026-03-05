@@ -12,14 +12,14 @@ pub struct BlockContext {
 	/// Client handle used for follow-up RPC calls.
 	pub client: Client,
 	/// Hash or number identifying the target block.
-	pub block_id: HashStringNumber,
+	pub at: HashStringNumber,
 	retry_on_error: RetryPolicy,
 }
 
 impl BlockContext {
 	/// Creates a new block context for a hash/height identifier.
-	pub fn new(client: Client, block_id: HashStringNumber) -> Self {
-		Self { client, block_id, retry_on_error: RetryPolicy::Inherit }
+	pub fn new(client: Client, at: HashStringNumber) -> Self {
+		Self { client, at, retry_on_error: RetryPolicy::Inherit }
 	}
 
 	/// Sets retry behavior for follow-up RPC calls.
@@ -44,7 +44,7 @@ impl BlockContext {
 
 	/// Resolves the stored identifier into a [`HashNumber`].
 	pub fn hash_number(&self) -> Result<HashNumber, Error> {
-		HashNumber::from_impl(self.block_id.clone())
+		HashNumber::from_impl(self.at.clone())
 			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::BlockSharedHashNumber, e))
 	}
 
@@ -57,11 +57,11 @@ impl BlockContext {
 
 	/// Fetches the block header associated with this context.
 	pub async fn header(&self) -> Result<AvailHeader, Error> {
-		let header = self.chain().block_header(Some(self.block_id.clone())).await?;
+		let header = self.chain().block_header(Some(self.at.clone())).await?;
 		let Some(header) = header else {
 			return Err(Error::not_found_with_op(
 				error_ops::ErrorOperation::BlockSharedHeader,
-				std::format!("No block header found for block id: {}", self.block_id),
+				std::format!("No block header found for block id: {}", self.at),
 			));
 		};
 
@@ -72,7 +72,7 @@ impl BlockContext {
 	///
 	/// Returns the number of events or an error when the RPC call fails.
 	pub async fn event_count(&self) -> Result<usize, Error> {
-		self.chain().block_event_count(self.block_id.clone()).await
+		self.chain().block_event_count(self.at.clone()).await
 	}
 }
 
@@ -88,20 +88,20 @@ pub struct BlockExtrinsicMetadata {
 	/// Variant within the pallet identifying the call.
 	pub variant_id: u8,
 	/// Block identifier (hash or number) where the extrinsic resides.
-	pub block_id: HashNumber,
+	pub at: HashNumber,
 }
 
 impl BlockExtrinsicMetadata {
 	/// Wraps metadata about an extrinsic inside a block.
 	///
-	pub fn new(ext_hash: H256, ext_index: u32, pallet_id: u8, variant_id: u8, block_id: HashNumber) -> Self {
-		Self { ext_hash, ext_index, pallet_id, variant_id, block_id }
+	pub fn new(ext_hash: H256, ext_index: u32, pallet_id: u8, variant_id: u8, at: HashNumber) -> Self {
+		Self { ext_hash, ext_index, pallet_id, variant_id, at }
 	}
 
 	/// Builds metadata from RPC extrinsic information.
 	///
 	/// Returns a metadata wrapper encapsulating the provided information.
-	pub fn from_rpc_extrinsic(ext: &rpc::Extrinsic, block_id: HashNumber) -> Self {
-		Self::new(ext.ext_hash, ext.ext_index, ext.pallet_id, ext.variant_id, block_id)
+	pub fn from_rpc_extrinsic(ext: &rpc::Extrinsic, at: HashNumber) -> Self {
+		Self::new(ext.ext_hash, ext.ext_index, ext.pallet_id, ext.variant_id, at)
 	}
 }

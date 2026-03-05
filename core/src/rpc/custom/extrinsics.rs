@@ -69,8 +69,7 @@ impl From<(u8, u8)> for AllowedExtrinsic {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct SignatureFilter {
-	pub ss58_address: Option<String>,
-	pub app_id: Option<u32>,
+	pub account_id: Option<String>,
 	pub nonce: Option<u32>,
 }
 
@@ -81,11 +80,6 @@ pub struct Extrinsic {
 	pub ext_index: u32,
 	pub pallet_id: u8,
 	pub variant_id: u8,
-	pub signature: Option<TransactionSignature>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TransactionSignature {
 	pub account_id: Option<AccountId>,
-	pub nonce: u32,
+	pub nonce: Option<u32>,
 }
