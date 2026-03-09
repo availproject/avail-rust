@@ -73,7 +73,7 @@ pub struct SignatureFilter {
 	pub nonce: Option<u32>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Extrinsic {
 	pub data: String,
 	pub ext_hash: H256,

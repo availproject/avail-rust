@@ -16,7 +16,8 @@ pub use extrinsics_params::DefaultExtrinsicParams;
 pub use header::{AvailHeader, HeaderExtension, KateCommitment};
 pub use rpc::{DataFormat, Error as RpcError};
 pub use substrate::{
-	Extension, ExtensionImplicit, Extrinsic, ExtrinsicBorrowed, ExtrinsicCall, ExtrinsicCallBorrowed, SignedPayload,
+	Extension, ExtensionImplicit, Extrinsic, ExtrinsicBorrowed, ExtrinsicCall, ExtrinsicCallBorrowed, Preamble,
+	SignedPayload,
 };
 pub use types::{
 	AccountId, AccountIdLike, BlakeTwo256, BlockHash, BlockInfo, Era, H256, HashNumber, MultiAddress, MultiSignature,

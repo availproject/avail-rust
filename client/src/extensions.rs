@@ -1,8 +1,4 @@
-use avail_rust_core::{
-	AccountId, H256,
-	ext::subxt_core::utils::AccountId32,
-	utils::{account_id_from_slice, account_id_from_str},
-};
+use avail_rust_core::{AccountId, H256, ext::subxt_core::utils::AccountId32, utils::account_id_from_slice};
 
 /// Extension helpers for working with `H256` values.
 pub trait H256Ext {
@@ -42,11 +38,6 @@ impl H256Ext for H256 {
 
 /// Extension helpers for constructing `AccountId` values.
 pub trait AccountIdExt {
-	/// Parses an address string into an `AccountId`.
-	///
-	/// Returns an error if the address string is malformed or uses an invalid SS58 format.
-	fn from_str(value: &str) -> Result<AccountId, String>;
-
 	/// Decodes an `AccountId` from raw bytes.
 	///
 	/// Returns an error if the byte slice is not exactly 32 bytes.
@@ -59,10 +50,6 @@ pub trait AccountIdExt {
 }
 
 impl AccountIdExt for AccountId {
-	fn from_str(value: &str) -> Result<AccountId, String> {
-		account_id_from_str(value)
-	}
-
 	fn from_slice(value: &[u8]) -> Result<AccountId, String> {
 		account_id_from_slice(value)
 	}

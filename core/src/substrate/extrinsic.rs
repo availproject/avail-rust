@@ -24,7 +24,7 @@ pub const EXTENSION_VERSION: ExtensionVersion = 0;
 pub const LEGACY_EXTRINSIC_FORMAT_VERSION: ExtrinsicVersion = 4;
 pub const EXTRINSIC_FORMAT_VERSION: ExtrinsicVersion = 5;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Preamble {
 	/// An extrinsic without a signature or any extension. This means it's either an inherent or
 	/// an old-school "Unsigned" (we don't use that terminology any more since it's confusable with

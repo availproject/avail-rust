@@ -226,7 +226,7 @@ impl BlockExtrinsicsQuery {
 
 // ── BlockEncodedExtrinsic ───────────────────────────────────────────────
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UntypedExtrinsic {
 	pub preamble: Preamble,
 	pub call: Vec<u8>,

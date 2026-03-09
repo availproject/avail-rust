@@ -42,7 +42,7 @@ impl From<BlockInfo> for H256 {
 	}
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum HashNumber {
 	Hash(H256),
 	Number(u32),

@@ -77,7 +77,7 @@ impl BlockContext {
 }
 
 /// Metadata describing where an extrinsic resides within a block.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlockExtrinsicMetadata {
 	/// Hash of the extrinsic.
 	pub ext_hash: H256,
