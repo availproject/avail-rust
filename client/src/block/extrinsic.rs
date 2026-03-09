@@ -258,6 +258,14 @@ impl UntypedExtrinsic {
 		self.metadata.ext_hash
 	}
 
+	pub fn pallet_id(&self) -> u8 {
+		self.metadata.pallet_id
+	}
+
+	pub fn variant_id(&self) -> u8 {
+		self.metadata.variant_id
+	}
+
 	pub fn nonce(&self) -> Option<u32> {
 		match &self.preamble {
 			Preamble::Bare(_) => None,

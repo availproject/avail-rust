@@ -8,7 +8,7 @@ Rust SDK for interacting with Avail networks.
 
 ```toml
 [dependencies]
-avail-rust-client = { version = "0.5.1", default-features = false, features = ["native", "reqwest"] }
+avail-rust-client = { version = "0.5.1", default-features = false, features = ["native"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 ```
 

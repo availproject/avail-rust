@@ -1,5 +1,6 @@
 use avail_rust_client::{avail_rust_core::rpc::blob::submit_blob, ext::const_hex, prelude::*};
 use codec::Encode;
+use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {

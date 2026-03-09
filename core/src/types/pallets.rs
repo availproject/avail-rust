@@ -668,7 +668,7 @@ pub mod balances {
 	pub mod types {
 		use super::*;
 
-		#[derive(Debug, Default, Clone, DecodeAsType, EncodeAsType)]
+		#[derive(Debug, Default, Clone, DecodeAsType, EncodeAsType, PartialEq, Eq)]
 		pub struct AccountData {
 			pub free: u128,
 			pub reserved: u128,

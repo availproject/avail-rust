@@ -40,16 +40,14 @@ pub mod transaction_options;
 pub mod utils;
 
 pub use chain::{Head, HeadKind};
-pub use client::Client;
-#[cfg(feature = "reqwest")]
-pub use client::ConnectionOptions;
 #[cfg(feature = "tracing")]
 pub use client::TracingFormat;
+pub use client::{Client, ConnectionOptions};
 pub use constants::{
 	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, ONE_AVAIL, ONE_HUNDRED_AVAIL,
 	ONE_THOUSAND_AVAIL, TEN_AVAIL, THOUSAND_AVAIL, TURING_ENDPOINT, TURING_WS_ENDPOINT,
 };
-pub use extensions::{AccountIdExt, H256Ext};
+pub use extensions::AccountIdExt;
 pub use retry_policy::RetryPolicy;
 pub use submission::{SubmissionOutcome, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
 pub use subscription::{BlockQueryMode, Fetcher, SubscribeApi, Subscription, SubscriptionBuilder, SubscriptionItem};
@@ -82,8 +80,6 @@ pub use subxt_signer::{SecretUri, sr25519::Keypair};
 pub mod ext {
 	pub use async_trait::async_trait;
 	pub use avail_rust_core::{self, ext::*};
-
-	#[cfg(feature = "reqwest")]
 	pub use reqwest;
 }
 

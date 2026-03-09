@@ -1,4 +1,5 @@
-use crate::{Error, H256Ext, error_ops};
+use crate::{Error, error_ops};
+use std::str::FromStr;
 
 /// Helpers that convert between RPC-compatible hash identifiers.
 pub mod hash_string_number {
@@ -41,8 +42,9 @@ pub mod hash_string {
 		fn inner(value: HashString) -> Result<H256, Error> {
 			let hash = match value {
 				HashString::Hash(x) => x,
-				HashString::String(x) => H256::from_str(&x)
-					.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ConversionToHash, e))?,
+				HashString::String(x) => H256::from_str(&x).map_err(|e| {
+					Error::validation_with_op(error_ops::ErrorOperation::ConversionToHash, e.to_string())
+				})?,
 			};
 			Ok(hash)
 		}
