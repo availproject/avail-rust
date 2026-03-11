@@ -38,21 +38,28 @@ impl std::fmt::Debug for Client {
 }
 
 /// Controls how a [`Client`] connects to an RPC endpoint.
-#[cfg(feature = "reqwest")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnectionOptions {
+	pub endpoint: String,
 	pub retry_policy: RetryPolicy,
 }
 
-#[cfg(feature = "reqwest")]
-impl Default for ConnectionOptions {
-	fn default() -> Self {
-		Self { retry_policy: RetryPolicy::Enabled }
+impl From<&str> for ConnectionOptions {
+	fn from(value: &str) -> Self {
+		Self {
+			endpoint: value.to_owned(),
+			retry_policy: RetryPolicy::Enabled,
+		}
+	}
+}
+
+impl From<String> for ConnectionOptions {
+	fn from(value: String) -> Self {
+		Self { endpoint: value, retry_policy: RetryPolicy::Enabled }
 	}
 }
 
 impl Client {
-	#[cfg(feature = "reqwest")]
 	/// Connects to an HTTP endpoint.
 	/// Returns an error if transport initialization or handshake fails.
 	///
@@ -65,30 +72,12 @@ impl Client {
 	/// println!("Best block: {:?}", best.hash());
 	/// # Ok(()) }
 	/// ```
-	pub async fn connect(endpoint: &str) -> Result<Client, crate::Error> {
-		Self::connect_with(endpoint, ConnectionOptions::default()).await
-	}
-
-	#[cfg(feature = "reqwest")]
-	/// Connects to an HTTP endpoint with custom connection options.
-	/// Returns an error if transport initialization or metadata bootstrap fails.
-	///
-	/// # Examples
-	/// ```no_run
-	/// # use avail_rust_client::Client;
-	/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-	/// let client = Client::connect_with(
-	///     "http://127.0.0.1:9944",
-	///     ConnectionOptions { retry_policy: RetryPolicy::Disabled },
-	/// ).await?;
-	/// println!("Retries enabled? {}", client.retry_policy() != RetryPolicy::Disabled);
-	/// # Ok(()) }
-	/// ```
-	pub async fn connect_with(endpoint: &str, options: ConnectionOptions) -> Result<Client, crate::Error> {
+	pub async fn connect(options: impl Into<ConnectionOptions>) -> Result<Client, crate::Error> {
 		use super::clients::ReqwestClient;
 
-		retry!(options.retry_policy.resolve(true), {
-			let rpc_client = ReqwestClient::new(endpoint);
+		let options = options.into();
+		retry!(options.retry_policy.resolve(false), {
+			let rpc_client = ReqwestClient::new(&options.endpoint);
 			let rpc_client = RpcClient::new(rpc_client);
 			Self::from_rpc_client(rpc_client).await.map_err(|e| e.into())
 		})
@@ -182,5 +171,9 @@ impl Client {
 
 	pub fn account<'a>(&'a self) -> crate::account::Account<'a> {
 		crate::account::Account::new(self)
+	}
+
+	pub fn blob<'a>(&'a self) -> crate::blob::Blob<'a> {
+		crate::blob::Blob::new(self)
 	}
 }

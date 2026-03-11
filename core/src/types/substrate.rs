@@ -197,7 +197,7 @@ impl Decode for DispatchClass {
 	}
 }
 
-#[derive(Clone, Default, Copy, Debug, PartialEq, Deserialize, Encode, Decode)]
+#[derive(Clone, Default, Copy, Debug, PartialEq, Eq, Deserialize, Encode, Decode)]
 pub struct Weight {
 	/// The weight of computational time used based on some reference hardware.
 	#[codec(compact)]
@@ -207,7 +207,7 @@ pub struct Weight {
 	pub proof_size: u64,
 }
 
-#[derive(Debug, Default, Clone, Copy, Deserialize, Encode, Decode)]
+#[derive(Debug, Default, Clone, Copy, Deserialize, Encode, Decode, PartialEq, Eq)]
 pub struct PerDispatchClassWeight {
 	pub normal: Weight,
 	pub operational: Weight,

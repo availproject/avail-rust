@@ -226,7 +226,7 @@ impl BlockExtrinsicsQuery {
 
 // ── BlockEncodedExtrinsic ───────────────────────────────────────────────
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UntypedExtrinsic {
 	pub preamble: Preamble,
 	pub call: Vec<u8>,
@@ -256,6 +256,14 @@ impl UntypedExtrinsic {
 
 	pub fn ext_hash(&self) -> H256 {
 		self.metadata.ext_hash
+	}
+
+	pub fn pallet_id(&self) -> u8 {
+		self.metadata.pallet_id
+	}
+
+	pub fn variant_id(&self) -> u8 {
+		self.metadata.variant_id
 	}
 
 	pub fn nonce(&self) -> Option<u32> {
