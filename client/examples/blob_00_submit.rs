@@ -1,5 +1,4 @@
-use avail_rust_client::{avail_rust_core::rpc::blob::submit_blob, ext::const_hex, prelude::*};
-use codec::Encode;
+use avail_rust_client::{ext::const_hex, prelude::*};
 use std::str::FromStr;
 
 #[tokio::main]
@@ -15,15 +14,22 @@ async fn main() -> Result<(), Error> {
 	.unwrap();
 
 	let signer = alice();
-	let unsigned_tx =
-		client
-			.tx()
-			.data_availability()
-			.submit_blob_metadata(2, blob_hash, blob.len() as u64, commitments, None, None);
+	let result = client
+		.blob()
+		.submit_blob_and_blob_metadata(
+			2,
+			blob_hash,
+			blob.len() as u64,
+			commitments,
+			None,
+			None,
+			&signer,
+			Options::new(),
+			&blob,
+		)
+		.await;
 
-	let tx = unsigned_tx.sign(&signer, Options::default()).await.unwrap().encode();
-
-	if let Err(e) = submit_blob(&client.rpc_client, &tx, &blob).await {
+	if let Err(e) = result {
 		println!("An error has occured: {e}");
 	} else {
 		println!("Blob submitted");

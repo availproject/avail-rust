@@ -172,4 +172,8 @@ impl Client {
 	pub fn account<'a>(&'a self) -> crate::account::Account<'a> {
 		crate::account::Account::new(self)
 	}
+
+	pub fn blob<'a>(&'a self) -> crate::blob::Blob<'a> {
+		crate::blob::Blob::new(self)
+	}
 }
