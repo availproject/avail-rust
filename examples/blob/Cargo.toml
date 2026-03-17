@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-avail-fri = { git = "https://github.com/availproject/avail-core.git", rev = "f1889544c65a7cf65df077bd4dc1e8941cd4e41f", default-features = false, features = ["parallel"]}
+avail-fri = { git = "https://github.com/availproject/avail-core.git", rev = "ecc267c2b9dc3508066ddf879fde94b9599aa31d", default-features = false, features = ["parallel", "std"]}
 avail-rust-client = { path = "./../../client", default-features = false, features = ["native"] }
 tokio = { version = "1", default-features = false, features = ["full"] }
 anyhow = { version = "1.0" }
