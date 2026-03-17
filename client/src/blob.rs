@@ -34,19 +34,26 @@ impl<'a> Blob<'a> {
 			.await
 	}
 
+	#[allow(clippy::too_many_arguments)]
 	pub async fn submit_blob_and_blob_metadata(
 		&self,
 		app_id: u32,
 		blob_hash: H256,
-		size: u64,
+		blob: &[u8],
 		commitments: Vec<u8>,
 		eval_point_seed: Option<[u8; 32]>,
 		eval_claim: Option<[u8; 16]>,
 		signer: &Keypair,
 		options: Options,
-		blob: &[u8],
 	) -> Result<(), Error> {
-		let tx = self.submit_blob_metadata_tx(app_id, blob_hash, size, commitments, eval_point_seed, eval_claim);
+		let tx = self.submit_blob_metadata_tx(
+			app_id,
+			blob_hash,
+			blob.len() as u64,
+			commitments,
+			eval_point_seed,
+			eval_claim,
+		);
 		let tx_signed = tx.sign(signer, options).await?;
 
 		self.submit_blob(&tx_signed.encode(), blob).await

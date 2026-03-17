@@ -3,46 +3,8 @@
 // see LICENSE for license details.
 
 use crate::types::Era;
-use codec::{Compact, Encode};
-use scale_info::PortableRegistry;
-use subxt_core::{
-	client::ClientState,
-	config::{Config, ExtrinsicParams, ExtrinsicParamsEncoder, Header, transaction_extensions},
-	error::ExtrinsicParamsError,
-};
-
-use crate::types::metadata::AppId;
-
-#[derive(Debug, Clone, Copy, Default)]
-pub struct CheckAppId(pub AppId);
-
-/// Ideally, we would use avail_core::AppId but we cannot define `RefineParams` for it so we need a wrapper. Crazy
-impl<T: Config> transaction_extensions::Params<T> for AppId {}
-impl<T: Config> transaction_extensions::Params<T> for CheckAppId {}
-
-impl ExtrinsicParamsEncoder for CheckAppId {
-	fn encode_value_to(&self, v: &mut Vec<u8>) {
-		Compact::<u32>(self.0.0).encode_to(v);
-	}
-
-	fn encode_implicit_to(&self, _: &mut Vec<u8>) {}
-}
-
-impl<T: Config> subxt_core::config::ExtrinsicParams<T> for CheckAppId {
-	type Params = AppId;
-
-	fn new(_client: &ClientState<T>, id: Self::Params) -> Result<Self, ExtrinsicParamsError> {
-		Ok(CheckAppId(id))
-	}
-}
-
-impl<T: Config> transaction_extensions::TransactionExtension<T> for CheckAppId {
-	type Decoded = Compact<u32>;
-
-	fn matches(identifier: &str, _type_id: u32, _types: &PortableRegistry) -> bool {
-		identifier == "CheckAppId"
-	}
-}
+use codec::Compact;
+use subxt_core::config::{Config, ExtrinsicParams, Header, transaction_extensions};
 
 /// Type used only for decoding extrinsic from blocks.
 pub type OnlyCodecExtra = (
@@ -54,7 +16,6 @@ pub type OnlyCodecExtra = (
 	Compact<u32>,  // CheckNonce<Runtime>,
 	(),            // CheckWeight<Runtime>,
 	Compact<u128>, // ChargeTransactionPayment<Runtime>,
-	AppId,         // CheckAppId<Runtime>,
 );
 
 /// The default [`super::ExtrinsicParams`] implementation understands common signed extensions
@@ -68,7 +29,6 @@ pub type DefaultExtrinsicParams<T> = transaction_extensions::AnyOf<
 		transaction_extensions::CheckMortality<T>,
 		transaction_extensions::CheckNonce,
 		transaction_extensions::ChargeTransactionPayment,
-		CheckAppId,
 	),
 >;
 
@@ -81,7 +41,6 @@ pub struct DefaultExtrinsicParamsBuilder<T: Config> {
 	/// `None` means the nonce will be automatically set.
 	nonce: Option<u64>,
 	tip: u128,
-	app_id: AppId,
 }
 
 #[derive(Debug, Clone)]
@@ -97,12 +56,7 @@ struct Mortality<Hash> {
 
 impl<T: Config> Default for DefaultExtrinsicParamsBuilder<T> {
 	fn default() -> Self {
-		Self {
-			mortality: None,
-			tip: 0,
-			nonce: None,
-			app_id: AppId::default(),
-		}
+		Self { mortality: None, tip: 0, nonce: None }
 	}
 }
 
@@ -128,12 +82,6 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 	/// Provide a specific nonce for the submitter of the extrinsic
 	pub fn nonce(mut self, nonce: u64) -> Self {
 		self.nonce = Some(nonce);
-		self
-	}
-
-	/// App Id
-	pub fn app_id(mut self, app_id: u32) -> Self {
-		self.app_id = AppId(app_id);
 		self
 	}
 
@@ -176,6 +124,6 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 			Some(x) => transaction_extensions::CheckNonceParams::with_nonce(x),
 			None => transaction_extensions::CheckNonceParams::from_chain(),
 		};
-		((), (), (), check_mortality_params, check_nonce_params, charge_transaction_params, self.app_id)
+		((), (), (), check_mortality_params, check_nonce_params, charge_transaction_params)
 	}
 }

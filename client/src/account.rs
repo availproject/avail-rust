@@ -33,7 +33,7 @@ impl<'a> Account<'a> {
 	}
 
 	pub fn new_from_phrase(mnemonic: &Mnemonic, password: Option<&str>) -> Result<Keypair, Error> {
-		let keypair = Keypair::from_phrase(&mnemonic, password).map_err(|e| {
+		let keypair = Keypair::from_phrase(mnemonic, password).map_err(|e| {
 			UserError::ValidationFailed(std::format!(
 				"[op:{}] Failed to derive keypair: {}",
 				error_ops::ErrorOperation::KeypairParse,

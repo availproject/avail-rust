@@ -1,13 +1,9 @@
 use std::{fmt::Display, str::FromStr};
 
-use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 
 use crate::{AccountId, MultiAddress, utils::account_id_from_str};
-
-#[derive(Debug, Clone, Copy, Default, Encode, Decode, Eq, PartialEq)]
-pub struct AppId(#[codec(compact)] pub u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct ChainInfo {

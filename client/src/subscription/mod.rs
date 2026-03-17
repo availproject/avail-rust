@@ -1,15 +1,13 @@
 pub mod builder;
 pub mod fetcher;
-pub(crate) mod sub;
-pub mod subscription;
+pub mod sub;
 
 pub use builder::SubscriptionBuilder;
 pub use fetcher::{
 	BlockEventsFetcher, BlockFetcher, BlockHeaderFetcher, BlockInfoFetcher, ExtrinsicFetcher, Fetcher,
 	GrandpaJustificationFetcher, LegacyBlockFetcher, UntypedExtrinsicFetcher,
 };
-pub use sub::BlockQueryMode;
-pub use subscription::{Subscription, SubscriptionItem};
+pub use sub::{BlockQueryMode, Subscription, SubscriptionItem};
 
 use crate::Client;
 use avail_rust_core::{

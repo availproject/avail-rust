@@ -5,7 +5,6 @@ use avail_rust_core::{AccountId, Era, Extension, H256};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Options {
-	pub app_id: Option<u32>,
 	pub mortality: Option<MortalityOption>,
 	pub nonce: Option<u32>,
 	pub tip: Option<u128>,
@@ -14,11 +13,6 @@ pub struct Options {
 impl Options {
 	pub fn new() -> Self {
 		Self::default()
-	}
-
-	pub fn app_id(mut self, value: u32) -> Self {
-		self.app_id = Some(value);
-		self
 	}
 
 	pub fn mortality(mut self, value: MortalityOption) -> Self {

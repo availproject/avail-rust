@@ -1,7 +1,6 @@
 use super::{
 	fetcher::Fetcher,
-	sub::{Sub, SubConfig},
-	subscription::Subscription,
+	sub::{Sub, SubConfig, Subscription},
 };
 use crate::{Client, Error, RetryPolicy};
 use std::time::Duration;
