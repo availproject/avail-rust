@@ -28,7 +28,7 @@ impl AvailHeader {
 	}
 
 	pub fn hash(&self) -> H256 {
-		BlakeTwo256::hash_of(self)
+		BlakeTwo256.hash_of(self)
 	}
 }
 
@@ -38,10 +38,6 @@ impl SubxtHeader for AvailHeader {
 
 	fn number(&self) -> Self::Number {
 		self.number
-	}
-
-	fn hash(&self) -> <Self::Hasher as Hasher>::Output {
-		self.hash()
 	}
 }
 

@@ -284,7 +284,7 @@ impl Extrinsic {
 
 	pub fn hash(&self) -> H256 {
 		let encoded = self.encode();
-		BlakeTwo256::hash(&encoded)
+		BlakeTwo256.hash(&encoded)
 	}
 }
 
@@ -398,7 +398,7 @@ impl<'a> ExtrinsicBorrowed<'a> {
 
 	pub fn hash(&self) -> H256 {
 		let encoded = self.encode();
-		BlakeTwo256::hash(&encoded)
+		BlakeTwo256.hash(&encoded)
 	}
 }
 
@@ -465,7 +465,7 @@ impl<'a> SignedPayload<'a> {
 		self.implicit.encode_to(&mut data);
 
 		if data.len() > 256 {
-			let hash = BlakeTwo256::hash(&data);
+			let hash = BlakeTwo256.hash(&data);
 			signer.sign(hash.as_ref()).0
 		} else {
 			signer.sign(&data).0

@@ -1,0 +1,10 @@
+[package]
+name = "blob_example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+avail-fri = { git = "https://github.com/availproject/avail-core.git", rev = "f1889544c65a7cf65df077bd4dc1e8941cd4e41f", default-features = false, features = ["parallel"]}
+avail-rust-client = { path = "./../../client", default-features = false, features = ["native"] }
+tokio = { version = "1", default-features = false, features = ["full"] }
+anyhow = { version = "1.0" }
