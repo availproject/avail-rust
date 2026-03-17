@@ -4445,3 +4445,19 @@ pub mod treasury {
 		}
 	}
 }
+pub mod babe {
+	use super::*;
+	pub const PALLET_ID: u8 = 2;
+
+	pub mod storage {
+		use super::*;
+
+		pub struct BabeRandomness;
+		impl StorageValue for BabeRandomness {
+			type VALUE = [u8; 32];
+
+			const PALLET_NAME: &str = "Babe";
+			const STORAGE_NAME: &str = "Randomness";
+		}
+	}
+}

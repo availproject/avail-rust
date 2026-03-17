@@ -4,7 +4,7 @@
 
 use crate::types::Era;
 use codec::Compact;
-use subxt_core::config::{Config, ExtrinsicParams, Header, transaction_extensions};
+use subxt_core::config::{Config, ExtrinsicParams, HashFor, transaction_extensions};
 
 /// Type used only for decoding extrinsic from blocks.
 pub type OnlyCodecExtra = (
@@ -37,7 +37,7 @@ pub type DefaultExtrinsicParams<T> = transaction_extensions::AnyOf<
 /// chain; such values will simply be ignored if so.
 pub struct DefaultExtrinsicParamsBuilder<T: Config> {
 	/// `None` means the tx will be immortal.
-	mortality: Option<Mortality<T::Hash>>,
+	mortality: Option<Mortality<HashFor<T>>>,
 	/// `None` means the nonce will be automatically set.
 	nonce: Option<u64>,
 	tip: u128,
@@ -70,10 +70,10 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 	/// Make the transaction mortal, given a block header that it should be mortal from,
 	/// and the number of blocks (roughly; it'll be rounded to a power of two) that it will
 	/// be mortal for.
-	pub fn mortal(mut self, from_block: &T::Header, for_n_blocks: u64) -> Self {
+	pub fn mortal(mut self, hash: HashFor<T>, number: u64, for_n_blocks: u64) -> Self {
 		self.mortality = Some(Mortality {
-			checkpoint_hash: from_block.hash(),
-			checkpoint_number: from_block.number().into(),
+			checkpoint_hash: hash,
+			checkpoint_number: number,
 			period: for_n_blocks,
 		});
 		self
@@ -91,7 +91,7 @@ impl<T: Config> DefaultExtrinsicParamsBuilder<T> {
 	///
 	/// Prefer to use [`DefaultExtrinsicParamsBuilder::mortal()`], which ensures that the block hash
 	/// and number align.
-	pub fn mortal_unchecked(mut self, from_block_number: u64, from_block_hash: T::Hash, for_n_blocks: u64) -> Self {
+	pub fn mortal_unchecked(mut self, from_block_number: u64, from_block_hash: HashFor<T>, for_n_blocks: u64) -> Self {
 		self.mortality = Some(Mortality {
 			checkpoint_hash: from_block_hash,
 			checkpoint_number: from_block_number,

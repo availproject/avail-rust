@@ -1,4 +1,8 @@
-use avail_rust_core::{H256, subxt_signer::sr25519::Keypair};
+use avail_rust_core::{
+	H256,
+	rpc::{blob::BlobInfo, kate::DataProof},
+	subxt_signer::sr25519::Keypair,
+};
 use codec::Encode;
 
 use crate::{Client, Error, Options, SubmittableTransaction};
@@ -10,6 +14,25 @@ pub struct Blob<'a> {
 impl<'a> Blob<'a> {
 	pub(crate) fn new(client: &'a Client) -> Self {
 		Self { client }
+	}
+
+	pub async fn get(
+		&self,
+		blob_hash: H256,
+		block_hash: Option<H256>,
+	) -> Result<avail_rust_core::rpc::blob::Blob, Error> {
+		self.client.chain().blob_get_blob(blob_hash, block_hash).await
+	}
+
+	/// Retrieve indexed blob info
+	pub async fn info(&self, blob_hash: H256) -> Result<BlobInfo, Error> {
+		self.client.chain().blob_get_blob_info(blob_hash).await
+	}
+
+	/// Return inclusion proof for a blob. If `at` is `Some(hash)` the proof is computed for that block,
+	/// otherwise the node will try to use its indexed finalized block for the blob.
+	pub async fn inclusion_proof(&self, blob_hash: H256, at: Option<H256>) -> Result<DataProof, Error> {
+		self.client.chain().blob_inclusion_proof(blob_hash, at).await
 	}
 
 	pub fn submit_blob_metadata_tx(
@@ -38,8 +61,8 @@ impl<'a> Blob<'a> {
 	pub async fn submit_blob_and_blob_metadata(
 		&self,
 		app_id: u32,
-		blob_hash: H256,
 		blob: &[u8],
+		blob_hash: H256,
 		commitments: Vec<u8>,
 		eval_point_seed: Option<[u8; 32]>,
 		eval_claim: Option<[u8; 16]>,
