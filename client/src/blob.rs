@@ -63,7 +63,6 @@ impl<'a> Blob<'a> {
 		app_id: u32,
 		blob: &[u8],
 		blob_hash: H256,
-		blob: &[u8],
 		commitments: Vec<u8>,
 		eval_point_seed: Option<[u8; 32]>,
 		eval_claim: Option<[u8; 16]>,

@@ -1,6 +1,5 @@
 use super::fetcher::Fetcher;
-use crate::Error;
-use crate::{BlockInfo, Client, H256, RetryPolicy, RpcError, platform::sleep};
+use crate::{BlockInfo, Client, Error, H256, RetryPolicy, RpcError, platform::sleep};
 use futures::stream::{self, Stream};
 use std::time::Duration;
 
