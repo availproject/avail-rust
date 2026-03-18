@@ -2,8 +2,8 @@ pub mod events;
 pub mod extrinsic;
 pub mod shared;
 
-pub use events::{BlockEvent, BlockEvents, BlockEventsQuery};
-pub use extrinsic::{BlockExtrinsicsQuery, TypedExtrinsic, UntypedExtrinsic};
+pub use events::{BlockEvent, BlockEvents, EventsQuery};
+pub use extrinsic::{ExtrinsicsQuery, TypedExtrinsic, UntypedExtrinsic};
 pub use shared::BlockExtrinsicMetadata;
 
 use crate::{Client, Error, RetryPolicy, block::shared::BlockContext};
@@ -29,13 +29,13 @@ impl Block {
 		Block { ctx: BlockContext::new(client, at.into()) }
 	}
 
-	pub fn extrinsics(&self) -> extrinsic::BlockExtrinsicsQuery {
-		extrinsic::BlockExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.at.clone())
+	pub fn extrinsics(&self) -> extrinsic::ExtrinsicsQuery {
+		extrinsic::ExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.at.clone())
 	}
 
 	/// Returns an event helper scoped to this block.
-	pub fn events(&self) -> events::BlockEventsQuery {
-		events::BlockEventsQuery::new(self.ctx.client.clone(), self.ctx.at.clone())
+	pub fn events(&self) -> events::EventsQuery {
+		events::EventsQuery::new(self.ctx.client.clone(), self.ctx.at.clone())
 	}
 
 	/// Sets retry behavior for subsequent block RPC calls.

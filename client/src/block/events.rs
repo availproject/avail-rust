@@ -6,14 +6,14 @@ use avail_rust_core::{
 };
 
 /// Helper for retrieving events scoped to a specific block.
-pub struct BlockEventsQuery {
+pub struct EventsQuery {
 	ctx: BlockContext,
 }
 
-impl BlockEventsQuery {
+impl EventsQuery {
 	/// Creates an event helper for a block hash/height.
 	pub fn new(client: Client, at: impl Into<HashStringNumber>) -> Self {
-		BlockEventsQuery { ctx: BlockContext::new(client, at.into()) }
+		EventsQuery { ctx: BlockContext::new(client, at.into()) }
 	}
 
 	/// Returns events emitted by a specific extrinsic index.

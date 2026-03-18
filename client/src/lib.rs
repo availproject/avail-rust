@@ -40,6 +40,8 @@ pub mod transaction_api;
 pub mod transaction_options;
 pub mod utils;
 
+pub use avail_rust_core::rpc::{AllowedEvents, AllowedExtrinsic};
+pub use block::{EventsQuery, ExtrinsicsQuery, TypedExtrinsic, UntypedExtrinsic};
 pub use chain::{Head, HeadKind};
 #[cfg(feature = "tracing")]
 pub use client::TracingFormat;

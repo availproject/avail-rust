@@ -2,7 +2,7 @@ use crate::{
 	Client, Error, RetryPolicy, UserError,
 	block::{
 		BlockExtrinsicMetadata,
-		events::{BlockEvents, BlockEventsQuery},
+		events::{BlockEvents, EventsQuery},
 		shared::BlockContext,
 	},
 	error_ops,
@@ -21,11 +21,11 @@ use codec::Decode;
 /// that return [`BlockEncodedExtrinsic`] with raw call bytes, and typed `_as` variants
 /// (`get_as`, `first_as`, `last_as`, `all_as`) that decode the call into a concrete
 /// Rust struct.
-pub struct BlockExtrinsicsQuery {
+pub struct ExtrinsicsQuery {
 	ctx: BlockContext,
 }
 
-impl BlockExtrinsicsQuery {
+impl ExtrinsicsQuery {
 	pub fn new(client: Client, at: HashStringNumber) -> Self {
 		Self { ctx: BlockContext::new(client, at) }
 	}
@@ -33,10 +33,7 @@ impl BlockExtrinsicsQuery {
 	// ── Untyped (encoded) methods ───────────────────────────────────────
 
 	pub async fn get(&self, extrinsic_id: impl Into<HashStringNumber>) -> Result<Option<UntypedExtrinsic>, Error> {
-		async fn inner(
-			s: &BlockExtrinsicsQuery,
-			extrinsic_id: HashStringNumber,
-		) -> Result<Option<UntypedExtrinsic>, Error> {
+		async fn inner(s: &ExtrinsicsQuery, extrinsic_id: HashStringNumber) -> Result<Option<UntypedExtrinsic>, Error> {
 			let allowed = match extrinsic_id {
 				HashStringNumber::Hash(x) => AllowedExtrinsic::from(x),
 				HashStringNumber::String(x) => AllowedExtrinsic::try_from(x.as_str()).map_err(UserError::Decoding)?,
@@ -136,7 +133,7 @@ impl BlockExtrinsicsQuery {
 		extrinsic_id: impl Into<HashStringNumber>,
 	) -> Result<Option<TypedExtrinsic<T>>, Error> {
 		async fn inner<T: HasHeader + Decode>(
-			s: &BlockExtrinsicsQuery,
+			s: &ExtrinsicsQuery,
 			extrinsic_id: HashStringNumber,
 		) -> Result<Option<TypedExtrinsic<T>>, Error> {
 			let allowed = match extrinsic_id {
@@ -239,7 +236,7 @@ impl UntypedExtrinsic {
 	}
 
 	pub async fn events(&self, client: Client) -> Result<BlockEvents, Error> {
-		let events = BlockEventsQuery::new(client, self.metadata.at)
+		let events = EventsQuery::new(client, self.metadata.at)
 			.extrinsic(self.ext_index())
 			.await?;
 
@@ -329,7 +326,7 @@ impl<T: HasHeader + Decode> TypedExtrinsic<T> {
 	}
 
 	pub async fn events(&self, client: Client) -> Result<BlockEvents, Error> {
-		let events = BlockEventsQuery::new(client, self.metadata.at)
+		let events = EventsQuery::new(client, self.metadata.at)
 			.extrinsic(self.ext_index())
 			.await?;
 

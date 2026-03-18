@@ -6,7 +6,7 @@
 
 use crate::{
 	AvailHeader, Client, Error, RetryPolicy,
-	block::{self, Block, events::BlockEventsQuery},
+	block::{self, Block, events::EventsQuery},
 };
 use async_trait::async_trait;
 use avail_rust_core::{
@@ -127,7 +127,7 @@ impl Fetcher for BlockEventsFetcher {
 	type Output = Vec<PhaseEvents>;
 
 	async fn fetch(&self, client: &Client, info: BlockInfo, _retry: RetryPolicy) -> Result<Vec<PhaseEvents>, Error> {
-		let query = BlockEventsQuery::new(client.clone(), info.hash);
+		let query = EventsQuery::new(client.clone(), info.hash);
 		query.rpc(self.allow_list.clone(), true).await
 	}
 
