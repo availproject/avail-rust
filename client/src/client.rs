@@ -53,6 +53,12 @@ impl From<&str> for ConnectionOptions {
 	}
 }
 
+impl From<&String> for ConnectionOptions {
+	fn from(value: &String) -> Self {
+		Self::from(value.as_str())
+	}
+}
+
 impl From<String> for ConnectionOptions {
 	fn from(value: String) -> Self {
 		Self { endpoint: value, retry_policy: RetryPolicy::Enabled }
