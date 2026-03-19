@@ -1,13 +1,15 @@
-use std::str::FromStr;
-
-use crate::{AccountId, HashNumber, rpc::Error};
+use crate::{
+	AccountId,
+	rpc::{Error, custom::BlockId},
+};
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use subxt_rpcs::{RpcClient, rpc_params};
 
 pub async fn fetch_extrinsics(
 	client: &RpcClient,
-	at: HashNumber,
+	at: BlockId,
 	allow_list: Option<Vec<AllowedExtrinsic>>,
 	sig_filter: SignatureFilter,
 	data_format: DataFormat,

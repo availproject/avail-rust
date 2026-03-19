@@ -52,7 +52,9 @@ pub use constants::{
 };
 pub use extensions::AccountIdExt;
 pub use retry_policy::RetryPolicy;
-pub use submission::{SubmissionOutcome, SubmittableTransaction, SubmittedTransaction, TransactionReceipt};
+pub use submission::{
+	SubmissionOutcome, SubmittableTransaction, SubmittedTransaction, TransactionReceipt, submitted::WaitOption,
+};
 pub use subscription::{BlockQueryMode, Fetcher, SubscribeApi, Subscription, SubscriptionBuilder, SubscriptionItem};
 pub use transaction_options::{Mortality, MortalityOption, Options};
 

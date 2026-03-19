@@ -501,6 +501,8 @@ pub mod data_availability {
 	}
 
 	pub mod types {
+		use crate::grandpa::AuthorityId;
+
 		use super::*;
 
 		#[derive(Debug, Clone)]
@@ -519,6 +521,38 @@ pub mod data_availability {
 				let owner = Decode::decode(input)?;
 				let id = Compact::<u32>::decode(input)?.0;
 				Ok(Self { owner, id })
+			}
+		}
+
+		#[derive(Debug, Clone)]
+		pub struct BlobTxSummary {
+			pub hash: H256,
+			pub tx_index: u32,
+			pub success: bool,
+			pub reason: Option<String>,
+			pub ownership: Vec<(AccountId, AuthorityId, String, Vec<u8>)>,
+			pub eval_proof: Option<Vec<u8>>,
+		}
+
+		impl Encode for BlobTxSummary {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.hash.encode_to(dest);
+				self.tx_index.encode_to(dest);
+				self.success.encode_to(dest);
+				self.reason.encode_to(dest);
+				self.ownership.encode_to(dest);
+				self.eval_proof.encode_to(dest);
+			}
+		}
+		impl Decode for BlobTxSummary {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let hash = Decode::decode(input)?;
+				let tx_index = Decode::decode(input)?;
+				let success = Decode::decode(input)?;
+				let reason = Decode::decode(input)?;
+				let ownership = Decode::decode(input)?;
+				let eval_proof = Decode::decode(input)?;
+				Ok(Self { hash, tx_index, success, reason, ownership, eval_proof })
 			}
 		}
 	}
@@ -630,11 +664,11 @@ pub mod data_availability {
 		impl Encode for SubmitBlobMetadata {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				Compact(self.app_id).encode_to(dest);
-				dest.write(&self.blob_hash.encode());
-				dest.write(&self.size.encode());
-				dest.write(&self.commitments.encode());
-				dest.write(&self.eval_point_seed.encode());
-				dest.write(&self.eval_claim.encode());
+				self.blob_hash.encode_to(dest);
+				self.size.encode_to(dest);
+				self.commitments.encode_to(dest);
+				self.eval_point_seed.encode_to(dest);
+				self.eval_claim.encode_to(dest);
 			}
 		}
 		impl Decode for SubmitBlobMetadata {
@@ -657,6 +691,31 @@ pub mod data_availability {
 		}
 		impl HasHeader for SubmitBlobMetadata {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 5);
+		}
+
+		#[derive(Clone)]
+		pub struct SubmitBlobTxsSummary {
+			pub total_blob_size: u64,
+			pub nb_blobs: u32,
+			pub blob_txs_summary: Vec<types::BlobTxSummary>,
+		}
+		impl Encode for SubmitBlobTxsSummary {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.total_blob_size.encode_to(dest);
+				self.nb_blobs.encode_to(dest);
+				self.blob_txs_summary.encode_to(dest);
+			}
+		}
+		impl Decode for SubmitBlobTxsSummary {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let total_blob_size = Decode::decode(input)?;
+				let nb_blobs = Decode::decode(input)?;
+				let blob_txs_summary = Decode::decode(input)?;
+				Ok(Self { total_blob_size, nb_blobs, blob_txs_summary })
+			}
+		}
+		impl HasHeader for SubmitBlobTxsSummary {
+			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 6);
 		}
 	}
 }

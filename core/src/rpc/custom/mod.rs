@@ -1,7 +1,7 @@
 mod events;
 mod extrinsics;
 
-use crate::{HashNumber, rpc::Error, types::metadata::ChainInfo};
+use crate::{rpc::Error, types::metadata::ChainInfo};
 use primitive_types::H256;
 use subxt_rpcs::{RpcClient, rpc_params};
 
@@ -20,8 +20,14 @@ pub async fn chain_info(client: &RpcClient) -> Result<ChainInfo, Error> {
 	Ok(value)
 }
 
-pub async fn block_timestamp(client: &RpcClient, at: HashNumber) -> Result<u64, Error> {
+pub async fn block_timestamp(client: &RpcClient, at: BlockId) -> Result<u64, Error> {
 	let params = rpc_params![at];
 	let value = client.request("custom_blockTimestamp", params).await?;
 	Ok(value)
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+pub enum BlockId {
+	Hash(H256),
+	Number(u32),
 }

@@ -15,7 +15,7 @@ async fn main() -> anyhow::Result<()> {
 
 	let result = client
 		.blob()
-		.submit_blob_and_blob_metadata(
+		.submit_with_metadata_and_watch(
 			2,
 			&data,
 			data_hash,
@@ -24,10 +24,11 @@ async fn main() -> anyhow::Result<()> {
 			Some(commitment.claim),
 			&alice(),
 			Options::new(),
+			WaitOption::default(),
 		)
 		.await;
 
-	println!("{:?}", data_hash);
+	println!("{:?}", result);
 
 	if let Err(e) = result {
 		println!("An error has occured: {e}");

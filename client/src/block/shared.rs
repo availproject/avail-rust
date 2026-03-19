@@ -44,7 +44,7 @@ impl BlockContext {
 
 	/// Resolves the stored identifier into a [`HashNumber`].
 	pub fn hash_number(&self) -> Result<HashNumber, Error> {
-		HashNumber::from_impl(self.at.clone())
+		HashNumber::try_from(self.at.clone())
 			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::BlockSharedHashNumber, e))
 	}
 
@@ -78,7 +78,7 @@ impl BlockContext {
 
 /// Metadata describing where an extrinsic resides within a block.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BlockExtrinsicMetadata {
+pub struct ExtrinsicMetadata {
 	/// Hash of the extrinsic.
 	pub ext_hash: H256,
 	/// Index of the extrinsic within the block.
@@ -91,7 +91,7 @@ pub struct BlockExtrinsicMetadata {
 	pub at: HashNumber,
 }
 
-impl BlockExtrinsicMetadata {
+impl ExtrinsicMetadata {
 	/// Wraps metadata about an extrinsic inside a block.
 	///
 	pub fn new(ext_hash: H256, ext_index: u32, pallet_id: u8, variant_id: u8, at: HashNumber) -> Self {

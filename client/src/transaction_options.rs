@@ -30,13 +30,12 @@ impl Options {
 		self
 	}
 
-	pub(crate) async fn resolve(
+	pub async fn resolve_nonce(
 		self,
 		client: &Client,
 		account_id: &AccountId,
 		retry_on_error: RetryPolicy,
-	) -> Result<ResolvedOptions, crate::Error> {
-		let tip = self.tip.unwrap_or_default();
+	) -> Result<u32, crate::Error> {
 		let nonce = match self.nonce {
 			Some(x) => x,
 			None => {
@@ -47,18 +46,36 @@ impl Options {
 					.await?
 			},
 		};
+
+		Ok(nonce)
+	}
+
+	pub async fn resolve_mortality(self, client: &Client) -> Result<Mortality, crate::Error> {
 		let mortality = self.mortality.unwrap_or(MortalityOption::Period(32));
 		let mortality = match mortality {
 			MortalityOption::Period(period) => Mortality::from_period(client, period).await?,
 			MortalityOption::Full(mortality) => mortality,
 		};
 
+		Ok(mortality)
+	}
+
+	pub async fn resolve(
+		self,
+		client: &Client,
+		account_id: &AccountId,
+		retry_on_error: RetryPolicy,
+	) -> Result<ResolvedOptions, crate::Error> {
+		let tip = self.tip.unwrap_or_default();
+		let nonce = self.resolve_nonce(client, account_id, retry_on_error).await?;
+		let mortality = self.resolve_mortality(client).await?;
+
 		Ok(ResolvedOptions { mortality, nonce, tip })
 	}
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct ResolvedOptions {
+pub struct ResolvedOptions {
 	pub mortality: Mortality,
 	pub nonce: u32,
 	pub tip: u128,

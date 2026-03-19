@@ -1,14 +1,14 @@
 use crate::{
 	Client, Error, RetryPolicy, UserError,
 	block::{
-		BlockExtrinsicMetadata,
+		ExtrinsicMetadata,
 		events::{BlockEvents, EventsQuery},
 		shared::BlockContext,
 	},
 	error_ops,
 };
 use avail_rust_core::{
-	Extrinsic, ExtrinsicDecodable, H256, HasHeader, HashNumber, MultiAddress, RpcError,
+	Extrinsic, ExtrinsicDecodable, H256, HasHeader, HashNumber, MultiAddress, RpcError, avail,
 	rpc::{self, AllowedExtrinsic, DataFormat},
 	substrate::extrinsic::Preamble,
 	types::HashStringNumber,
@@ -35,9 +35,12 @@ impl ExtrinsicsQuery {
 	pub async fn get(&self, extrinsic_id: impl Into<HashStringNumber>) -> Result<Option<UntypedExtrinsic>, Error> {
 		async fn inner(s: &ExtrinsicsQuery, extrinsic_id: HashStringNumber) -> Result<Option<UntypedExtrinsic>, Error> {
 			let allowed = match extrinsic_id {
-				HashStringNumber::Hash(x) => AllowedExtrinsic::from(x),
 				HashStringNumber::String(x) => AllowedExtrinsic::try_from(x.as_str()).map_err(UserError::Decoding)?,
-				HashStringNumber::Number(x) => AllowedExtrinsic::from(x),
+				HashStringNumber::HashNumber(hn) => match hn {
+					HashNumber::Hash(x) => AllowedExtrinsic::from(x),
+					HashNumber::Number(x) => AllowedExtrinsic::from(x),
+					HashNumber::HashAndNumber(hn) => AllowedExtrinsic::from(hn.0),
+				},
 			};
 
 			s.first(Some(vec![allowed]), Default::default()).await
@@ -137,9 +140,12 @@ impl ExtrinsicsQuery {
 			extrinsic_id: HashStringNumber,
 		) -> Result<Option<TypedExtrinsic<T>>, Error> {
 			let allowed = match extrinsic_id {
-				HashStringNumber::Hash(x) => AllowedExtrinsic::from(x),
 				HashStringNumber::String(x) => AllowedExtrinsic::try_from(x.as_str()).map_err(UserError::Decoding)?,
-				HashStringNumber::Number(x) => AllowedExtrinsic::from(x),
+				HashStringNumber::HashNumber(hn) => match hn {
+					HashNumber::Hash(x) => AllowedExtrinsic::from(x),
+					HashNumber::Number(x) => AllowedExtrinsic::from(x),
+					HashNumber::HashAndNumber(hn) => AllowedExtrinsic::from(hn.0),
+				},
 			};
 
 			let encoded = s.first(Some(vec![allowed]), Default::default()).await?;
@@ -196,6 +202,43 @@ impl ExtrinsicsQuery {
 		Ok(result)
 	}
 
+	// ── Predefined ──────────────────────────────────────────────────────
+
+	/// Block 0 is the only block that does not have this extrinsic in it.
+	pub async fn ext_timestamp(&self) -> Result<TypedExtrinsic<avail::timestamp::tx::Set>, Error> {
+		let ext = self.first_as::<avail::timestamp::tx::Set>(Default::default()).await?;
+		let Some(ext) = ext else {
+			return Err(Error::NotFound(String::from("Timestamp Set extrinsic not found")));
+		};
+		Ok(ext)
+	}
+
+	/// Block 0 is the only block that does not have this extrinsic in it.
+	pub async fn ext_submit_blob_txs_summary(
+		&self,
+	) -> Result<TypedExtrinsic<avail::data_availability::tx::SubmitBlobTxsSummary>, Error> {
+		let ext = self
+			.first_as::<avail::data_availability::tx::SubmitBlobTxsSummary>(Default::default())
+			.await?;
+		let Some(ext) = ext else {
+			return Err(Error::NotFound(String::from("Data Availability Submit Blob Tx Summary extrinsic not found")));
+		};
+		Ok(ext)
+	}
+
+	/// Block 0 is the only block that does not have this extrinsic in it.
+	pub async fn ext_failed_send_message_txs(
+		&self,
+	) -> Result<TypedExtrinsic<avail::vector::tx::FailedSendMessageTxs>, Error> {
+		let ext = self
+			.first_as::<avail::vector::tx::FailedSendMessageTxs>(Default::default())
+			.await?;
+		let Some(ext) = ext else {
+			return Err(Error::NotFound(String::from("Vector Failed Send Message Txs extrinsic not found")));
+		};
+		Ok(ext)
+	}
+
 	// ── Raw RPC access ──────────────────────────────────────────────────
 
 	pub async fn rpc(
@@ -227,11 +270,11 @@ impl ExtrinsicsQuery {
 pub struct UntypedExtrinsic {
 	pub preamble: Preamble,
 	pub call: Vec<u8>,
-	pub metadata: BlockExtrinsicMetadata,
+	pub metadata: ExtrinsicMetadata,
 }
 
 impl UntypedExtrinsic {
-	pub fn new(preamble: Preamble, call: Vec<u8>, metadata: BlockExtrinsicMetadata) -> Self {
+	pub fn new(preamble: Preamble, call: Vec<u8>, metadata: ExtrinsicMetadata) -> Self {
 		Self { preamble, call, metadata }
 	}
 
@@ -304,7 +347,7 @@ impl UntypedExtrinsic {
 	}
 
 	pub fn from_rpc_extrinsic(ext: &rpc::Extrinsic, at: HashNumber) -> Result<Self, Error> {
-		let metadata = BlockExtrinsicMetadata::from_rpc_extrinsic(ext, at);
+		let metadata = ExtrinsicMetadata::from_rpc_extrinsic(ext, at);
 		let extrinsic = Extrinsic::try_from(ext.data.as_str())
 			.map_err(|e| Error::decode_with_op(error_ops::ErrorOperation::BlockExtrinsicFromRpc, e))?;
 		Ok(UntypedExtrinsic::new(extrinsic.preamble, extrinsic.call.0, metadata))
@@ -317,11 +360,11 @@ impl UntypedExtrinsic {
 pub struct TypedExtrinsic<T: HasHeader + Decode> {
 	pub preamble: Preamble,
 	pub call: T,
-	pub metadata: BlockExtrinsicMetadata,
+	pub metadata: ExtrinsicMetadata,
 }
 
 impl<T: HasHeader + Decode> TypedExtrinsic<T> {
-	pub fn new(preamble: Preamble, call: T, metadata: BlockExtrinsicMetadata) -> Self {
+	pub fn new(preamble: Preamble, call: T, metadata: ExtrinsicMetadata) -> Self {
 		Self { preamble, call, metadata }
 	}
 

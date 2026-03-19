@@ -14,15 +14,25 @@ use std::time::Duration;
 pub struct WaitOption {
 	pub mode: BlockQueryMode,
 	pub timeout: Duration,
+	pub max_block_height: Option<u32>,
 }
 
 impl WaitOption {
 	pub fn new(mode: BlockQueryMode) -> Self {
-		Self { mode, timeout: Duration::from_mins(3) }
+		Self {
+			mode,
+			timeout: Duration::from_mins(3),
+			max_block_height: None,
+		}
 	}
 
 	pub fn timeout(mut self, value: Duration) -> Self {
 		self.timeout = value;
+		self
+	}
+
+	pub fn max_block_height(mut self, value: Option<u32>) -> Self {
+		self.max_block_height = value;
 		self
 	}
 }
@@ -33,11 +43,18 @@ impl From<BlockQueryMode> for WaitOption {
 	}
 }
 
+impl From<Duration> for WaitOption {
+	fn from(value: Duration) -> Self {
+		Self::new(BlockQueryMode::Finalized).timeout(value)
+	}
+}
+
 impl Default for WaitOption {
 	fn default() -> Self {
 		Self {
 			mode: BlockQueryMode::Finalized,
 			timeout: Duration::from_mins(3),
+			max_block_height: None,
 		}
 	}
 }
@@ -60,7 +77,9 @@ impl SubmittedTransaction {
 	}
 
 	pub async fn find_receipt(&self, opts: impl Into<WaitOption>) -> Result<FindReceiptOutcome, Error> {
-		find_receipt(self.client.clone(), self.ext_hash, self.block_start, Some(self.block_end), opts.into()).await
+		let mut opts = opts.into();
+		opts.max_block_height = opts.max_block_height.or_else(|| Some(self.block_end));
+		find_receipt(self.client.clone(), self.ext_hash, self.block_start, opts).await
 	}
 
 	pub async fn receipt(&self, opts: impl Into<WaitOption>) -> Result<TransactionReceipt, Error> {
@@ -95,10 +114,9 @@ pub async fn find_receipt(
 	client: Client,
 	ext_hash: H256,
 	from_block_height: u32,
-	max_block_height: Option<u32>,
 	opts: WaitOption,
 ) -> Result<FindReceiptOutcome, Error> {
-	let future = find_receipt_inner(client, ext_hash, from_block_height, max_block_height, opts);
+	let future = find_receipt_inner(client, ext_hash, from_block_height, opts);
 	match platform::timeout(opts.timeout, future).await {
 		Ok(result) => result,
 		Err(_) => Ok(FindReceiptOutcome::TimedOut),
@@ -109,40 +127,34 @@ async fn find_receipt_inner(
 	client: Client,
 	ext_hash: H256,
 	from_block_height: u32,
-	max_block_height: Option<u32>,
 	opts: WaitOption,
 ) -> Result<FindReceiptOutcome, Error> {
 	let allow_list = Some(vec![ext_hash.into()]);
 	let mut sub = client
 		.subscribe()
-		.raw()
+		.blocks()
 		.from_height(from_block_height)
 		.mode(opts.mode)
 		.build()
 		.await?;
 
 	loop {
-		let block_info = sub.next().await?;
-
-		let exts = client
-			.chain()
-			.extrinsics(block_info.block_hash, allow_list.clone(), Default::default(), DataFormat::None)
+		let block = sub.next().await?;
+		let exts = block
+			.value
+			.extrinsics()
+			.rpc(allow_list.clone(), Default::default(), DataFormat::None)
 			.await?;
 
 		if let Some(ext) = exts.first() {
 			let (ext_hash, ext_index) = (ext.ext_hash, ext.ext_index);
-			let receipt = TransactionReceipt::new(
-				client.clone(),
-				block_info.block_hash,
-				block_info.block_height,
-				ext_hash,
-				ext_index,
-			);
+			let receipt =
+				TransactionReceipt::new(client.clone(), block.block_hash, block.block_height, ext_hash, ext_index);
 			return Ok(FindReceiptOutcome::Found(receipt));
 		}
 
-		if let Some(max_height) = max_block_height
-			&& block_info.block_height > max_height
+		if let Some(max_height) = opts.max_block_height
+			&& block.block_height > max_height
 		{
 			return Ok(FindReceiptOutcome::NotFound);
 		}

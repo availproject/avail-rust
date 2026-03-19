@@ -1,9 +1,7 @@
-use std::{fmt::Display, str::FromStr};
-
+use crate::{AccountId, MultiAddress, rpc, utils::account_id_from_str};
 use primitive_types::H256;
-use serde::{Deserialize, Serialize};
-
-use crate::{AccountId, MultiAddress, utils::account_id_from_str};
+use serde::Deserialize;
+use std::{fmt::Display, str::FromStr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct ChainInfo {
@@ -38,21 +36,26 @@ impl From<BlockInfo> for H256 {
 	}
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HashNumber {
 	Hash(H256),
 	Number(u32),
+	HashAndNumber((H256, u32)),
 }
 
-impl HashNumber {
-	pub fn from_impl(value: impl Into<HashStringNumber>) -> Result<Self, String> {
-		Self::try_from(value.into())
+impl std::fmt::Display for HashNumber {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			HashNumber::Hash(h) => write!(f, "Hash: {}", h),
+			HashNumber::Number(n) => write!(f, "Number: {}", n),
+			HashNumber::HashAndNumber((h, n)) => write!(f, "Hash: {:?}; Number: {}", h, n),
+		}
 	}
 }
 
 impl From<BlockInfo> for HashNumber {
 	fn from(value: BlockInfo) -> Self {
-		Self::Hash(value.hash)
+		Self::HashAndNumber((value.hash, value.height))
 	}
 }
 
@@ -65,6 +68,12 @@ impl From<H256> for HashNumber {
 impl From<u32> for HashNumber {
 	fn from(value: u32) -> Self {
 		Self::Number(value)
+	}
+}
+
+impl From<(H256, u32)> for HashNumber {
+	fn from(value: (H256, u32)) -> Self {
+		Self::HashAndNumber(value)
 	}
 }
 
@@ -90,12 +99,11 @@ impl TryFrom<HashStringNumber> for HashNumber {
 
 	fn try_from(value: HashStringNumber) -> Result<Self, Self::Error> {
 		let v = match value {
-			HashStringNumber::Hash(x) => Self::Hash(x),
 			HashStringNumber::String(x) => {
 				let hash = H256::from_str(&x).map_err(|x| x.to_string())?;
 				Self::Hash(hash)
 			},
-			HashStringNumber::Number(x) => Self::Number(x),
+			HashStringNumber::HashNumber(hn) => hn,
 		};
 		Ok(v)
 	}
@@ -106,6 +114,16 @@ impl TryFrom<HashString> for HashNumber {
 
 	fn try_from(value: HashString) -> Result<Self, Self::Error> {
 		Self::try_from(HashStringNumber::from(value))
+	}
+}
+
+impl From<HashNumber> for rpc::custom::BlockId {
+	fn from(value: HashNumber) -> Self {
+		match value {
+			HashNumber::Hash(x) => Self::Hash(x),
+			HashNumber::Number(n) => Self::Number(n),
+			HashNumber::HashAndNumber((h, ..)) => Self::Hash(h),
+		}
 	}
 }
 
@@ -161,31 +179,29 @@ impl From<String> for HashString {
 
 #[derive(Debug, Clone)]
 pub enum HashStringNumber {
-	Hash(H256),
 	String(String),
-	Number(u32),
+	HashNumber(HashNumber),
 }
 
 impl std::fmt::Display for HashStringNumber {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			HashStringNumber::Hash(h) => write!(f, "Hash: {}", h),
 			HashStringNumber::String(h) => write!(f, "String Hash: {}", h),
-			HashStringNumber::Number(n) => write!(f, "Number: {}", n),
+			HashStringNumber::HashNumber(hn) => hn.fmt(f),
 		}
 	}
 }
 
 impl From<BlockInfo> for HashStringNumber {
 	fn from(value: BlockInfo) -> Self {
-		Self::Hash(value.hash)
+		Self::HashNumber(HashNumber::from(value))
 	}
 }
 
 impl From<HashString> for HashStringNumber {
 	fn from(value: HashString) -> Self {
 		match value {
-			HashString::Hash(x) => Self::Hash(x),
+			HashString::Hash(x) => Self::HashNumber(HashNumber::Hash(x)),
 			HashString::String(x) => Self::String(x),
 		}
 	}
@@ -193,22 +209,19 @@ impl From<HashString> for HashStringNumber {
 
 impl From<HashNumber> for HashStringNumber {
 	fn from(value: HashNumber) -> Self {
-		match value {
-			HashNumber::Hash(x) => Self::Hash(x),
-			HashNumber::Number(x) => Self::Number(x),
-		}
+		Self::HashNumber(value)
 	}
 }
 
 impl From<H256> for HashStringNumber {
 	fn from(value: H256) -> Self {
-		Self::Hash(value)
+		Self::HashNumber(HashNumber::Hash(value))
 	}
 }
 
 impl From<u32> for HashStringNumber {
 	fn from(value: u32) -> Self {
-		Self::Number(value)
+		Self::HashNumber(HashNumber::Number(value))
 	}
 }
 

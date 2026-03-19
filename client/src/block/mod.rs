@@ -4,7 +4,7 @@ pub mod shared;
 
 pub use events::{BlockEvent, BlockEvents, EventsQuery};
 pub use extrinsic::{ExtrinsicsQuery, TypedExtrinsic, UntypedExtrinsic};
-pub use shared::BlockExtrinsicMetadata;
+pub use shared::ExtrinsicMetadata;
 
 use crate::{Client, Error, RetryPolicy, block::shared::BlockContext};
 use avail_rust_core::{
@@ -55,6 +55,7 @@ impl Block {
 				)
 			})?,
 			HashNumber::Number(n) => n,
+			HashNumber::HashAndNumber((_, n)) => n,
 		};
 
 		chain.block_justification(at).await

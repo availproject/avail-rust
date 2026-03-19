@@ -192,32 +192,37 @@ impl Chain {
 	///
 	/// Returns `BlockInfo` describing the block, or an error if the lookup fails.
 	pub async fn block_info_from(&self, at: impl Into<HashStringNumber>) -> Result<BlockInfo, Error> {
-		let at = HashNumber::from_impl(at)
-			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainBlockInfoFrom, e))?;
-		let (height, hash) = match at {
-			HashNumber::Hash(hash) => {
-				let height = self.block_height(hash).await?;
-				let Some(height) = height else {
-					return Err(Error::not_found_with_op(
-						error_ops::ErrorOperation::ChainBlockInfoFrom,
-						std::format!("No block height found for hash: {}", hash),
-					));
-				};
-				(height, hash)
-			},
-			HashNumber::Number(height) => {
-				let hash = self.block_hash(Some(height)).await?;
-				let Some(hash) = hash else {
-					return Err(Error::not_found_with_op(
-						error_ops::ErrorOperation::ChainBlockInfoFrom,
-						std::format!("No block hash found for height: {}", height),
-					));
-				};
-				(height, hash)
-			},
-		};
+		async fn inner(c: &Chain, at: HashNumber) -> Result<BlockInfo, Error> {
+			let (height, hash) = match at {
+				HashNumber::Hash(hash) => {
+					let height = c.block_height(hash).await?;
+					let Some(height) = height else {
+						return Err(Error::not_found_with_op(
+							error_ops::ErrorOperation::ChainBlockInfoFrom,
+							std::format!("No block height found for hash: {}", hash),
+						));
+					};
+					(height, hash)
+				},
+				HashNumber::Number(height) => {
+					let hash = c.block_hash(Some(height)).await?;
+					let Some(hash) = hash else {
+						return Err(Error::not_found_with_op(
+							error_ops::ErrorOperation::ChainBlockInfoFrom,
+							std::format!("No block hash found for height: {}", height),
+						));
+					};
+					(height, hash)
+				},
+				HashNumber::HashAndNumber((h, n)) => (n, h),
+			};
 
-		Ok(BlockInfo::from((hash, height)))
+			Ok(BlockInfo::from((hash, height)))
+		}
+
+		let at = HashNumber::try_from(at.into())
+			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainBlockInfoFrom, e.to_string()))?;
+		inner(self, at).await
 	}
 
 	/// Determines the author of the specified block.
@@ -448,33 +453,38 @@ impl Chain {
 		&self,
 		at: impl Into<HashStringNumber>,
 	) -> Result<Option<GrandpaJustification>, Error> {
-		let hash_number = HashNumber::from_impl(at)
+		async fn inner(c: &Chain, at: HashNumber) -> Result<Option<GrandpaJustification>, Error> {
+			let at = match at {
+				HashNumber::Hash(h) => c.block_height(h).await?,
+				HashNumber::Number(n) => Some(n),
+				HashNumber::HashAndNumber((_, n)) => Some(n),
+			};
+			let Some(at) = at else {
+				return Err(Error::not_found_with_op(
+					error_ops::ErrorOperation::ChainBlockJustification,
+					"No block found for requested hash",
+				));
+			};
+
+			let result = retry!(c.should_retry_on_error(), {
+				rpc::grandpa::block_justification(&c.client.rpc_client, at).await
+			})?;
+
+			let Some(result) = result else {
+				return Ok(None);
+			};
+
+			let justification = const_hex::decode(result.trim_start_matches("0x"))
+				.map_err(|x| RpcError::MalformedResponse(x.to_string()))?;
+
+			let justification = GrandpaJustification::decode(&mut justification.as_slice());
+			let justification = justification.map_err(|e| RpcError::MalformedResponse(e.to_string()))?;
+			Ok(Some(justification))
+		}
+
+		let at = HashNumber::try_from(at.into())
 			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainBlockJustification, e))?;
-		let at = match hash_number {
-			HashNumber::Hash(h) => self.block_height(h).await?,
-			HashNumber::Number(h) => Some(h),
-		};
-		let Some(at) = at else {
-			return Err(Error::not_found_with_op(
-				error_ops::ErrorOperation::ChainBlockJustification,
-				"No block found for requested hash",
-			));
-		};
-
-		let result = retry!(self.should_retry_on_error(), {
-			rpc::grandpa::block_justification(&self.client.rpc_client, at).await
-		})?;
-
-		let Some(result) = result else {
-			return Ok(None);
-		};
-
-		let justification = const_hex::decode(result.trim_start_matches("0x"))
-			.map_err(|x| RpcError::MalformedResponse(x.to_string()))?;
-
-		let justification = GrandpaJustification::decode(&mut justification.as_slice());
-		let justification = justification.map_err(|e| RpcError::MalformedResponse(e.to_string()))?;
-		Ok(Some(justification))
+		inner(self, at).await
 	}
 
 	/// Queries the runtime for fee information about an encoded extrinsic.
@@ -623,48 +633,69 @@ impl Chain {
 		sig_filter: rpc::SignatureFilter,
 		data_format: rpc::DataFormat,
 	) -> Result<Vec<rpc::Extrinsic>, Error> {
-		let at = HashNumber::from_impl(at)
-			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainFetchExtrinsics, e))?;
+		async fn inner(
+			c: &Chain,
+			at: HashNumber,
+			allow_list: Option<Vec<rpc::AllowedExtrinsic>>,
+			sig_filter: rpc::SignatureFilter,
+			data_format: rpc::DataFormat,
+		) -> Result<Vec<rpc::Extrinsic>, Error> {
+			retry!(c.should_retry_on_error(), {
+				rpc::custom::fetch_extrinsics(
+					&c.client.rpc_client,
+					at.into(),
+					allow_list.clone(),
+					sig_filter.clone(),
+					data_format,
+				)
+				.await
+				.map_err(|e| e.into())
+			})
+		}
 
-		retry!(self.should_retry_on_error(), {
-			rpc::custom::fetch_extrinsics(
-				&self.client.rpc_client,
-				at,
-				allow_list.clone(),
-				sig_filter.clone(),
-				data_format,
-			)
-			.await
-			.map_err(|e| e.into())
-		})
+		let at = HashNumber::try_from(at.into())
+			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainFetchExtrinsics, e))?;
+		inner(self, at, allow_list, sig_filter, data_format).await
 	}
 
 	/// Pulls events for a block with optional filtering.
 	///
 	pub async fn events(
 		&self,
-		at: HashNumber,
+		at: impl Into<HashStringNumber>,
 		allow_list: rpc::AllowedEvents,
 		fetch_data: bool,
 	) -> Result<Vec<rpc::PhaseEvents>, Error> {
-		let at = HashNumber::from_impl(at)
-			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainFetchEvents, e))?;
+		async fn inner(
+			c: &Chain,
+			at: HashNumber,
+			allow_list: rpc::AllowedEvents,
+			fetch_data: bool,
+		) -> Result<Vec<rpc::PhaseEvents>, Error> {
+			retry!(c.should_retry_on_error(), {
+				rpc::custom::fetch_events(&c.client.rpc_client, at.into(), allow_list.clone(), fetch_data)
+					.await
+					.map_err(|e| e.into())
+			})
+		}
 
-		retry!(self.should_retry_on_error(), {
-			rpc::custom::fetch_events(&self.client.rpc_client, at, allow_list.clone(), fetch_data)
-				.await
-				.map_err(|e| e.into())
-		})
+		let at = HashNumber::try_from(at.into())
+			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainFetchEvents, e.to_string()))?;
+		inner(self, at, allow_list, fetch_data).await
 	}
 
 	pub async fn block_timestamp(&self, at: impl Into<HashStringNumber>) -> Result<u64, Error> {
-		let at = HashNumber::from_impl(at)
-			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainBlockTimestamp, e))?;
-		retry!(self.should_retry_on_error(), {
-			rpc::custom::block_timestamp(&self.client.rpc_client, at)
-				.await
-				.map_err(|e| e.into())
-		})
+		async fn inner(c: &Chain, at: HashNumber) -> Result<u64, Error> {
+			retry!(c.should_retry_on_error(), {
+				rpc::custom::block_timestamp(&c.client.rpc_client, at.into())
+					.await
+					.map_err(|e| e.into())
+			})
+		}
+
+		let at = HashNumber::try_from(at.into())
+			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainBlockTimestamp, e.to_string()))?;
+		inner(self, at).await
 	}
 
 	/// Reports whether RPC helpers should retry after encountering errors.

@@ -1,5 +1,5 @@
 use avail_rust_client::{
-	block::{BlockExtrinsicMetadata, UntypedExtrinsic},
+	block::{ExtrinsicMetadata, UntypedExtrinsic},
 	prelude::*,
 };
 use avail_rust_core::{
@@ -47,7 +47,7 @@ pub async fn block_extrinsics_test(client: &Client) -> Result<(), Error> {
 	let expected_0 = UntypedExtrinsic {
 		preamble: avail_rust_core::Preamble::Bare(5),
 		call: hex_decode("0x03000b6175f6d19c01"),
-		metadata: BlockExtrinsicMetadata {
+		metadata: ExtrinsicMetadata {
 			ext_hash: h256("0x4e440d66dd293259e28cbf55a87ac371ccfb6be336859934d21288134458a0e7"),
 			ext_index: 0,
 			pallet_id: 3,
@@ -61,7 +61,7 @@ pub async fn block_extrinsics_test(client: &Client) -> Result<(), Error> {
 	let expected_1 = UntypedExtrinsic {
 		preamble: avail_rust_core::Preamble::Bare(5),
 		call: hex_decode("0x060300d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d13000064a7b3b6e00d"),
-		metadata: BlockExtrinsicMetadata {
+		metadata: ExtrinsicMetadata {
 			ext_hash: h256("0xcb26cd186e3d0df1c62701b9bde19b77c3ba2d64a2598d8f0948f5301bfff3a8"),
 			ext_index: 1,
 			pallet_id: 6,
@@ -81,7 +81,7 @@ pub async fn block_extrinsics_test(client: &Client) -> Result<(), Error> {
 	let expected_2 = UntypedExtrinsic {
 		preamble: avail_rust_core::Preamble::Bare(4),
 		call: hex_decode("0x1d0600000000000000000000000000"),
-		metadata: BlockExtrinsicMetadata {
+		metadata: ExtrinsicMetadata {
 			ext_hash: h256("0x0afb112c764a4678309dd935dbffde52b0c4a0ce0aca3201cc2f112aee777716"),
 			ext_index: 2,
 			pallet_id: 29,
@@ -95,7 +95,7 @@ pub async fn block_extrinsics_test(client: &Client) -> Result<(), Error> {
 	let expected_3 = UntypedExtrinsic {
 		preamble: avail_rust_core::Preamble::Bare(4),
 		call: hex_decode("0x270b00"),
-		metadata: BlockExtrinsicMetadata {
+		metadata: ExtrinsicMetadata {
 			ext_hash: h256("0x92cdb77314063a01930b093516d19a453399710cc8ae635ff5ab6cf76b26f218"),
 			ext_index: 3,
 			pallet_id: 39,

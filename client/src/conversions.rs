@@ -11,22 +11,26 @@ pub mod hash_string_number {
 	///
 	/// Propagates RPC errors returned by [`Chain::block_hash`], or decoding errors when parsing strings.
 	pub async fn to_hash(c: &Chain, value: impl Into<HashStringNumber>) -> Result<H256, Error> {
-		let hash_number = HashNumber::from_impl(value)
-			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ConversionToHash, e))?;
-
-		match hash_number {
-			HashNumber::Hash(x) => Ok(x),
-			HashNumber::Number(x) => {
-				let hash = c.block_hash(Some(x)).await?;
-				let Some(hash) = hash else {
-					return Err(Error::not_found_with_op(
-						error_ops::ErrorOperation::ConversionToHash,
-						std::format!("No block hash found for block height: {}", x),
-					));
-				};
-				Ok(hash)
-			},
+		async fn inner(c: &Chain, value: HashNumber) -> Result<H256, Error> {
+			match value {
+				HashNumber::Hash(x) => Ok(x),
+				HashNumber::Number(x) => {
+					let hash = c.block_hash(Some(x)).await?;
+					let Some(hash) = hash else {
+						return Err(Error::not_found_with_op(
+							error_ops::ErrorOperation::ConversionToHash,
+							std::format!("No block hash found for block height: {}", x),
+						));
+					};
+					Ok(hash)
+				},
+				HashNumber::HashAndNumber((h, ..)) => Ok(h),
+			}
 		}
+
+		let value = HashNumber::try_from(value.into())
+			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ConversionToHash, e))?;
+		inner(c, value).await
 	}
 }
 
