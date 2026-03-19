@@ -40,24 +40,6 @@ pub mod transaction_api;
 pub mod transaction_options;
 pub mod utils;
 
-pub use avail_rust_core::rpc::{AllowedEvents, AllowedExtrinsic};
-pub use block::{EventsQuery, ExtrinsicsQuery, TypedExtrinsic, UntypedExtrinsic};
-pub use chain::{Head, HeadKind};
-#[cfg(feature = "tracing")]
-pub use client::TracingFormat;
-pub use client::{Client, ConnectionOptions};
-pub use constants::{
-	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, ONE_AVAIL, ONE_HUNDRED_AVAIL,
-	ONE_THOUSAND_AVAIL, TEN_AVAIL, THOUSAND_AVAIL, TURING_ENDPOINT, TURING_WS_ENDPOINT,
-};
-pub use extensions::AccountIdExt;
-pub use retry_policy::RetryPolicy;
-pub use submission::{
-	SubmissionOutcome, SubmittableTransaction, SubmittedTransaction, TransactionReceipt, submitted::WaitOption,
-};
-pub use subscription::{BlockQueryMode, Fetcher, SubscribeApi, Subscription, SubscriptionBuilder, SubscriptionItem};
-pub use transaction_options::{Mortality, MortalityOption, Options};
-
 pub use account::Account;
 pub use avail_rust_core::{
 	self, AccountId, AvailHeader, BlockInfo, DataFormat, Extension, ExtensionImplicit, Extrinsic, ExtrinsicCall,
@@ -66,20 +48,38 @@ pub use avail_rust_core::{
 	ext::{codec, primitive_types, scale_info, scale_value, subxt_core, subxt_metadata, subxt_rpcs, subxt_signer},
 	grandpa::GrandpaJustification,
 	multi_account_id,
-	rpc::LegacyBlock,
+	rpc::{AllowedEvents, AllowedExtrinsic, LegacyBlock},
 	substrate::{
 		StorageDoubleMap, StorageDoubleMapIterator, StorageHasher, StorageMap, StorageMapIterator, StorageValue,
 	},
 };
-pub use constants::dev_accounts;
+pub use blob::{FindBlobExtOutcome, FoundBlobExt};
+pub use block::{EventsQuery, ExtrinsicsQuery, TypedExtrinsic, UntypedExtrinsic};
+pub use chain::{Head, HeadKind};
+#[cfg(feature = "tracing")]
+pub use client::TracingFormat;
+pub use client::{Client, ConnectionOptions};
+pub use constants::{
+	LOCAL_ENDPOINT, LOCAL_WS_ENDPOINT, MAINNET_ENDPOINT, MAINNET_WS_ENDPOINT, ONE_AVAIL, ONE_HUNDRED_AVAIL,
+	ONE_THOUSAND_AVAIL, TEN_AVAIL, THOUSAND_AVAIL, TURING_ENDPOINT, TURING_WS_ENDPOINT, dev_accounts,
+};
 pub use error::{Error, ErrorCode, UserError};
 pub use error_ops::*;
+pub use extensions::AccountIdExt;
 pub use primitive_types::{H256, U256};
-pub use subscription::fetcher::{
-	BlockEventsFetcher, BlockFetcher, BlockHeaderFetcher, BlockInfoFetcher, ExtrinsicFetcher,
-	GrandpaJustificationFetcher, LegacyBlockFetcher, UntypedExtrinsicFetcher,
+pub use retry_policy::RetryPolicy;
+pub use submission::{
+	SubmissionOutcome, SubmittableTransaction, SubmittedTransaction, TransactionReceipt, submitted::WaitOption,
+};
+pub use subscription::{
+	BlockQueryMode, Fetcher, SubscribeApi, Subscription, SubscriptionBuilder, SubscriptionItem,
+	fetcher::{
+		BlockEventsFetcher, BlockFetcher, BlockHeaderFetcher, BlockInfoFetcher, ExtrinsicFetcher,
+		GrandpaJustificationFetcher, LegacyBlockFetcher, UntypedExtrinsicFetcher,
+	},
 };
 pub use subxt_signer::{SecretUri, sr25519::Keypair};
+pub use transaction_options::{Mortality, MortalityOption, Options};
 
 // External
 pub mod ext {

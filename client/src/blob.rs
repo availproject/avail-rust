@@ -85,7 +85,7 @@ impl<'a> Blob<'a> {
 		signer: &Keypair,
 		options: Options,
 		opts: impl Into<WaitOption>,
-	) -> Result<FindBlobTxOutcome, Error> {
+	) -> Result<FindBlobExtOutcome, Error> {
 		Self::submit_with_metadata_and_watch_inner(
 			&self,
 			app_id,
@@ -113,7 +113,7 @@ impl<'a> Blob<'a> {
 		metadata_ext: &[u8],
 		blob: &[u8],
 		opts: impl Into<WaitOption>,
-	) -> Result<FindBlobTxOutcome, Error> {
+	) -> Result<FindBlobExtOutcome, Error> {
 		self.submit_and_watch_inner(metadata_ext, blob, opts.into()).await
 	}
 
@@ -122,7 +122,7 @@ impl<'a> Blob<'a> {
 		metadata_ext: &[u8],
 		blob: &[u8],
 		opts: WaitOption,
-	) -> Result<FindBlobTxOutcome, Error> {
+	) -> Result<FindBlobExtOutcome, Error> {
 		let chain_info = self.client.chain().info().await?;
 		let metadata_ext_hash = self.submit(metadata_ext, blob).await?;
 
@@ -146,7 +146,7 @@ impl<'a> Blob<'a> {
 		signer: &Keypair,
 		options: Options,
 		mut opts: WaitOption,
-	) -> Result<FindBlobTxOutcome, Error> {
+	) -> Result<FindBlobExtOutcome, Error> {
 		let mortality = options.resolve_mortality(self.client).await?;
 		let tx = self.metadata_ext(app_id, blob_hash, blob.len() as u64, commitments, eval_point_seed, eval_claim);
 		let metadata_ext = tx.sign(signer, options).await?;
@@ -167,7 +167,7 @@ pub struct FoundBlobExt {
 }
 
 #[derive(Debug, Clone)]
-pub enum FindBlobTxOutcome {
+pub enum FindBlobExtOutcome {
 	Found(FoundBlobExt),
 	NotFound,
 	TimedOut,
@@ -178,11 +178,11 @@ pub async fn watch_with_timeout(
 	metadata_tx_hash: H256,
 	block_height: u32,
 	opts: WaitOption,
-) -> Result<FindBlobTxOutcome, Error> {
+) -> Result<FindBlobExtOutcome, Error> {
 	let future = watch(client, metadata_tx_hash, block_height, opts.mode, opts.max_block_height);
 	match platform::timeout(opts.timeout, future).await {
 		Ok(result) => result,
-		Err(_) => Ok(FindBlobTxOutcome::TimedOut),
+		Err(_) => Ok(FindBlobExtOutcome::TimedOut),
 	}
 }
 
@@ -192,7 +192,7 @@ pub async fn watch(
 	block_height: u32,
 	mode: BlockQueryMode,
 	max_block_height: Option<u32>,
-) -> Result<FindBlobTxOutcome, Error> {
+) -> Result<FindBlobExtOutcome, Error> {
 	let mut sub = client
 		.subscribe()
 		.blocks()
@@ -208,7 +208,7 @@ pub async fn watch(
 			continue;
 		}
 		if max_block_height.is_some_and(|x| block.block_height > x) {
-			return Ok(FindBlobTxOutcome::NotFound);
+			return Ok(FindBlobExtOutcome::NotFound);
 		}
 
 		let query = block.value.extrinsics();
@@ -233,6 +233,6 @@ pub async fn watch(
 			extrinsic.ext_index,
 		);
 		let found = FoundBlobExt { summary, receipt };
-		return Ok(FindBlobTxOutcome::Found(found));
+		return Ok(FindBlobExtOutcome::Found(found));
 	}
 }
