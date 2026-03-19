@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
 			Some(commitment.claim),
 			&alice(),
 			Options::new(),
-			WaitOption::default(),
+			BlockQueryMode::Best,
 		)
 		.await;
 

@@ -41,6 +41,12 @@ impl<'de> Deserialize<'de> for AuthorityId {
 	}
 }
 
+impl std::fmt::Display for AuthorityId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", const_hex::encode_prefixed(self.0))
+	}
+}
+
 #[derive(Debug, Clone, Serialize, Encode, Decode)]
 pub struct ScheduledChange<N> {
 	/// The new authorities after the change, along with their respective weights.

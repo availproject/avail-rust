@@ -1,10 +1,12 @@
 use crate::{
-	BlockQueryMode, Client, Error, Options, SubmittableTransaction, platform, submission::submitted::WaitOption,
+	BlockQueryMode, Client, Error, Options, SubmittableTransaction, TransactionReceipt, platform,
+	submission::submitted::WaitOption,
 };
 use avail_rust_core::{
-	H256,
+	DataFormat, H256,
 	avail::data_availability::types::BlobTxSummary,
-	rpc::{blob::BlobInfo, kate::DataProof},
+	rpc::{AllowedExtrinsic, blob::BlobInfo, kate::DataProof},
+	subxt_core::config::{Hasher, substrate::BlakeTwo256},
 	subxt_signer::sr25519::Keypair,
 };
 use codec::Encode;
@@ -37,7 +39,7 @@ impl<'a> Blob<'a> {
 		self.client.chain().blob_inclusion_proof(blob_hash, at).await
 	}
 
-	pub fn metadata_tx(
+	pub fn metadata_ext(
 		&self,
 		app_id: u32,
 		blob_hash: H256,
@@ -53,6 +55,7 @@ impl<'a> Blob<'a> {
 	}
 
 	#[allow(clippy::too_many_arguments)]
+	/// Returns metadata extrinsic hash
 	pub async fn submit_with_metadata(
 		&self,
 		app_id: u32,
@@ -63,8 +66,8 @@ impl<'a> Blob<'a> {
 		eval_claim: Option<[u8; 16]>,
 		signer: &Keypair,
 		options: Options,
-	) -> Result<(), Error> {
-		let tx = self.metadata_tx(app_id, blob_hash, blob.len() as u64, commitments, eval_point_seed, eval_claim);
+	) -> Result<H256, Error> {
+		let tx = self.metadata_ext(app_id, blob_hash, blob.len() as u64, commitments, eval_point_seed, eval_claim);
 		let tx_signed = tx.sign(signer, options).await?;
 
 		self.submit(&tx_signed.encode(), blob).await
@@ -82,7 +85,7 @@ impl<'a> Blob<'a> {
 		signer: &Keypair,
 		options: Options,
 		opts: impl Into<WaitOption>,
-	) -> Result<FindBlobTxSummaryOutcome, Error> {
+	) -> Result<FindBlobTxOutcome, Error> {
 		Self::submit_with_metadata_and_watch_inner(
 			&self,
 			app_id,
@@ -98,37 +101,37 @@ impl<'a> Blob<'a> {
 		.await
 	}
 
-	pub async fn submit(&self, metadata: &[u8], blob: &[u8]) -> Result<(), Error> {
-		self.client.chain().blob_submit_blob(metadata, blob).await
+	/// Returns metadata extrinsic hash
+	pub async fn submit(&self, metadata_ext: &[u8], blob: &[u8]) -> Result<H256, Error> {
+		let metadata_ext_hash = BlakeTwo256.hash(metadata_ext);
+		self.client.chain().blob_submit_blob(metadata_ext, blob).await?;
+		Ok(metadata_ext_hash)
 	}
 
 	pub async fn submit_and_watch(
 		&self,
-		metadata: &[u8],
+		metadata_ext: &[u8],
 		blob: &[u8],
-		blob_hash: H256,
 		opts: impl Into<WaitOption>,
-	) -> Result<FindBlobTxSummaryOutcome, Error> {
-		self.submit_and_watch_inner(metadata, blob, blob_hash, opts.into())
-			.await
+	) -> Result<FindBlobTxOutcome, Error> {
+		self.submit_and_watch_inner(metadata_ext, blob, opts.into()).await
 	}
 
 	async fn submit_and_watch_inner(
 		&self,
-		metadata_signed_transaction: &[u8],
+		metadata_ext: &[u8],
 		blob: &[u8],
-		blob_hash: H256,
 		opts: WaitOption,
-	) -> Result<FindBlobTxSummaryOutcome, Error> {
+	) -> Result<FindBlobTxOutcome, Error> {
 		let chain_info = self.client.chain().info().await?;
-		self.submit(metadata_signed_transaction, blob).await?;
+		let metadata_ext_hash = self.submit(metadata_ext, blob).await?;
 
 		let block_height = match opts.mode {
 			BlockQueryMode::Finalized => chain_info.finalized_height,
 			BlockQueryMode::Best => chain_info.best_height,
 		};
 
-		watch_with_timeout(self.client, blob_hash, block_height, opts).await
+		watch_with_timeout(self.client, metadata_ext_hash, block_height, opts).await
 	}
 
 	#[allow(clippy::too_many_arguments)]
@@ -143,54 +146,53 @@ impl<'a> Blob<'a> {
 		signer: &Keypair,
 		options: Options,
 		mut opts: WaitOption,
-	) -> Result<FindBlobTxSummaryOutcome, Error> {
+	) -> Result<FindBlobTxOutcome, Error> {
 		let mortality = options.resolve_mortality(self.client).await?;
-		let tx = self.metadata_tx(app_id, blob_hash, blob.len() as u64, commitments, eval_point_seed, eval_claim);
-		let tx_signed = tx.sign(signer, options).await?;
+		let tx = self.metadata_ext(app_id, blob_hash, blob.len() as u64, commitments, eval_point_seed, eval_claim);
+		let metadata_ext = tx.sign(signer, options).await?;
+		let metadata_ext = metadata_ext.encode();
 
 		opts.max_block_height = opts
 			.max_block_height
 			.or_else(|| Some(mortality.block_height + mortality.period as u32));
 
-		self.submit_and_watch_inner(&tx_signed.encode(), blob, blob_hash, opts)
-			.await
+		self.submit_and_watch_inner(&metadata_ext, blob, opts).await
 	}
 }
 
 #[derive(Debug, Clone)]
-pub struct FoundBlobInformation {
+pub struct FoundBlobExt {
+	pub receipt: TransactionReceipt,
 	pub summary: BlobTxSummary,
-	pub block_height: u32,
-	pub block_hash: H256,
 }
 
 #[derive(Debug, Clone)]
-pub enum FindBlobTxSummaryOutcome {
-	Found(FoundBlobInformation),
+pub enum FindBlobTxOutcome {
+	Found(FoundBlobExt),
 	NotFound,
 	TimedOut,
 }
 
 pub async fn watch_with_timeout(
 	client: &Client,
-	blob_hash: H256,
+	metadata_tx_hash: H256,
 	block_height: u32,
 	opts: WaitOption,
-) -> Result<FindBlobTxSummaryOutcome, Error> {
-	let future = watch(client, blob_hash, block_height, opts.mode, opts.max_block_height);
+) -> Result<FindBlobTxOutcome, Error> {
+	let future = watch(client, metadata_tx_hash, block_height, opts.mode, opts.max_block_height);
 	match platform::timeout(opts.timeout, future).await {
 		Ok(result) => result,
-		Err(_) => Ok(FindBlobTxSummaryOutcome::TimedOut),
+		Err(_) => Ok(FindBlobTxOutcome::TimedOut),
 	}
 }
 
 pub async fn watch(
 	client: &Client,
-	blob_hash: H256,
+	metadata_tx_hash: H256,
 	block_height: u32,
 	mode: BlockQueryMode,
 	max_block_height: Option<u32>,
-) -> Result<FindBlobTxSummaryOutcome, Error> {
+) -> Result<FindBlobTxOutcome, Error> {
 	let mut sub = client
 		.subscribe()
 		.blocks()
@@ -199,22 +201,38 @@ pub async fn watch(
 		.build()
 		.await?;
 
+	let allow_list = vec![AllowedExtrinsic::from(metadata_tx_hash)];
 	loop {
 		let block = sub.next().await?;
 		if block_height == 0 {
 			continue;
 		}
 		if max_block_height.is_some_and(|x| block.block_height > x) {
-			return Ok(FindBlobTxSummaryOutcome::NotFound);
+			return Ok(FindBlobTxOutcome::NotFound);
 		}
 
 		let query = block.value.extrinsics();
-		let ext = query.ext_submit_blob_txs_summary().await?;
-		let Some(summary) = ext.call.blob_txs_summary.into_iter().find(|x| x.hash == blob_hash) else {
+		let extrinsics = query
+			.rpc(Some(allow_list.clone()), Default::default(), DataFormat::None)
+			.await?;
+
+		let Some(extrinsic) = extrinsics.first() else {
 			continue;
 		};
 
-		let found = FoundBlobInformation { summary, block_height, block_hash: block.block_hash };
-		return Ok(FindBlobTxSummaryOutcome::Found(found));
+		let summaries = query.ext_submit_blob_txs_summary().await?.call.blob_txs_summary;
+		let Some(summary) = summaries.into_iter().find(|x| x.tx_index == extrinsic.ext_index) else {
+			continue;
+		};
+
+		let receipt = TransactionReceipt::new(
+			client.clone(),
+			block.block_hash,
+			block.block_height,
+			extrinsic.ext_hash,
+			extrinsic.ext_index,
+		);
+		let found = FoundBlobExt { summary, receipt };
+		return Ok(FindBlobTxOutcome::Found(found));
 	}
 }
