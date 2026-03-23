@@ -12,7 +12,7 @@ pub use sub::{BlockQueryMode, Subscription, SubscriptionItem};
 use crate::Client;
 use avail_rust_core::{
 	HasHeader,
-	rpc::{AllowedEvents, AllowedExtrinsic, SignatureFilter},
+	rpc::{AllowedEvents, AllowedExtrinsic, Query},
 };
 use codec::Decode;
 use std::marker::PhantomData;
@@ -42,17 +42,17 @@ impl SubscribeApi {
 
 	pub fn extrinsics<T: HasHeader + Decode + Clone + Sync>(
 		&self,
-		sig_filter: SignatureFilter,
+		query: Query,
 	) -> SubscriptionBuilder<ExtrinsicFetcher<T>> {
-		SubscriptionBuilder::new(self.0.clone(), ExtrinsicFetcher { sig_filter, _phantom: PhantomData })
+		SubscriptionBuilder::new(self.0.clone(), ExtrinsicFetcher { query, _phantom: PhantomData })
 	}
 
 	pub fn untyped_extrinsics(
 		&self,
 		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: SignatureFilter,
+		query: Query,
 	) -> SubscriptionBuilder<UntypedExtrinsicFetcher> {
-		SubscriptionBuilder::new(self.0.clone(), UntypedExtrinsicFetcher { allow_list, sig_filter })
+		SubscriptionBuilder::new(self.0.clone(), UntypedExtrinsicFetcher { allow_list, query })
 	}
 
 	pub fn justification(&self) -> SubscriptionBuilder<GrandpaJustificationFetcher> {
