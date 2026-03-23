@@ -630,14 +630,14 @@ impl Chain {
 		&self,
 		at: impl Into<HashStringNumber>,
 		allow_list: Option<Vec<rpc::AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
+		query: rpc::Query,
 		data_format: rpc::DataFormat,
 	) -> Result<Vec<rpc::Extrinsic>, Error> {
 		async fn inner(
 			c: &Chain,
 			at: HashNumber,
 			allow_list: Option<Vec<rpc::AllowedExtrinsic>>,
-			sig_filter: rpc::SignatureFilter,
+			query: rpc::Query,
 			data_format: rpc::DataFormat,
 		) -> Result<Vec<rpc::Extrinsic>, Error> {
 			retry!(c.should_retry_on_error(), {
@@ -645,7 +645,7 @@ impl Chain {
 					&c.client.rpc_client,
 					at.into(),
 					allow_list.clone(),
-					sig_filter.clone(),
+					query.clone(),
 					data_format,
 				)
 				.await
@@ -655,7 +655,7 @@ impl Chain {
 
 		let at = HashNumber::try_from(at.into())
 			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainFetchExtrinsics, e))?;
-		inner(self, at, allow_list, sig_filter, data_format).await
+		inner(self, at, allow_list, query, data_format).await
 	}
 
 	/// Pulls events for a block with optional filtering.

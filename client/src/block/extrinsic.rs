@@ -9,7 +9,7 @@ use crate::{
 };
 use avail_rust_core::{
 	Extrinsic, ExtrinsicDecodable, H256, HasHeader, HashNumber, MultiAddress, RpcError, avail,
-	rpc::{self, AllowedExtrinsic, DataFormat},
+	rpc::{self, AllowedExtrinsic, DataFormat, Query},
 	substrate::extrinsic::Preamble,
 	types::HashStringNumber,
 };
@@ -52,15 +52,14 @@ impl ExtrinsicsQuery {
 	pub async fn first(
 		&self,
 		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
+		mut query: rpc::Query,
 	) -> Result<Option<UntypedExtrinsic>, Error> {
 		let at = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
+		query.max_items = Some(1);
+		query.reverse = false;
 
-		let mut result = chain
-			.extrinsics(at, allow_list, sig_filter, DataFormat::Extrinsic)
-			.await?;
-
+		let mut result = chain.extrinsics(at, allow_list, query, DataFormat::Extrinsic).await?;
 		let Some(info) = result.first_mut() else {
 			return Ok(None);
 		};
@@ -72,14 +71,14 @@ impl ExtrinsicsQuery {
 	pub async fn last(
 		&self,
 		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
+		mut query: rpc::Query,
 	) -> Result<Option<UntypedExtrinsic>, Error> {
 		let at = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
+		query.max_items = Some(1);
+		query.reverse = true;
 
-		let mut result = chain
-			.extrinsics(at, allow_list, sig_filter, DataFormat::Extrinsic)
-			.await?;
+		let mut result = chain.extrinsics(at, allow_list, query, DataFormat::Extrinsic).await?;
 		let Some(info) = result.last_mut() else {
 			return Ok(None);
 		};
@@ -91,14 +90,12 @@ impl ExtrinsicsQuery {
 	pub async fn all(
 		&self,
 		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
+		query: rpc::Query,
 	) -> Result<Vec<UntypedExtrinsic>, Error> {
 		let at = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
 
-		let extrinsics = chain
-			.extrinsics(at, allow_list, sig_filter, DataFormat::Extrinsic)
-			.await?;
+		let extrinsics = chain.extrinsics(at, allow_list, query, DataFormat::Extrinsic).await?;
 
 		let mut result = Vec::with_capacity(extrinsics.len());
 		for info in extrinsics {
@@ -109,14 +106,10 @@ impl ExtrinsicsQuery {
 		Ok(result)
 	}
 
-	pub async fn count(
-		&self,
-		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
-	) -> Result<usize, Error> {
+	pub async fn count(&self, allow_list: Option<Vec<AllowedExtrinsic>>, query: rpc::Query) -> Result<usize, Error> {
 		let at = self.ctx.at.clone();
 		let chain = self.ctx.chain();
-		let result = chain.extrinsics(at, allow_list, sig_filter, DataFormat::None).await?;
+		let result = chain.extrinsics(at, allow_list, query, DataFormat::None).await?;
 
 		Ok(result.len())
 	}
@@ -124,9 +117,10 @@ impl ExtrinsicsQuery {
 	pub async fn exists(
 		&self,
 		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
+		mut query: rpc::Query,
 	) -> Result<bool, Error> {
-		self.count(allow_list, sig_filter).await.map(|x| x > 0)
+		query.max_items = Some(1);
+		self.count(allow_list, query).await.map(|x| x > 0)
 	}
 
 	// ── Typed (_as) methods ─────────────────────────────────────────────
@@ -159,13 +153,10 @@ impl ExtrinsicsQuery {
 		inner::<T>(self, extrinsic_id.into()).await
 	}
 
-	pub async fn first_as<T: HasHeader + Decode>(
-		&self,
-		sig_filter: rpc::SignatureFilter,
-	) -> Result<Option<TypedExtrinsic<T>>, Error> {
+	pub async fn first_as<T: HasHeader + Decode>(&self, query: rpc::Query) -> Result<Option<TypedExtrinsic<T>>, Error> {
 		let allow_list = Some(vec![T::HEADER_INDEX.into()]);
 
-		let encoded = self.first(allow_list, sig_filter).await?;
+		let encoded = self.first(allow_list, query).await?;
 		let Some(encoded) = encoded else {
 			return Ok(None);
 		};
@@ -173,13 +164,10 @@ impl ExtrinsicsQuery {
 		Ok(Some(encoded.as_typed::<T>()?))
 	}
 
-	pub async fn last_as<T: HasHeader + Decode>(
-		&self,
-		sig_filter: rpc::SignatureFilter,
-	) -> Result<Option<TypedExtrinsic<T>>, Error> {
+	pub async fn last_as<T: HasHeader + Decode>(&self, query: rpc::Query) -> Result<Option<TypedExtrinsic<T>>, Error> {
 		let allow_list = Some(vec![T::HEADER_INDEX.into()]);
 
-		let encoded = self.last(allow_list, sig_filter).await?;
+		let encoded = self.last(allow_list, query).await?;
 		let Some(encoded) = encoded else {
 			return Ok(None);
 		};
@@ -187,13 +175,10 @@ impl ExtrinsicsQuery {
 		Ok(Some(encoded.as_typed::<T>()?))
 	}
 
-	pub async fn all_as<T: HasHeader + Decode>(
-		&self,
-		sig_filter: rpc::SignatureFilter,
-	) -> Result<Vec<TypedExtrinsic<T>>, Error> {
+	pub async fn all_as<T: HasHeader + Decode>(&self, query: rpc::Query) -> Result<Vec<TypedExtrinsic<T>>, Error> {
 		let allow_list = Some(vec![T::HEADER_INDEX.into()]);
 
-		let all = self.all(allow_list, sig_filter).await?;
+		let all = self.all(allow_list, query).await?;
 		let mut result = Vec::with_capacity(all.len());
 		for encoded in all {
 			result.push(encoded.as_typed::<T>()?);
@@ -206,7 +191,9 @@ impl ExtrinsicsQuery {
 
 	/// Block 0 is the only block that does not have this extrinsic in it.
 	pub async fn ext_timestamp(&self) -> Result<TypedExtrinsic<avail::timestamp::tx::Set>, Error> {
-		let ext = self.first_as::<avail::timestamp::tx::Set>(Default::default()).await?;
+		let mut query = Query::default();
+		query.max_items = Some(1);
+		let ext = self.first_as::<avail::timestamp::tx::Set>(query).await?;
 		let Some(ext) = ext else {
 			return Err(Error::NotFound(String::from("Timestamp Set extrinsic not found")));
 		};
@@ -217,8 +204,10 @@ impl ExtrinsicsQuery {
 	pub async fn ext_submit_blob_txs_summary(
 		&self,
 	) -> Result<TypedExtrinsic<avail::data_availability::tx::SubmitBlobTxsSummary>, Error> {
+		let mut query = Query::default();
+		query.max_items = Some(1);
 		let ext = self
-			.first_as::<avail::data_availability::tx::SubmitBlobTxsSummary>(Default::default())
+			.first_as::<avail::data_availability::tx::SubmitBlobTxsSummary>(query)
 			.await?;
 		let Some(ext) = ext else {
 			return Err(Error::NotFound(String::from("Data Availability Submit Blob Tx Summary extrinsic not found")));
@@ -230,9 +219,9 @@ impl ExtrinsicsQuery {
 	pub async fn ext_failed_send_message_txs(
 		&self,
 	) -> Result<TypedExtrinsic<avail::vector::tx::FailedSendMessageTxs>, Error> {
-		let ext = self
-			.first_as::<avail::vector::tx::FailedSendMessageTxs>(Default::default())
-			.await?;
+		let mut query = Query::default();
+		query.max_items = Some(1);
+		let ext = self.first_as::<avail::vector::tx::FailedSendMessageTxs>(query).await?;
 		let Some(ext) = ext else {
 			return Err(Error::NotFound(String::from("Vector Failed Send Message Txs extrinsic not found")));
 		};
@@ -244,12 +233,12 @@ impl ExtrinsicsQuery {
 	pub async fn rpc(
 		&self,
 		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
+		query: rpc::Query,
 		data_format: rpc::DataFormat,
 	) -> Result<Vec<rpc::Extrinsic>, Error> {
 		self.ctx
 			.chain()
-			.extrinsics(self.ctx.at.clone(), allow_list, sig_filter, data_format)
+			.extrinsics(self.ctx.at.clone(), allow_list, query, data_format)
 			.await
 	}
 
