@@ -158,12 +158,15 @@ pub struct V4CompactDataLookup {
 
 /// Fri blob commitment: one entry per blob in the block.
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode, Default)]
-#[serde(rename_all = "camelCase")]
+// TODO: bring it back before testnet re-genesis to maintain consistency by making the field names camelCase, but for now we need to keep it snake_case to avoid breaking the current testnet genesis.
+// #[serde(rename_all = "camelCase")]
 pub struct FriBlobCommitment {
-	/// Blob size in bytes (original data).
+	/// Blob hash
+	pub blob_hash: H256,
+	/// Original blob size in bytes.
 	pub size_bytes: u64,
-	/// Commitment to the encoded blob (Merkle root, 32 bytes).
-	pub commitment: H256,
+	/// Fri PCS commitment (Merkle root of the blob codeword).
+	pub commitment: Vec<u8>,
 }
 
 /// Version tag for Fri parameters.
