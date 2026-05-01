@@ -1,4 +1,4 @@
-use codec::{Compact, Decode, Encode};
+use codec::{Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use subxt_core::config::{Hasher, Header as SubxtHeader, substrate::BlakeTwo256};
@@ -19,11 +19,10 @@ pub struct AvailHeader {
 }
 
 impl AvailHeader {
-	/// Data root of all DA data in this block, regardless of PCS (KZG/Fri).
+	/// Data root of all DA blobs & bridge txs in this block.
 	pub fn data_root(&self) -> H256 {
 		match &self.extension {
-			HeaderExtension::Kzg(KzgHeader::V4(ext)) => ext.commitment.data_root,
-			HeaderExtension::Fri(FriHeader::V1(ext)) => ext.data_root,
+			HeaderExtension::V1(ext) => ext.data_root,
 		}
 	}
 
@@ -62,108 +61,29 @@ where
 	}
 }
 
-/// Top-level DA header extension: *which PCS + which version inside*.
+/// Versioned DA header extension.
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-// #[serde(rename_all = "camelCase")]
 pub enum HeaderExtension {
-	/// KZG-based DA header (current mainnet scheme, v4).
-	Kzg(KzgHeader),
-	/// Fri/Binius-based DA header (new scheme).
-	Fri(FriHeader),
+	/// FRI/Binius-based DA header.
+	V1(FriV1HeaderExtension),
 }
 
 impl Default for HeaderExtension {
 	fn default() -> Self {
-		HeaderExtension::Fri(FriHeader::V1(FriV1HeaderExtension::default()))
+		HeaderExtension::V1(FriV1HeaderExtension::default())
 	}
-}
-
-/// KZG header variants (only v4 is used on-chain now).
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-pub enum KzgHeader {
-	V4(V4HeaderExtension),
-}
-
-/// Fri header variants (v1 for now).
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-pub enum FriHeader {
-	V1(FriV1HeaderExtension),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DataLookupItem {
-	// Compact
-	pub app_id: u32,
-	// Compact
-	pub start: u32,
-}
-impl Encode for DataLookupItem {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		Compact(self.app_id).encode_to(dest);
-		Compact(self.start).encode_to(dest);
-	}
-}
-impl Decode for DataLookupItem {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let app_id = Compact::<u32>::decode(input)?.0;
-		let start = Compact::<u32>::decode(input)?.0;
-		Ok(Self { app_id, start })
-	}
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct KateCommitment {
-	// Compact
-	pub rows: u16,
-	// Compact
-	pub cols: u16,
-	pub commitment: Vec<u8>,
-	pub data_root: H256,
-}
-impl Encode for KateCommitment {
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		Compact(self.rows).encode_to(dest);
-		Compact(self.cols).encode_to(dest);
-		self.commitment.encode_to(dest);
-		self.data_root.encode_to(dest);
-	}
-}
-impl Decode for KateCommitment {
-	fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
-		let rows = Compact::<u16>::decode(input)?.0;
-		let cols = Compact::<u16>::decode(input)?.0;
-		let commitment = Decode::decode(input)?;
-		let data_root = Decode::decode(input)?;
-		Ok(Self { rows, cols, commitment, data_root })
-	}
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-#[serde(rename_all = "camelCase")]
-pub struct V4HeaderExtension {
-	pub app_lookup: V4CompactDataLookup,
-	pub commitment: KateCommitment,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-#[serde(rename_all = "camelCase")]
-pub struct V4CompactDataLookup {
-	#[codec(compact)]
-	pub size: u32,
-	pub index: Vec<DataLookupItem>,
-	pub rows_per_tx: Vec<u16>,
 }
 
 /// Fri blob commitment: one entry per blob in the block.
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FriBlobCommitment {
+	/// Blob hash.
+	pub blob_hash: H256,
 	/// Blob size in bytes (original data).
 	pub size_bytes: u64,
-	/// Commitment to the encoded blob (Merkle root, 32 bytes).
-	pub commitment: H256,
+	/// FRI PCS commitment.
+	pub commitment: Vec<u8>,
 }
 
 /// Version tag for Fri parameters.
@@ -180,4 +100,28 @@ pub struct FriV1HeaderExtension {
 	pub blobs: Vec<FriBlobCommitment>,
 	pub data_root: H256,
 	pub params_version: FriParamsVersion,
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn header_extension_v1_uses_variant_index_zero() {
+		let extension = HeaderExtension::V1(FriV1HeaderExtension::default());
+
+		assert_eq!(extension.encode()[0], 0);
+	}
+
+	#[test]
+	fn fri_blob_commitment_matches_core_field_order() {
+		let blob_hash = H256::repeat_byte(1);
+		let commitment = vec![2, 3, 5, 8];
+		let blob = FriBlobCommitment { blob_hash, size_bytes: 13, commitment: commitment.clone() };
+		let decoded = FriBlobCommitment::decode(&mut &blob.encode()[..]).expect("valid encoding");
+
+		assert_eq!(decoded.blob_hash, blob_hash);
+		assert_eq!(decoded.size_bytes, 13);
+		assert_eq!(decoded.commitment, commitment);
+	}
 }
