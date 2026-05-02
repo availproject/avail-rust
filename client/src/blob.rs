@@ -44,14 +44,14 @@ impl<'a> Blob<'a> {
 		app_id: u32,
 		blob_hash: H256,
 		size: u64,
-		commitments: Vec<u8>,
-		eval_point_seed: Option<[u8; 32]>,
-		eval_claim: Option<[u8; 16]>,
+		commitment: Vec<u8>,
+		eval_point_seed: [u8; 32],
+		eval_claim: [u8; 16],
 	) -> SubmittableTransaction {
 		self.client
 			.tx()
 			.data_availability()
-			.submit_blob_metadata(app_id, blob_hash, size, commitments, eval_point_seed, eval_claim)
+			.submit_blob_metadata(app_id, blob_hash, size, commitment, eval_point_seed, eval_claim)
 	}
 
 	#[allow(clippy::too_many_arguments)]
@@ -61,13 +61,13 @@ impl<'a> Blob<'a> {
 		app_id: u32,
 		blob: &[u8],
 		blob_hash: H256,
-		commitments: Vec<u8>,
-		eval_point_seed: Option<[u8; 32]>,
-		eval_claim: Option<[u8; 16]>,
+		commitment: Vec<u8>,
+		eval_point_seed: [u8; 32],
+		eval_claim: [u8; 16],
 		signer: &Keypair,
 		options: Options,
 	) -> Result<H256, Error> {
-		let tx = self.metadata_ext(app_id, blob_hash, blob.len() as u64, commitments, eval_point_seed, eval_claim);
+		let tx = self.metadata_ext(app_id, blob_hash, blob.len() as u64, commitment, eval_point_seed, eval_claim);
 		let tx_signed = tx.sign(signer, options).await?;
 
 		self.submit(&tx_signed.encode(), blob).await
@@ -79,9 +79,9 @@ impl<'a> Blob<'a> {
 		app_id: u32,
 		blob: &[u8],
 		blob_hash: H256,
-		commitments: Vec<u8>,
-		eval_point_seed: Option<[u8; 32]>,
-		eval_claim: Option<[u8; 16]>,
+		commitment: Vec<u8>,
+		eval_point_seed: [u8; 32],
+		eval_claim: [u8; 16],
 		signer: &Keypair,
 		options: Options,
 		opts: impl Into<WaitOption>,
@@ -91,7 +91,7 @@ impl<'a> Blob<'a> {
 			app_id,
 			blob,
 			blob_hash,
-			commitments,
+			commitment,
 			eval_point_seed,
 			eval_claim,
 			signer,
@@ -140,15 +140,15 @@ impl<'a> Blob<'a> {
 		app_id: u32,
 		blob: &[u8],
 		blob_hash: H256,
-		commitments: Vec<u8>,
-		eval_point_seed: Option<[u8; 32]>,
-		eval_claim: Option<[u8; 16]>,
+		commitment: Vec<u8>,
+		eval_point_seed: [u8; 32],
+		eval_claim: [u8; 16],
 		signer: &Keypair,
 		options: Options,
 		mut opts: WaitOption,
 	) -> Result<FindBlobExtOutcome, Error> {
 		let mortality = options.resolve_mortality(self.client).await?;
-		let tx = self.metadata_ext(app_id, blob_hash, blob.len() as u64, commitments, eval_point_seed, eval_claim);
+		let tx = self.metadata_ext(app_id, blob_hash, blob.len() as u64, commitment, eval_point_seed, eval_claim);
 		let metadata_ext = tx.sign(signer, options).await?;
 		let metadata_ext = metadata_ext.encode();
 

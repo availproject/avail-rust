@@ -657,16 +657,16 @@ pub mod data_availability {
 			pub app_id: u32,
 			pub blob_hash: H256,
 			pub size: u64,
-			pub commitments: Vec<u8>,
-			pub eval_point_seed: Option<[u8; 32]>,
-			pub eval_claim: Option<[u8; 16]>,
+			pub commitment: Vec<u8>,
+			pub eval_point_seed: [u8; 32],
+			pub eval_claim: [u8; 16],
 		}
 		impl Encode for SubmitBlobMetadata {
 			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
 				Compact(self.app_id).encode_to(dest);
 				self.blob_hash.encode_to(dest);
 				self.size.encode_to(dest);
-				self.commitments.encode_to(dest);
+				self.commitment.encode_to(dest);
 				self.eval_point_seed.encode_to(dest);
 				self.eval_claim.encode_to(dest);
 			}
@@ -676,14 +676,14 @@ pub mod data_availability {
 				let app_id = Compact::<u32>::decode(input)?.0;
 				let blob_hash = Decode::decode(input)?;
 				let size = Decode::decode(input)?;
-				let commitments = Decode::decode(input)?;
+				let commitment = Decode::decode(input)?;
 				let eval_point_seed = Decode::decode(input)?;
 				let eval_claim = Decode::decode(input)?;
 				Ok(Self {
 					app_id,
 					blob_hash,
 					size,
-					commitments,
+					commitment,
 					eval_point_seed,
 					eval_claim,
 				})
