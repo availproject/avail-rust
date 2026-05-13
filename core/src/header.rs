@@ -178,6 +178,6 @@ pub enum FriParamsVersion {
 #[serde(rename_all = "camelCase")]
 pub struct FriV1HeaderExtension {
 	pub blobs: Vec<FriBlobCommitment>,
-	pub data_root: H256,
 	pub params_version: FriParamsVersion,
+	pub data_root: H256,
 }
