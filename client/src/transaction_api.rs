@@ -815,15 +815,15 @@ impl DataAvailability {
 		app_id: u32,
 		blob_hash: H256,
 		size: u64,
-		commitments: Vec<u8>,
-		eval_point_seed: Option<[u8; 32]>,
-		eval_claim: Option<[u8; 16]>,
+		commitment: Vec<u8>,
+		eval_point_seed: [u8; 32],
+		eval_claim: [u8; 16],
 	) -> SubmittableTransaction {
 		let value = avail::data_availability::tx::SubmitBlobMetadata {
 			app_id,
 			blob_hash,
 			size,
-			commitments,
+			commitment,
 			eval_point_seed,
 			eval_claim,
 		};
