@@ -11,10 +11,10 @@ pub async fn fetch_extrinsics(
 	client: &RpcClient,
 	at: BlockId,
 	allow_list: Option<Vec<AllowedExtrinsic>>,
-	sig_filter: SignatureFilter,
+	query: Query,
 	data_format: DataFormat,
 ) -> Result<Vec<Extrinsic>, Error> {
-	let params = rpc_params![at, allow_list, sig_filter, data_format];
+	let params = rpc_params![at, allow_list, query, data_format];
 	let value: Vec<Extrinsic> = client.request("custom_extrinsics", params).await?;
 	Ok(value)
 }
@@ -70,9 +70,11 @@ impl From<(u8, u8)> for AllowedExtrinsic {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct SignatureFilter {
-	pub account_id: Option<String>,
+pub struct Query {
+	pub address: Option<String>,
 	pub nonce: Option<u32>,
+	pub max_items: Option<u32>,
+	pub reverse: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

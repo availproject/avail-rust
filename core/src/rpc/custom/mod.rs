@@ -6,7 +6,7 @@ use primitive_types::H256;
 use subxt_rpcs::{RpcClient, rpc_params};
 
 pub use events::{AllowedEvents, PhaseEvents, RuntimeEvent, fetch_events};
-pub use extrinsics::{AllowedExtrinsic, DataFormat, Extrinsic, SignatureFilter, fetch_extrinsics};
+pub use extrinsics::{AllowedExtrinsic, DataFormat, Extrinsic, Query, fetch_extrinsics};
 
 pub async fn get_block_number(client: &RpcClient, at: H256) -> Result<Option<u32>, Error> {
 	let params = rpc_params![at];

@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use avail_rust_core::{
 	BlockInfo, HasHeader,
 	grandpa::GrandpaJustification,
-	rpc::{AllowedEvents, AllowedExtrinsic, LegacyBlock, PhaseEvents, SignatureFilter},
+	rpc::{AllowedEvents, AllowedExtrinsic, LegacyBlock, PhaseEvents, Query},
 };
 use codec::Decode;
 use std::marker::PhantomData;
@@ -143,7 +143,7 @@ impl Fetcher for BlockEventsFetcher {
 /// Yields decoded extrinsics of type `T` for each block.
 #[derive(Clone)]
 pub struct ExtrinsicFetcher<T: HasHeader + Decode> {
-	pub(crate) sig_filter: SignatureFilter,
+	pub(crate) query: Query,
 	pub(crate) _phantom: PhantomData<T>,
 }
 
@@ -154,7 +154,7 @@ impl<T: HasHeader + Decode + Clone + Sync> Fetcher for ExtrinsicFetcher<T> {
 	async fn fetch(&self, client: &Client, info: BlockInfo, retry: RetryPolicy) -> Result<Self::Output, Error> {
 		let mut block = Block::new(client.clone(), info.hash).extrinsics();
 		block.set_retry_policy(retry);
-		block.all_as::<T>(self.sig_filter.clone()).await
+		block.all_as::<T>(self.query.clone()).await
 	}
 
 	fn is_empty(&self, value: &Self::Output) -> bool {
@@ -170,7 +170,7 @@ impl<T: HasHeader + Decode + Clone + Sync> Fetcher for ExtrinsicFetcher<T> {
 #[derive(Debug, Clone)]
 pub struct UntypedExtrinsicFetcher {
 	pub(crate) allow_list: Option<Vec<AllowedExtrinsic>>,
-	pub(crate) sig_filter: SignatureFilter,
+	pub(crate) query: Query,
 }
 
 #[async_trait]
@@ -180,7 +180,7 @@ impl Fetcher for UntypedExtrinsicFetcher {
 	async fn fetch(&self, client: &Client, info: BlockInfo, retry: RetryPolicy) -> Result<Self::Output, Error> {
 		let mut block = Block::new(client.clone(), info.hash).extrinsics();
 		block.set_retry_policy(retry);
-		block.all(self.allow_list.clone(), self.sig_filter.clone()).await
+		block.all(self.allow_list.clone(), self.query.clone()).await
 	}
 
 	fn is_empty(&self, value: &Self::Output) -> bool {
