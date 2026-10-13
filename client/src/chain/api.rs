@@ -625,37 +625,22 @@ impl Chain {
 	}
 
 	/// Fetches extrinsics from a block using the provided filters.
-	///
 	pub async fn extrinsics(
 		&self,
 		at: impl Into<HashStringNumber>,
-		allow_list: Option<Vec<rpc::AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
-		data_format: rpc::DataFormat,
+		params: rpc::FetchParams,
 	) -> Result<Vec<rpc::Extrinsic>, Error> {
-		async fn inner(
-			c: &Chain,
-			at: HashNumber,
-			allow_list: Option<Vec<rpc::AllowedExtrinsic>>,
-			sig_filter: rpc::SignatureFilter,
-			data_format: rpc::DataFormat,
-		) -> Result<Vec<rpc::Extrinsic>, Error> {
+		async fn inner(c: &Chain, at: HashNumber, params: rpc::FetchParams) -> Result<Vec<rpc::Extrinsic>, Error> {
 			retry!(c.should_retry_on_error(), {
-				rpc::custom::fetch_extrinsics(
-					&c.client.rpc_client,
-					at.into(),
-					allow_list.clone(),
-					sig_filter.clone(),
-					data_format,
-				)
-				.await
-				.map_err(|e| e.into())
+				rpc::custom::fetch_extrinsics(&c.client.rpc_client, at.into(), params.clone())
+					.await
+					.map_err(|e| e.into())
 			})
 		}
 
 		let at = HashNumber::try_from(at.into())
 			.map_err(|e| Error::validation_with_op(error_ops::ErrorOperation::ChainFetchExtrinsics, e))?;
-		inner(self, at, allow_list, sig_filter, data_format).await
+		inner(self, at, params).await
 	}
 
 	/// Pulls events for a block with optional filtering.

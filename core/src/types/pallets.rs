@@ -3191,6 +3191,29 @@ pub mod vector {
 		impl HasHeader for FailedSendMessageTxs {
 			const HEADER_INDEX: (u8, u8) = (PALLET_ID, 11);
 		}
+
+		/// Vector call 11 on infinity runtimes: the inherent that lists every `send_message` of the block
+		/// whose bridge message was accepted, keyed by extrinsic index. Older runtimes used this call index
+		/// for `failed_send_message_txs(Vec<Compact<u32>>)`, which avail-rust still decodes.
+		#[derive(Debug, Clone)]
+		pub struct SuccessfulSendMessages {
+			pub messages: Vec<(u32, super::types::AddressedMessage)>,
+		}
+
+		impl Decode for SuccessfulSendMessages {
+			fn decode<I: codec::Input>(input: &mut I) -> Result<Self, codec::Error> {
+				let messages = Vec::<(Compact<u32>, super::types::AddressedMessage)>::decode(input)?;
+				let messages = messages
+					.into_iter()
+					.map(|(index, message)| (index.0, message))
+					.collect();
+				Ok(Self { messages })
+			}
+		}
+
+		impl HasHeader for SuccessfulSendMessages {
+			const HEADER_INDEX: (u8, u8) = (vector::PALLET_ID, 11);
+		}
 	}
 }
 

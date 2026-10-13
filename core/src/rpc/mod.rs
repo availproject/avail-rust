@@ -15,7 +15,9 @@ pub use error::Error;
 
 pub use super::AvailHeader;
 pub use chain::{Block, BlockJustification, LegacyBlock};
-pub use custom::{AllowedEvents, AllowedExtrinsic, DataFormat, Extrinsic, PhaseEvents, RuntimeEvent, SignatureFilter};
+pub use custom::{
+	AllowedEvents, AllowedExtrinsic, DataFormat, Extrinsic, FetchParams, PhaseEvents, RuntimeEvent, SignatureFilter,
+};
 use subxt_rpcs::{RpcClient, client::RpcParams};
 
 pub async fn raw_call<T: serde::de::DeserializeOwned>(

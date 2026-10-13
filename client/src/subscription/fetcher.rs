@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use avail_rust_core::{
 	BlockInfo, HasHeader,
 	grandpa::GrandpaJustification,
-	rpc::{AllowedEvents, AllowedExtrinsic, LegacyBlock, PhaseEvents, SignatureFilter},
+	rpc::{self, AllowedEvents, AllowedExtrinsic, LegacyBlock, PhaseEvents, SignatureFilter},
 };
 use codec::Decode;
 use std::marker::PhantomData;
@@ -180,7 +180,10 @@ impl Fetcher for UntypedExtrinsicFetcher {
 	async fn fetch(&self, client: &Client, info: BlockInfo, retry: RetryPolicy) -> Result<Self::Output, Error> {
 		let mut block = Block::new(client.clone(), info.hash).extrinsics();
 		block.set_retry_policy(retry);
-		block.all(self.allow_list.clone(), self.sig_filter.clone()).await
+		let mut params = rpc::FetchParams::new();
+		params.allow_list = self.allow_list.clone();
+		params.sig_filter = self.sig_filter.clone();
+		block.all(params).await
 	}
 
 	fn is_empty(&self, value: &Self::Output) -> bool {

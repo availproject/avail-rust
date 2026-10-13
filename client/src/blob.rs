@@ -5,7 +5,7 @@ use crate::{
 use avail_rust_core::{
 	DataFormat, H256,
 	avail::data_availability::types::BlobTxSummary,
-	rpc::{AllowedExtrinsic, blob::BlobInfo, kate::DataProof},
+	rpc::{AllowedExtrinsic, FetchParams, blob::BlobInfo, kate::DataProof},
 	subxt_core::config::{Hasher, substrate::BlakeTwo256},
 	subxt_signer::sr25519::Keypair,
 };
@@ -201,7 +201,9 @@ pub async fn watch(
 		.build()
 		.await?;
 
-	let allow_list = vec![AllowedExtrinsic::from(metadata_tx_hash)];
+	let params = FetchParams::new()
+		.with_allow_list(vec![AllowedExtrinsic::from(metadata_tx_hash)])
+		.with_data_format(DataFormat::None);
 	loop {
 		let block = sub.next().await?;
 		if block_height == 0 {
@@ -212,9 +214,7 @@ pub async fn watch(
 		}
 
 		let query = block.value.extrinsics();
-		let extrinsics = query
-			.rpc(Some(allow_list.clone()), Default::default(), DataFormat::None)
-			.await?;
+		let extrinsics = query.rpc(params.clone()).await?;
 
 		let Some(extrinsic) = extrinsics.first() else {
 			continue;

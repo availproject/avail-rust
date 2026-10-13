@@ -9,7 +9,7 @@ use crate::{
 };
 use avail_rust_core::{
 	Extrinsic, ExtrinsicDecodable, H256, HasHeader, HashNumber, MultiAddress, RpcError, avail,
-	rpc::{self, AllowedExtrinsic, DataFormat},
+	rpc::{self, AllowedExtrinsic, DataFormat, FetchParams},
 	substrate::extrinsic::Preamble,
 	types::HashStringNumber,
 };
@@ -42,24 +42,21 @@ impl ExtrinsicsQuery {
 					HashNumber::HashAndNumber(hn) => AllowedExtrinsic::from(hn.0),
 				},
 			};
+			let params = FetchParams::new().with_allow_list(vec![allowed]);
 
-			s.first(Some(vec![allowed]), Default::default()).await
+			s.first(params).await
 		}
 
 		inner(self, extrinsic_id.into()).await
 	}
 
-	pub async fn first(
-		&self,
-		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
-	) -> Result<Option<UntypedExtrinsic>, Error> {
+	/// 'params.data_format' will be overwritten and set to 'DataFormat::Extrinsic'
+	pub async fn first(&self, mut params: FetchParams) -> Result<Option<UntypedExtrinsic>, Error> {
 		let at = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
+		params.data_format = DataFormat::Extrinsic;
 
-		let mut result = chain
-			.extrinsics(at, allow_list, sig_filter, DataFormat::Extrinsic)
-			.await?;
+		let mut result = chain.extrinsics(at, params).await?;
 
 		let Some(info) = result.first_mut() else {
 			return Ok(None);
@@ -69,17 +66,13 @@ impl ExtrinsicsQuery {
 		Ok(Some(ext))
 	}
 
-	pub async fn last(
-		&self,
-		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
-	) -> Result<Option<UntypedExtrinsic>, Error> {
+	/// 'params.data_format' will be overwritten and set to 'DataFormat::Extrinsic'
+	pub async fn last(&self, mut params: FetchParams) -> Result<Option<UntypedExtrinsic>, Error> {
 		let at = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
+		params.data_format = DataFormat::Extrinsic;
 
-		let mut result = chain
-			.extrinsics(at, allow_list, sig_filter, DataFormat::Extrinsic)
-			.await?;
+		let mut result = chain.extrinsics(at, params).await?;
 		let Some(info) = result.last_mut() else {
 			return Ok(None);
 		};
@@ -88,17 +81,13 @@ impl ExtrinsicsQuery {
 		Ok(Some(ext))
 	}
 
-	pub async fn all(
-		&self,
-		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
-	) -> Result<Vec<UntypedExtrinsic>, Error> {
+	/// 'params.data_format' will be overwritten and set to 'DataFormat::Extrinsic'
+	pub async fn all(&self, mut params: FetchParams) -> Result<Vec<UntypedExtrinsic>, Error> {
 		let at = self.ctx.hash_number()?;
 		let chain = self.ctx.chain();
+		params.data_format = DataFormat::Extrinsic;
 
-		let extrinsics = chain
-			.extrinsics(at, allow_list, sig_filter, DataFormat::Extrinsic)
-			.await?;
+		let extrinsics = chain.extrinsics(at, params).await?;
 
 		let mut result = Vec::with_capacity(extrinsics.len());
 		for info in extrinsics {
@@ -109,24 +98,19 @@ impl ExtrinsicsQuery {
 		Ok(result)
 	}
 
-	pub async fn count(
-		&self,
-		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
-	) -> Result<usize, Error> {
+	/// 'params.data_format' will be overwritten and set to 'DataFormat::None'
+	pub async fn count(&self, mut params: FetchParams) -> Result<usize, Error> {
 		let at = self.ctx.at.clone();
 		let chain = self.ctx.chain();
-		let result = chain.extrinsics(at, allow_list, sig_filter, DataFormat::None).await?;
+		params.data_format = DataFormat::None;
+
+		let result = chain.extrinsics(at, params).await?;
 
 		Ok(result.len())
 	}
 
-	pub async fn exists(
-		&self,
-		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
-	) -> Result<bool, Error> {
-		self.count(allow_list, sig_filter).await.map(|x| x > 0)
+	pub async fn exists(&self, params: FetchParams) -> Result<bool, Error> {
+		self.count(params).await.map(|x| x > 0)
 	}
 
 	// ── Typed (_as) methods ─────────────────────────────────────────────
@@ -148,7 +132,8 @@ impl ExtrinsicsQuery {
 				},
 			};
 
-			let encoded = s.first(Some(vec![allowed]), Default::default()).await?;
+			let params = FetchParams::new().with_allow_list(vec![allowed]);
+			let encoded = s.first(params).await?;
 			let Some(encoded) = encoded else {
 				return Ok(None);
 			};
@@ -163,9 +148,11 @@ impl ExtrinsicsQuery {
 		&self,
 		sig_filter: rpc::SignatureFilter,
 	) -> Result<Option<TypedExtrinsic<T>>, Error> {
-		let allow_list = Some(vec![T::HEADER_INDEX.into()]);
+		let params = FetchParams::new()
+			.with_allow_list(vec![T::HEADER_INDEX.into()])
+			.with_sig_filter(sig_filter);
 
-		let encoded = self.first(allow_list, sig_filter).await?;
+		let encoded = self.first(params).await?;
 		let Some(encoded) = encoded else {
 			return Ok(None);
 		};
@@ -177,9 +164,11 @@ impl ExtrinsicsQuery {
 		&self,
 		sig_filter: rpc::SignatureFilter,
 	) -> Result<Option<TypedExtrinsic<T>>, Error> {
-		let allow_list = Some(vec![T::HEADER_INDEX.into()]);
+		let params = FetchParams::new()
+			.with_allow_list(vec![T::HEADER_INDEX.into()])
+			.with_sig_filter(sig_filter);
 
-		let encoded = self.last(allow_list, sig_filter).await?;
+		let encoded = self.last(params).await?;
 		let Some(encoded) = encoded else {
 			return Ok(None);
 		};
@@ -191,9 +180,11 @@ impl ExtrinsicsQuery {
 		&self,
 		sig_filter: rpc::SignatureFilter,
 	) -> Result<Vec<TypedExtrinsic<T>>, Error> {
-		let allow_list = Some(vec![T::HEADER_INDEX.into()]);
+		let params = FetchParams::new()
+			.with_allow_list(vec![T::HEADER_INDEX.into()])
+			.with_sig_filter(sig_filter);
 
-		let all = self.all(allow_list, sig_filter).await?;
+		let all = self.all(params).await?;
 		let mut result = Vec::with_capacity(all.len());
 		for encoded in all {
 			result.push(encoded.as_typed::<T>()?);
@@ -226,7 +217,7 @@ impl ExtrinsicsQuery {
 		Ok(ext)
 	}
 
-	/// Block 0 is the only block that does not have this extrinsic in it.
+	/// TODO
 	pub async fn ext_failed_send_message_txs(
 		&self,
 	) -> Result<TypedExtrinsic<avail::vector::tx::FailedSendMessageTxs>, Error> {
@@ -239,18 +230,23 @@ impl ExtrinsicsQuery {
 		Ok(ext)
 	}
 
+	/// TODO
+	pub async fn ext_successful_send_message_txs(
+		&self,
+	) -> Result<TypedExtrinsic<avail::vector::tx::SuccessfulSendMessages>, Error> {
+		let ext = self
+			.first_as::<avail::vector::tx::SuccessfulSendMessages>(Default::default())
+			.await?;
+		let Some(ext) = ext else {
+			return Err(Error::NotFound(String::from("Vector Successful Send Message Txs extrinsic not found")));
+		};
+		Ok(ext)
+	}
+
 	// ── Raw RPC access ──────────────────────────────────────────────────
 
-	pub async fn rpc(
-		&self,
-		allow_list: Option<Vec<AllowedExtrinsic>>,
-		sig_filter: rpc::SignatureFilter,
-		data_format: rpc::DataFormat,
-	) -> Result<Vec<rpc::Extrinsic>, Error> {
-		self.ctx
-			.chain()
-			.extrinsics(self.ctx.at.clone(), allow_list, sig_filter, data_format)
-			.await
+	pub async fn rpc(&self, params: FetchParams) -> Result<Vec<rpc::Extrinsic>, Error> {
+		self.ctx.chain().extrinsics(self.ctx.at.clone(), params).await
 	}
 
 	// ── Configuration ───────────────────────────────────────────────────

@@ -21,11 +21,7 @@ impl Fetcher for ExtrinsicCountFetcher {
 	type Output = usize;
 
 	async fn fetch(&self, client: &Client, info: BlockInfo, _retry: RetryPolicy) -> Result<usize, Error> {
-		let count = client
-			.block(info.height)
-			.extrinsics()
-			.count(None, Default::default())
-			.await?;
+		let count = client.block(info.height).extrinsics().count(Default::default()).await?;
 		Ok(count)
 	}
 

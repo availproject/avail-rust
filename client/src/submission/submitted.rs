@@ -6,7 +6,7 @@ use crate::{
 	platform,
 	subscription::sub::{BlockQueryMode, Sub, SubConfig},
 };
-use avail_rust_core::{DataFormat, H256, HasHeader, RpcError, types::metadata::HashString};
+use avail_rust_core::{DataFormat, H256, HasHeader, RpcError, rpc::FetchParams, types::metadata::HashString};
 use codec::Decode;
 use std::time::Duration;
 
@@ -129,7 +129,6 @@ async fn find_receipt_inner(
 	from_block_height: u32,
 	opts: WaitOption,
 ) -> Result<FindReceiptOutcome, Error> {
-	let allow_list = Some(vec![ext_hash.into()]);
 	let mut sub = client
 		.subscribe()
 		.blocks()
@@ -138,13 +137,12 @@ async fn find_receipt_inner(
 		.build()
 		.await?;
 
+	let params = FetchParams::new()
+		.with_allow_list(vec![ext_hash.into()])
+		.with_data_format(DataFormat::None);
 	loop {
 		let block = sub.next().await?;
-		let exts = block
-			.value
-			.extrinsics()
-			.rpc(allow_list.clone(), Default::default(), DataFormat::None)
-			.await?;
+		let exts = block.value.extrinsics().rpc(params.clone()).await?;
 
 		if let Some(ext) = exts.first() {
 			let (ext_hash, ext_index) = (ext.ext_hash, ext.ext_index);
@@ -231,15 +229,15 @@ impl TransactionReceipt {
 		let tx_hash = conversions::hash_string::to_hash(ext_hash)?;
 		let config = SubConfig { mode, start_height: Some(block_start), ..Default::default() };
 		let mut sub = Sub::init(client.clone(), config).await.map_err(Error::from)?;
+		let params = FetchParams::new()
+			.with_allow_list(vec![tx_hash.into()])
+			.with_data_format(DataFormat::None);
 
 		loop {
 			let block_info = sub.next().await?;
 
 			let block = Block::new(client.clone(), block_info.height);
-			let exts = block
-				.extrinsics()
-				.rpc(Some(vec![tx_hash.into()]), Default::default(), DataFormat::None)
-				.await?;
+			let exts = block.extrinsics().rpc(params.clone()).await?;
 
 			if let Some(info) = exts.first() {
 				let tr = TransactionReceipt::new(

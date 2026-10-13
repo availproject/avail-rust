@@ -9,6 +9,7 @@ pub use shared::ExtrinsicMetadata;
 use crate::{Client, Error, RetryPolicy, block::shared::BlockContext};
 use avail_rust_core::{
 	AccountId, AccountIdLike, AvailHeader, BlockInfo, HashNumber,
+	avail::{data_availability::tx::SubmitBlobTxsSummary, vector::types::AddressedMessage},
 	grandpa::GrandpaJustification,
 	subxt_metadata,
 	types::{
@@ -95,7 +96,7 @@ impl Block {
 	pub async fn extrinsic_count(&self) -> Result<usize, Error> {
 		let mut q = self.extrinsics();
 		q.set_retry_policy(self.ctx.retry_policy());
-		q.count(None, Default::default()).await
+		q.count(Default::default()).await
 	}
 
 	/// Returns the number of events in this block.
@@ -111,6 +112,22 @@ impl Block {
 	/// Returns total extrinsic weight inferred from block events.
 	pub async fn extrinsic_weight(&self) -> Result<Weight, Error> {
 		self.events().extrinsic_weight().await
+	}
+
+	/// TODO
+	pub async fn submit_blob_txs_summary(&self) -> Result<SubmitBlobTxsSummary, Error> {
+		extrinsic::ExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.at.clone())
+			.ext_submit_blob_txs_summary()
+			.await
+			.map(|x| x.call)
+	}
+
+	/// TODO
+	pub async fn successful_send_messages(&self) -> Result<Vec<(u32, AddressedMessage)>, Error> {
+		extrinsic::ExtrinsicsQuery::new(self.ctx.client.clone(), self.ctx.at.clone())
+			.ext_successful_send_message_txs()
+			.await
+			.map(|x| x.call.messages)
 	}
 
 	/// TODO

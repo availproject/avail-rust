@@ -24,7 +24,7 @@ pub async fn main() -> Result<(), Error> {
 	// The second param allows us to filter by signature. By default no signature filtering is done.
 	// This is useful if we want to fetch extrinsic that are submitted by an specific account.
 	let block = client.block(1);
-	let _ = block.extrinsics().all(None, Default::default()).await?;
+	let _ = block.extrinsics().all(Default::default()).await?;
 
 	// If we already know what extrinsic we want, we can use .all_as() and it will fetch extrinsics only
 	// related to that specific call type. The only drawback is that it can only fetch one specific
@@ -45,20 +45,17 @@ pub async fn main() -> Result<(), Error> {
 	// .count() 	- returns the count of extrinsics in a block
 	// .exists() 	- returns true if an extrinsic exsits in the block with given filters
 	let _ = block.extrinsics().get(0).await?;
-	let _ = block.extrinsics().first(None, Default::default()).await?;
-	let _ = block.extrinsics().last(None, Default::default()).await?;
-	let _ = block.extrinsics().count(None, Default::default()).await?;
-	let _ = block.extrinsics().exists(None, Default::default()).await?;
+	let _ = block.extrinsics().first(Default::default()).await?;
+	let _ = block.extrinsics().last(Default::default()).await?;
+	let _ = block.extrinsics().count(Default::default()).await?;
+	let _ = block.extrinsics().exists(Default::default()).await?;
 
 	// The .rpc() method gives you one more level of freedom compared to .all() method.
 	// You can define the amount of data to fetch from the RPC:
 	// - DataFormat::None 		- nothing will be fetched
 	// - DataFormat::Call 		- only the extrinsic call will be fetched
 	// - DataFormat::Extrinsic	- The whole extrinsic will be fetched
-	let _ = block
-		.extrinsics()
-		.rpc(None, Default::default(), Default::default())
-		.await?;
+	let _ = block.extrinsics().rpc(Default::default()).await?;
 
 	Ok(())
 }

@@ -4,7 +4,7 @@ use avail_rust_client::{
 };
 use avail_rust_core::{
 	avail::balances::types::AccountData,
-	rpc::{self, AllowedExtrinsic},
+	rpc::{self, AllowedExtrinsic, FetchParams},
 };
 use std::str::FromStr;
 
@@ -35,12 +35,12 @@ pub async fn block_extrinsics_test(client: &Client) -> Result<(), Error> {
 	let block: block::Block = client.block(at);
 	let query = block.extrinsics();
 
-	assert_eq!(query.count(None, Default::default()).await?, 4);
-	assert_eq!(query.exists(None, Default::default()).await?, true);
+	assert_eq!(query.count(Default::default()).await?, 4);
+	assert_eq!(query.exists(Default::default()).await?, true);
 	let allowed = Some(vec![AllowedExtrinsic::TxIndex(100)]);
-	assert_eq!(query.exists(allowed, Default::default()).await?, false);
+	assert_eq!(query.exists(allowed.into()).await?, false);
 
-	let extrinsics = query.all(None, Default::default()).await?;
+	let extrinsics = query.all(Default::default()).await?;
 	assert_eq!(extrinsics.len(), 4);
 
 	// Ext 0
@@ -107,7 +107,7 @@ pub async fn block_extrinsics_test(client: &Client) -> Result<(), Error> {
 
 	// RPC extrinsics
 	let rpc_exts = query
-		.rpc(None, Default::default(), DataFormat::Extrinsic)
+		.rpc(FetchParams::new().with_data_format(DataFormat::Extrinsic))
 		.await
 		.unwrap();
 	assert_eq!(rpc_exts.len(), 4);
@@ -161,8 +161,8 @@ pub async fn block_extrinsics_test(client: &Client) -> Result<(), Error> {
 	assert_eq!(rpc_exts[3], expected);
 
 	// First & Last
-	assert_eq!(query.first(None, Default::default()).await?.unwrap(), expected_0);
-	assert_eq!(query.last(None, Default::default()).await?.unwrap(), expected_3);
+	assert_eq!(query.first(Default::default()).await?.unwrap(), expected_0);
+	assert_eq!(query.last(Default::default()).await?.unwrap(), expected_3);
 
 	Ok(())
 }
