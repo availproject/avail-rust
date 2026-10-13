@@ -197,6 +197,7 @@ impl TransactionReceipt {
 		Ok(ext)
 	}
 
+	/// Returns the UNIX timestamp in ms from the block where this transaction was included.
 	pub async fn timestamp(&self) -> Result<u64, Error> {
 		let block = Block::new(self.client.clone(), self.block_hash);
 		block.timestamp().await

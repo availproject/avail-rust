@@ -3700,6 +3700,7 @@ pub mod timestamp {
 	pub mod tx {
 		use super::*;
 
+		// UNIX timestamp in ms
 		#[derive(Debug, Clone)]
 		pub struct Set {
 			pub now: u64,

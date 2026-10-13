@@ -669,6 +669,7 @@ impl Chain {
 		inner(self, at, allow_list, fetch_data).await
 	}
 
+	/// Returns block's UNIX timestamp in ms.
 	pub async fn block_timestamp(&self, at: impl Into<HashStringNumber>) -> Result<u64, Error> {
 		async fn inner(c: &Chain, at: HashNumber) -> Result<u64, Error> {
 			retry!(c.should_retry_on_error(), {

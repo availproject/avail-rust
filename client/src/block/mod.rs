@@ -67,7 +67,7 @@ impl Block {
 		self.ctx.should_retry_on_error()
 	}
 
-	/// Returns this block's UNIX timestamp.
+	/// Returns this block's UNIX timestamp in ms.
 	pub async fn timestamp(&self) -> Result<u64, Error> {
 		self.ctx.chain().block_timestamp(self.ctx.at.clone()).await
 	}

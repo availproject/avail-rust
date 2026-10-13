@@ -20,6 +20,7 @@ pub async fn chain_info(client: &RpcClient) -> Result<ChainInfo, Error> {
 	Ok(value)
 }
 
+/// Returns block's UNIX timestamp in ms.
 pub async fn block_timestamp(client: &RpcClient, at: BlockId) -> Result<u64, Error> {
 	let params = rpc_params![at];
 	let value = client.request("custom_blockTimestamp", params).await?;
