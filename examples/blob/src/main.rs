@@ -5,7 +5,7 @@ use avail_rust_core::avail::babe::storage::BabeRandomness;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-	let client = Client::connect(LOCAL_ENDPOINT).await?;
+	let client = Client::connect(INFINITY_TURING_ENDPOINT).await?;
 
 	// Data
 	let data = "My Data".as_bytes();

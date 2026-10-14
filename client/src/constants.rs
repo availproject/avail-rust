@@ -12,6 +12,10 @@ pub const LOCAL_ENDPOINT: &str = "http://127.0.0.1:9944";
 /// Default WebSocket endpoint for a locally running Avail node.
 pub const LOCAL_WS_ENDPOINT: &str = "ws://127.0.0.1:9944";
 /// Public HTTP endpoint for the Turing test network.
+pub const INFINITY_TURING_ENDPOINT: &str = "https://infinity-turing-rpc.avail.so/rpc";
+/// Public WebSocket endpoint for the Turing test network.
+pub const INFINITY_TURING_WS_ENDPOINT: &str = "wss://infinity-turing-rpc.avail.so/ws";
+/// Public HTTP endpoint for the Turing test network.
 pub const TURING_ENDPOINT: &str = "https://turing-rpc.avail.so/rpc";
 /// Public WebSocket endpoint for the Turing test network.
 pub const TURING_WS_ENDPOINT: &str = "wss://turing-rpc.avail.so/ws";
