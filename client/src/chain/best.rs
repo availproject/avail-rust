@@ -27,7 +27,7 @@ impl Best {
 		self
 	}
 
-	/// TODO
+	/// Return best block info.
 	pub async fn block_info(&self) -> Result<BlockInfo, RpcError> {
 		self.head.block_info().await
 	}

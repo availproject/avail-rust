@@ -67,8 +67,12 @@ impl<'a> Blob<'a> {
 		signer: &Keypair,
 		options: Options,
 	) -> Result<H256, Error> {
-		let tx = self.metadata_ext(app_id, blob_hash, blob.len() as u64, commitment, eval_point_seed, eval_claim);
-		let tx_signed = tx.sign(signer, options).await?;
+		let tx = self
+			.metadata_ext(app_id, blob_hash, blob.len() as u64, commitment, eval_point_seed, eval_claim)
+			.with_mortality(options.mortality)
+			.with_nonce(options.nonce)
+			.with_tip(options.tip);
+		let tx_signed = tx.sign(signer).await?;
 
 		self.submit(&tx_signed.encode(), blob).await
 	}
@@ -148,8 +152,12 @@ impl<'a> Blob<'a> {
 		mut opts: WaitOption,
 	) -> Result<FindBlobExtOutcome, Error> {
 		let mortality = options.resolve_mortality(self.client).await?;
-		let tx = self.metadata_ext(app_id, blob_hash, blob.len() as u64, commitment, eval_point_seed, eval_claim);
-		let metadata_ext = tx.sign(signer, options).await?;
+		let tx = self
+			.metadata_ext(app_id, blob_hash, blob.len() as u64, commitment, eval_point_seed, eval_claim)
+			.with_mortality(crate::MortalityOption::Full(mortality))
+			.with_nonce(options.nonce)
+			.with_tip(options.tip);
+		let metadata_ext = tx.sign(signer).await?;
 		let metadata_ext = metadata_ext.encode();
 
 		opts.max_block_height = opts

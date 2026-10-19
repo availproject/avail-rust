@@ -11,7 +11,7 @@ pub async fn main() -> Result<(), Error> {
 	// is .submit() which signs and sends the transaction in one RPC call. It returns a
 	// SubmittedTransaction handle that we can use to track the transaction's progress.
 	let tx = client.tx().data_availability().submit_data(2, "Hello Avail!");
-	let submitted = tx.submit(&signer, Default::default()).await?;
+	let submitted = tx.submit(&signer).await?;
 	println!("Ext Hash: {:?}", submitted.ext_hash);
 
 	// Waiting for inclusion
@@ -55,9 +55,7 @@ pub async fn main() -> Result<(), Error> {
 	//
 	// The outcome variant is handy when you want to check events (e.g. ExtrinsicSuccess) right away.
 	let tx = client.tx().data_availability().submit_data(2, "Full flow");
-	let (receipt, events) = tx
-		.submit_and_wait_for_outcome(&signer, Options::new(), BlockQueryMode::Best)
-		.await?;
+	let (receipt, events) = tx.outcome(&signer, BlockQueryMode::Best).await?;
 	println!("Height: {}, Success: {}", receipt.block_height, events.is_extrinsic_success_present());
 
 	// Reading back the submitted data

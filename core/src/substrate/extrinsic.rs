@@ -144,7 +144,7 @@ pub struct Extension {
 	pub tip: u128,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtrinsicCall(pub Vec<u8>);
 
 impl ExtrinsicCall {
@@ -251,7 +251,7 @@ fn encode_extrinsic(preamble: &Preamble, call: &[u8]) -> Vec<u8> {
 	output
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Extrinsic {
 	pub preamble: Preamble,
 	pub call: ExtrinsicCall,
@@ -470,5 +470,88 @@ impl<'a> SignedPayload<'a> {
 		} else {
 			signer.sign(&data).0
 		}
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::*;
+
+	#[test]
+	pub fn era_encoding_and_decoding() {
+		// Immortal
+		let era = Era::Immortal;
+		let encoded = const_hex::encode(codec::Encode::encode(&era));
+		assert_eq!("00", encoded);
+		let encoded_bytes = const_hex::decode(encoded).unwrap();
+		assert_eq!(era, codec::Decode::decode(&mut encoded_bytes.as_slice()).unwrap());
+
+		// Mortal
+		let era = Era::mortal(8, 11);
+		let encoded = const_hex::encode(codec::Encode::encode(&era));
+		assert_eq!("3200", encoded);
+		let encoded_bytes = const_hex::decode(encoded).unwrap();
+		assert_eq!(era, codec::Decode::decode(&mut encoded_bytes.as_slice()).unwrap());
+
+		let era = Era::mortal(4, 8);
+		let encoded = const_hex::encode(codec::Encode::encode(&era));
+		assert_eq!("0100", encoded);
+		let encoded_bytes = const_hex::decode(encoded).unwrap();
+		assert_eq!(era, codec::Decode::decode(&mut encoded_bytes.as_slice()).unwrap());
+	}
+
+	#[test]
+	pub fn extension_encoding_and_decoding() {
+		let extension = Extension { era: Era::Immortal, nonce: 1, tip: 2 };
+		let encoded = const_hex::encode(codec::Encode::encode(&extension));
+		assert_eq!("000408", encoded);
+		let encoded_bytes = const_hex::decode(encoded).unwrap();
+		assert_eq!(extension, codec::Decode::decode(&mut encoded_bytes.as_slice()).unwrap());
+	}
+
+	#[test]
+	pub fn preamble_encoding_decoding() {
+		// Encode and decode bare preamble
+		let preamble = Preamble::Bare(LEGACY_EXTRINSIC_FORMAT_VERSION);
+		let encoded = const_hex::encode(codec::Encode::encode(&preamble));
+		assert_eq!("04", encoded);
+		let encoded_bytes = const_hex::decode(encoded).unwrap();
+		assert_eq!(preamble, codec::Decode::decode(&mut encoded_bytes.as_slice()).unwrap());
+
+		let preamble = Preamble::Bare(EXTRINSIC_FORMAT_VERSION);
+		let encoded = const_hex::encode(codec::Encode::encode(&preamble));
+		assert_eq!("05", encoded);
+		let encoded_bytes = const_hex::decode(encoded).unwrap();
+		assert_eq!(preamble, codec::Decode::decode(&mut encoded_bytes.as_slice()).unwrap());
+
+		// Encode and decode general preamble
+		let preamble = Preamble::General(100, Extension { era: Era::Immortal, nonce: 1, tip: 2 });
+		let encoded = const_hex::encode(codec::Encode::encode(&preamble));
+		assert_eq!("4564000408", encoded);
+		let encoded_bytes = const_hex::decode(encoded).unwrap();
+		assert_eq!(preamble, codec::Decode::decode(&mut encoded_bytes.as_slice()).unwrap());
+
+		// Encode and signed preamble
+		let address = MultiAddress::Id(subxt_core::utils::AccountId32([1u8; 32]));
+		let signature = MultiSignature::Sr25519([2u8; 64]);
+		let extension = Extension { era: Era::Immortal, nonce: 3, tip: 4 };
+		let preamble = Preamble::Signed(address, signature, extension);
+		let encoded = const_hex::encode(codec::Encode::encode(&preamble));
+		assert_eq!(
+			"840001010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202000c10",
+			encoded
+		);
+		let encoded_bytes = const_hex::decode(encoded).unwrap();
+		assert_eq!(preamble, codec::Decode::decode(&mut encoded_bytes.as_slice()).unwrap());
+	}
+
+	#[test]
+	pub fn extrinsic_encoding_decoding() {
+		// Encode and decode bare preamble
+		let extrinsic = Extrinsic::new(Preamble::Bare(1), ExtrinsicCall(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]));
+		let encoded = const_hex::encode(codec::Encode::encode(&extrinsic));
+		assert_eq!("2c0100010203040506070809", encoded);
+		let encoded_bytes = const_hex::decode(encoded).unwrap();
+		assert_eq!(extrinsic, codec::Decode::decode(&mut encoded_bytes.as_slice()).unwrap());
 	}
 }

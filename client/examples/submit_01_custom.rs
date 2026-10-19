@@ -32,7 +32,7 @@ pub async fn main() -> Result<(), Error> {
 	// submit, wait for a receipt, read events.
 	let custom = CustomExtrinsic { data: vec![1, 2, 3, 4] };
 	let tx = SubmittableTransaction::from_encodable(client.clone(), custom);
-	let submitted = tx.submit(&signer, Options::new()).await?;
+	let submitted = tx.submit(&signer).await?;
 	println!("Ext Hash: {:?}", submitted.ext_hash);
 
 	let (receipt, events) = submitted.outcome(BlockQueryMode::Finalized).await?;
