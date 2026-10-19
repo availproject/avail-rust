@@ -1,7 +1,7 @@
 use codec::{Compact, Decode, Encode};
 use primitive_types::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use subxt_core::config::{Hasher, Header, substrate::BlakeTwo256};
+use subxt_core::config::{Hasher, Header as SubxtHeader, substrate::BlakeTwo256};
 
 pub use subxt_core::config::substrate::{Digest, DigestItem};
 
@@ -27,20 +27,16 @@ impl AvailHeader {
 	}
 
 	pub fn hash(&self) -> H256 {
-		BlakeTwo256::hash_of(self)
+		BlakeTwo256.hash_of(self)
 	}
 }
 
-impl Header for AvailHeader {
+impl SubxtHeader for AvailHeader {
 	type Hasher = BlakeTwo256;
 	type Number = u32;
 
 	fn number(&self) -> Self::Number {
 		self.number
-	}
-
-	fn hash(&self) -> <Self::Hasher as Hasher>::Output {
-		self.hash()
 	}
 }
 

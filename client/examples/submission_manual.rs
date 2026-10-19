@@ -1,5 +1,5 @@
 use avail_rust_client::{prelude::*, subxt_core::config::Hasher};
-use avail_rust_core::{BlakeTwo256, ExtrinsicPayload, MultiSignature};
+use avail_rust_core::{ExtrinsicPayload, MultiSignature, subxt_core::config::substrate::BlakeTwo256};
 use codec::Encode;
 
 #[tokio::main]
@@ -59,7 +59,7 @@ pub fn sign(signer: &Keypair, payload: &ExtrinsicPayload) -> [u8; 64] {
 	payload.additional.encode_to(&mut data);
 
 	if data.len() > 256 {
-		let hash = BlakeTwo256::hash(&data);
+		let hash = BlakeTwo256.hash(&data);
 		signer.sign(hash.as_ref()).0
 	} else {
 		signer.sign(&data).0
