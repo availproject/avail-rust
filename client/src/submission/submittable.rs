@@ -1,7 +1,7 @@
 use super::submitted::SubmissionOutcome;
 use crate::{
-	Client, Error, RetryPolicy, chain::Chain, submission::submitted::WaitOption, subxt_signer::sr25519::Keypair,
-	transaction_options::Options,
+	Client, Error, MortalityOption, RetryPolicy, chain::Chain, submission::submitted::WaitOption,
+	subxt_signer::sr25519::Keypair,
 };
 use avail_rust_core::{
 	ExtrinsicBorrowed, H256, HasHeader, RpcError,
@@ -15,8 +15,11 @@ use avail_rust_core::{
 #[derive(Clone)]
 pub struct SubmittableTransaction {
 	client: Client,
-	pub call: ExtrinsicCall,
 	retry_on_error: RetryPolicy,
+	pub call: ExtrinsicCall,
+	pub mortality: MortalityOption,
+	pub nonce: Option<u32>,
+	pub tip: u128,
 }
 
 impl SubmittableTransaction {
@@ -25,7 +28,32 @@ impl SubmittableTransaction {
 	/// The builder is inert until one of the async helpers is invoked. By default it inherits the
 	/// client's retry policy, but this can be customised via [`set_retry_policy`](Self::set_retry_policy).
 	pub fn new(client: Client, call: ExtrinsicCall) -> Self {
-		Self { client, call, retry_on_error: RetryPolicy::Inherit }
+		Self {
+			client,
+			call,
+			retry_on_error: RetryPolicy::Inherit,
+			mortality: MortalityOption::default(),
+			nonce: None,
+			tip: 0,
+		}
+	}
+
+	/// Sets nonce
+	pub fn with_nonce(mut self, value: Option<u32>) -> Self {
+		self.nonce = value;
+		self
+	}
+
+	/// Sets tip
+	pub fn with_tip(mut self, value: u128) -> Self {
+		self.tip = value;
+		self
+	}
+
+	/// Sets mortality
+	pub fn with_mortality(mut self, value: MortalityOption) -> Self {
+		self.mortality = value;
+		self
 	}
 
 	/// Signs the call with the provided keypair and submits it to the chain in a single RPC round-trip.
@@ -35,31 +63,33 @@ impl SubmittableTransaction {
 	///
 	/// The submission uses `options` (nonce, tip, mortality) exactly as provided; no additional mutation
 	/// happens inside this helper.
-	pub async fn submit(&self, signer: &Keypair, options: Options) -> Result<super::SubmittedTransaction, Error> {
+	pub async fn submit(&self, signer: &Keypair) -> Result<super::SubmittedTransaction, Error> {
+		let options = crate::Options { mortality: self.mortality, nonce: self.nonce, tip: self.tip };
 		self.chain().sign_and_submit_call(signer, &self.call.0, options).await
 	}
 
-	pub async fn submit_and_wait_for_receipt(
+	/// Submits the transactions and waits for the receipt to be available.
+	pub async fn receipt(
 		&self,
 		signer: &Keypair,
-		options: Options,
 		wait_opts: impl Into<WaitOption>,
 	) -> Result<super::TransactionReceipt, Error> {
-		let submitted = self.submit(signer, options).await?;
+		let submitted = self.submit(signer).await?;
 		submitted.receipt(wait_opts).await
 	}
 
-	pub async fn submit_and_wait_for_outcome(
+	/// Submits the transactions and waits for the outcome to be available.
+	pub async fn outcome(
 		&self,
 		signer: &Keypair,
-		options: Options,
 		wait_opts: impl Into<WaitOption>,
 	) -> Result<SubmissionOutcome, Error> {
-		let submitted = self.submit(signer, options).await?;
+		let submitted = self.submit(signer).await?;
 		submitted.outcome(wait_opts).await
 	}
 
-	pub async fn sign<'a>(&'a self, signer: &Keypair, options: Options) -> Result<ExtrinsicBorrowed<'a>, Error> {
+	pub async fn sign<'a>(&'a self, signer: &Keypair) -> Result<ExtrinsicBorrowed<'a>, Error> {
+		let options = crate::Options { mortality: self.mortality, nonce: self.nonce, tip: self.tip };
 		self.chain()
 			.build_extrinsic_from_call(signer, &self.call.0, options)
 			.await
@@ -73,13 +103,8 @@ impl SubmittableTransaction {
 	}
 
 	/// Signs the call and estimates fees for the exact extrinsic payload.
-	pub async fn estimate_extrinsic_fees(
-		&self,
-		signer: &Keypair,
-		options: Options,
-		at: Option<H256>,
-	) -> Result<FeeDetails, Error> {
-		let transaction = self.sign(signer, options).await?;
+	pub async fn estimate_extrinsic_fees(&self, signer: &Keypair, at: Option<H256>) -> Result<FeeDetails, Error> {
+		let transaction = self.sign(signer).await?;
 		let transaction = transaction.encode();
 		Ok(self
 			.chain()

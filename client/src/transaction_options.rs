@@ -5,9 +5,9 @@ use avail_rust_core::{AccountId, Era, Extension, H256};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Options {
-	pub mortality: Option<MortalityOption>,
+	pub mortality: MortalityOption,
 	pub nonce: Option<u32>,
-	pub tip: Option<u128>,
+	pub tip: u128,
 }
 
 impl Options {
@@ -15,18 +15,18 @@ impl Options {
 		Self::default()
 	}
 
-	pub fn mortality(mut self, value: MortalityOption) -> Self {
-		self.mortality = Some(value);
+	pub fn with_mortality(mut self, value: MortalityOption) -> Self {
+		self.mortality = value;
 		self
 	}
 
-	pub fn nonce(mut self, value: u32) -> Self {
+	pub fn with_nonce(mut self, value: u32) -> Self {
 		self.nonce = Some(value);
 		self
 	}
 
-	pub fn tip(mut self, value: u128) -> Self {
-		self.tip = Some(value);
+	pub fn with_tip(mut self, value: u128) -> Self {
+		self.tip = value;
 		self
 	}
 
@@ -51,8 +51,7 @@ impl Options {
 	}
 
 	pub async fn resolve_mortality(self, client: &Client) -> Result<Mortality, crate::Error> {
-		let mortality = self.mortality.unwrap_or(MortalityOption::Period(32));
-		let mortality = match mortality {
+		let mortality = match self.mortality {
 			MortalityOption::Period(period) => Mortality::from_period(client, period).await?,
 			MortalityOption::Full(mortality) => mortality,
 		};
@@ -66,11 +65,10 @@ impl Options {
 		account_id: &AccountId,
 		retry_on_error: RetryPolicy,
 	) -> Result<ResolvedOptions, crate::Error> {
-		let tip = self.tip.unwrap_or_default();
 		let nonce = self.resolve_nonce(client, account_id, retry_on_error).await?;
 		let mortality = self.resolve_mortality(client).await?;
 
-		Ok(ResolvedOptions { mortality, nonce, tip })
+		Ok(ResolvedOptions { mortality, nonce, tip: self.tip })
 	}
 }
 
@@ -92,6 +90,12 @@ impl From<&ResolvedOptions> for Extension {
 pub enum MortalityOption {
 	Period(u64),
 	Full(Mortality),
+}
+
+impl Default for MortalityOption {
+	fn default() -> Self {
+		Self::Period(32)
+	}
 }
 
 #[derive(Debug, Clone, Copy)]
